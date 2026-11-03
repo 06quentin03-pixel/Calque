@@ -5,7 +5,7 @@ Dernière mise à jour : 3 novembre 2026.
 ## Branche
 - Travail : `claude/layer-modification-prompt-feasibility-nw7oa4`.
 - `main` (version utilisée au quotidien) : **non modifiée**.
-- ⚠️ Envoi sur GitHub bloqué : l'application Claude a l'accès en lecture au dépôt, mais pas en écriture (erreur 403 « Resource not accessible by integration »). Les commits sont locaux tant que l'accès n'est pas corrigé.
+- Accès GitHub en écriture opérationnel : les phases 0 et 1a sont sur la branche de travail.
 
 ## Dernière tâche terminée
 - Phase 1a, protection des données (voir CHANGELOG).
