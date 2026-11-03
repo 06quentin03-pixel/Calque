@@ -10,14 +10,15 @@ Légende : ⬜ à faire · 🟨 en cours · ✅ terminé · ⏸ en attente d'une
 ## Phase 1 — Fiabilisation et architecture
 Dépend de : phase 0.
 
-**1a. Protection des données (prioritaire, bug critique de l'audit)**
-- ⬜ Stockage des plans dans IndexedDB, avec reprise automatique des plans existants du `localStorage`, sans les effacer.
-- ⬜ Vérification de chaque écriture et alerte visible en cas d'échec (fin du faux « Enregistré »).
-- ⬜ Copies de sécurité automatiques et historique des versions, avec restauration.
-- ⬜ Export du plan par le menu de partage de l'iPad (fichier `.calque`) et import compatible avec les anciens `.json`.
-- ⬜ Migration versionnée du format (`v: 1` → `v: 2`) et contrôle d'intégrité à l'ouverture.
-- ⬜ Demande de stockage persistant (`navigator.storage.persist`).
-- Validation : tests du stockage plein, de la migration d'un ancien plan, de l'aller-retour export/import et de la restauration d'une version.
+**1a. Protection des données** ✅ (testée automatiquement ; à vérifier sur iPad)
+- ✅ Stockage des plans dans IndexedDB, avec reprise automatique des plans existants du `localStorage`, sans les effacer.
+- ✅ Vérification de chaque écriture et alerte visible en cas d'échec (fin du faux « Enregistré »).
+- ✅ Copies de sécurité automatiques et historique des versions, avec restauration. Plans supprimés récupérables.
+- ✅ Envoi du plan par le menu de partage de l'iPad (fichier `.calque.json`) et import compatible avec les anciens `.json`.
+- ✅ Sauvegarde complète de tous les plans dans un fichier, avec un import qui n'écrase jamais rien.
+- ✅ Cadre de migration versionnée du format (`PLAN_VERSION`, `MIGRATIONS`) et contrôle d'intégrité à l'ouverture (empreinte et liens cassés).
+- ✅ Demande de stockage persistant (`navigator.storage.persist`).
+- Validation : 7 tests automatisés dans `tests/stockage.test.mjs`, tous réussis.
 
 **1b. Architecture** ⏸ (décision de l'utilisateur requise : voir PROGRESS.md)
 - ⬜ Découpage progressif de `index.html` en modules natifs : noyau/modèle, géométrie, électricité, rendu 2D, 3D, export, interface.

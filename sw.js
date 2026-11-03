@@ -1,7 +1,7 @@
 /* Calque : fonctionnement hors ligne.
    Réseau d'abord pour les fichiers du site (les mises à jour arrivent dès qu'il y a internet),
    copie locale sinon. */
-const CACHE = 'calque-v3';
+const CACHE = 'calque-v4';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

@@ -35,7 +35,10 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Modèle de données : un plan est un objet JSON `P` (`levels, nodes, walls, openings, items, elec, rooms, dims, texts, circuits, rcds, links, ducts, install`).
   - Unités : centimètres, axe Y vers le bas. Chaque objet a un `id` unique et un niveau `lv`.
 - La 2D et la 3D lisent le même `P` : il n'y a jamais de seconde copie des données.
-- Sauvegarde actuelle : `localStorage` (clés `calque.p.<id>`, `calque.idx`, `calque.cur`, `calque.settings`).
+- Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
+  - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
+  - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
+  - Format des plans : `PLAN_VERSION` + `MIGRATIONS[n]` (fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache `calque-v3`).
   - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier.
@@ -50,7 +53,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 
 - Serveur local : `python3 -m http.server 8765` à la racine du dépôt.
 - Navigateur : Chromium est installé avec Playwright (`require('playwright')`). WebKit n'est pas disponible dans l'environnement cloud.
-- Tests unitaires : `node --test tests/` (dès que le dossier existe).
+- Tests : `node --test tests/*.test.mjs` (Playwright + Chromium, serveur intégré au test).
 - Tailles d'écran à vérifier : 1180×820 (iPad paysage), 820×1180 (iPad portrait), 390×844 (téléphone).
 - Ne jamais laisser de fichiers de test (captures, etc.) dans le dépôt : utiliser le dossier temporaire de la session.
 

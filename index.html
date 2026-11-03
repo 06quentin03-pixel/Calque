@@ -5325,6 +5325,7 @@ function fmtIn(v) { return isNum(v) ? String(Math.round(v * 10) / 10).replace('.
 let toastT = 0;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 const ICON = {
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
   x: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   rotL: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v5h5"/><path d="M4.5 9A8 8 0 1 1 6 17"/></svg>',
   rotR: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4v5h-5"/><path d="M19.5 9A8 8 0 1 0 18 17"/></svg>',
@@ -6126,8 +6127,11 @@ function renderMenuPop() {
     menuItem('pen', 'Renommer le plan', renamePlan),
     h('hr'),
     menuItem('img', 'Exporter en image ou en PDF', openExport),
-    menuItem('down', 'Exporter le fichier du plan', exportJSON),
-    menuItem('up', 'Importer un fichier de plan', () => $('#fileIn').click()),
+    menuItem('up', 'Envoyer le fichier du plan', exportJSON),
+    menuItem('down', 'Importer un fichier (plan ou sauvegarde)', () => $('#fileIn').click()),
+    h('hr'),
+    menuItem('clock', 'Historique des versions', openVersions),
+    menuItem('folder', 'Sauvegarder tous mes plans', exportAll),
     h('hr'),
     menuItem('house', 'Ouvrir le plan d’exemple', openSample),
     menuItem('help', 'Gestes et raccourcis', openHelp),
@@ -6248,14 +6252,93 @@ function openHelp() {
     h('p', { class: 'note' }, 'Les murs se dessinent dans l’axe. Les surfaces affichées sont des surfaces au sol, murs et cloisons déduits.'));
 }
 
-/* ---------------- sauvegarde ---------------- */
+/* ---------------- sauvegarde ----------------
+   Stockage principal : IndexedDB (base « calque »), bien plus grand que localStorage (≈ 5 Mo sur Safari).
+     plans    { id, name, savedAt, sum, size }            liste des plans (sans le contenu, pour lister vite)
+     data     { id, json }                                contenu du plan
+     versions { k (auto), pid, name, savedAt, sum, size, why }   historique et copies de sécurité
+     vdata    { k, json }                                 contenu de chaque version
+     meta     { k, v }
+   localStorage reste une copie de secours « au mieux », lue à chaque démarrage, jamais effacée par la migration.
+   Chaque écriture est vérifiée : « Enregistré » n'est affiché que si elle a réellement réussi. */
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
 function lsDel(k) { try { localStorage.removeItem(k); } catch (e) { } }
 function localIndex() { try { const a = JSON.parse(lsGet('calque.idx') || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-function setLocalIndex(a) { lsSet('calque.idx', JSON.stringify(a)); }
+function setLocalIndex(a) { return lsSet('calque.idx', JSON.stringify(a)); }
+
+/* version du format des plans : chaque évolution du format ajoute une fonction MIGRATIONS[n] (plan v n → v n+1) */
+const PLAN_VERSION = 1;
+const MIGRATIONS = {};
+function migratePlan(p) {
+  let v = isNum(p.v) && p.v >= 1 ? Math.floor(p.v) : 1;
+  const from = v;
+  while (v < PLAN_VERSION && MIGRATIONS[v]) { p = MIGRATIONS[v](p); v++; }
+  p.v = Math.max(v, from);
+  return { plan: p, from, newer: from > PLAN_VERSION };
+}
+/* empreinte du contenu (FNV-1a + longueur) : détecte un enregistrement tronqué ou abîmé */
+function checksum(s) { let x = 0x811c9dc5; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193); } return (x >>> 0).toString(36) + '.' + s.length; }
+/* contrôle d'intégrité : signale les liens cassés sans rien modifier */
+function planProblems(p) {
+  const out = [];
+  const ids = (a) => new Set((a || []).map((o) => o && o.id));
+  const nodes = ids(p.nodes), walls = ids(p.walls), circs = ids(p.circuits), rcds = ids(p.rcds), lvs = ids(p.levels);
+  const n = (cond, msg) => { if (cond) out.push(msg); };
+  n((p.walls || []).some((w) => !nodes.has(w.a) || !nodes.has(w.b)), 'mur relié à un angle manquant');
+  n((p.openings || []).some((o) => !walls.has(o.wall)), 'ouverture sur un mur manquant');
+  n((p.elec || []).some((e) => e.cid && !circs.has(e.cid)), 'symbole relié à un circuit manquant');
+  n((p.circuits || []).some((c) => c.rcd && !rcds.has(c.rcd)), 'circuit relié à un différentiel manquant');
+  n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
+  return out;
+}
+
+const DB = {
+  db: null, ok: false,
+  open() {
+    return new Promise((res) => {
+      let req;
+      try { req = indexedDB.open('calque', 1); } catch (e) { res(false); return; }
+      const fail = () => res(false);
+      const timer = setTimeout(fail, 4000);
+      req.onupgradeneeded = () => {
+        const d = req.result;
+        if (!d.objectStoreNames.contains('plans')) d.createObjectStore('plans', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('data')) d.createObjectStore('data', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('versions')) d.createObjectStore('versions', { keyPath: 'k', autoIncrement: true }).createIndex('pid', 'pid');
+        if (!d.objectStoreNames.contains('vdata')) d.createObjectStore('vdata', { keyPath: 'k' });
+        if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'k' });
+      };
+      req.onsuccess = () => {
+        clearTimeout(timer);
+        this.db = req.result; this.ok = true;
+        this.db.onversionchange = () => { this.db.close(); this.ok = false; };
+        this.db.onclose = () => { this.ok = false; };
+        res(true);
+      };
+      req.onerror = () => { clearTimeout(timer); fail(); };
+    });
+  },
+  /* la promesse n'est tenue que lorsque la transaction est réellement écrite (oncomplete) */
+  tx(stores, mode, fn) {
+    return new Promise((res, rej) => {
+      if (!this.ok) { rej(new Error('idb-closed')); return; }
+      let t; const box = {};
+      try { t = this.db.transaction(stores, mode); } catch (e) { rej(e); return; }
+      t.oncomplete = () => res(box.v);
+      t.onerror = () => rej(t.error || new Error('idb'));
+      t.onabort = () => rej(t.error || new Error('idb-abort'));
+      try { fn(t, box); } catch (e) { try { t.abort(); } catch (e2) { } rej(e); }
+    });
+  },
+  get(store, key) { return this.tx([store], 'readonly', (t, box) => { const r = t.objectStore(store).get(key); r.onsuccess = () => { box.v = r.result; }; }); },
+  all(store) { return this.tx([store], 'readonly', (t, box) => { const r = t.objectStore(store).getAll(); r.onsuccess = () => { box.v = r.result || []; }; }); },
+  byIndex(store, index, key) { return this.tx([store], 'readonly', (t, box) => { const r = t.objectStore(store).index(index).getAll(key); r.onsuccess = () => { box.v = r.result || []; }; }); },
+};
+
 const Store = {
   cloud: false, col: null, cache: new Map(), timer: 0, saving: false, again: false,
+  busy: false, failNotified: false, lastErr: null,
   async init() {
     try {
       if (!window.claude || typeof window.claude.use !== 'function') return false;
@@ -6279,10 +6362,71 @@ const Store = {
     }
   },
 };
+
+/* écrit un plan dans IndexedDB (principal) et dans localStorage (secours) ; renvoie { idb, ls } */
+async function writePlanLocal(id, name, savedAt, json) {
+  const sum = checksum(json);
+  let idb = false;
+  if (DB.ok) {
+    try {
+      await DB.tx(['plans', 'data'], 'readwrite', (t) => {
+        t.objectStore('data').put({ id, json });
+        t.objectStore('plans').put({ id, name, savedAt, sum, size: json.length });
+      });
+      idb = true;
+    } catch (e) { Store.lastErr = e; }
+  }
+  let ls = lsSet('calque.p.' + id, json);
+  if (ls) { const idx = localIndex().filter((x) => x.id !== id); idx.push({ id, name, savedAt }); ls = setLocalIndex(idx); }
+  if (!ls && idb) {
+    /* localStorage plein : on retire l'ancienne copie de secours pour qu'elle ne soit jamais prise pour la bonne */
+    lsDel('calque.p.' + id); setLocalIndex(localIndex().filter((x) => x.id !== id));
+  }
+  lsSet('calque.cur', id);
+  return { idb, ls, sum };
+}
+
+/* ---- historique des versions ---- */
+const VERS = { gap: 10 * 60 * 1000, keep: 40 };
+const lastVer = new Map(); // pid → { savedAt, sum }
+async function versionsOf(pid) {
+  if (!DB.ok) return [];
+  try { return (await DB.byIndex('versions', 'pid', pid)).sort((a, b) => b.savedAt - a.savedAt); } catch (e) { return []; }
+}
+async function addVersion(pid, name, json, why) {
+  if (!DB.ok) return false;
+  const sum = checksum(json), savedAt = Date.now();
+  try {
+    await DB.tx(['versions', 'vdata'], 'readwrite', (t) => {
+      const r = t.objectStore('versions').add({ pid, name, savedAt, sum, size: json.length, why });
+      r.onsuccess = () => { t.objectStore('vdata').put({ k: r.result, json }); };
+    });
+    lastVer.set(pid, { savedAt, sum });
+    pruneVersions(pid);
+    return true;
+  } catch (e) { return false; }
+}
+async function pruneVersions(pid) {
+  const vs = await versionsOf(pid);
+  const extra = vs.slice(VERS.keep);
+  if (!extra.length) return;
+  try { await DB.tx(['versions', 'vdata'], 'readwrite', (t) => { for (const v of extra) { t.objectStore('versions').delete(v.k); t.objectStore('vdata').delete(v.k); } }); } catch (e) { }
+}
+async function versionJson(k) { try { const d = await DB.get('vdata', k); return d ? d.json : null; } catch (e) { return null; } }
+/* une version automatique toutes les 10 minutes de travail, seulement si le plan a changé */
+async function maybeVersion(pid, name, json, sum, why, force) {
+  if (!DB.ok) return;
+  if (!lastVer.has(pid)) { const vs = await versionsOf(pid); lastVer.set(pid, vs.length ? { savedAt: vs[0].savedAt, sum: vs[0].sum } : { savedAt: 0, sum: '' }); }
+  const lv = lastVer.get(pid);
+  if (lv.sum === sum) return;
+  if (!force && Date.now() - lv.savedAt < VERS.gap) return;
+  await addVersion(pid, name, json, why || 'Automatique');
+}
+
 function setSave(state, msg) {
   const el = $('#saveState'); el.dataset.s = state;
-  $('#saveTxt').textContent = msg || { ok: 'Enregistré', dirty: 'Modifications…', local: 'Enregistré sur cet appareil', err: 'Échec de l’enregistrement' }[state];
-  el.title = $('#saveTxt').textContent;
+  $('#saveTxt').textContent = msg || { ok: 'Enregistré', dirty: 'Modifications…', local: 'Enregistré sur cet appareil', err: 'Non enregistré' }[state];
+  el.title = state === 'err' ? 'Le dernier enregistrement a échoué. Exportez le plan pour ne rien perdre.' : $('#saveTxt').textContent;
 }
 function scheduleSave() {
   ui.isExample = false;
@@ -6291,32 +6435,74 @@ function scheduleSave() {
   clearTimeout(Store.timer);
   Store.timer = setTimeout(saveNow, 900);
 }
+function notifySaveFail() {
+  if (Store.failNotified) return;
+  Store.failNotified = true;
+  openModal('Enregistrement impossible',
+    h('p', null, 'Calque n’a pas pu enregistrer vos dernières modifications sur cet appareil (espace de stockage plein ou indisponible).'),
+    h('p', null, 'Le plan est toujours ouvert : exportez-le maintenant pour ne rien perdre, puis libérez de l’espace (anciens plans, historique, réglages de l’iPad > Général > Stockage).'),
+    btns(btn('Exporter le plan', () => { closeModal(); exportJSON(); }, 'pri', 'up'), btn('Fermer', closeModal)));
+}
 async function saveNow() {
-  clearTimeout(Store.timer);
+  clearTimeout(Store.timer); Store.timer = 0;
   if (!P || ui.isExample) return;
-  const id = P.id, name = P.name || 'Plan', savedAt = ui.savedAt || Date.now();
-  const json = JSON.stringify(P);
-  lsSet('calque.p.' + id, json);
-  const idx = localIndex().filter((x) => x.id !== id); idx.push({ id, name, savedAt }); setLocalIndex(idx);
-  lsSet('calque.cur', id);
-  if (!Store.cloud) { setSave('local'); return; }
-  if (Store.saving) { Store.again = true; return; }
-  if (json.length > 240000) { setSave('err', 'Plan trop lourd pour l’enregistrement en ligne'); return; }
-  Store.saving = true;
+  if (Store.busy) { Store.again = true; return; }
+  Store.busy = true;
   try {
-    await Store.col.doc('p_' + id).set({ name, savedAt, json });
-    Store.cache.set(id, { id, name, savedAt, json });
-    setSave('ok');
-  } catch (e) {
-    if (e && e.code === 'unavailable') { setTimeout(() => { if (!Store.saving) saveNow(); }, 1500 + Math.random() * 1000); }
-    setSave('err', e && e.code === 'quota_exceeded' ? 'Espace en ligne plein' : 'Enregistré sur cet appareil seulement');
+    do {
+      Store.again = false;
+      const id = P.id, name = P.name || 'Plan', savedAt = ui.savedAt || Date.now();
+      const json = JSON.stringify(P);
+      const r = await writePlanLocal(id, name, savedAt, json);
+      if (!r.idb && !r.ls) { setSave('err'); notifySaveFail(); return; }
+      Store.failNotified = false;
+      maybeVersion(id, name, json, r.sum);
+      if (!Store.cloud) { setSave('local'); continue; }
+      if (json.length > 240000) { setSave('local', 'Enregistré sur cet appareil seulement'); continue; }
+      try {
+        await Store.col.doc('p_' + id).set({ name, savedAt, json });
+        Store.cache.set(id, { id, name, savedAt, json });
+        setSave('ok');
+      } catch (e) {
+        if (e && e.code === 'unavailable') { setTimeout(() => { if (!Store.busy) saveNow(); }, 1500 + Math.random() * 1000); }
+        setSave('local', e && e.code === 'quota_exceeded' ? 'Espace en ligne plein' : 'Enregistré sur cet appareil seulement');
+      }
+    } while (Store.again);
+  } finally { Store.busy = false; }
+}
+/* au démarrage : reprend dans IndexedDB les plans de localStorage plus récents (anciennes versions de Calque) */
+async function syncFromLocal() {
+  if (!DB.ok) return 0;
+  let metas = [];
+  try { metas = await DB.all('plans'); } catch (e) { return 0; }
+  const have = new Map(metas.map((m) => [m.id, m]));
+  let n = 0;
+  for (const li of localIndex()) {
+    const m = have.get(li.id);
+    if (m && (m.savedAt || 0) >= (li.savedAt || 0)) continue;
+    const json = lsGet('calque.p.' + li.id);
+    if (!json) continue;
+    try { JSON.parse(json); } catch (e) { continue; }
+    const sum = checksum(json);
+    try {
+      await DB.tx(['plans', 'data'], 'readwrite', (t) => {
+        t.objectStore('data').put({ id: li.id, json });
+        t.objectStore('plans').put({ id: li.id, name: li.name || 'Plan', savedAt: li.savedAt || 0, sum, size: json.length });
+      });
+      await addVersion(li.id, li.name || 'Plan', json, 'Copie de sécurité (reprise de l’ancien stockage)');
+      n++;
+    } catch (e) { }
   }
-  Store.saving = false;
-  if (Store.again) { Store.again = false; saveNow(); }
+  try { await DB.tx(['meta'], 'readwrite', (t) => { t.objectStore('meta').put({ k: 'lsSync', v: Date.now() }); }); } catch (e) { }
+  return n;
+}
+async function askPersist() {
+  try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch (e) { }
 }
 function openPlan(plan, id, opts) {
   opts = opts || {};
-  P = normalizePlan(plan); P.id = id; delete P.savedAt;
+  const mig = migratePlan(plan);
+  P = normalizePlan(mig.plan); P.id = id; delete P.savedAt;
   touch(); syncRooms();
   const L = levelsSorted();
   ui.lv = (L.find((l) => l.elev >= 0) || L[0]).id;
@@ -6328,22 +6514,44 @@ function openPlan(plan, id, opts) {
   refreshUI();
   setSave(ui.isExample ? (Store.cloud ? 'ok' : 'local') : Store.cloud ? 'ok' : 'local', ui.isExample ? 'Exemple non enregistré' : undefined);
   fitView();
+  if (mig.newer) toast('Ce plan vient d’une version plus récente de Calque : certaines données peuvent ne pas s’afficher.');
+  else if (!ui.isExample && !opts.quiet) { const pb = planProblems(P); if (pb.length) toast('Plan ouvert. À vérifier : ' + pb.join(', ') + '.'); }
+  /* copie de sécurité à l'ouverture (si le plan a changé depuis la dernière version) */
+  if (!ui.isExample && !opts.quiet) { const json = JSON.stringify(P); maybeVersion(id, P.name || 'Plan', json, checksum(json), 'À l’ouverture', true); }
 }
 async function listProjects() {
   if (Store.cloud) { try { await Store.refresh(); } catch (e) { } }
   const m = new Map();
-  for (const x of localIndex()) m.set(x.id, { id: x.id, name: x.name, savedAt: x.savedAt || 0 });
-  for (const x of Store.cache.values()) { const l = m.get(x.id); if (!l || x.savedAt >= l.savedAt) m.set(x.id, { id: x.id, name: x.name, savedAt: x.savedAt }); }
+  const put = (x) => { const l = m.get(x.id); if (!l || (x.savedAt || 0) >= (l.savedAt || 0)) m.set(x.id, { id: x.id, name: x.name, savedAt: x.savedAt || 0 }); };
+  if (DB.ok) { try { for (const x of await DB.all('plans')) put(x); } catch (e) { } }
+  for (const x of localIndex()) put(x);
+  for (const x of Store.cache.values()) put(x);
   if (P && !m.has(P.id)) m.set(P.id, { id: P.id, name: P.name + (ui.isExample ? ' (non enregistré)' : ''), savedAt: ui.savedAt || Date.now() });
   return [...m.values()].sort((a, b) => b.savedAt - a.savedAt);
 }
+/* lit le plan le plus récent parmi IndexedDB, localStorage et l'enregistrement en ligne ; ignore une copie abîmée */
 async function loadProject(id) {
+  const cands = [];
+  if (DB.ok) {
+    try {
+      const meta = await DB.get('plans', id), d = meta && await DB.get('data', id);
+      if (d && d.json) cands.push({ src: 'idb', savedAt: meta.savedAt || 0, json: d.json, bad: meta.sum && checksum(d.json) !== meta.sum });
+    } catch (e) { }
+  }
   const local = lsGet('calque.p.' + id);
-  const li = localIndex().find((x) => x.id === id);
+  if (local) { const li = localIndex().find((x) => x.id === id); cands.push({ src: 'ls', savedAt: li ? li.savedAt || 0 : 0, json: local }); }
   let cloud = Store.cache.get(id);
   if (Store.cloud && !cloud) { try { const d = await Store.col.doc('p_' + id).get(); if (d.exists) { const x = d.data(); cloud = { id, name: x.name, savedAt: x.savedAt || 0, json: x.json }; } } catch (e) { } }
-  if (cloud && cloud.json && (!local || !li || cloud.savedAt > (li.savedAt || 0))) return { plan: JSON.parse(cloud.json), savedAt: cloud.savedAt };
-  if (local) return { plan: JSON.parse(local), savedAt: li ? li.savedAt : 0 };
+  if (cloud && cloud.json) cands.push({ src: 'cloud', savedAt: cloud.savedAt || 0, json: cloud.json });
+  cands.sort((a, b) => (a.bad ? 1 : 0) - (b.bad ? 1 : 0) || b.savedAt - a.savedAt);
+  for (const c of cands) {
+    try { const plan = JSON.parse(c.json); if (plan && typeof plan === 'object') return { plan, savedAt: c.savedAt, damaged: cands.some((x) => x.bad) }; } catch (e) { }
+  }
+  /* aucune copie lisible : dernière version de l'historique */
+  for (const v of await versionsOf(id)) {
+    const json = await versionJson(v.k);
+    try { if (json) return { plan: JSON.parse(json), savedAt: v.savedAt, damaged: true }; } catch (e) { }
+  }
   return null;
 }
 async function openProjects() {
@@ -6354,25 +6562,75 @@ async function openProjects() {
     return h('div', { class: 'proj-li', 'aria-current': String(cur) },
       h('div', { style: 'min-width:0' }, h('b', null, p.name), h('small', null, cur ? 'Ouvert · ' + fmtDate(p.savedAt) : fmtDate(p.savedAt))),
       h('div', { class: 'btns' },
-        cur ? null : btn('Ouvrir', async () => { await saveNow(); const r = await loadProject(p.id); if (!r) { toast('Ce plan est introuvable.'); return; } closeModal(); openPlan(r.plan, p.id, { savedAt: r.savedAt }); }, 'sm pri'),
+        cur ? null : btn('Ouvrir', async () => { await saveNow(); const r = await loadProject(p.id); if (!r) { toast('Ce plan est introuvable.'); return; } closeModal(); openPlan(r.plan, p.id, { savedAt: r.savedAt }); if (r.damaged) toast('La dernière copie était abîmée : la copie valide la plus récente a été ouverte.'); }, 'sm pri'),
         btn('', async () => { const r = cur ? { plan: JSON.parse(snapshot()) } : await loadProject(p.id); if (!r) return; const nid = uid('p'); r.plan.name = (r.plan.name || 'Plan') + ' (copie)'; closeModal(); openPlan(r.plan, nid); scheduleSave(); toast('Copie créée.'); }, 'sm', 'dup'),
         confirmBtn('', 'Supprimer ?', async () => { await deleteProject(p.id); openProjects(); })));
   });
+  const deleted = await deletedPlans(new Set(list.map((p) => p.id)));
+  const delRows = deleted.map((v) => h('div', { class: 'proj-li' },
+    h('div', { style: 'min-width:0' }, h('b', null, v.name), h('small', null, 'Supprimé · dernière copie du ' + fmtDate(v.savedAt))),
+    h('div', { class: 'btns' }, btn('Récupérer', async () => {
+      const json = await versionJson(v.k); if (!json) { toast('Copie illisible.'); return; }
+      await saveNow(); closeModal(); openPlan(JSON.parse(json), v.pid); scheduleSave(); toast(`« ${v.name} » récupéré.`);
+    }, 'sm'))));
+  let space = '';
+  try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); if (e.usage != null) space = ` Espace utilisé : ${NF1.format(e.usage / 1048576)} Mo.`; } } catch (e) { }
   openModal('Mes plans', ...rows, btns(btn('Nouveau plan', () => { closeModal(); newPlan(); }, 'pri', 'plus')),
-    h('p', { class: 'note' }, Store.cloud ? 'Vos plans sont enregistrés dans votre compte et vous suivent d’un appareil à l’autre.' : 'Vos plans sont enregistrés sur cet appareil. Exportez le fichier du plan pour le garder ailleurs.'));
+    delRows.length ? h('h3', { style: 'margin:8px 0 0;font-size:13px' }, 'Plans supprimés récemment') : null, ...delRows,
+    h('p', { class: 'note' }, (Store.cloud ? 'Vos plans sont enregistrés dans votre compte et vous suivent d’un appareil à l’autre.' : 'Vos plans sont enregistrés sur cet appareil, avec un historique des versions. Envoyez-vous régulièrement une sauvegarde (menu … > Sauvegarder tous mes plans).') + space));
   for (const b of $$('#modal .btn.sm')) { if (!b.textContent.trim()) b.setAttribute('aria-label', b.classList.contains('danger') ? 'Supprimer' : 'Dupliquer'); }
 }
+/* plans supprimés dont il reste une copie dans l'historique (la plus récente de chacun) */
+async function deletedPlans(alive) {
+  if (!DB.ok) return [];
+  let all = [];
+  try { all = await DB.all('versions'); } catch (e) { return []; }
+  const best = new Map();
+  for (const v of all) { if (alive.has(v.pid)) continue; const b = best.get(v.pid); if (!b || v.savedAt > b.savedAt) best.set(v.pid, v); }
+  return [...best.values()].sort((a, b) => b.savedAt - a.savedAt).slice(0, 10);
+}
 async function deleteProject(id) {
+  /* copie de sécurité avant suppression : le plan reste récupérable dans « Plans supprimés récemment » */
+  const r = P && P.id === id ? { plan: JSON.parse(snapshot()) } : await loadProject(id);
+  if (r) await addVersion(id, r.plan.name || 'Plan', JSON.stringify(r.plan), 'Avant suppression');
+  if (DB.ok) { try { await DB.tx(['plans', 'data'], 'readwrite', (t) => { t.objectStore('plans').delete(id); t.objectStore('data').delete(id); }); } catch (e) { } }
   lsDel('calque.p.' + id);
   setLocalIndex(localIndex().filter((x) => x.id !== id));
   if (Store.cloud) { try { await Store.col.doc('p_' + id).delete(); Store.cache.delete(id); } catch (e) { toast('Suppression en ligne impossible pour le moment.'); } }
   if (P && P.id === id) {
+    clearTimeout(Store.timer); Store.timer = 0;
     const rest = await listProjects();
     const next = rest.find((x) => x.id !== id);
-    if (next) { const r = await loadProject(next.id); if (r) { openPlan(r.plan, next.id, { savedAt: r.savedAt }); return; } }
+    if (next) { const r2 = await loadProject(next.id); if (r2) { openPlan(r2.plan, next.id, { savedAt: r2.savedAt }); return; } }
     openPlan(blankPlan('Nouveau plan'), uid('p'), { tool: 'room' });
     scheduleSave();
   }
+}
+/* fenêtre « Historique des versions » du plan ouvert */
+async function openVersions() {
+  if (ui.isExample) { toast('Le plan d’exemple n’a pas d’historique : modifiez-le pour l’enregistrer.'); return; }
+  if (!DB.ok) { toast('Historique indisponible sur ce navigateur.'); return; }
+  await saveNow();
+  const vs = await versionsOf(P.id);
+  const fmt = (t) => new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(t));
+  const rows = vs.map((v) => h('div', { class: 'proj-li' },
+    h('div', { style: 'min-width:0' }, h('b', null, fmt(v.savedAt)), h('small', null, `${v.why} · ${NF1.format(v.size / 1024)} Ko`)),
+    h('div', { class: 'btns' },
+      btn('Copie', async () => {
+        const json = await versionJson(v.k); if (!json) { toast('Version illisible.'); return; }
+        const plan = JSON.parse(json); plan.name = (plan.name || 'Plan') + ' (version du ' + fmt(v.savedAt) + ')';
+        await saveNow(); closeModal(); openPlan(plan, uid('p')); scheduleSave(); toast('Version ouverte dans un nouveau plan.');
+      }, 'sm'),
+      confirmBtnPlain('Restaurer', 'Confirmer ?', async () => {
+        const json = await versionJson(v.k); if (!json) { toast('Version illisible.'); return; }
+        await saveNow();
+        await addVersion(P.id, P.name || 'Plan', snapshot(), 'Avant restauration');
+        const id = P.id; closeModal(); openPlan(JSON.parse(json), id, { quiet: true }); scheduleSave(); toast('Version restaurée. L’état précédent est gardé dans l’historique.');
+      }))));
+  openModal('Historique des versions',
+    h('p', { class: 'note' }, 'Une copie est gardée à l’ouverture du plan, puis toutes les 10 minutes de travail, avant chaque restauration et avant une suppression (40 dernières copies par plan).'),
+    btns(btn('Enregistrer une version maintenant', async () => { const ok = await addVersion(P.id, P.name || 'Plan', snapshot(), 'Manuelle'); toast(ok ? 'Version enregistrée.' : 'Échec de l’enregistrement de la version.'); if (ok) openVersions(); }, 'pri', 'plus')),
+    ...(rows.length ? rows : [h('p', { class: 'note' }, 'Aucune version pour l’instant.')]));
 }
 async function newPlan() {
   await saveNow();
@@ -7060,26 +7318,88 @@ async function runExport(g) {
   finally { requestRender(); }
 }
 
-async function exportJSON() {
-  const data = JSON.stringify(Object.assign({ format: 'calque-plan', version: 1 }, P));
-  const dl = await getDownloads();
-  if (dl) {
-    try { await dl.save({ filename: `${slug(P.name)}.json`, data }); toast('Fichier exporté.'); return; }
-    catch (e) { if (e && e.code === 'declined') return; }
+/* fichier prêt à envoyer : le menu de partage de l'iPad (AirDrop, Mail, Messages, Fichiers) si possible, sinon téléchargement */
+function shareableFile(data, name) {
+  for (const type of ['application/json', 'text/plain']) {
+    const f = new File([data], name, { type });
+    try { if (navigator.canShare && navigator.canShare({ files: [f] })) return { file: f, share: true }; } catch (e) { }
   }
-  if (saveBlobLocal(new Blob([data], { type: 'application/json' }), `${slug(P.name)}.json`)) { toast('Fichier du plan téléchargé.'); return; }
-  const ta = h('textarea', { class: 'txt', style: 'height:160px;padding:8px;font-family:var(--f-num);font-size:12px', readonly: true }, data);
-  openModal('Fichier du plan', h('p', { class: 'note' }, 'Copiez ce texte et collez-le dans un fichier .json pour le conserver.'), ta,
-    btns(btn('Copier', () => { navigator.clipboard && navigator.clipboard.writeText(data).then(() => toast('Copié.'), () => { ta.select(); toast('Sélectionné : copiez avec Ctrl+C.'); }); }, 'pri')));
+  return { file: new File([data], name, { type: 'application/json' }), share: false };
+}
+function deliverFile(title, data, name, note) {
+  const { file, share } = shareableFile(data, name);
+  const copyBox = () => {
+    const ta = h('textarea', { class: 'txt', style: 'height:160px;padding:8px;font-family:var(--f-num);font-size:12px', readonly: true }, data);
+    openModal(title, h('p', { class: 'note' }, 'Copiez ce texte et collez-le dans un fichier .json pour le conserver.'), ta,
+      btns(btn('Copier', () => { navigator.clipboard && navigator.clipboard.writeText(data).then(() => toast('Copié.'), () => { ta.select(); toast('Sélectionné : copiez avec Ctrl+C.'); }); }, 'pri')));
+  };
+  openModal(title,
+    h('p', null, h('b', null, name), ' · ', NF1.format(data.length / 1024), ' Ko'),
+    h('p', { class: 'note' }, note),
+    btns(
+      share ? btn('Envoyer…', async () => {
+        try { await navigator.share({ files: [file], title: name }); closeModal(); toast('Fichier envoyé.'); }
+        catch (e) { if (!(e && e.name === 'AbortError')) toast('Partage impossible : utilisez « Enregistrer ».'); }
+      }, 'pri', 'up') : null,
+      btn('Enregistrer', async () => { if (await saveFile(file)) { closeModal(); toast('Fichier enregistré.'); } else copyBox(); }, share ? '' : 'pri', 'down')));
+}
+function exportJSON() {
+  const data = JSON.stringify(Object.assign({ format: 'calque-plan', version: 1 }, P));
+  deliverFile('Envoyer le plan', data, `${slug(P.name)}.calque.json`,
+    'Ce fichier contient tout le plan (murs, mobilier, électricité, tableau). Il se rouvre dans Calque sur n’importe quel appareil : menu … > Importer un fichier.');
+}
+/* sauvegarde complète : tous les plans de l'appareil dans un seul fichier */
+async function exportAll() {
+  await saveNow();
+  const list = (await listProjects()).filter((p) => !(ui.isExample && P && p.id === P.id));
+  const plans = [];
+  for (const p of list) {
+    const r = P && p.id === P.id ? { plan: JSON.parse(snapshot()), savedAt: ui.savedAt } : await loadProject(p.id);
+    if (r) plans.push({ id: p.id, name: p.name, savedAt: r.savedAt || p.savedAt || 0, plan: r.plan });
+  }
+  if (!plans.length) { toast('Aucun plan enregistré à sauvegarder.'); return; }
+  const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans });
+  deliverFile('Sauvegarder tous mes plans', data, `calque-sauvegarde-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.calque.json`,
+    `${plans.length} plan${plans.length > 1 ? 's' : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`);
+}
+const isPlanObj = (o) => o && typeof o === 'object' && Array.isArray(o.walls) && Array.isArray(o.nodes);
+/* import d'une sauvegarde complète : n'écrase jamais un plan existant */
+async function importBackup(o) {
+  await saveNow();
+  const have = new Map((await listProjects()).map((p) => [p.id, p]));
+  let added = 0, same = 0, copies = 0;
+  for (const x of o.plans) {
+    if (!x || !isPlanObj(x.plan)) continue;
+    const plan = migratePlan(x.plan).plan; delete plan.format; delete plan.version; delete plan.id;
+    const json = JSON.stringify(plan);
+    let id = typeof x.id === 'string' && x.id ? x.id : uid('p');
+    if (have.has(id)) {
+      const r = await loadProject(id);
+      if (r) { const cur = Object.assign({}, r.plan); delete cur.id; if (JSON.stringify(cur) === json) { same++; continue; } }
+      id = uid('p'); plan.name = (plan.name || 'Plan') + ' (importé)'; copies++;
+    } else added++;
+    const res = await writePlanLocal(id, plan.name || 'Plan', x.savedAt || Date.now(), JSON.stringify(plan));
+    if (!res.idb && !res.ls) { notifySaveFail(); break; }
+    await addVersion(id, plan.name || 'Plan', JSON.stringify(plan), 'Importé d’une sauvegarde');
+  }
+  if (P) lsSet('calque.cur', P.id);
+  const parts = [];
+  if (added) parts.push(`${added} plan${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`);
+  if (copies) parts.push(`${copies} en copie (un plan du même nom existait déjà et n’a pas été modifié)`);
+  if (same) parts.push(`${same} déjà à jour`);
+  toast(parts.length ? 'Sauvegarde importée : ' + parts.join(', ') + '.' : 'Aucun plan dans cette sauvegarde.');
+  openProjects();
 }
 $('#fileIn').addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0]; e.target.value = '';
   if (!f) return;
+  let o;
+  try { o = JSON.parse(await f.text()); } catch (err) { toast('Ce fichier n’est pas un plan Calque valide.'); return; }
   try {
-    const txt = await f.text();
-    const o = JSON.parse(txt);
-    if (!o || !Array.isArray(o.walls) || !Array.isArray(o.nodes)) throw new Error('format');
-    delete o.format; delete o.version;
+    if (o && o.format === 'calque-backup' && Array.isArray(o.plans)) { await importBackup(o); return; }
+    if (!isPlanObj(o)) throw new Error('format');
+    delete o.format; delete o.version; delete o.id;
     await saveNow();
     openPlan(o, uid('p'));
     scheduleSave();
@@ -8502,16 +8822,22 @@ function bindUI() {
   window.addEventListener('resize', () => { closePops(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestRender());
   window.addEventListener('beforeunload', () => { if (Store.timer) saveNow(); });
+  window.addEventListener('pagehide', () => { if (Store.timer) saveNow(); }); // iPad : plus fiable que beforeunload
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && Store.timer) saveNow(); });
 }
 async function boot() {
   loadSettings();
   readColors();
   bindUI();
-  const curId = lsGet('calque.cur');
-  let raw = curId && lsGet('calque.p.' + curId);
+  /* stockage principal IndexedDB ; reprise des plans de l'ancien stockage (localStorage, laissé intact) */
+  if (typeof indexedDB !== 'undefined' && await DB.open()) { await syncFromLocal(); askPersist(); }
+  let curId = lsGet('calque.cur');
+  if (!curId) { const list = await listProjects(); if (list.length) curId = list[0].id; }
   let ok = false;
-  if (raw) { try { const li = localIndex().find((x) => x.id === curId); openPlan(JSON.parse(raw), curId, { savedAt: li ? li.savedAt : 0 }); ok = true; } catch (e) { } }
+  if (curId) {
+    const r = await loadProject(curId);
+    if (r) { try { openPlan(r.plan, curId, { savedAt: r.savedAt }); ok = true; if (r.damaged) toast('La dernière copie du plan était abîmée : la copie valide la plus récente a été ouverte.'); } catch (e) { } }
+  }
   if (!ok) openPlan(samplePlan(), uid('p'), { example: true });
   resizeCanvas();
   { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d') setView(vw); }
