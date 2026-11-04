@@ -1,5 +1,14 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 3, étape 3 : bilan de puissance et équilibrage des phases
+- Nouvel onglet **Bilan** dans Tableau électrique : puissance installée, puissance apparente et cos φ global, puissance appelée (avec le coefficient de simultanéité ks, s’il est saisi), puissance souscrite.
+- Bilan **partiel** signalé quand des circuits n’ont pas de puissance ou de cos φ (les totaux sont alors des minimums). Aucun coefficient ks par défaut : le tableau Legrand des coefficients est attendu ; une valeur peut être saisie, avec sa fiabilité et son origine.
+- Tableau des circuits : puissance (avec son badge), cos φ, S, IB, phase, statut et accès direct à la fiche de calcul.
+- **Équilibrage** (installation triphasée) : intensité par phase, déséquilibre, répartition proposée (du plus fort au plus faible courant, sur la phase la moins chargée) et bouton « Appliquer la répartition proposée » (Annuler pour revenir). Circuits sans phase et sans intensité listés.
+- Liste des 8 tableaux NF C 15-100 attendus, avec leur état (tous « manquants » pour l’instant).
+- Barre d’onglets du tableau : défile sur elle-même sur un petit écran au lieu de décaler toute la page.
+- Ajout d’un test dans `tests/fiche.test.mjs` (4 tests au total).
+
 ## 2026-11-04 — Phase 3, étape 2 : fiche de calcul d’un circuit
 - **Fiche de calcul** : bouton « Fiche de calcul » dans l’inspecteur d’un symbole relié à un circuit (plan) et dans l’éditeur d’un circuit (onglet Tableau électrique), avec le statut du circuit à côté.
 - La fiche affiche : le statut (conforme / non conforme / vérification nécessaire), les alertes (moteur de calcul et contrôle actuel du tableau, marqué « indicatif »), les données manquantes, les données du circuit à saisir, les résultats et les formules (avec les nombres utilisés), les contrôles avec leur source et l’édition, les données utilisées avec leur badge (vérifiée, saisie, estimée, manquante), les hypothèses et les tableaux NF C 15-100 manquants.

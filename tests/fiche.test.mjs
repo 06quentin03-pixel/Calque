@@ -108,3 +108,39 @@ test('fiche de calcul depuis le plan, en triphasé, sur iPad portrait', async ()
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('bilan de puissance et équilibrage des phases dans l’onglet Tableau', async () => {
+  const { ctx, page, errors } = await fresh({ viewport: { width: 820, height: 1180 }, touch: true });
+  const p = planV4('pB5'); p.install.reseau = 'tri'; delete p.install.ks;
+  /* chauffage : radiateur 2 000 W (IB 8,70 A) ; prises 3 680 W cos 1 (16 A) ; cuisson 6 900 W cos 1 (30 A) */
+  p.circuits[1].calc = { p: { v: 3680, st: 'saisie' }, cos: { v: 1, st: 'saisie' } };
+  p.circuits.push({ id: 'c3', kind: 'cuisson', name: 'Cuisson', cal: 32, sec: 6, rcd: 'r2', dda: false, ctrl: null, calc: { p: { v: 6900, st: 'saisie' }, cos: { v: 1, st: 'saisie' } } });
+  await seedPlan(ctx, p);
+  await boot(page);
+  await page.click('.vtab[data-view="elec"]'); await wait(page, 300);
+  await page.click('#evBar button:has-text("Bilan")'); await wait(page, 300);
+  const txt = () => page.textContent('#evCanvas');
+  let t = await txt();
+  assert.match(t, /12,58 kW/, 'puissance installée 2 000 + 3 680 + 6 900 = 12 580 W');
+  assert.match(t, /ks manquant/); assert.match(t, /Coefficient de simultanéité ks/);
+  assert.match(t, /Aucun circuit réparti/);
+  assert.match(t, /Courants admissibles des conducteurs/, 'liste des tableaux Legrand attendus');
+  /* ks saisi : puissance appelée 0,5 × 12 580 = 6,29 kW */
+  await page.fill('#fi-ks', '0,5'); await page.press('#fi-ks', 'Enter'); await wait(page, 300);
+  assert.match(await txt(), /6,29 kW/);
+  /* répartition proposée : 30 A → L1, 16 A → L2, 8,70 A → L3 */
+  await page.click('#evCanvas button:has-text("Appliquer la répartition proposée")'); await wait(page, 1400);
+  const st = await storedPlan(page, 'pB5');
+  assert.deepEqual(st.circuits.map((c) => c.calc && c.calc.phase), ['L3', 'L2', 'L1']);
+  assert.deepEqual(st.install.ks, { v: 0.5, st: 'saisie' });
+  t = await txt();
+  /* I moyen = (30 + 16 + 8,6957) / 3 = 18,2319 A ; (30 − 18,2319) / 18,2319 = 64,55 % → « 64,5 % » */
+  assert.match(t, /Déséquilibre 64,5 %/);
+  /* Annuler : retour aux circuits sans phase */
+  await page.evaluate(async () => (await import('./js/interaction.js')).undo()); await wait(page, 300);
+  assert.match(await txt(), /Aucun circuit réparti/);
+  const w = await page.$eval('.ev-work', (e) => e.scrollWidth - e.clientWidth);
+  assert.ok(w <= 1, 'pas de débordement horizontal en portrait');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 3, étape 2).
+Dernière mise à jour : 4 novembre 2026 (phase 3 terminée, demande de fusion n°2 préparée).
 
 ## Branche
 - Travail : `claude/layer-modification-prompt-feasibility-nw7oa4`.
@@ -43,22 +43,28 @@ Contrôles complémentaires (scripts, hors dépôt) :
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
-## Phase 3 — électricité et calculs (en cours)
+## Phase 3 — électricité et calculs (terminée, à vérifier sur iPad)
 - ✅ Étape 1 : moteur de calcul sans écran (`js/calcul.js`), emplacement des tableaux NF C 15-100 (`js/normes.js`), partie sans écran d'`electricite.js` sortie dans `js/elecdonnees.js`. 13 tests dans `tests/calcul.test.mjs`. Tests : **53/53 réussis**.
   - Contrôle de non-régression : circuits, différentiels, coffret et contrôles NF C 15-100 générés sur le plan d'exemple **identiques** avant et après (script hors dépôt).
   - Tous les tableaux NF C 15-100 sont « manquants » : en attente des extraits Legrand de l'utilisateur.
 - ✅ Étape 2 : fiche de calcul d'un circuit (`js/fiche.js`), ouverte depuis l'inspecteur du plan et depuis le tableau ; réglage « Réseau » de l'installation ; format des plans v5 avec migration. 3 tests dans `tests/fiche.test.mjs`. Tests : **56/56 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fiche entièrement visible, boutons de 44 px).
+- ✅ Étape 3 : onglet « Bilan » du tableau (bilan de puissance, coefficient ks, tableau des circuits, équilibrage des phases avec répartition proposée, liste des tableaux Legrand attendus). 1 test de plus dans `tests/fiche.test.mjs`. Tests : **57/57 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 ; correction du débordement horizontal de la barre d'onglets sur téléphone.
+- ⏸ Tableaux NF C 15-100 : emplacements prêts dans `js/normes.js`, **en attente des extraits Legrand** de l'utilisateur. Tant qu'ils manquent, la section (In ≤ Iz), la chute de tension maximale, les sections du logement et les coefficients de simultanéité restent « vérification nécessaire ».
 
 ## Tâche en cours
-- Phase 3, étape 3 : bilan de puissance et équilibrage des phases dans l'onglet Tableau.
+- Aucune. Phase 3 terminée ; demande de fusion n°2 préparée (non fusionnée), en attente des essais sur iPad.
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
 
 ## Points d'attention
+- Test `ipad.test.mjs` « rendu limité à la zone visible… » : **un échec intermittent** observé une fois (90 pixels différents sur la première vue) lors d'une suite complète, puis réussi 4 fois seul et à la suite complète suivante. Le rendu du plan n'a pas été modifié en phase 3 ; cause probable : chargement des polices. À surveiller.
+- Un plan enregistré en v5 puis rouvert avec l'ancienne version de `main` affiche « vient d'une version plus récente » ; ses données restent dans le fichier.
 - Format des plans passé de v1 à v5 (migrations testées). Un plan enregistré avec cette version, rouvert avec l'ancienne version de `main`, affiche « vient d'une version plus récente » ; les données restent dans le fichier.
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Phase 3, étape 3 : bilan de puissance et équilibrage dans l'onglet Tableau, puis demande de fusion.
+- Recopier les tableaux Legrand dans `js/normes.js` dès que l'utilisateur les fournit (avec test), puis activer le contrôle In ≤ Iz et la limite de chute de tension.
+- Phase 4 : cheminements et métrés (la longueur des câbles alimentera la fiche de calcul).

@@ -3,7 +3,8 @@
    (avec leur statut), les données manquantes, les alertes et les contrôles à trois statuts.
    Les calculs eux-mêmes sont dans calcul.js (sans écran). Module JavaScript natif (aucune compilation). */
 import { $, P } from './noyau.js';
-import { CONF, LIB_STATUT, entreesDuPlan, ficheCircuit, fmt, puissanceCircuit } from './calcul.js';
+import { CONF, LIB_STATUT, bilanDuPlan, entreesDuPlan, equilibrageDuPlan, ficheCircuit, fmt, puissanceCircuit } from './calcul.js';
+import { TABLES, tableDisponible } from './normes.js';
 import { circById, circNumbers, circuitColor, nfcChecks } from './electricite.js';
 import { ICON, btn, btns, closeModal, h, numField, sec, segCtl, textField, toast } from './interface.js';
 import { commit } from './interaction.js';
@@ -21,10 +22,11 @@ function statutCircuit(c) { return ficheCircuit(entreesDuPlan(P, c)).statut; }
 /* ---- données de calcul enregistrées dans le circuit (c.calc, format v5) ---- */
 const calcOf = (c) => c.calc || (c.calc = {});
 function tidy(c) { if (c.calc && !Object.keys(c.calc).length) delete c.calc; }
-/* champ d'une donnée numérique : valeur, statut (saisie / vérifiée / estimée), origine, effacer */
-function champDonnee(c, key, label, unit, o) {
-  const d = c.calc && c.calc[key];
-  const setV = (v) => { const k = calcOf(c); k[key] = Object.assign({ v, st: d ? d.st : 'saisie' }, d && d.src ? { src: d.src } : {}); commit(); };
+/* champ d'une donnée numérique : valeur, statut (saisie / vérifiée / estimée), origine, effacer.
+   box(true) renvoie l'objet qui porte la donnée (créé au besoin), box(false) l'objet existant ou null ; clean() range après effacement */
+function champDonnee(box, key, label, unit, o, clean) {
+  const cur = box(false), d = cur && cur[key];
+  const setV = (v) => { box(true)[key] = Object.assign({ v, st: d ? d.st : 'saisie' }, d && d.src ? { src: d.src } : {}); commit(); };
   const kids = [numField(label, d ? d.v : null, unit, setV, { id: 'fi-' + key, min: o.min, max: o.max })];
   if (o.chips) kids.push(h('div', { class: 'chips' }, o.chips.map((v) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!!d && Math.abs(d.v - v) < 1e-9), onclick: () => setV(v) }, fmt(v, 3)))));
   if (d) {
@@ -33,11 +35,12 @@ function champDonnee(c, key, label, unit, o) {
       d.st = st; commit();
     })));
     kids.push(textField(null, d.src, (v) => { v = v.trim(); if (v) d.src = v; else { delete d.src; if (d.st === 'verifiee') d.st = 'saisie'; } commit(); }, { id: 'fi-' + key + '-src', ph: 'Origine : notice, plaque signalétique, mesure…' }));
-    kids.push(btns(btn('Effacer', () => { delete calcOf(c)[key]; tidy(c); commit(); }, 'sm', 'del')));
+    kids.push(btns(btn('Effacer', () => { delete box(true)[key]; if (clean) clean(); commit(); }, 'sm', 'del')));
   }
   if (o.note) kids.push(h('p', { class: 'note' }, o.note));
   return h('div', { class: 'fi-champ' }, ...kids);
 }
+const calcBox = (c) => (create) => (create ? calcOf(c) : c.calc || null);
 
 /* ---- contenu de la fiche ---- */
 function ficheBody(c) {
@@ -63,9 +66,9 @@ function ficheBody(c) {
   const k = c.calc || {};
   const phaseOpts = [{ v: null, n: 'Non précisé' }, { v: 'L1', n: 'L1' }, { v: 'L2', n: 'L2' }, { v: 'L3', n: 'L3' }, { v: 'tri', n: 'Triphasé' }];
   parts.push(sec('Données du circuit',
-    champDonnee(c, 'p', 'Puissance prévue', 'W', { min: 1, max: 1e6, note: pNote }),
-    champDonnee(c, 'cos', 'Facteur de puissance cos φ', '', { min: 0.01, max: 1, chips: [1, 0.95, 0.9, 0.85, 0.8], note: cosNote }),
-    champDonnee(c, 'len', 'Longueur du câble (tableau → point le plus éloigné)', 'm', { min: 0.1, max: 10000, note: k.len ? null : 'Mesurez ou estimez la longueur réelle du câble. Le calcul depuis les cheminements viendra à la phase 4.' }),
+    champDonnee(calcBox(c), 'p', 'Puissance prévue', 'W', { min: 1, max: 1e6, note: pNote }, () => tidy(c)),
+    champDonnee(calcBox(c), 'cos', 'Facteur de puissance cos φ', '', { min: 0.01, max: 1, chips: [1, 0.95, 0.9, 0.85, 0.8], note: cosNote }, () => tidy(c)),
+    champDonnee(calcBox(c), 'len', 'Longueur du câble (tableau → point le plus éloigné)', 'm', { min: 0.1, max: 10000, note: k.len ? null : 'Mesurez ou estimez la longueur réelle du câble. Le calcul depuis les cheminements viendra à la phase 4.' }, () => tidy(c)),
     h('div', { class: 'fi-champ' }, h('span', { class: 'fi-lab' }, 'Métal des conducteurs'),
       segCtl([{ v: null, n: 'Non précisé' }, { v: 'cu', n: 'Cuivre' }, { v: 'al', n: 'Aluminium' }], k.mat || null, (v) => { if (v) calcOf(c).mat = v; else if (c.calc) delete c.calc.mat; tidy(c); commit(); }),
       k.mat ? null : h('p', { class: 'note' }, 'Non précisé : cuivre retenu (estimé).')),
@@ -130,4 +133,62 @@ function ficheButton(c) {
   const st = statutCircuit(c);
   return h('div', { class: 'fi-btn' }, btn('Fiche de calcul', () => openFiche(c.id), 'sm', 'info'), pillStatut(st));
 }
-export { FI, badgeDonnee, ficheBody, ficheButton, openFiche, pillStatut, renderFiche, statutCircuit };
+/* ---- onglet « Bilan et phases » du Tableau électrique ---- */
+function bilanView() {
+  const inst = P.install || (P.install = {});
+  const b = bilanDuPlan(P), eq = equilibrageDuPlan(P, b);
+  const nums = circNumbers();
+  const kW = (w) => (w == null ? '—' : fmt(w / 1000, 2) + ' kW'), kVA = (w) => (w == null ? '—' : fmt(w / 1000, 2) + ' kVA');
+  const box = (n, v, sub) => h('div', { class: 'ev-sumbox bi-box' }, h('b', null, v), h('span', null, n), sub ? h('small', null, sub) : null);
+  const parts = [];
+  parts.push(h('div', { class: 'ev-sum bi-sum' },
+    box('Puissance installée', kW(b.Pinstallee), b.complet ? null : 'partielle (minimum)'),
+    box('Puissance apparente', kVA(b.Sinstallee), b.Sinstallee == null ? 'incomplète' : `cos φ ${fmt(b.cos, 2)}`),
+    box('Puissance appelée', b.ks ? kW(b.Pappelee) : '—', b.ks ? `ks = ${fmt(b.ks.v, 2)} (${LIB_STATUT[b.ks.st].toLowerCase()})` : 'ks manquant'),
+    box('Puissance souscrite', b.souscrite ? kVA(b.souscrite.v) : '—', b.reseau.v === 'tri' ? 'triphasé' : 'monophasé' + (b.reseau.st === 'estimee' ? ' (estimé)' : ''))));
+  parts.push(h('p', { class: 'note' }, 'Bilan indicatif : somme des puissances des circuits, S = √(ΣP² + ΣQ²). La puissance appelée applique le coefficient de simultanéité ks, s’il est indiqué. Il ne remplace pas l’étude d’un professionnel.'));
+  if (b.alertes.length) parts.push(h('div', { class: 'ev-list' }, b.alertes.map((a) => h('div', { class: 'ev-chk ' + (a.niveau === 'bad' ? 'err' : 'info') }, h('span', { class: 'ic' }, ICON_SEV[a.niveau] || 'i'), h('span', { class: 'tx' }, a.texte)))));
+  if (b.manquantes.length) parts.push(h('section', null, h('h3', null, 'Données manquantes'), h('ul', { class: 'fi-manq' }, b.manquantes.map((m) => h('li', null, h('b', null, m.nom), ' — ', m.pourquoi)))));
+  const ksBox = (create) => (create ? (P.install || (P.install = {})) : P.install || null);
+  parts.push(h('section', null, h('h3', null, 'Coefficient de simultanéité'),
+    champDonnee(ksBox, 'ks', 'ks (entre 0 et 1)', '', { min: 0.01, max: 1, note: tableDisponible('simultaneite') ? null : 'Aucune valeur par défaut : le tableau des coefficients (extrait Legrand) n’a pas encore été fourni. Saisissez une valeur si vous la connaissez.' })));
+  // circuits
+  parts.push(h('section', null, h('h3', null, 'Circuits'), h('div', { class: 'ev-table bi-table' }, h('table', null,
+    h('thead', null, h('tr', null, ['Repère', 'Désignation', 'P', 'cos φ', 'S', 'IB', 'Phase', 'Statut', ''].map((t) => h('th', null, t)))),
+    h('tbody', null, b.lignes.map((l) => h('tr', null,
+      h('td', null, h('span', { class: 'ev-num', style: `--cc:${circuitColor(l.id) || 'var(--elec)'}` }, nums.get(l.id))),
+      h('td', null, l.nom),
+      h('td', { class: 'n' }, l.P != null ? [fmt(l.P, 0) + ' W ', badgeDonnee(l.Pst)] : badgeDonnee(null)),
+      h('td', { class: 'n' }, l.cos != null ? fmt(l.cos, 2) : '—'),
+      h('td', { class: 'n' }, l.S != null ? fmt(l.S, 0) + ' VA' : '—'),
+      h('td', { class: 'n' }, l.IB != null ? fmt(l.IB, 2) + ' A' : '—'),
+      h('td', null, l.phase ? (l.phase === 'tri' ? 'Tri' : l.phase) + (l.phaseSt === 'estimee' ? ' (estimé)' : '') : '—'),
+      h('td', null, pillStatut(l.statut)),
+      h('td', null, btn('Fiche', () => openFiche(l.id), 'sm')))))))));
+  // équilibrage
+  const ph = h('section', null, h('h3', null, 'Équilibrage des phases'));
+  if (!eq.applicable) ph.append(h('p', { class: 'note' }, b.reseau.st === 'estimee' ? 'Réseau non précisé (monophasé retenu) : choisissez « Triphasé 400 V » dans Arrivée et installation pour répartir les circuits sur les trois phases.' : 'Installation monophasée : pas d’équilibrage à faire.'));
+  else {
+    const max = Math.max(eq.L1, eq.L2, eq.L3, eq.proposition.L1, eq.proposition.L2, eq.proposition.L3, 1);
+    const bars = (e) => h('div', { class: 'bi-bars' }, ['L1', 'L2', 'L3'].map((p) => h('div', { class: 'bi-bar' }, h('span', null, p), h('i', { style: `width:${Math.round(e[p] / max * 100)}%` }), h('b', null, fmt(e[p], 1) + ' A'))));
+    ph.append(h('p', { class: 'note' }, 'Somme des intensités d’emploi par phase. Un circuit triphasé compte sur les trois phases. Déséquilibre = (I max − I moyen) / I moyen.'),
+      h('div', { class: 'bi-eq' }, h('div', null, h('b', null, 'Répartition actuelle'), bars(eq), h('p', { class: 'note' }, eq.moyenne > 0 ? `Déséquilibre ${fmt(eq.desequilibre, 1)} %` : 'Aucun circuit réparti pour le moment.')),
+        h('div', null, h('b', null, 'Répartition proposée'), bars(eq.proposition), h('p', { class: 'note' }, `Déséquilibre ${fmt(eq.proposition.desequilibre, 1)} %`))));
+    if (eq.sansPhase.length) ph.append(h('p', { class: 'note', style: 'color:var(--bad)' }, `Sans phase : ${eq.sansPhase.join(', ')}.`));
+    if (eq.sansI.length) ph.append(h('p', { class: 'note' }, `Non comptés (intensité inconnue) : ${eq.sansI.join(', ')}.`));
+    const n = Object.keys(eq.proposition.phases).length;
+    if (n) ph.append(btns(btn('Appliquer la répartition proposée', () => {
+      for (const [id, p] of Object.entries(eq.proposition.phases)) { const c = circById(id); if (c && !(c.calc && c.calc.phase === 'tri')) calcOf(c).phase = p; }
+      commit(); toast(`${n} circuit${n > 1 ? 's' : ''} réparti${n > 1 ? 's' : ''} sur les phases. « Annuler » pour revenir.`);
+    }, 'pri sm')));
+  }
+  parts.push(ph);
+  // tableaux NF C 15-100
+  parts.push(h('section', null, h('h3', null, 'Tableaux NF C 15-100 (extraits Legrand)'),
+    h('p', { class: 'note' }, 'Emplacements prêts. Tant qu’un tableau manque, les contrôles qui en dépendent restent « vérification nécessaire ».'),
+    h('div', { class: 'ev-list' }, TABLES.map((t) => h('div', { class: 'ev-chk ' + (tableDisponible(t.id) ? 'ok' : 'warn') }, h('span', { class: 'ic' }, tableDisponible(t.id) ? '✓' : '!'),
+      h('span', { class: 'tx' }, h('b', null, t.titre), t.contenu, h('small', null, tableDisponible(t.id) ? `Source : ${t.source} · Édition : ${t.edition}${t.page ? ' · ' + t.page : ''}` : 'Manquant : extrait à fournir')))))));
+  return h('div', { class: 'ev-checks bilan' }, ...parts);
+}
+
+export { FI, bilanView, badgeDonnee, ficheBody, ficheButton, openFiche, pillStatut, renderFiche, statutCircuit };

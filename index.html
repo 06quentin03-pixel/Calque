@@ -289,6 +289,8 @@ button.ev-row:hover { background: var(--panel-2); }
 .ev-actions { padding: 2px 0 4px; }
 .ev-work { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); overflow: hidden; }
 .ev-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+.ev-bar > .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.ev-bar > .seg button { flex: none; }
 .ev-bar .seg button { padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; }
 .ev-count { margin-left: 7px; min-width: 20px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ok); color: #fff; font-size: 11px; display: inline-grid; place-items: center; font-family: var(--f-num); }
 .ev-count.err { background: var(--bad); }
@@ -436,6 +438,23 @@ button.ev-chk:hover { background: var(--panel-2); }
 .fiche .fi-tab td.n { font-family: var(--f-num); font-weight: 600; white-space: nowrap; text-align: right; }
 .fiche .fi-tab td.src { color: var(--ink-2); font-size: 11.5px; }
 @media (max-width: 560px) { .fiche .fi-tab td.src { display: none; } }
+/* onglet « Bilan et phases » */
+.bilan .bi-sum { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.bilan .bi-box small { color: var(--ink-2); font-size: 11.5px; }
+.bilan .btn, .bilan .seg button { min-height: 44px; }
+.bilan .chip { height: 44px; min-width: 52px; }
+.bilan .fi-champ { display: flex; flex-direction: column; gap: 6px; max-width: 520px; }
+.bilan .fi-st { display: flex; flex-direction: column; gap: 4px; }
+.bilan .fi-lab { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+.bilan .fi-manq { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; }
+.bilan .bi-table { overflow-x: auto; max-width: none; margin-top: 0; }
+.bilan .bi-table td.n { white-space: nowrap; }
+.bilan .bi-table .badge { height: 20px; font-size: 11px; padding: 0 6px; }
+.bilan .bi-eq { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.bilan .bi-bars { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+.bilan .bi-bar { display: grid; grid-template-columns: 28px 1fr 70px; align-items: center; gap: 8px; font-size: 13px; }
+.bilan .bi-bar i { display: block; height: 14px; border-radius: 7px; background: var(--elec); min-width: 2px; }
+.bilan .bi-bar b { font-family: var(--f-num); text-align: right; }
 .exp-prev { display: grid; place-items: center; min-height: 140px; padding: 10px; border: 1px solid var(--rule); border-radius: 12px; background: var(--panel-2); }
 .exp-prev canvas, .exp-prev img { display: block; max-width: 100%; max-height: 280px; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); background: #fff; }
 .exp-prev.chk canvas { background: repeating-conic-gradient(#e6e8e4 0 25%, #fff 0 50%) 0 0 / 16px 16px; }
