@@ -33,6 +33,7 @@ Mise à jour : phase 3 (4 novembre 2026).
 | `elecdonnees.js` | Données électriques sans écran sorties de `electricite.js` : classement des symboles, types de circuits (`CK`), valeurs du contrôle (`SEC_MAX`…), puissance des symboles avec statut | oui |
 | `normes.js` | Emplacement des tableaux NF C 15-100 (extraits Legrand, source, édition, statut « manquante » ou « vérifiée »), constantes estimées, règles citées | oui |
 | `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts, fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
+| `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |
 | `interaction.js` | Vue, sélection, outils de dessin, aimantation, Apple Pencil | non |
@@ -82,7 +83,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 4) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 5) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -93,14 +94,16 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `rooms[]` | Étiquettes des pièces : `id`, `lv`, `name`, `x`, `y`, `tint` (couleur). Le contour de la pièce est calculé depuis les murs |
 | `dims[]` | Cotes libres : `id`, `lv`, `ax`, `ay`, `bx`, `by` |
 | `texts[]` | Textes : `id`, `lv`, `x`, `y`, `text`, `size` (`s`, `m`, `l`), `rot` |
-| `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl` |
+| `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl`, `calc` (données de calcul, facultatif, v5 : `p` puissance en W, `cos`, `len` longueur en m — chacune `{ v, st, src }` ; `mat` `cu`/`al` ; `phase` `L1`/`L2`/`L3`/`tri`) |
 | `rcds[]` | Interrupteurs différentiels : `id`, `type` (`AC`, `A`…), `cal` (calibre en A) |
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
 | `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]` |
 | `comps[]` | Copies des composants personnalisés utilisés par le plan (v3) : `id`, `kind` (`furn`/`elec`), `n`, `base` (modèle), `rang`, `w`, `d` ou `h`, `mark`, `tech` |
 | `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
-| `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret) |
+| `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5) |
+
+Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.
 
 Données dérivées, jamais enregistrées : `IDX` (index par identifiant), `GEO` (géométrie par niveau : polygones des murs, pièces, surfaces).
 Elles sont recalculées par `touch()` après chaque modification.

@@ -47,7 +47,8 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Moteur de calcul pur et testé (`js/calcul.js`, 13 tests dans `tests/calcul.test.mjs`) : intensités mono et triphasées, puissances P/Q/S, cos φ, chute de tension, protections (IB ≤ In ; In ≤ Iz en attente du tableau), bilan de puissance, équilibrage des phases. La section et le contrôle In ≤ Iz restent « vérification nécessaire » tant que les tableaux Legrand manquent.
 - ✅ Partie sans écran d'`electricite.js` sortie dans `js/elecdonnees.js` (résultat du tableau et des contrôles inchangé).
 - ✅ Emplacement des tableaux NF C 15-100 préparé (`js/normes.js`), tous « manquants ».
-- ⬜ Fiche de calcul d'un circuit depuis le plan : hypothèses, formules, données manquantes, alertes.
+- ✅ Fiche de calcul d'un circuit depuis le plan et depuis le tableau : hypothèses, formules, données utilisées et manquantes, alertes, contrôles à 3 statuts (`js/fiche.js`, format v5, 3 tests dans `tests/fiche.test.mjs`).
+- ⬜ Bilan de puissance et équilibrage des phases dans l'onglet Tableau.
 - ⬜ Tableaux de données issus des extraits Legrand ⏸ (documents à fournir par l'utilisateur).
 
 ## Phase 4 — Cheminements et métrés

@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 3, étape 2 : fiche de calcul d’un circuit
+- **Fiche de calcul** : bouton « Fiche de calcul » dans l’inspecteur d’un symbole relié à un circuit (plan) et dans l’éditeur d’un circuit (onglet Tableau électrique), avec le statut du circuit à côté.
+- La fiche affiche : le statut (conforme / non conforme / vérification nécessaire), les alertes (moteur de calcul et contrôle actuel du tableau, marqué « indicatif »), les données manquantes, les données du circuit à saisir, les résultats et les formules (avec les nombres utilisés), les contrôles avec leur source et l’édition, les données utilisées avec leur badge (vérifiée, saisie, estimée, manquante), les hypothèses et les tableaux NF C 15-100 manquants.
+- Saisie : puissance prévue, cos φ (raccourcis 1 ; 0,95 ; 0,9 ; 0,85 ; 0,8), longueur du câble, métal, raccordement (phase L1, L2, L3 ou triphasé, en installation triphasée). Pour chaque valeur : fiabilité et origine. « Vérifiée » exige une origine.
+- Sans saisie, la puissance est la somme des symboles reliés (puissance saisie dans l’inspecteur, ou valeur par défaut de Calque marquée « estimée »). Une prise n’a jamais de puissance devinée.
+- Tableau › Arrivée et installation : réglage **Réseau** (monophasé 230 V / triphasé 400 V). Non précisé : le calcul retient le monophasé, marqué « estimé ». Le cartouche du schéma unifilaire indique « Triphasé 400 V » si choisi.
+- La fiche suit les modifications, Annuler et Rétablir. Boutons de 44 px pour le doigt et le Pencil.
+- **Format des plans v5** : `circuits[].calc` et `install.reseau`, `install.ks` (facultatifs). Migration v4 → v5 : rien n’est ajouté ni deviné, les valeurs invalides sont retirées.
+- Service Worker : cache `calque-v13`.
+- Ajout de `tests/fiche.test.mjs` (3 tests).
+
 ## 2026-11-04 — Phase 3, étape 1 : moteur de calcul électrique (sans écran)
 - **`js/calcul.js`** (JavaScript pur, testable avec Node) : intensité d’emploi en monophasé `IB = P / (U0 × cos φ)` et en triphasé `IB = P / (√3 × U × cos φ)`, puissances P, Q, S et cos φ, chute de tension `ΔU = b (ρ L / S cos φ + λ L sin φ) IB` (b = 2 en mono, 1 en tri), bilan de puissance (`S = √(ΣP² + ΣQ²)`, coefficient de simultanéité facultatif), équilibrage des phases (déséquilibre et répartition proposée).
 - **Données marquées** : chaque donnée porte un statut « vérifiée » (source obligatoire), « saisie » ou « estimée », et son origine. Une donnée absente est listée dans « données manquantes » et le résultat qui en dépend n’est pas calculé. Aucune puissance ni aucun cos φ n’est deviné pour une prise ; seule exception, signalée comme « estimée » : cos φ = 1 pour le chauffage et le chauffe-eau (charges résistives).

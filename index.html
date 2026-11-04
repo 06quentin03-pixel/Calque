@@ -404,6 +404,38 @@ button.ev-chk:hover { background: var(--panel-2); }
 @media (max-width: 760px) { .v3-panel { width: calc(100% - 20px); max-height: 45%; } .v3-joy { width: 108px; height: 108px; } }
 /* ---- export ---- */
 .modal.wide { width: min(620px, calc(100vw - 32px)); max-height: min(90vh, 820px); }
+/* fiche de calcul (phase 3) : statuts conforme / non conforme / vérification nécessaire */
+.stat { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 10px; border-radius: 13px; font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.stat.st-conforme { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.stat.st-non_conforme { color: #fff; background: var(--bad); }
+.stat.st-verification { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); border: 1px dashed var(--warn); }
+.badge.b-manq { color: var(--bad); background: transparent; border: 1px dashed var(--bad); }
+.fi-btn { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.fi-btn .stat { white-space: normal; }
+.fi-btn .btn, .fiche .btn, .fiche .seg button { min-height: 44px; }
+.fiche .chip { height: 44px; min-width: 52px; font-size: 14px; }
+.fiche .fi-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 0 2px; }
+.fiche .fi-champ { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.fiche .fi-champ:last-of-type { border-bottom: 0; }
+.fiche .fi-lab { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+.fiche .fi-st { display: flex; flex-direction: column; gap: 4px; }
+.fiche .seg { flex-wrap: wrap; }
+.fiche .fi-manq, .fiche .fi-hyp { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; }
+.fiche .fi-manq li::marker { color: var(--bad); }
+.fiche .fi-formules { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.fiche .fi-f { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px; background: var(--panel-2); border-radius: 10px; font-size: 13px; }
+.fiche .fi-f code { font-family: var(--f-num); font-size: 13px; white-space: normal; overflow-wrap: anywhere; }
+.fiche .fi-f code.appli { color: var(--ink-2); }
+.fiche .fi-f .res { font-family: var(--f-num); font-weight: 700; }
+.fiche .fi-ctl { display: flex; flex-direction: column; gap: 8px; }
+.fiche .fi-c { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 10px; font-size: 13px; }
+.fiche .fi-ch { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.fiche .fi-c small { color: var(--ink-2); font-size: 11.5px; }
+.fiche .fi-tab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.fiche .fi-tab td { padding: 6px 4px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.fiche .fi-tab td.n { font-family: var(--f-num); font-weight: 600; white-space: nowrap; text-align: right; }
+.fiche .fi-tab td.src { color: var(--ink-2); font-size: 11.5px; }
+@media (max-width: 560px) { .fiche .fi-tab td.src { display: none; } }
 .exp-prev { display: grid; place-items: center; min-height: 140px; padding: 10px; border: 1px solid var(--rule); border-radius: 12px; background: var(--panel-2); }
 .exp-prev canvas, .exp-prev img { display: block; max-width: 100%; max-height: 280px; box-shadow: 0 1px 4px rgba(0, 0, 0, .18); background: #fff; }
 .exp-prev.chk canvas { background: repeating-conic-gradient(#e6e8e4 0 25%, #fff 0 50%) 0 0 / 16px 16px; }

@@ -13,6 +13,7 @@ import { btn, btns, chipRow, closePops, elecThumb, h, kv, sec, segCtl, textField
 import { slug } from './stockage.js';
 import { openFileModal } from './export.js';
 import { v3Show } from './vue3d.js';
+import { ficheButton } from './fiche.js';
 
 /* ============================================================
    CALQUE — onglet « Tableau électrique »
@@ -72,7 +73,7 @@ function uniSVG(col, selId) {
   s.push(`<rect x="${tx}" y="18" width="332" height="96" rx="4" style="fill:none;stroke:${col.ink};stroke-width:1.2"/>`);
   s.push(sText(tx + 14, 42, P.name || 'Plan', col.ink, 16, { w: 700, fam: FONT_UI }));
   s.push(sText(tx + 14, 62, 'Schéma unifilaire du tableau de répartition', col.ink, 12.5));
-  s.push(sText(tx + 14, 80, 'Monophasé 230 V · NF C 15-100 (révision 2024)', col.ink2, 12));
+  s.push(sText(tx + 14, 80, (inst.reseau === 'tri' ? 'Triphasé 400 V' : 'Monophasé 230 V') + ' · NF C 15-100 (révision 2024)', col.ink2, 12));
   s.push(sText(tx + 14, 98, new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date()) + ' · ' + P.circuits.length + ' circuits · ' + P.rcds.length + ' différentiels', col.ink2, 12));
   // arrivée
   const sx = 70;
@@ -281,6 +282,8 @@ function renderEvSide() {
       h('p', { class: 'note' }, `Disjoncteur de branchement ${agcpLabel(inst.kva)}, différentiel 500 mA type S, fourni par le distributeur.`)),
     sec('Parafoudre', segCtl([{ v: false, n: 'Sans' }, { v: true, n: 'Avec parafoudre' }], !!inst.parafoudre, (v) => { inst.parafoudre = v; commit(); }),
       h('p', { class: 'note' }, 'Obligatoire si le bâtiment a un paratonnerre et dans certaines zones exposées à la foudre. Recommandé dans les autres cas.')),
+    sec('Réseau', segCtl([{ v: 'mono', n: 'Monophasé 230 V' }, { v: 'tri', n: 'Triphasé 400 V' }], inst.reseau || null, (v) => { inst.reseau = v; commit(); }),
+      h('p', { class: 'note' }, inst.reseau ? (inst.reseau === 'tri' ? 'Calculs en triphasé : choisissez la phase de chaque circuit dans sa fiche de calcul. Le disjoncteur de branchement affiché reste celui du monophasé : à vérifier.' : 'Calculs en monophasé 230 V.') : 'Non précisé : les calculs retiennent le monophasé (valeur estimée).')),
     sec('Coffret', segCtl([{ v: 13, n: '13 modules par rangée' }, { v: 18, n: '18 modules' }], inst.row || 13, (v) => { inst.row = v; commit(); })),
     kv([['Surface des pièces', fmtArea(totalSurface())], ['Liaisons commandes', String(P.links.length)]])));
   kids.push(h('div', { class: 'btns ev-actions' },
@@ -377,6 +380,7 @@ function circuitEditor(c) {
   const smax = SEC_MAX[c.sec];
   return h('div', { class: 'ev-edit' },
     sec('Désignation', textField(null, c.name, (v) => { c.name = v.trim() || k.n; commit(); }, { id: 'e-name', ph: 'Nom du circuit' })),
+    sec('Calcul', ficheButton(c)),
     sec('Type', typeSel),
     sec('Disjoncteur', chipRow(CALS, c.cal, (v) => { c.cal = v; commit(); }, (v) => v + ' A')),
     sec('Section des conducteurs', chipRow(SECS, c.sec, (v) => { c.sec = v; commit(); }, (v) => String(v).replace('.', ',') + ' mm²'),

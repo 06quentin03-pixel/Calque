@@ -53,7 +53,37 @@ const MIGRATIONS = {
     p.fonds = p.fonds.filter((f) => f && typeof f === 'object' && typeof f.img === 'string');
     return p;
   },
+  /* v4 → v5 (phase 3) : données de calcul. Un circuit peut porter `calc` { p, cos, len : données { v, st, src } ;
+     mat : 'cu' | 'al' ; phase : 'L1' | 'L2' | 'L3' | 'tri' }, l'installation `reseau` ('mono' | 'tri') et `ks`.
+     Les plans v4 n'en ont pas : RIEN n'est ajouté ni deviné (une donnée absente reste « manquante » dans la fiche).
+     Une valeur invalide éventuelle est retirée. */
+  4(p) {
+    for (const c of Array.isArray(p.circuits) ? p.circuits : []) if (c && 'calc' in c) { const k = cleanCalc(c.calc); if (k) c.calc = k; else delete c.calc; }
+    const i = p.install;
+    if (i && typeof i === 'object') {
+      if ('reseau' in i && i.reseau !== 'mono' && i.reseau !== 'tri') delete i.reseau;
+      if ('ks' in i) { const d = cleanDonnee(i.ks, (v) => v > 0 && v <= 1); if (d) i.ks = d; else delete i.ks; }
+    }
+    return p;
+  },
 };
+/* donnée de calcul enregistrée : { v (nombre), st ('verifiee' exige src, 'saisie', 'estimee'), src } */
+function cleanDonnee(d, ok) {
+  if (!d || typeof d !== 'object' || !isNum(d.v) || (ok && !ok(d.v))) return null;
+  const src = typeof d.src === 'string' ? d.src.trim() : '';
+  let st = ['verifiee', 'saisie', 'estimee'].includes(d.st) ? d.st : 'saisie';
+  if (st === 'verifiee' && !src) st = 'saisie';
+  return src ? { v: d.v, st, src } : { v: d.v, st };
+}
+function cleanCalc(k) {
+  if (!k || typeof k !== 'object' || Array.isArray(k)) return null;
+  const o = {};
+  const p = cleanDonnee(k.p, (v) => v > 0), cos = cleanDonnee(k.cos, (v) => v > 0 && v <= 1), len = cleanDonnee(k.len, (v) => v > 0);
+  if (p) o.p = p; if (cos) o.cos = cos; if (len) o.len = len;
+  if (k.mat === 'cu' || k.mat === 'al') o.mat = k.mat;
+  if (['L1', 'L2', 'L3', 'tri'].includes(k.phase)) o.phase = k.phase;
+  return Object.keys(o).length ? o : null;
+}
 function migratePlan(p) {
   let v = isNum(p.v) && p.v >= 1 ? Math.floor(p.v) : 1;
   const from = v;
@@ -446,7 +476,7 @@ function saveBlobLocal(blob, filename) {
   } catch (e) { return false; }
 }
 
-export { DB, DL, LIGHT, MIGRATIONS, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
+export { DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
   deletedPlans, getDownloads, lastVer, listProjects, loadProject, localIndex, lsDel, lsGet, lsSet, maybeVersion,
   migratePlan, newPlan, notifySaveFail, openPlan, openProjects, openSample, openVersions, planProblems, pruneVersions,
   saveBlobLocal, saveNow, scheduleSave, setLocalIndex, setSave, slug, syncFromLocal, versionJson, versionsOf,
