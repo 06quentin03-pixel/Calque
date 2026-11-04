@@ -322,3 +322,68 @@ test('plan : zone interdite dessinée au doigt, itinéraire proposé puis créé
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('remplissage et liste de matériel (sans écran) : toujours « vérification nécessaire », rien de deviné', async () => {
+  const M = await import(path.join(ROOT, 'js', 'materiel.js'));
+  const N = await import(path.join(ROOT, 'js', 'normes.js'));
+  const p = planLongueurs();
+  let r = M.remplissageGaines(p);
+  const g1 = r.find((x) => x.id === 'g1'), g3 = r.find((x) => x.id === 'g3');
+  assert.deepEqual(g1.circuits, ['c1']); assert.deepEqual(g3.circuits, ['c2'], 'gaine sans circuit empruntée par c2');
+  assert.equal(g1.taux, null, 'type, diamètre et câble inconnus : pas de taux');
+  assert.ok(g1.manquantes.some((m) => /type/.test(m)) && g1.manquantes.some((m) => /diamètre extérieur du câble/.test(m)));
+  assert.equal(g1.controle.statut, 'verification');
+  assert.ok(!N.tableDisponible('remplissage_conduits'), 'tableau de remplissage non couvert par l’extrait Legrand');
+  assert.match(g1.controle.source, /NF C 15-100/);
+  /* données saisies : ICTA Ø20, câble Ø7 → 49 / 400 = 12,25 % de la section nominale, statut inchangé */
+  p.ducts[0].kind = 'icta'; p.ducts[0].dia = 20; p.circuits[0].calc = { dcab: { v: 7, st: 'saisie' } };
+  r = M.remplissageGaines(p).find((x) => x.id === 'g1');
+  assert.ok(Math.abs(r.taux - 12.25) < 1e-9); assert.equal(r.controle.statut, 'verification');
+  /* goulotte sans dimensions : pas de taux */
+  p.ducts[0].kind = 'goulotte'; delete p.ducts[0].dia;
+  r = M.remplissageGaines(p).find((x) => x.id === 'g1');
+  assert.equal(r.taux, null); assert.ok(r.manquantes.some((m) => /largeur et hauteur/.test(m)));
+  /* liste de matériel : conducteurs = câble à commander × 3 (phase, neutre, terre) */
+  const q = planLongueurs();
+  const L = M.listeMateriel(q);
+  const lg = (des) => L.lignes.find((l) => l.des === des);
+  assert.equal(lg('Fil ou câble 2,5 mm²').qte, 33, '9,20 m + 10 % → 11 m × 3');
+  assert.equal(lg('Fil ou câble 1,5 mm²').qte, 3 * Math.ceil(CH.cheminCircuit(q, 'c2').arbre / 100 * 1.1 - 1e-9));
+  assert.equal(lg('Boîtes d’encastrement (appareils muraux)').qte, 2);
+  assert.equal(lg('Boîtiers DCL de plafond').qte, 1);
+  assert.equal(lg('Passages entre étages').qte, 2);
+  assert.ok(L.lignes.every((l) => l.st === 'estimee'), 'quantités « estimées »');
+  assert.ok(L.lignes.some((l) => l.cat === 'Cheminements' && /type non précisé/.test(l.des)));
+  /* un circuit incomplet n'est pas compté dans les conducteurs, et il est signalé */
+  q.ducts.splice(2, 1);
+  const L2 = M.listeMateriel(q);
+  assert.ok(!L2.lignes.some((l) => l.des === 'Fil ou câble 1,5 mm²')); assert.deepEqual(L2.sansLongueur, ['Éclairage étage']);
+});
+
+test('onglet Cheminements : remplissage, matériel ; diamètre du câble saisi dans la fiche', async () => {
+  const { ctx, page, errors } = await fresh({ touch: true });
+  const p = Object.assign(planLongueurs(), { id: 'pC9', name: 'Plan matériel', nodes: [], walls: [], openings: [], items: [], rooms: [], dims: [], texts: [], links: [], comps: [], fonds: [], fondImg: {}, zones: [],
+    rcds: [{ id: 'r1', type: 'A', cal: 40 }] });
+  p.levels = p.levels.map((l, i) => ({ ...l, name: i ? 'Étage' : 'Rez-de-chaussée', slab: 20 })); p.circuits.forEach((c) => { c.rcd = 'r1'; });
+  p.ducts[0].kind = 'icta'; p.ducts[0].dia = 20;
+  await seedPlan(ctx, p);
+  await boot(page);
+  await page.click('.vtab[data-view="elec"]'); await wait(page, 300);
+  await page.click('#evBar button:has-text("Cheminements")'); await wait(page, 300);
+  const txt = () => page.textContent('#evCanvas');
+  assert.match(await txt(), /Remplissage des cheminements/);
+  assert.match(await page.textContent('#evCanvas tr[data-duct="g1"]'), /Vérification nécessaire/);
+  assert.match(await page.textContent('#evCanvas tr[data-duct="g1"]'), /diamètre extérieur du câble/);
+  assert.match(await txt(), /Liste de matériel/); assert.match(await txt(), /Fil ou câble 2,5 mm²/); assert.match(await txt(), /33 m/);
+  /* diamètre extérieur saisi dans la fiche du circuit c1 */
+  await page.locator('#evCanvas tr[data-cid="c1"] .btn:has-text("Fiche")').click(); await wait(page, 300);
+  await page.fill('#fi-dcab', '7'); await page.press('#fi-dcab', 'Enter'); await wait(page, 300);
+  await page.evaluate(async () => (await import('./js/interface.js')).closeModal()); await wait(page, 300);
+  const row = await page.textContent('#evCanvas tr[data-duct="g1"]');
+  assert.match(row, /12,[23] %/); assert.match(row, /Vérification nécessaire/, 'jamais « conforme »');
+  await wait(page, 1200);
+  const st = await storedPlan(page, 'pC9');
+  assert.deepEqual(st.circuits.find((c) => c.id === 'c1').calc.dcab, { v: 7, st: 'saisie' });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

@@ -43,12 +43,14 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-04 (ph. 4) | Itinéraire : A* sur grille (cellule 5 cm ou plus, 60 000 cases au plus), 4 directions, coûts : virage 40, mur 300, cloison 80, abords VMC 4 | Tracés droits et orthogonaux comme sur chantier ; calcul rapide sur iPad |
 | 2026-11-04 (ph. 4) | Conflits = points d'attention de Calque (« à revoir » / information), jamais « conforme » | Ce ne sont pas des règles de la norme |
 | 2026-11-04 (ph. 4) | Inspecteur d'un type ajouté par un module : `EXT.insp` | Les zones interdites sont gérées par `routeui.js` sans alourdir `interface.js` |
+| 2026-11-04 (ph. 4) | Remplissage : occupation calculée sur la section **nominale**, présentée comme « indicative », statut toujours « vérification nécessaire » | Diamètre intérieur réel et taux maximal inconnus (extrait non fourni) ; aucune conclusion de conformité |
+| 2026-11-04 (ph. 4) | Matériel : un câble par circuit, phase + neutre + terre (5 conducteurs en triphasé), navettes non comptées ; toutes les quantités « estimées » | Hypothèses simples, écrites à côté des quantités |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v17`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v18`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 
@@ -56,3 +58,4 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 `noyau` ← `elecdonnees` ← `calcul` ← `normes`
 `calcul` + `electricite` + `interface` ← `fiche` ← (`tableau`, `interface`)
 `noyau` + `mutations` + `symboles` ← `cheminement` ← (`reseaux`, `vue3d`, `stockage`, `calcul`)
+`cheminement` ← `itineraire` ← `materiel` ← (`metres`, `reseaux`) ; `routeui` (écran) utilise `itineraire` et `cheminement`

@@ -14,6 +14,7 @@ import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h
   wallSideName } from './interface.js';
 import { v3Refresh } from './vue3d.js';
 import { conflitsSection } from './routeui.js';
+import { remplissageGaines } from './materiel.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -688,11 +689,17 @@ function inspGaine(d) {
       sec('Type de cheminement', h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((k) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.kind === k), onclick: () => setKind(k) }, TYPES_CHEMIN[k].court))),
         h('p', { class: 'note' }, t ? t.note : 'Type non précisé : choisissez-le (il sera repris pour les gaines suivantes).')),
       sec(t && t.forme === 'rect' ? 'Dimensions' : 'Diamètre', taille),
-      pose, circ, conflitsSection(d),
+      pose, circ, remplissageLigne(d), conflitsSection(d),
       h('p', { class: 'note' }, 'Faites glisser un point rond pour déplacer un coude, ou un petit point au milieu d’un tronçon pour en ajouter un. Double-touchez un coude pour le retirer.'),
       sec(null, btns(btn('Inverser le sens', () => reverseDuct(d), '', 'swap'), btn('Supprimer', deleteSel, 'danger', 'del'))),
     ),
   ];
+}
+/* remplissage d'une gaine (toujours « vérification nécessaire ») */
+function remplissageLigne(d) {
+  const r = remplissageGaines(P).find((x) => x.id === d.id); if (!r) return null;
+  return sec('Remplissage', kv([['Circuits', r.n ? r.circuits.map((id) => circNumbers().get(id)).join(', ') : '—'], ['Occupation', r.taux != null ? `${String(Math.round(r.taux * 10) / 10).replace('.', ',')} % (indicatif)` : '—']]),
+    h('p', { class: 'note' }, r.controle.detail));
 }
 /* passage entre étages : niveau relié (le jumeau est créé au même endroit sur l'autre niveau) */
 function traverseeSection(e) {

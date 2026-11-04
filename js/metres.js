@@ -8,7 +8,8 @@ import { circNumbers, circuitColor } from './electricite.js';
 import { btn, h } from './interface.js';
 import { conflitsPlan } from './itineraire.js';
 import { goToRef } from './tableau.js';
-import { badgeDonnee, champDonnee, openFiche } from './fiche.js';
+import { badgeDonnee, champDonnee, openFiche, pillStatut } from './fiche.js';
+import { listeMateriel, remplissageGaines } from './materiel.js';
 
 const m = (cm, d = 1) => (cm == null ? '—' : fmt(cm / 100, d) + ' m');
 
@@ -65,11 +66,42 @@ function conflitsSectionPlan() {
     cs.length ? h('div', { class: 'ev-list' }, [...warn, ...info.filter((c) => c.kind !== 'mur' && c.kind !== 'cloison')].map(item)) : null);
 }
 
+/* taux de remplissage : toujours « vérification nécessaire » (règle non couverte par l'extrait Legrand fourni) */
+function remplissageSection() {
+  const rs = remplissageGaines(P), nums = circNumbers(), lv = new Map(P.levels.map((l) => [l.id, l.name]));
+  const R = rs[0] && rs[0].controle;
+  return h('section', null, h('h3', null, 'Remplissage des cheminements'),
+    h('p', { class: 'note' }, 'Un câble par circuit est compté dans chaque cheminement emprunté. L’occupation est calculée seulement si le diamètre extérieur de chaque câble (fiche de calcul du circuit) et les dimensions du cheminement sont indiqués. Le taux maximal admis n’est pas couvert par l’extrait Legrand fourni : statut « vérification nécessaire ».'),
+    h('div', { class: 'ev-table bi-table' }, h('table', null,
+      h('thead', null, h('tr', null, ['Cheminement', 'Niveau', 'Circuits', 'Occupation', 'Statut', ''].map((t) => h('th', null, t)))),
+      h('tbody', null, rs.map((r) => h('tr', { 'data-duct': r.id },
+        h('td', null, r.nom + (r.taille ? ' · ' + r.taille : ''), r.taux == null && r.n ? h('small', { class: 'note', style: 'display:block' }, 'Manque : ' + r.manquantes.join(' ; ')) : null),
+        h('td', null, lv.get(r.lv) || ''),
+        h('td', null, r.n ? r.circuits.map((id) => nums.get(id)).join(', ') : '—'),
+        h('td', { class: 'n' }, r.taux != null ? [fmt(r.taux, 1) + ' % ', badgeDonnee('estimee')] : '—'),
+        h('td', null, pillStatut(r.controle.statut)),
+        h('td', null, btn('Voir', () => goToRef({ t: 'duct', id: r.id }), 'sm'))))))),
+    R ? h('small', { class: 'note' }, `Règle : ${R.nom}. Source : ${R.source} · Édition : ${R.edition}.`) : null);
+}
+/* liste de matériel estimée */
+function materielSection() {
+  const L = listeMateriel(P);
+  return h('section', null, h('h3', null, 'Liste de matériel (estimation)'),
+    h('p', { class: 'note' }, `Quantités mesurées sur le plan, réserve de ${fmt(L.reserve.v, 0)} % comprise, arrondies à l’unité supérieure. Aucune référence fabricant : à vérifier avant commande.`),
+    L.lignes.length ? h('div', { class: 'ev-table bi-table' }, h('table', null,
+      h('thead', null, h('tr', null, ['Catégorie', 'Désignation', 'Quantité', 'Fiabilité', 'Détail'].map((t) => h('th', null, t)))),
+      h('tbody', null, L.lignes.map((l) => h('tr', null, h('td', null, l.cat), h('td', null, l.des), h('td', { class: 'n' }, `${fmt(l.qte, 0)} ${l.unite}`), h('td', null, badgeDonnee(l.st)), h('td', null, h('small', null, l.note)))))))
+      : h('p', { class: 'note' }, 'Rien à compter pour le moment : tracez les gaines des circuits.'),
+    L.sansLongueur.length ? h('p', { class: 'note', style: 'color:var(--bad)' }, `Conducteurs non comptés (circuits pas entièrement raccordés par les gaines) : ${L.sansLongueur.join(', ')}.`) : null,
+    L.vertInconnues ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${L.vertInconnues} verticale${L.vertInconnues > 1 ? 's' : ''} non comptée${L.vertInconnues > 1 ? 's' : ''} (pose de gaine non précisée) : longueurs sous-estimées.`) : null);
+}
+
 function metresView() {
   const parts = [];
   if (!P.circuits.length) parts.push(h('p', { class: 'note' }, 'Générez d’abord le tableau (onglet Schéma unifilaire) : les longueurs sont calculées par circuit.'));
   else parts.push(...longueursSection(lignesCircuits(P)));
-  if ((P.ducts || []).some((d) => d.sys === 'elec')) parts.push(conflitsSectionPlan());
+  if ((P.ducts || []).some((d) => d.sys === 'elec')) parts.push(conflitsSectionPlan(), remplissageSection());
+  if (P.circuits.length || (P.ducts || []).some((d) => d.sys === 'elec')) parts.push(materielSection());
   return h('div', { class: 'ev-checks bilan metres' }, ...parts);
 }
 

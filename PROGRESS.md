@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 4 en cours, étapes 1 à 3 terminées).
+Dernière mise à jour : 4 novembre 2026 (phase 4 terminée, demande de fusion n°3 préparée).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -55,7 +55,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 4 : extrait Legrand « Points clés » (révision 23 août 2024) reçu ; 2 tableaux recopiés (sections/calibres par circuit et chauffage ; différentiels) et contrôles ajoutés ; sèche-linge et pompe à chaleur en type A. Fichiers `PROJECT_STATE.md`, `TECHNICAL_DECISIONS.md`, `NEXT_SESSION.md`. Tests : **59/59 réussis**.
 - ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : **reportés en phase 8** par l'utilisateur le 4 novembre 2026 (documents payants). Les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire » ; textes « à fournir » retirés de l'interface.
 
-## Phase 4 — cheminements et métrés (en cours)
+## Phase 4 — cheminements et métrés (terminée, à fusionner et à vérifier sur iPad)
 - ✅ Étape 1 : cheminements (types ICTA, IRL, goulotte, chemin de câbles ; pose sol / plafond / hauteur ; verticales ; autres circuits ; passages entre étages), module `js/cheminement.js`, format des plans v6 avec migration et copie de sécurité avant mise à jour du format. 3 tests dans `tests/cheminement.test.mjs`. Tests : **62/62 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (pas de débordement ; choix du type en pastilles pour tenir dans l'inspecteur).
 
@@ -66,8 +66,11 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 3 : recherche d'itinéraire (grille, percements comptés, zones interdites, portes selon la pose, VMC évitée), zones interdites (outil, sélection, nom), conflits dans l'inspecteur et l'onglet Cheminements (`js/itineraire.js`, `js/routeui.js`). 2 tests de plus. Tests : **66/66 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (aperçu de l'itinéraire, gaine créée, liste des conflits).
 
+- ✅ Étape 4 : remplissage des cheminements (toujours « vérification nécessaire »), diamètre extérieur du câble dans la fiche, liste de matériel estimée (`js/materiel.js`). 2 tests de plus. Tests : **68/68 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844.
+
 ## Tâche en cours
-- Phase 4, étape 4 : taux de remplissage des conduits (« vérification nécessaire ») et liste de matériel.
+- Aucune. Phase 4 terminée ; demande de fusion n°3 à fusionner par l'utilisateur ; essais iPad à faire (liste dans `NEXT_SESSION.md`).
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
@@ -79,4 +82,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Phase 4 : cheminements et métrés (la longueur des câbles alimentera la fiche de calcul).
+- Fusion de la demande n°3 par l'utilisateur, essais iPad de la phase 4, puis phase 5 : éclairage et 3D avancée.

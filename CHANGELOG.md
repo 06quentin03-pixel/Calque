@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 4, étape 4 : remplissage des cheminements et liste de matériel (fin de la phase 4)
+- Nouveau module sans écran **`js/materiel.js`**.
+- **Remplissage** de chaque gaine, goulotte ou chemin de câbles : circuits qui y passent (déclarés ou dont le cheminement l’emprunte, un câble par circuit), occupation de la section nominale si le diamètre extérieur de chaque câble et les dimensions du cheminement sont connus.
+  - Statut **toujours « vérification nécessaire »** : le taux maximal admis n’est pas dans l’extrait Legrand fourni (tableau « Remplissage des conduits et goulottes » ajouté à `js/normes.js`, « manquant », reporté en phase 8). Source et édition affichées.
+  - Données manquantes listées (type, diamètre ou dimensions, diamètre extérieur des câbles) : aucune valeur devinée.
+- **Diamètre extérieur du câble** saisissable dans la fiche de calcul du circuit (`calc.dcab`, facultatif, avec sa fiabilité).
+- **Liste de matériel (estimation)** dans l’onglet Cheminements : cheminements par type et taille (longueur verticales comprises + réserve), conducteurs par section (phase, neutre, terre ; navettes non comptées) pour les circuits entièrement raccordés, boîtes d’encastrement, boîtiers DCL, boîtes de dérivation, passages entre étages, traversées de murs et de cloisons. Toutes les quantités sont « estimées », sans référence fabricant.
+- Remplissage aussi dans l’inspecteur d’une gaine.
+- Service Worker : cache `calque-v18`, `js/materiel.js` ajouté.
+- `tests/cheminement.test.mjs` : 9 tests. Tests : 68/68.
+
 ## 2026-11-04 — Phase 4, étape 3 : recherche d’itinéraire, zones interdites et conflits
 - Nouveau module sans écran **`js/itineraire.js`** : recherche d’itinéraire sur une grille du niveau (quatre directions, virages limités), conflits d’une gaine et de tout le plan.
   - Les traversées de murs et de cloisons coûtent cher (chacune = un percement) ; les zones interdites sont infranchissables (avec une marge) ; les conduits de VMC sont évités ; pour une gaine posée « à une hauteur donnée », les portes sont infranchissables.

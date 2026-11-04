@@ -36,7 +36,8 @@ Mise à jour : phase 4 (4 novembre 2026).
 | `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
-| `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve | non |
+| `materiel.js` | Remplissage des cheminements (« vérification nécessaire »), liste de matériel estimée | oui |
+| `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve, conflits, remplissage, matériel | non |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |

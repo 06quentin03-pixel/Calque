@@ -76,6 +76,7 @@ function ficheBody(c) {
     champDonnee(calcBox(c), 'p', 'Puissance prévue', 'W', { min: 1, max: 1e6, note: pNote }, () => tidy(c)),
     champDonnee(calcBox(c), 'cos', 'Facteur de puissance cos φ', '', { min: 0.01, max: 1, chips: [1, 0.95, 0.9, 0.85, 0.8], note: cosNote }, () => tidy(c)),
     champDonnee(calcBox(c), 'len', 'Longueur du câble (tableau → point le plus éloigné)', 'm', { min: 0.1, max: 10000, note: noteLongueur(k, en) }, () => tidy(c)),
+    champDonnee(calcBox(c), 'dcab', 'Diamètre extérieur du câble', 'mm', { min: 1, max: 100, note: k.dcab ? null : 'Facultatif : relevé sur la fiche technique du câble, il sert au taux de remplissage des gaines (onglet Cheminements).' }, () => tidy(c)),
     h('div', { class: 'fi-champ' }, h('span', { class: 'fi-lab' }, 'Métal des conducteurs'),
       segCtl([{ v: null, n: 'Non précisé' }, { v: 'cu', n: 'Cuivre' }, { v: 'al', n: 'Aluminium' }], k.mat || null, (v) => { if (v) calcOf(c).mat = v; else if (c.calc) delete c.calc.mat; tidy(c); commit(); }),
       k.mat ? null : h('p', { class: 'note' }, 'Non précisé : cuivre retenu (estimé).')),
