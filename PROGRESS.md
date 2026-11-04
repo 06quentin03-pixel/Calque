@@ -30,7 +30,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - barre du haut en paysage et en portrait.
 - Reste à observer lors d'une prochaine mise à jour : le bandeau « nouvelle version disponible ».
 
-## Phase 2 — dessin et bibliothèque (en cours)
+## Phase 2 — dessin et bibliothèque (terminée, fusionnée dans `main`)
 - ✅ Étape 1 : bibliothèque par domaines et sous-catégories (`js/bibliotheque.js`). 3 tests dans `tests/bibliotheque.test.mjs`. Captures vérifiées en 1180×820 et 820×1180.
 - ✅ Étape 2 : bibliothèque technique générique, 110 articles, références de l'utilisateur, badge de fiabilité, format des plans v2 avec migration. 5 tests dans `tests/technique.test.mjs`. Tests : **28/28 réussis**.
   - Limite connue : les références saisies restent sur l'appareil ; un plan envoyé à quelqu'un d'autre garde le choix de l'article, mais pas votre référence.
@@ -39,12 +39,12 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Mesure (pire cas, photo de 10,8 Mo) : un réglage enregistré en 14 ms, dessin en 1,5 ms ; l'annulation ne recopie pas l'image.
   - Non vérifiable ici : lecture d'un PDF par Safari sur iPad (Chromium ne lit pas les PDF comme images ; le message d'explication est testé).
 - ⏸ Étape 5 : import des catalogues fabricants. **Préparé** (`js/catalogue.js`, 4 tests dans `tests/catalogue.test.mjs`), vérifié aussi sur un .xlsx produit par un autre logiciel. Tests : **40/40 réussis**.
-  - En attente des fichiers de l'utilisateur : un extrait de catalogue (CSV, Excel ou FAB-DIS) par fabricant utilisé, pour régler les colonnes, choisir l'enregistrement selon le volume, puis faire l'écran d'import.
+  - **Mis de côté par l'utilisateur** (4 novembre 2026). Le module reste dans le dépôt, inactif, pour une reprise éventuelle.
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
 ## Tâche en cours
-- Aucune. Phase 2 terminée, sauf l'import des catalogues (en attente des fichiers).
+- Aucune. Phase 2 terminée et fusionnée ; essais iPad de la phase 2 demandés à l'utilisateur.
 
 ## À vérifier sur l'iPad (phase 2)
 - Bibliothèque au doigt et au Pencil, paysage et portrait.
@@ -57,4 +57,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Fusion par l'utilisateur, essais sur iPad, puis réception des catalogues fabricants, ou phase 3 (moteur de calcul).
+- Retour des essais iPad de la phase 2, puis phase 3 (moteur de calcul).
