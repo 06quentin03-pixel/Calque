@@ -44,17 +44,14 @@ Contrôles complémentaires (scripts, hors dépôt) :
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
 ## Tâche en cours
-- Aucune. Phase 2 terminée et fusionnée ; essais iPad de la phase 2 demandés à l'utilisateur.
+- Aucune. Phase 2 terminée, fusionnée et validée sur iPad.
 
-## À vérifier sur l'iPad (phase 2)
-- Bibliothèque au doigt et au Pencil, paysage et portrait.
-- Bibliothèque technique : saisie d'une référence, puis fermeture et réouverture de l'application.
-- Composants : création, pose, mode avion.
-- Fond de plan : photo prise avec l'iPad, image, et **PDF** (lecture par Safari non testable ici) ; mise à l'échelle par 2 points au Pencil.
+## Essais sur l'iPad (phase 2)
+**Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
 
 ## Points d'attention
 - Format des plans passé de v1 à v4 (migrations testées). Un plan enregistré avec cette version, rouvert avec l'ancienne version de `main`, affiche « vient d'une version plus récente » ; les données restent dans le fichier.
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Retour des essais iPad de la phase 2, puis phase 3 (moteur de calcul).
+- Phase 3 : moteur de calcul électrique (JavaScript pur, testé avec Node), puis fiche de calcul d'un circuit.
