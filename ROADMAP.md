@@ -34,9 +34,9 @@ Dépend de : phase 0.
 - ✅ Correction de la barre du haut sur téléphone (deux lignes).
 - Validation : 7 tests automatisés dans `tests/ipad.test.mjs`, tous réussis.
 
-## Phase 2 — Dessin et bibliothèque
+## Phase 2 — Dessin et bibliothèque 🟨
 Dépend de : 1a, 1b.
-- ⬜ Bibliothèque organisée par catégories et sous-catégories (mobilier, équipements du bâtiment, électricité, tertiaire).
+- ✅ Bibliothèque organisée par catégories et sous-catégories (mobilier, équipements du bâtiment, électricité, tertiaire) : `js/bibliotheque.js`, 247 éléments rangés, rien supprimé (3 tests dans `tests/bibliotheque.test.mjs`).
 - ⬜ Bibliothèque technique générique, lisible sur chantier (« Disjoncteur 20 A courbe C »…), avec un champ référence fabricant optionnel et un badge de fiabilité.
 - ⬜ Composants personnalisés.
 - ⬜ Import de catalogues fabricants (CSV/Excel, FAB-DIS) ⏸ (fichiers à fournir par l'utilisateur).

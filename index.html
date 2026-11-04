@@ -168,6 +168,12 @@ button.li:hover { background: var(--panel-2); }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { height: 30px; padding: 0 11px; border: 1px solid var(--rule); border-radius: 15px; background: transparent; font-size: 12.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .tab[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+/* bibliothèque : domaines (grandes pastilles) puis sous-catégories, sur plusieurs lignes pour rester visibles au doigt et au Pencil */
+.tabs.dom { flex-wrap: wrap; gap: 6px; padding-bottom: 8px; }
+.tabs.dom .tab { height: 38px; padding: 0 14px; font-size: 13.5px; border-radius: 19px; }
+.tabs.subs { flex-wrap: wrap; gap: 5px; padding-top: 2px; border-top: 1px solid var(--rule); padding-top: 8px; margin: 0 12px; padding-left: 0; padding-right: 0; }
+.tabs.subs .tab { height: 34px; border-radius: 17px; }
+.tabs.subs .tab[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); }
 .grid-cat { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; padding: 4px 12px 14px; overflow-y: auto; min-height: 0; }
 .card { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px 7px; border: 1px solid var(--rule); border-radius: 10px; background: var(--c-room); font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.2; color: var(--ink); min-height: 104px; }
 .card:hover { border-color: var(--accent); }

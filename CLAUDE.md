@@ -44,7 +44,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
   - Format des plans : `PLAN_VERSION` + `MIGRATIONS[n]` (fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
-- `sw.js` : Service Worker « réseau d'abord » (cache `calque-v6`). Tous les fichiers de `js/` sont dans `CORE`.
+- `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
   - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier (un test le vérifie).
   - Avis « nouvelle version disponible » : `js/miseajour.js`.
 

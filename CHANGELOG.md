@@ -1,5 +1,13 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 2, étape 1 : bibliothèque par catégories
+- Les outils Mobilier, Escalier et Électricité ouvrent une seule **Bibliothèque** en quatre domaines : Mobilier, Équipements du bâtiment, Électricité, Tertiaire, chacun avec ses sous-catégories.
+- Les 71 meubles et les 176 symboles sont tous conservés et rangés (`js/bibliotheque.js`). « Tertiaire » regroupe des éléments existants (postes de travail, salle de réunion, éclairage, courants faibles, sécurité incendie, contrôle d’accès, locaux techniques) sans nouveau dessin.
+- La recherche porte sur toute la bibliothèque et affiche le chemin de chaque résultat (« Électricité › Tableau & énergie »).
+- Pastilles plus grandes (38 et 34 px), sur plusieurs lignes, pour le doigt et le Pencil.
+- Service Worker : cache `calque-v7`.
+- Ajout de `tests/bibliotheque.test.mjs` (3 tests).
+
 ## 2026-11-03 — Phase 0 : audit
 - Ajout de `AUDIT.md` : état des lieux complet de l'application.
 - Ajout des fichiers de suivi `CLAUDE.md`, `ROADMAP.md`, `PROGRESS.md` et `CHANGELOG.md`.

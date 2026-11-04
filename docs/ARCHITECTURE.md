@@ -20,6 +20,7 @@ Mise à jour : phase 1b (4 novembre 2026).
 | `mutations.js` | Ajout, découpe et fusion des murs ; repères des objets | oui |
 | `historique.js` | Annuler / rétablir (blocs partagés entre étapes) | oui |
 | `symboles.js` | Mobilier, escaliers, 176 symboles électriques, catalogues | oui |
+| `bibliotheque.js` | Rangement de la bibliothèque : domaines, sous-catégories, recherche | oui |
 | `evenements.js` | Signaux entre modules (« le plan a changé ») | oui |
 | `rendu2d.js` | Dessin du plan en 2D (canvas), zone visible | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 | non (pour l'instant) |

@@ -27,13 +27,14 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Phase 1c : dessin au Pencil, déplacement au doigt, paume, survol, fluidité d'un gros plan.
 - Phase 1a : bouton « Envoyer… », reprise des plans existants.
 
-## Tâche en cours
-- Aucune.
+## Phase 2 — dessin et bibliothèque (en cours)
+- ✅ Étape 1 : bibliothèque par domaines et sous-catégories (`js/bibliotheque.js`). Tests : `node --test tests/*.test.mjs` → **23/23 réussis** (3 nouveaux dans `tests/bibliotheque.test.mjs`). Captures vérifiées en 1180×820 et 820×1180.
+- ⬜ Étape 2 : bibliothèque technique générique (référence fabricant facultative, badge de fiabilité).
+- ⬜ Étape 3 : composants personnalisés.
+- ⬜ Étape 4 : fond de plan (image ou PDF).
+- ⏸ Étape 5 : import des catalogues fabricants (préparation seulement, en attente des fichiers).
 
-## Prochaine action prévue
-- Phase 2 : dessin et bibliothèque.
-  - Bibliothèque organisée par catégories.
-  - Bibliothèque technique générique avec badge de fiabilité.
-  - Composants personnalisés.
-  - Import d'un plan en fond de calque.
-  - L'import des catalogues fabricants attend les fichiers de l'utilisateur.
+À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
+
+## Tâche en cours
+- Phase 2, étape 2.

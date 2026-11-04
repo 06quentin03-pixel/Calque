@@ -5,8 +5,9 @@ import { $, $$, C, DEG, IDX, NF1, P, S, clamp, fmtArea, fmtLen, fmtLenU, inPoly,
   vnorm, vsub } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { clampOpening, deleteNode, deleteWall, itemToWorld, mergeAtNode, normDeg, splitWall, wallsAt } from './mutations.js';
-import { ELEC, ELEC_BY, ELEC_CATS, FURN, FURN_CATS, drawItem, furnDef, isStair, stairInfo } from './symboles.js';
+import { ELEC, ELEC_BY, ELEC_CATS, drawItem, furnDef, isStair, stairInfo } from './symboles.js';
 import { FONT_LABEL, TINTS, TINT_NAMES } from './rendu2d.js';
+import { DOMAINES, allEntries, entriesOf, pathOf, searchEntries } from './bibliotheque.js';
 import { AUTONOMOUS, CK, CMDS, SOCKETS, SPOTLIKE, accepts, circById, circNumbers, circStats, circuitColor, cleanLinks,
   defaultKindFor, elecPower, fmtCount, orderCircuits, rcdCircuits, roomAt } from './electricite.js';
 import { DUCT_DIAS, afterFilter, closeDimEdit, ductHintMsg, ductPts, ductVisible, finishDuct, fold, inspDuct,
@@ -749,49 +750,77 @@ document.addEventListener('pointerdown', (e) => {
 }, true);
 $('#scrim').addEventListener('click', () => { if (!$('#modal').hidden) closeModal(); closePops(); });
 
-ui.catTab = {};
-ui.catQ = {};
+/* ---------------- bibliothèque : domaines › sous-catégories › éléments ----------------
+   Les outils « Mobilier », « Escaliers » et « Électricité » ouvrent la même bibliothèque, chacun à son dernier emplacement.
+   La recherche porte sur toute la bibliothèque. D'autres modules peuvent ajouter un domaine (LIB_EXTRA). */
+ui.libSub = {};      // dernier emplacement ouvert par outil
+ui.libDomSub = {};   // dernière sous-catégorie ouverte dans chaque domaine
+ui.libQ = '';
+const LIB_DEFAULT = { furn: 'm_cuisine', stairs: 'b_escaliers', elec: 'e_prises' };
+const LIB_EXTRA = [];  // { dom: { id, name, subs: [{ id, name }] }, entries(subId) → entrées, all() → entrées, card?(x) }
+function libDomains() { return [...DOMAINES, ...LIB_EXTRA.map((x) => x.dom)]; }
+function libEntries(subId) {
+  for (const x of LIB_EXTRA) if (x.dom.subs.some((s) => s.id === subId)) return x.entries(subId);
+  return entriesOf(subId);
+}
+function libSubPath(subId) {
+  for (const d of libDomains()) { const s = d.subs.find((z) => z.id === subId); if (s) return { dom: d, sub: s }; }
+  return null;
+}
+function libAll() { return [...allEntries(), ...LIB_EXTRA.flatMap((x) => x.all())]; }
 function openCatalog(kind) {
   const pop = $('#catalog');
-  const elec = kind === 'elec';
-  const cats = elec ? ELEC_CATS : FURN_CATS.filter((c) => (kind === 'stairs' ? c.id === 'escaliers' : c.id !== 'escaliers'));
-  let cur = ui.catTab[kind] || cats[0].id;
-  let q = ui.catQ[kind] || '';
-  const all = elec ? ELEC : FURN.filter((d) => cats.some((c) => c.id === d.cat));
-  const catName = (id) => (cats.find((c) => c.id === id) || {}).name || '';
+  let subId = ui.libSub[kind] || LIB_DEFAULT[kind] || 'm_cuisine';
+  if (!libSubPath(subId)) subId = LIB_DEFAULT[kind] || 'm_cuisine';
+  let q = ui.libQ || '';
   const grid = h('div', { class: 'grid-cat' });
-  const tabs = cats.length > 1 ? h('div', { class: 'tabs' }) : null;
-  const card = (d, showCat) => {
-    const thumb = elec ? elecThumb(d, 64) : furnThumb(d);
-    return h('button', { type: 'button', class: 'card', title: elec ? d.desc : d.n, onclick: () => {
-      ui.place = { kind: elec ? 'elec' : 'furn', def: d, from: kind };
+  const doms = h('div', { class: 'tabs dom', role: 'tablist', 'aria-label': 'Domaines' });
+  const subs = h('div', { class: 'tabs subs', role: 'tablist', 'aria-label': 'Sous-catégories' });
+  const note = h('p', { class: 'note', style: 'padding:0 16px 8px' });
+  const card = (x, showPath) => {
+    const d = x.def, elec = x.src === 'elec';
+    const thumb = x.thumb ? x.thumb() : elec ? elecThumb(d, 64) : furnThumb(d);
+    const info = showPath ? (x.path || pathOf(x.sub)) : x.info ? x.info : elec ? null : isStair(d.t) ? `${d.w} × ${d.d} · ${d.n_} marches` : `${d.w} × ${d.d} cm`;
+    return h('button', { type: 'button', class: 'card', title: x.title || (elec ? d.desc : d.n), 'data-key': x.src + ':' + x.key, onclick: () => {
+      ui.place = Object.assign({ kind: x.src, def: d, from: kind }, x.place || {});
       closePops(); setTool('place');
-    } }, thumb, h('span', null, d.n), showCat ? h('small', null, catName(d.cat)) : elec ? null : h('small', null, isStair(d.t) ? `${d.w} × ${d.d} · ${d.n_} marches` : `${d.w} × ${d.d} cm`));
+    } }, thumb, h('span', null, x.name || d.n), info ? h('small', null, info) : null);
   };
-  const drawGrid = () => {
+  const draw = () => {
     const words = fold(q).split(/\s+/).filter(Boolean);
+    const here = libSubPath(subId);
+    doms.replaceChildren(...libDomains().map((d) => h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': String(!words.length && d.id === here.dom.id), 'aria-pressed': String(!words.length && d.id === here.dom.id), onclick: () => {
+      subId = ui.libDomSub[d.id] || d.subs[0].id; ui.libSub[kind] = subId; q = ''; ui.libQ = ''; search.value = ''; draw(); grid.scrollTop = 0;
+    } }, d.name)));
+    subs.hidden = !!words.length;
+    subs.replaceChildren(...here.dom.subs.map((s) => h('button', { type: 'button', class: 'tab', role: 'tab', 'aria-selected': String(s.id === subId), 'aria-pressed': String(s.id === subId), onclick: () => {
+      subId = s.id; ui.libSub[kind] = subId; ui.libDomSub[here.dom.id] = subId; draw(); grid.scrollTop = 0;
+    } }, s.name)));
     let items;
     if (words.length) {
-      items = all.filter((d) => { const hay = fold(d.n + ' ' + (d.desc || '') + ' ' + catName(d.cat) + ' ' + (d.t || '')); return words.every((w) => hay.includes(w)); });
-      grid.replaceChildren(...(items.length ? items.map((d) => card(d, true)) : [h('p', { class: 'note', style: 'grid-column:1/-1;padding:8px 4px' }, 'Aucun résultat pour « ' + q + ' ».')]));
+      items = searchEntries(q, libAll());
+      grid.replaceChildren(...(items.length ? items.map((x) => card(x, true)) : [h('p', { class: 'note', style: 'grid-column:1/-1;padding:8px 4px' }, 'Aucun résultat pour « ' + q + ' ».')]));
     } else {
-      items = all.filter((d) => d.cat === cur);
-      grid.replaceChildren(...items.map((d) => card(d, false)));
+      items = libEntries(subId);
+      const ex = LIB_EXTRA.find((x) => x.dom.id === here.dom.id);
+      grid.replaceChildren(...items.map((x) => card(x, false)), ...(ex && ex.after ? [ex.after(subId)].flat().filter(Boolean) : []));
     }
-    if (tabs) tabs.replaceChildren(...cats.map((c) => h('button', { type: 'button', class: 'tab', 'aria-pressed': String(!words.length && c.id === cur), onclick: () => { cur = c.id; ui.catTab[kind] = cur; q = ''; ui.catQ[kind] = ''; search.value = ''; drawGrid(); } }, c.name)));
+    const ex = LIB_EXTRA.find((x) => x.dom.id === here.dom.id);
+    const msg = words.length ? `${items.length} résultat${items.length > 1 ? 's' : ''} dans toute la bibliothèque.`
+      : ex && ex.note ? ex.note(subId)
+      : here.dom.id === 'electricite' || here.dom.id === 'tertiaire' ? 'Choisissez un élément puis touchez le plan. Les symboles muraux se collent au mur le plus proche. Les conduits de VMC et les gaines se tracent avec l’outil Conduit.'
+      : subId === 'b_escaliers' ? 'L’escalier se pose au niveau de départ. La trémie apparaît à l’étage du dessus.' : '';
+    note.textContent = msg; note.hidden = !msg;
   };
-  const search = h('input', { class: 'txt', type: 'search', value: q, placeholder: elec ? `Rechercher parmi ${ELEC.length} symboles (prise, VMC, spot…)` : 'Rechercher (lit, évier, canapé…)', 'aria-label': 'Rechercher dans le catalogue', autocomplete: 'off', enterkeyhint: 'search' });
-  search.addEventListener('input', () => { q = search.value; ui.catQ[kind] = q; drawGrid(); });
-  pop.replaceChildren(...[
-    h('div', { class: 'pop-head' }, h('h2', null, elec ? 'Électricité et VMC' : kind === 'stairs' ? 'Escaliers' : 'Mobilier et équipements'),
+  const total = libAll().length;
+  const search = h('input', { class: 'txt', type: 'search', value: q, placeholder: `Rechercher dans toute la bibliothèque (${total} éléments)`, 'aria-label': 'Rechercher dans la bibliothèque', autocomplete: 'off', enterkeyhint: 'search' });
+  search.addEventListener('input', () => { q = search.value; ui.libQ = q; draw(); });
+  pop.replaceChildren(
+    h('div', { class: 'pop-head' }, h('h2', null, 'Bibliothèque'),
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Fermer', html: ICON.x, onclick: closePops })),
-    kind !== 'stairs' ? h('div', { class: 'cat-search' }, search) : null,
-    tabs,
-    elec ? h('p', { class: 'note', style: 'padding:0 16px 8px' }, 'Choisissez un symbole puis touchez le plan. Les symboles muraux se collent au mur le plus proche. Les conduits de VMC et les gaines se tracent avec l’outil Conduit.') : null,
-    kind === 'stairs' ? h('p', { class: 'note', style: 'padding:0 16px 8px' }, 'L’escalier se pose au niveau de départ. La trémie apparaît à l’étage du dessus.') : null,
-    grid,
-  ].filter(Boolean));
-  drawGrid();
+    h('div', { class: 'cat-search' }, search),
+    doms, subs, note, grid);
+  draw();
   showPop(pop, $(`.tool[data-tool="${kind}"]`), 'side');
 }
 function furnThumb(def) {
@@ -976,7 +1005,7 @@ export { ICON, ROOM_NAMES, addLevel, addOpeningOnWall, applyWallLength, body, bt
   closeModal, closePops, closePopsOnly, confirmBtn, copyWalls, deleteLevel, deleteSel, ductsOf, duplicateSel,
   elecThumb, faceLen, floorName, fmtIn, furnThumb, h, hintKey, ico, inspCloset, inspDim, inspElec, inspGap, inspHead,
   inspItem, inspLevel, inspNode, inspOpening, inspRoom, inspText, inspWall, isNarrow, kv, linksSection, menuItem,
-  newCircuitFor, nudgeSel, numField, openCatalog, openHelp, openLevelPop, openModal, openingModelSelect,
+  LIB_EXTRA, libAll, newCircuitFor, nudgeSel, numField, openCatalog, openHelp, openLevelPop, openModal, openingModelSelect,
   openingPositionSec, openingSizeText, parseNum, renamePlan, renderInspector, renderLevels, renderMenuPop,
   renderViewPop, rotateSel, row, sec, segCtl, setOpeningModel, setTool, setWallAngle, setWallFace, setWallLength,
   showPop, stretchEnd, switchLevel, textField, toast, toastT, toggleRow, uniqueRoomName, updateHint, wallAngleDisp,
