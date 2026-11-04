@@ -20,6 +20,7 @@ import { newPlan, openProjects, openSample, openVersions } from './stockage.js';
 import { exportAll, exportJSON, openExport } from './export.js';
 import { f3Def, itemHeight3 } from './vue3d.js';
 import { compSection, materielSection, openTechLib } from './biblioui.js';
+import { ficheButton } from './fiche.js';
 import { fondSection, pickFond } from './fond.js';
 
 /* ============================================================
@@ -456,10 +457,12 @@ function circuitSection(e) {
   });
   const c = e.cid && circById(e.cid);
   const st = c && circStats(c);
-  return sec('Circuit', sel, c
-    ? h('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap' }, h('span', { class: 'ev-num', style: `--cc:${circuitColor(c.id)}` }, nums.get(c.id)), h('span', { class: 'pill ' + (st.over ? 'bad' : 'ok') }, fmtCount(st)),
-      btn('Voir dans le tableau', () => { ui.evSel = { t: 'circuit', id: c.id }; setView('elec'); }, 'sm'))
-    : h('p', { class: 'note' }, P.circuits.length ? 'Choisissez le circuit qui alimente ce symbole.' : 'Générez le tableau dans l\u2019onglet Tableau électrique, ou créez un circuit ici.'));
+  if (c) return sec('Circuit', sel,
+    h('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap' }, h('span', { class: 'ev-num', style: `--cc:${circuitColor(c.id)}` }, nums.get(c.id)), h('span', { class: 'pill ' + (st.over ? 'bad' : 'ok') }, fmtCount(st)),
+      btn('Voir dans le tableau', () => { ui.evSel = { t: 'circuit', id: c.id }; setView('elec'); }, 'sm')),
+    ficheButton(c));
+  return sec('Circuit', sel,
+    h('p', { class: 'note' }, P.circuits.length ? 'Choisissez le circuit qui alimente ce symbole.' : 'Générez le tableau dans l\u2019onglet Tableau électrique, ou créez un circuit ici.'));
 }
 function linksSection(e) {
   const n = P.links.filter((l) => l.a === e.id || l.b === e.id).length;

@@ -1,6 +1,7 @@
 # CLAUDE.md — instructions permanentes pour le développement de Calque
 
-À lire au début de **chaque** session, avant toute modification, avec `ROADMAP.md` et `PROGRESS.md`.
+À lire au début de **chaque** session, avant toute modification, avec `PROJECT_STATE.md` (état du projet), `TECHNICAL_DECISIONS.md` (choix techniques), `NEXT_SESSION.md` (consignes de la session), `ROADMAP.md` et `PROGRESS.md`.
+Une session par phase : à la fin de chaque phase, mettre à jour ces trois fichiers et réécrire `NEXT_SESSION.md` pour la phase suivante.
 
 ## Le projet
 
@@ -20,6 +21,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 5. **Réglementation.** Ne jamais afficher de conformité globale si tout n'a pas été vérifié. Il y a trois statuts : conforme / non conforme / vérification nécessaire.
    - Chaque règle indique sa source et l'édition de la norme.
    - Source autorisée par l'utilisateur : les extraits NF C 15-100 publiés par Legrand. Le texte de la norme AFNOR n'est pas reproduit.
+   - Extrait reçu : guide Legrand « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003). Tableaux recopiés dans `js/normes.js`.
 6. Le hors ligne est prioritaire. Aucune dépendance cloud, aucun abonnement, aucun serveur obligatoire.
 7. Compatibilité totale avec les plans existants. Toute évolution du format passe par une migration et une copie de sécurité.
 8. Tester chaque modification. Ne pas déclarer terminé ce qui n'est que visible à l'écran.
@@ -42,7 +44,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 4) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 5) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
   - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier (un test le vérifie).
@@ -71,4 +73,4 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 
 ## Fin de chaque étape
 
-Mettre à jour `PROGRESS.md` et `CHANGELOG.md` (et `ROADMAP.md` si besoin), faire un commit explicite, puis pousser sur la branche de développement.
+Mettre à jour `PROJECT_STATE.md`, `PROGRESS.md` et `CHANGELOG.md` (et `ROADMAP.md`, `TECHNICAL_DECISIONS.md` si besoin), faire un commit explicite, puis pousser sur la branche de développement.

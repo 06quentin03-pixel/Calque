@@ -1,10 +1,12 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026.
+Dernière mise à jour : 4 novembre 2026 (phase 3 terminée, demande de fusion n°2 fusionnée à la demande de l'utilisateur).
 
 ## Branche
+- Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
 - Travail : `claude/layer-modification-prompt-feasibility-nw7oa4`.
-- `main` (version utilisée au quotidien) : **non modifiée**. L'utilisateur fusionne lui-même (procédure expliquée : Pull requests > New pull request > base main ← branche de travail > Merge).
+- `main` (version utilisée au quotidien) : l'utilisateur a fusionné la demande n°1 (phases 0, 1a, 1b, 1c et phase 2). Il fusionne lui-même ; on ne modifie jamais `main` directement.
+- Toute nouvelle fusion passe par une **nouvelle** demande de fusion (la n°1 est terminée).
 
 ## Phases terminées
 - Phase 0 : audit.
@@ -22,12 +24,14 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Export PDF identique à l'octet près (21 993 octets) ; vues 3D et Tableau, catalogues, inspecteur et raccourcis clavier sans erreur.
 - **Mise à jour simulée depuis la version actuelle de `main`** : l'ancien cache `calque-v3` est remplacé par `calque-v6`, le plan dessiné avec l'ancienne version est conservé, l'application marche ensuite hors ligne.
 
-À vérifier sur l'iPad (Safari et Apple Pencil réels indisponibles ici) :
-- Phase 1b : démarrage après la mise à jour, puis hors ligne (mode avion).
-- Phase 1c : dessin au Pencil, déplacement au doigt, paume, survol, fluidité d'un gros plan.
-- Phase 1a : bouton « Envoyer… », reprise des plans existants.
+**Essais sur l'iPad de l'utilisateur : validés le 4 novembre 2026** (« tout marche »), selon la liste fournie :
+- mise à jour et reprise des plans, hors ligne (mode avion) ;
+- Apple Pencil (dessin, doigt qui déplace, paume, survol, réglage), fluidité, annuler/rétablir ;
+- envoi par le menu de partage, sauvegarde complète, historique des versions, exports PDF et image ;
+- barre du haut en paysage et en portrait.
+- Reste à observer lors d'une prochaine mise à jour : le bandeau « nouvelle version disponible ».
 
-## Phase 2 — dessin et bibliothèque (en cours)
+## Phase 2 — dessin et bibliothèque (terminée, fusionnée dans `main`)
 - ✅ Étape 1 : bibliothèque par domaines et sous-catégories (`js/bibliotheque.js`). 3 tests dans `tests/bibliotheque.test.mjs`. Captures vérifiées en 1180×820 et 820×1180.
 - ✅ Étape 2 : bibliothèque technique générique, 110 articles, références de l'utilisateur, badge de fiabilité, format des plans v2 avec migration. 5 tests dans `tests/technique.test.mjs`. Tests : **28/28 réussis**.
   - Limite connue : les références saisies restent sur l'appareil ; un plan envoyé à quelqu'un d'autre garde le choix de l'article, mais pas votre référence.
@@ -36,22 +40,33 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Mesure (pire cas, photo de 10,8 Mo) : un réglage enregistré en 14 ms, dessin en 1,5 ms ; l'annulation ne recopie pas l'image.
   - Non vérifiable ici : lecture d'un PDF par Safari sur iPad (Chromium ne lit pas les PDF comme images ; le message d'explication est testé).
 - ⏸ Étape 5 : import des catalogues fabricants. **Préparé** (`js/catalogue.js`, 4 tests dans `tests/catalogue.test.mjs`), vérifié aussi sur un .xlsx produit par un autre logiciel. Tests : **40/40 réussis**.
-  - En attente des fichiers de l'utilisateur : un extrait de catalogue (CSV, Excel ou FAB-DIS) par fabricant utilisé, pour régler les colonnes, choisir l'enregistrement selon le volume, puis faire l'écran d'import.
+  - **Mis de côté par l'utilisateur** (4 novembre 2026). Le module reste dans le dépôt, inactif, pour une reprise éventuelle.
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
-## Tâche en cours
-- Aucune. Phase 2 terminée, sauf l'import des catalogues (en attente des fichiers).
+## Phase 3 — électricité et calculs (terminée, à vérifier sur iPad)
+- ✅ Étape 1 : moteur de calcul sans écran (`js/calcul.js`), emplacement des tableaux NF C 15-100 (`js/normes.js`), partie sans écran d'`electricite.js` sortie dans `js/elecdonnees.js`. 13 tests dans `tests/calcul.test.mjs`. Tests : **53/53 réussis**.
+  - Contrôle de non-régression : circuits, différentiels, coffret et contrôles NF C 15-100 générés sur le plan d'exemple **identiques** avant et après (script hors dépôt).
+  - Tous les tableaux NF C 15-100 sont « manquants » : en attente des extraits Legrand de l'utilisateur.
+- ✅ Étape 2 : fiche de calcul d'un circuit (`js/fiche.js`), ouverte depuis l'inspecteur du plan et depuis le tableau ; réglage « Réseau » de l'installation ; format des plans v5 avec migration. 3 tests dans `tests/fiche.test.mjs`. Tests : **56/56 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fiche entièrement visible, boutons de 44 px).
+- ✅ Étape 3 : onglet « Bilan » du tableau (bilan de puissance, coefficient ks, tableau des circuits, équilibrage des phases avec répartition proposée, liste des tableaux Legrand attendus). 1 test de plus dans `tests/fiche.test.mjs`. Tests : **57/57 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 ; correction du débordement horizontal de la barre d'onglets sur téléphone.
+- ✅ Étape 4 : extrait Legrand « Points clés » (révision 23 août 2024) reçu ; 2 tableaux recopiés (sections/calibres par circuit et chauffage ; différentiels) et contrôles ajoutés ; sèche-linge et pompe à chaleur en type A. Fichiers `PROJECT_STATE.md`, `TECHNICAL_DECISIONS.md`, `NEXT_SESSION.md`. Tests : **59/59 réussis**.
+- ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire ».
 
-## À vérifier sur l'iPad (phase 2)
-- Bibliothèque au doigt et au Pencil, paysage et portrait.
-- Bibliothèque technique : saisie d'une référence, puis fermeture et réouverture de l'application.
-- Composants : création, pose, mode avion.
-- Fond de plan : photo prise avec l'iPad, image, et **PDF** (lecture par Safari non testable ici) ; mise à l'échelle par 2 points au Pencil.
+## Tâche en cours
+- Aucune. Phase 3 terminée et fusionnée dans `main` (demande n°2, fusion demandée explicitement par l'utilisateur le 4 novembre 2026). Essais iPad à faire : liste dans `NEXT_SESSION.md`.
+
+## Essais sur l'iPad (phase 2)
+**Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
 
 ## Points d'attention
-- Format des plans passé de v1 à v4 (migrations testées). Un plan enregistré avec cette version, rouvert avec l'ancienne version de `main`, affiche « vient d'une version plus récente » ; les données restent dans le fichier.
+- Test `ipad.test.mjs` « rendu limité à la zone visible… » : **un échec intermittent** observé une fois (90 pixels différents sur la première vue) lors d'une suite complète, puis réussi 4 fois seul et à la suite complète suivante. Le rendu du plan n'a pas été modifié en phase 3 ; cause probable : chargement des polices. À surveiller.
+- Un plan enregistré en v5 puis rouvert avec l'ancienne version de `main` affiche « vient d'une version plus récente » ; ses données restent dans le fichier.
+- Format des plans passé de v1 à v5 (migrations testées). Un plan enregistré avec cette version, rouvert avec l'ancienne version de `main`, affiche « vient d'une version plus récente » ; les données restent dans le fichier.
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Fusion par l'utilisateur, essais sur iPad, puis réception des catalogues fabricants, ou phase 3 (moteur de calcul).
+- Recopier les tableaux Legrand manquants dans `js/normes.js` dès que l'utilisateur les fournit (avec test), puis activer le contrôle In ≤ Iz et la limite de chute de tension.
+- Phase 4 : cheminements et métrés (la longueur des câbles alimentera la fiche de calcul).

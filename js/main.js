@@ -14,6 +14,7 @@ import './interface.js';
 import './stockage.js';
 import './export.js';
 import './vue3d.js';
+import './fiche.js';
 import './demarrage.js';
 import { boot } from './demarrage.js';
 import { watchUpdates } from './miseajour.js';

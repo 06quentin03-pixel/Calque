@@ -13,6 +13,7 @@ import { btn, btns, chipRow, closePops, elecThumb, h, kv, sec, segCtl, textField
 import { slug } from './stockage.js';
 import { openFileModal } from './export.js';
 import { v3Show } from './vue3d.js';
+import { bilanView, ficheButton } from './fiche.js';
 
 /* ============================================================
    CALQUE — onglet « Tableau électrique »
@@ -72,7 +73,7 @@ function uniSVG(col, selId) {
   s.push(`<rect x="${tx}" y="18" width="332" height="96" rx="4" style="fill:none;stroke:${col.ink};stroke-width:1.2"/>`);
   s.push(sText(tx + 14, 42, P.name || 'Plan', col.ink, 16, { w: 700, fam: FONT_UI }));
   s.push(sText(tx + 14, 62, 'Schéma unifilaire du tableau de répartition', col.ink, 12.5));
-  s.push(sText(tx + 14, 80, 'Monophasé 230 V · NF C 15-100 (révision 2024)', col.ink2, 12));
+  s.push(sText(tx + 14, 80, (inst.reseau === 'tri' ? 'Triphasé 400 V' : 'Monophasé 230 V') + ' · NF C 15-100 (révision 2024)', col.ink2, 12));
   s.push(sText(tx + 14, 98, new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date()) + ' · ' + P.circuits.length + ' circuits · ' + P.rcds.length + ' différentiels', col.ink2, 12));
   // arrivée
   const sx = 70;
@@ -281,6 +282,8 @@ function renderEvSide() {
       h('p', { class: 'note' }, `Disjoncteur de branchement ${agcpLabel(inst.kva)}, différentiel 500 mA type S, fourni par le distributeur.`)),
     sec('Parafoudre', segCtl([{ v: false, n: 'Sans' }, { v: true, n: 'Avec parafoudre' }], !!inst.parafoudre, (v) => { inst.parafoudre = v; commit(); }),
       h('p', { class: 'note' }, 'Obligatoire si le bâtiment a un paratonnerre et dans certaines zones exposées à la foudre. Recommandé dans les autres cas.')),
+    sec('Réseau', segCtl([{ v: 'mono', n: 'Monophasé 230 V' }, { v: 'tri', n: 'Triphasé 400 V' }], inst.reseau || null, (v) => { inst.reseau = v; commit(); }),
+      h('p', { class: 'note' }, inst.reseau ? (inst.reseau === 'tri' ? 'Calculs en triphasé : choisissez la phase de chaque circuit dans sa fiche de calcul. Le disjoncteur de branchement affiché reste celui du monophasé : à vérifier.' : 'Calculs en monophasé 230 V.') : 'Non précisé : les calculs retiennent le monophasé (valeur estimée).')),
     sec('Coffret', segCtl([{ v: 13, n: '13 modules par rangée' }, { v: 18, n: '18 modules' }], inst.row || 13, (v) => { inst.row = v; commit(); })),
     kv([['Surface des pièces', fmtArea(totalSurface())], ['Liaisons commandes', String(P.links.length)]])));
   kids.push(h('div', { class: 'btns ev-actions' },
@@ -358,7 +361,7 @@ function rcdEditor(r) {
   const cs = rcdCircuits(r.id);
   return h('div', { class: 'ev-edit' },
     sec('Type', segCtl([{ v: 'AC', n: 'Type AC' }, { v: 'A', n: 'Type A' }, { v: 'F', n: 'Type F' }], r.type, (v) => { r.type = v; commit(); }),
-      h('p', { class: 'note' }, r.type === 'AC' ? 'Usage courant : éclairage, prises, chauffage, chauffe-eau.' : r.type === 'A' ? 'Obligatoire pour la plaque de cuisson, le lave-linge et la borne de recharge.' : 'Type F : appareils à vitesse variable monophasés (pompe à chaleur, climatisation, pompe de piscine), congélateur.')),
+      h('p', { class: 'note' }, r.type === 'AC' ? 'Usage courant : éclairage, prises, chauffage, chauffe-eau.' : r.type === 'A' ? 'Obligatoire pour la plaque de cuisson, le lave-linge, le sèche-linge, la pompe à chaleur et la borne de recharge.' : 'Type F : appareils à vitesse variable monophasés (pompe à chaleur, climatisation, pompe de piscine), congélateur.')),
     sec('Calibre', segCtl([25, 40, 63].map((v) => ({ v, n: v + ' A' })), r.cal, (v) => { r.cal = v; commit(); }),
       kv([['Charge calculée', NF1.format(l) + ' A'], ['Réglage de l’AGCP', agcp + ' A'], ['Circuits', cs.length + ' / 8']]),
       h('p', { class: 'note' }, 'Charge = chauffage + chauffe-eau + borne à 100 %, autres circuits à 50 % de leur calibre. Le calibre doit couvrir cette charge ou le réglage de l’AGCP.')),
@@ -377,6 +380,7 @@ function circuitEditor(c) {
   const smax = SEC_MAX[c.sec];
   return h('div', { class: 'ev-edit' },
     sec('Désignation', textField(null, c.name, (v) => { c.name = v.trim() || k.n; commit(); }, { id: 'e-name', ph: 'Nom du circuit' })),
+    sec('Calcul', ficheButton(c)),
     sec('Type', typeSel),
     sec('Disjoncteur', chipRow(CALS, c.cal, (v) => { c.cal = v; commit(); }, (v) => v + ' A')),
     sec('Section des conducteurs', chipRow(SECS, c.sec, (v) => { c.sec = v; commit(); }, (v) => String(v).replace('.', ',') + ' mm²'),
@@ -435,9 +439,9 @@ function renderEvMain() {
   const bar = $('#evBar');
   const tab = (v, label, badge) => h('button', { type: 'button', 'aria-pressed': String(ui.evTab === v), onclick: () => { ui.evTab = v; renderEvMain(); } }, label, badge ? h('span', { class: 'ev-count' + (nErr ? ' err' : '') }, badge) : null);
   bar.replaceChildren(...[
-    h('div', { class: 'seg' }, tab('uni', 'Schéma unifilaire'), tab('panel', 'Coffret'), tab('check', 'Contrôle NF C 15-100', nErr ? String(nErr) : nWarn ? String(nWarn) : '✓')),
+    h('div', { class: 'seg' }, tab('uni', 'Schéma unifilaire'), tab('panel', 'Coffret'), tab('check', 'Contrôle NF C 15-100', nErr ? String(nErr) : nWarn ? String(nWarn) : '✓'), tab('calc', 'Bilan')),
     h('div', { class: 'spacer' }),
-    ui.evTab !== 'check' ? h('div', { class: 'btns' },
+    ui.evTab !== 'check' && ui.evTab !== 'calc' ? h('div', { class: 'btns' },
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Dézoomer', title: 'Dézoomer', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg>', onclick: () => { ui.evZoom = clamp(ui.evZoom / 1.2, 0.3, 3); renderEvMain(); } }),
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Ajuster', title: 'Ajuster à la largeur', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>', onclick: () => { ui.evZoom = 0; renderEvMain(); } }),
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Zoomer', title: 'Zoomer', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg>', onclick: () => { ui.evZoom = clamp((ui.evZoom || 1) * 1.2, 0.3, 3); renderEvMain(); } }),
@@ -445,6 +449,7 @@ function renderEvMain() {
   const cv2 = $('#evCanvas');
   const sel = ui.evSel && ui.evSel.t === 'circuit' ? ui.evSel.id : null;
   if (ui.evTab === 'check') { cv2.replaceChildren(checksView(checks)); return; }
+  if (ui.evTab === 'calc') { const sc = cv2.scrollTop; cv2.replaceChildren(bilanView()); cv2.scrollTop = sc; return; }
   if (!P.circuits.length && !P.rcds.length) {
     cv2.replaceChildren(h('div', { class: 'ev-empty' }, h('h3', null, 'Pas encore de tableau'), h('p', null, 'Touchez « Générer depuis le plan » : Calque crée les circuits et les différentiels à partir des symboles électriques que vous avez posés.'), btn('Générer depuis le plan', () => { generateFromPlan(); commit(); }, 'pri', 'plus')));
     return;
