@@ -1,6 +1,6 @@
 # Architecture de Calque
 
-Mise à jour : phase 1b (4 novembre 2026).
+Mise à jour : phase 3 (4 novembre 2026).
 
 ## Principe
 
@@ -30,7 +30,10 @@ Mise à jour : phase 1b (4 novembre 2026).
 | `biblioui.js` | Fenêtre « Bibliothèque technique », saisie des références, section « Matériel » de l'inspecteur | non |
 | `evenements.js` | Signaux entre modules (« le plan a changé ») | oui |
 | `rendu2d.js` | Dessin du plan en 2D (canvas), zone visible | non |
-| `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 | non (pour l'instant) |
+| `elecdonnees.js` | Données électriques sans écran sorties de `electricite.js` : classement des symboles, types de circuits (`CK`), valeurs du contrôle (`SEC_MAX`…), puissance des symboles avec statut | oui |
+| `normes.js` | Emplacement des tableaux NF C 15-100 (extraits Legrand, source, édition, statut « manquante » ou « vérifiée »), constantes estimées, règles citées | oui |
+| `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts, fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
+| `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |
 | `interaction.js` | Vue, sélection, outils de dessin, aimantation, Apple Pencil | non |
 | `tableau.js` | Onglet « Tableau électrique » : unifilaire, coffret | non |

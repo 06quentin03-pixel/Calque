@@ -1,5 +1,14 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 3, étape 1 : moteur de calcul électrique (sans écran)
+- **`js/calcul.js`** (JavaScript pur, testable avec Node) : intensité d’emploi en monophasé `IB = P / (U0 × cos φ)` et en triphasé `IB = P / (√3 × U × cos φ)`, puissances P, Q, S et cos φ, chute de tension `ΔU = b (ρ L / S cos φ + λ L sin φ) IB` (b = 2 en mono, 1 en tri), bilan de puissance (`S = √(ΣP² + ΣQ²)`, coefficient de simultanéité facultatif), équilibrage des phases (déséquilibre et répartition proposée).
+- **Données marquées** : chaque donnée porte un statut « vérifiée » (source obligatoire), « saisie » ou « estimée », et son origine. Une donnée absente est listée dans « données manquantes » et le résultat qui en dépend n’est pas calculé. Aucune puissance ni aucun cos φ n’est deviné pour une prise ; seule exception, signalée comme « estimée » : cos φ = 1 pour le chauffage et le chauffe-eau (charges résistives).
+- **Trois statuts de contrôle** : conforme, non conforme, vérification nécessaire. Un circuit n’est jamais « conforme » tant qu’un de ses contrôles n’a pas pu être vérifié. Chaque contrôle cite sa source et l’édition de la norme.
+- **`js/normes.js`** : emplacement des 8 tableaux de la NF C 15-100 attendus (courants admissibles, modes de pose, facteurs de correction, sections et calibres du logement, chutes de tension maximales, constantes de calcul, simultanéité, différentiels), avec source, édition et page à remplir. **Tous « manquants »** : les contrôles qui en dépendent restent « vérification nécessaire ».
+- **`js/elecdonnees.js`** : partie sans écran sortie de `electricite.js` (classement des symboles, types de circuits, valeurs du contrôle actuel). `electricite.js` la réexporte : le tableau et les contrôles donnent exactement le même résultat qu’avant (comparaison automatique de l’ancienne et de la nouvelle version sur le plan d’exemple).
+- Service Worker : cache `calque-v12`.
+- Ajout de `tests/calcul.test.mjs` (13 tests, valeurs calculées à la main).
+
 ## 2026-11-04 — Phase 2, étape 5 : préparation de l’import des catalogues fabricants
 - `js/catalogue.js` (sans écran) : lecture des fichiers **CSV** (UTF-8 ou Windows-1252, séparateur détecté, guillemets) et **Excel .xlsx** (sans bibliothèque externe), reconnaissance des colonnes usuelles (référence, désignation, marque, EAN, famille, unité, prix), conversion en articles.
 - Aucune valeur inventée : une colonne vide reste absente ; doublons et lignes vides comptés ; un article sans référence est signalé.

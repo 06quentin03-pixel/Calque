@@ -16,7 +16,7 @@ test('chaque module de js/ est mis en cache par le Service Worker (hors ligne)',
 });
 
 test('modules sans accès à l’écran : utilisables directement par Node', async () => {
-  for (const m of ['noyau', 'geometrie', 'mutations', 'historique', 'symboles', 'evenements']) await import(path.join(ROOT, 'js', m + '.js'));
+  for (const m of ['noyau', 'geometrie', 'mutations', 'historique', 'symboles', 'evenements', 'elecdonnees', 'normes', 'calcul']) await import(path.join(ROOT, 'js', m + '.js'));
   const N = await import(path.join(ROOT, 'js', 'noyau.js'));
   assert.equal(N.polyArea([{ x: 0, y: 0 }, { x: 400, y: 0 }, { x: 400, y: 300 }, { x: 0, y: 300 }]), 120000);
   assert.ok(N.inPoly({ x: 10, y: 10 }, [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }, { x: 0, y: 20 }]));

@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (essais iPad de la phase 1 validés).
+Dernière mise à jour : 4 novembre 2026 (phase 3, étape 1).
 
 ## Branche
 - Travail : `claude/layer-modification-prompt-feasibility-nw7oa4`.
@@ -43,8 +43,13 @@ Contrôles complémentaires (scripts, hors dépôt) :
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
+## Phase 3 — électricité et calculs (en cours)
+- ✅ Étape 1 : moteur de calcul sans écran (`js/calcul.js`), emplacement des tableaux NF C 15-100 (`js/normes.js`), partie sans écran d'`electricite.js` sortie dans `js/elecdonnees.js`. 13 tests dans `tests/calcul.test.mjs`. Tests : **53/53 réussis**.
+  - Contrôle de non-régression : circuits, différentiels, coffret et contrôles NF C 15-100 générés sur le plan d'exemple **identiques** avant et après (script hors dépôt).
+  - Tous les tableaux NF C 15-100 sont « manquants » : en attente des extraits Legrand de l'utilisateur.
+
 ## Tâche en cours
-- Aucune. Phase 2 terminée, fusionnée et validée sur iPad.
+- Phase 3, étape 2 : fiche de calcul d'un circuit (depuis le plan et depuis le tableau), données de calcul enregistrées dans le plan (format v5).
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
@@ -54,4 +59,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Phase 3 : moteur de calcul électrique (JavaScript pur, testé avec Node), puis fiche de calcul d'un circuit.
+- Phase 3, étape 2 : fiche de calcul d'un circuit ; étape 3 : bilan de puissance et équilibrage dans l'onglet Tableau.
