@@ -20,10 +20,12 @@ Dépend de : phase 0.
 - ✅ Demande de stockage persistant (`navigator.storage.persist`).
 - Validation : 7 tests automatisés dans `tests/stockage.test.mjs`, tous réussis.
 
-**1b. Architecture** ⏸ (décision de l'utilisateur requise : voir PROGRESS.md)
-- ⬜ Découpage progressif de `index.html` en modules natifs : noyau/modèle, géométrie, électricité, rendu 2D, 3D, export, interface.
-- ⬜ Modèle de données commun documenté, avec un système d'événements « le plan a changé ».
-- ⬜ Mise à jour du Service Worker pour les nouveaux fichiers et affichage « nouvelle version disponible ».
+**1b. Architecture** ✅ (testée automatiquement ; à vérifier sur iPad)
+- ✅ Découpage de `index.html` en 15 modules natifs dans `js/` (noyau, géométrie, murs, historique, symboles, rendu 2D, électricité, réseaux, interaction, tableau, interface, stockage, export, 3D, démarrage), sans changement de comportement.
+- ✅ Modèle de données documenté (`docs/ARCHITECTURE.md`) et système d'événements « le plan a changé » (`js/evenements.js`).
+- ✅ Service Worker : tous les modules en cache hors ligne ; avis « nouvelle version disponible » (`js/miseajour.js`).
+- Validation : 6 tests dans `tests/architecture.test.mjs`, mise à jour depuis la version de `main` simulée (plans conservés, hors ligne OK).
+- Suite prévue au fil des phases : extraire de `electricite.js` la partie sans écran (tables et contrôles) pour le moteur de calcul (phase 3) et le moteur de règles (phase 6).
 
 **1c. Performances et iPad** ✅ (testée automatiquement ; à vérifier sur iPad)
 - ✅ Rendu 2D limité à la zone visible, image mémorisée du plan pendant les aperçus (curseur, tracé de mur).

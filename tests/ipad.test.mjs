@@ -2,7 +2,6 @@
 // Lancer depuis la racine du dépôt :  node --test tests/
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT, fresh, wait, boot, seedPlan, storedPlan, canvasBox, bigPlan } from './outils.mjs';
 
@@ -72,11 +71,8 @@ test('gros plan : l’image mémorisée du plan donne le même résultat pendant
   assert.ok(diffCount(a.shots[0], a.shots[1]) > 50, 'le mur ajouté est visible');
 });
 
-test('annuler/rétablir : les blocs inchangés sont partagés entre les étapes', () => {
-  const src = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  const i0 = src.indexOf('const H_STEPS'), i1 = src.indexOf('function historyTrim');
-  assert.ok(i0 > 0 && i1 > i0, 'code de l’historique trouvé');
-  const lib = new Function(src.slice(i0, i1) + '; return { packPlan, unpackPlan, samePack };')();
+test('annuler/rétablir : les blocs inchangés sont partagés entre les étapes', async () => {
+  const lib = await import(path.join(ROOT, 'js', 'historique.js')); // module sans accès à l'écran : utilisable par Node
   const P = bigPlan(6);
   const s0 = lib.packPlan(P, null);
   assert.deepEqual(lib.unpackPlan(s0), JSON.parse(JSON.stringify(P)), 'le plan est restitué à l’identique');

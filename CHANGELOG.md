@@ -27,3 +27,12 @@
 - Service Worker : cache `calque-v5`.
 - Ajout de `tests/ipad.test.mjs` (7 tests) et `tests/outils.mjs` (outils communs).
 - `CLAUDE.md` corrigé (nom du cache, numéros de ligne).
+
+## 2026-11-04 — Phase 1b : architecture en modules
+- Le code (8 500 lignes) quitte `index.html` pour **15 modules JavaScript natifs** dans `js/`, un par moteur, chargés par `js/main.js`. Aucun changement de comportement : contenu vérifié ligne à ligne, export PDF identique à l'octet près.
+- Système d'événements « le plan a changé » (`js/evenements.js`) : ouverture, modification, annuler, rétablir.
+- Avis « nouvelle version disponible » avec bouton Recharger (le plan est enregistré d'abord) ; vérification des mises à jour au retour de l'application au premier plan.
+- Service Worker : cache `calque-v6`, tous les modules disponibles hors ligne dès l'installation.
+- Documentation de l'architecture et du modèle de données : `docs/ARCHITECTURE.md`.
+- `package.json` (type module) pour tester les modules sans écran avec Node.
+- Ajout de `tests/architecture.test.mjs` (6 tests). Mise à jour depuis l'ancienne version simulée : plans conservés.

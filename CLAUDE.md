@@ -28,9 +28,13 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 10. Langue : français, pour l'interface, les commentaires et les échanges. L'utilisateur débute sur GitHub : lui donner des explications simples et concrètes, adaptées à l'iPad.
 11. Ne jamais demander de mot de passe, de jeton ou de clé.
 
-## Architecture actuelle (voir `AUDIT.md` pour le détail)
+## Architecture actuelle (détail et modèle de données : `docs/ARCHITECTURE.md`)
 
-- `index.html` contient toute l'application (environ 610 Ko, 9 000 lignes). Le CSS est aux lignes 7–380, le HTML juste après, et le JS de la ligne 467 à la fin, dans une seule fonction anonyme. Les numéros de ligne bougent à chaque modification : chercher les fonctions par leur nom.
+- Depuis la phase 1b, `index.html` ne contient plus que la page (styles et structure). Le code est réparti en **modules JavaScript natifs** dans `js/` (un fichier par moteur), chargés par `js/main.js`.
+  - Un module ne réaffecte jamais une variable importée : il passe par `setP`, `setGEO`, `setRC` ou `setDIMHIT`.
+  - Ce qui sert à plusieurs modules dès le chargement va dans `js/noyau.js`.
+  - Événements entre modules : `js/evenements.js` (`EV.PLAN_CHANGE`, `EV.PLAN_OUVERT`).
+  - `package.json` (`"type": "module"`) permet d'importer les modules sans écran dans Node.
 - Pas de bibliothèque externe ni de compilation. 3D en WebGL 2 écrit à la main, PDF généré par un module intégré.
 - Modèle de données : un plan est un objet JSON `P` (`levels, nodes, walls, openings, items, elec, rooms, dims, texts, circuits, rcds, links, ducts, install`).
   - Unités : centimètres, axe Y vers le bas. Chaque objet a un `id` unique et un niveau `lv`.
@@ -40,8 +44,9 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
   - Format des plans : `PLAN_VERSION` + `MIGRATIONS[n]` (fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
-- `sw.js` : Service Worker « réseau d'abord » (cache `calque-v5`).
-  - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier.
+- `sw.js` : Service Worker « réseau d'abord » (cache `calque-v6`). Tous les fichiers de `js/` sont dans `CORE`.
+  - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier (un test le vérifie).
+  - Avis « nouvelle version disponible » : `js/miseajour.js`.
 
 - Rendu 2D (depuis la phase 1c) :
   - `drawScene` ne dessine à l'écran que les objets de la zone visible (`VIEW`, marge de 160 px). Les exports PDF/PNG dessinent toujours tout.
@@ -52,7 +57,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 
 ## Architecture cible
 
-- Moteurs indépendants, sans outil de compilation : modules JavaScript natifs (`<script type="module">`), compatibles Safari iPadOS et GitHub Pages.
+- Moteurs indépendants, sans outil de compilation : modules JavaScript natifs (`<script type="module">`), compatibles Safari iPadOS et GitHub Pages. **En place depuis la phase 1b.**
 - Le moteur de calcul électrique et le moteur de règles sont du **JavaScript pur, sans accès au DOM**, testables avec Node (`node --test`).
 - Le découpage est **progressif** : l'application doit fonctionner après chaque étape.
 

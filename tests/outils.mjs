@@ -74,7 +74,7 @@ export function bigPlan(n = 5, id = 'pBIG') {
   const P = { v: 1, id, name: 'Gros plan de test', levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }],
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
     circuits: [{ id: 'c1', kind: 'prises', name: 'Prises', cal: 16, sec: 1.5, rcd: 'r1', dda: false, ctrl: null }],
-    rcds: [{ id: 'r1', type: 'AC', sens: 30, cal: 40 }], links: [], ducts: [], install: { kva: 9, parafoudre: false, row: 13 } };
+    rcds: [{ id: 'r1', type: 'AC', cal: 40 }], links: [], ducts: [], install: { kva: 9, parafoudre: false, row: 13 } };
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
     const k = `_${i}_${j}`, x = i * 900, y = j * 800;
     const N = (nm, px, py) => { P.nodes.push({ id: nm + k, lv: 'L0', x: x + px, y: y + py }); return nm + k; };
