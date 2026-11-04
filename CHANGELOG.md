@@ -1,7 +1,7 @@
 # CHANGELOG — historique des modifications
 
-## 2026-11-04 — Phase 3 : on s'en tient au guide Legrand fourni
-- Décision de l’utilisateur : les tableaux absents du guide « Points clés » (Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes, simultanéité) ne seront pas demandés.
+## 2026-11-04 — Phase 3 : tableaux Legrand manquants reportés en phase 8
+- Décision de l’utilisateur : les tableaux absents du guide « Points clés » (Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes, simultanéité) sont reportés à la toute fin (phase 8), car les documents sont payants.
 - Interface : « extrait à fournir » remplacé par « non couvert par l’extrait Legrand fourni ». Les contrôles concernés restent « vérification nécessaire » (aucune valeur inventée).
 
 ## 2026-11-04 — Phase 3, étape 4 : tableaux Legrand et fichiers de passage entre sessions

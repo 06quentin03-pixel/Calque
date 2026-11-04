@@ -53,7 +53,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 3 : onglet « Bilan » du tableau (bilan de puissance, coefficient ks, tableau des circuits, équilibrage des phases avec répartition proposée, liste des tableaux Legrand attendus). 1 test de plus dans `tests/fiche.test.mjs`. Tests : **57/57 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 ; correction du débordement horizontal de la barre d'onglets sur téléphone.
 - ✅ Étape 4 : extrait Legrand « Points clés » (révision 23 août 2024) reçu ; 2 tableaux recopiés (sections/calibres par circuit et chauffage ; différentiels) et contrôles ajoutés ; sèche-linge et pompe à chaleur en type A. Fichiers `PROJECT_STATE.md`, `TECHNICAL_DECISIONS.md`, `NEXT_SESSION.md`. Tests : **59/59 réussis**.
-- ✖ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : **abandonnés par l'utilisateur** le 4 novembre 2026 (on s'en tient au guide fourni). Les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire » ; textes « à fournir » retirés de l'interface.
+- ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : **reportés en phase 8** par l'utilisateur le 4 novembre 2026 (documents payants). Les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire » ; textes « à fournir » retirés de l'interface.
 
 ## Tâche en cours
 - Aucune. Phase 3 terminée et fusionnée dans `main` (demande n°2, fusion demandée explicitement par l'utilisateur le 4 novembre 2026). Essais iPad à faire : liste dans `NEXT_SESSION.md`.

@@ -1,7 +1,7 @@
 # ROADMAP — évolution de Calque
 
 Ordre logique de développement. Chaque phase doit être validée (tests et absence de régression) avant la suivante.
-Légende : ⬜ à faire · 🟨 en cours · ✅ terminé · ⏸ en attente d'une décision ou de données de l'utilisateur · ✖ abandonné par l'utilisateur
+Légende : ⬜ à faire · 🟨 en cours · ✅ terminé · ⏸ en attente d'une décision ou de données de l'utilisateur
 
 ## Phase 0 — Audit ✅
 - ✅ Lecture du code, tests automatisés, état des lieux dans `AUDIT.md`.
@@ -50,7 +50,7 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Fiche de calcul d'un circuit depuis le plan et depuis le tableau : hypothèses, formules, données utilisées et manquantes, alertes, contrôles à 3 statuts (`js/fiche.js`, format v5, 3 tests dans `tests/fiche.test.mjs`).
 - ✅ Bilan de puissance et équilibrage des phases dans l'onglet Tableau (onglet « Bilan »).
 - ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
-- ✖ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : abandonnés par l'utilisateur (4 novembre 2026). Les contrôles concernés restent « vérification nécessaire ».
+- ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : **reportés en phase 8** (documents payants). Les contrôles concernés restent « vérification nécessaire » d'ici là.
 
 ## Phase 4 — Cheminements et métrés
 Dépend de : 3.
@@ -77,7 +77,8 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 
 ## Phase 8 — Validation finale
 - ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.
+- ⬜ Tableaux NF C 15-100 manquants (extraits Legrand payants, à fournir par l'utilisateur) : courants admissibles Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage des conduits. Les recopier dans `js/normes.js` (avec tests), puis activer In ≤ Iz, la limite de chute de tension et le remplissage.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
-- Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; on s'en tient à ce guide (décision de l'utilisateur).
+- Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).
