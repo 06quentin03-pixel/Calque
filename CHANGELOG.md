@@ -1,5 +1,18 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 2, étape 4 : fond de plan (image ou PDF)
+- **Importer un fond de plan** (menu … ou inspecteur du niveau) : photo, image (JPEG, PNG, HEIC sur iPad) ou PDF, placé sous le dessin du niveau courant, à 50 % de transparence.
+- **Mise à l’échelle par 2 points** : touchez deux points d’une longueur connue (une cote, un mur), saisissez la longueur réelle (« 350 » ou « 3,50 m »). Le premier point reste en place.
+- **PDF à l’échelle connue** : boutons 1:20, 1:50, 1:100, 1:200, 1:500 (si le PDF n’a été ni agrandi ni réduit).
+- Réglages : **opacité** (curseur 10 à 100 %), déplacer (glisser au doigt ou au Pencil), tourner d’un quart de tour, masquer, remplacer, retirer (Annuler le rend).
+- Le fond aide à dessiner : il n’apparaît **pas** dans les exports PDF et image. Il est enregistré dans le plan (fichier envoyé et sauvegarde complète compris).
+- PDF : la première page est lue par Safari sur iPad. Un navigateur qui ne sait pas lire le PDF affiche une explication et ne modifie rien.
+- Image réduite si besoin (côté le plus long : 4096 pixels), enregistrée en JPEG.
+- **Format des plans v4** : `fonds[]` (réglages) et `fondImg{}` (images, à part pour que l’annulation ne recopie pas l’image à chaque réglage). Migration v3 → v4. Contrôle d’intégrité : « fond de plan sans image ».
+- Points d’extension `EXT` (`noyau.js`) pour ajouter un outil, un bandeau d’aide ou un dessin sans modifier les moteurs.
+- Service Worker : cache `calque-v10`.
+- Ajout de `tests/fond.test.mjs` (4 tests).
+
 ## 2026-11-04 — Phase 2, étape 3 : composants personnalisés
 - Nouveau domaine **Mes composants** dans la bibliothèque, avec le bouton « + Nouveau composant ».
 - Un composant reprend le dessin d’un meuble ou d’un symbole existant, avec **vos** valeurs : nom, dimensions (meuble), hauteur de pose et **marquage** affiché sur le plan (symbole, 8 caractères), rangement, désignation technique, référence fabricant, fabricant, fiabilité et source (facultatifs).

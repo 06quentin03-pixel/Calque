@@ -32,10 +32,12 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 2 : bibliothèque technique générique, 110 articles, références de l'utilisateur, badge de fiabilité, format des plans v2 avec migration. 5 tests dans `tests/technique.test.mjs`. Tests : **28/28 réussis**.
   - Limite connue : les références saisies restent sur l'appareil ; un plan envoyé à quelqu'un d'autre garde le choix de l'article, mais pas votre référence.
 - ✅ Étape 3 : composants personnalisés (`js/composants.js`), format des plans v3 avec migration. 4 tests dans `tests/composants.test.mjs`. Tests : **32/32 réussis**.
-- ⬜ Étape 4 : fond de plan (image ou PDF).
+- ✅ Étape 4 : fond de plan (image ou PDF), format des plans v4 avec migration. 4 tests dans `tests/fond.test.mjs`. Tests : **36/36 réussis**.
+  - Mesure (pire cas, photo de 10,8 Mo) : un réglage enregistré en 14 ms, dessin en 1,5 ms ; l'annulation ne recopie pas l'image.
+  - Non vérifiable ici : lecture d'un PDF par Safari sur iPad (Chromium ne lit pas les PDF comme images ; le message d'explication est testé).
 - ⏸ Étape 5 : import des catalogues fabricants (préparation seulement, en attente des fichiers).
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
 ## Tâche en cours
-- Phase 2, étape 4 (fond de plan).
+- Phase 2, étape 5 (préparation de l'import des catalogues fabricants).

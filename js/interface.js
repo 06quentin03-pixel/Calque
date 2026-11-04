@@ -1,6 +1,6 @@
 /* Calque — module « interface » : interface : inspecteur, panneaux, niveaux, fenêtres.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, C, DEG, IDX, NF1, P, S, clamp, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
+import { $, $$, C, DEG, EXT, IDX, NF1, P, S, clamp, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
   levelOf, levelsSorted, nodeOf, saveSettings, setGEO, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
   vnorm, vsub } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
@@ -20,6 +20,7 @@ import { newPlan, openProjects, openSample, openVersions } from './stockage.js';
 import { exportAll, exportJSON, openExport } from './export.js';
 import { f3Def, itemHeight3 } from './vue3d.js';
 import { compSection, materielSection, openTechLib } from './biblioui.js';
+import { fondSection, pickFond } from './fond.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -545,6 +546,7 @@ function inspLevel() {
       row(numField('Hauteur sous plafond', lvl.h, 'cm', (v) => { lvl.h = v; commit(); }, { id: 'f-lvh', min: 100, max: 1000 }),
         numField('Épaisseur plancher', lvl.slab, 'cm', (v) => { lvl.slab = v; commit(); }, { id: 'f-lvs', min: 0, max: 100 })),
       numField('Altitude du sol fini', lvl.elev, 'cm', (v) => { lvl.elev = v; commit(); }, { id: 'f-lve', min: -5000, max: 10000 })),
+    fondSection(),
   ];
   if (empty) parts.push(sec('Pour commencer', h('div', { class: 'empty-help' },
     h('span', null, 'Avec l’outil ', h('b', null, 'Pièce'), ', faites glisser un rectangle : quatre murs sont créés d’un coup.'),
@@ -637,7 +639,7 @@ let hintKey = '';
 function updateHint() {
   const el = $('#hint');
   const t = ui.tool;
-  const key = [t, ui.wallKind, ui.doorKind, !!ui.chain, ui.chain && ui.chain.stack.length > 0, ui.place && ui.place.def.t, S.thMur, S.thCloison, ui.hl, ui.linkSrc, ui.hl && circById(ui.hl) && circById(ui.hl).name, ui.duct ? ui.duct.pts.length + ui.duct.sys : '', S.ductSys, ui.ductDia].join('|');
+  const key = [t, ui.wallKind, ui.doorKind, !!ui.chain, ui.chain && ui.chain.stack.length > 0, ui.place && ui.place.def.t, S.thMur, S.thCloison, ui.hl, ui.linkSrc, ui.hl && circById(ui.hl) && circById(ui.hl).name, ui.duct ? ui.duct.pts.length + ui.duct.sys : '', S.ductSys, ui.ductDia, ...EXT.hintKey.map((f) => f())].join('|');
   if (key === hintKey && !el.hidden === (t !== 'select')) return;
   hintKey = key;
   if (t === 'select') {
@@ -721,7 +723,7 @@ function updateHint() {
     kids = [h('b', null, 'Cote'), h('span', { class: 'msg' }, 'Faites glisser d’un point à un autre. Les angles des murs aimantent.'), done];
   } else if (t === 'text') {
     kids = [h('b', null, 'Texte'), h('span', { class: 'msg' }, 'Touchez le plan pour ajouter un texte.'), btn('Annuler', () => setTool('select'), 'sm')];
-  }
+  } else if (EXT.hint[t]) kids = EXT.hint[t]();
   el.replaceChildren(...kids.filter(Boolean));
 }
 
@@ -884,6 +886,7 @@ function renderMenuPop() {
     menuItem('pen', 'Renommer le plan', renamePlan),
     h('hr'),
     menuItem('book', 'Bibliothèque technique', openTechLib),
+    menuItem('img', 'Importer un fond de plan (image ou PDF)', pickFond),
     h('hr'),
     menuItem('img', 'Exporter en image ou en PDF', openExport),
     menuItem('up', 'Envoyer le fichier du plan', exportJSON),

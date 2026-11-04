@@ -1,6 +1,6 @@
 /* Calque — module « rendu2d » : rendu 2D du plan (canvas).
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { C, DEG, IDX, P, S, bboxOf, clamp, fmtArea, fmtLen, inPoly, labelPoint, levelAbove, levelBelow, ui, vadd,
+import { C, DEG, EXT, IDX, P, S, bboxOf, clamp, fmtArea, fmtLen, inPoly, labelPoint, levelAbove, levelBelow, ui, vadd,
   vdist, vlen, vmid, vmul, vnorm, vperp, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToWorld } from './mutations.js';
@@ -79,6 +79,7 @@ function drawSceneIn(lv, opts) {
   }
   if (S.layers.grid && !opts.export) drawGrid();
   setWorld();
+  for (const f of EXT.under) { c.save(); try { f(c, lv, opts); } finally { c.restore(); } }
   if (below && S.layers.ghost && !opts.export) drawGhost(below.id);
   // trémies des escaliers du niveau inférieur
   if (below) for (const it of P.items) if (it.lv === below.id && isStair(it.type) && itemInView(it)) drawItem(c, it, K, 'upper');

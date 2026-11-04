@@ -45,6 +45,14 @@ const MIGRATIONS = {
     }
     return p;
   },
+  /* v3 → v4 (phase 2) : fond de plan (image ou PDF) par niveau. Réglages dans `fonds`, images dans `fondImg`
+     (séparées pour que l'annulation ne recopie pas l'image à chaque réglage). Les plans v3 n'en ont pas. */
+  3(p) {
+    if (!Array.isArray(p.fonds)) p.fonds = [];
+    if (!p.fondImg || typeof p.fondImg !== 'object' || Array.isArray(p.fondImg)) p.fondImg = {};
+    p.fonds = p.fonds.filter((f) => f && typeof f === 'object' && typeof f.img === 'string');
+    return p;
+  },
 };
 function migratePlan(p) {
   let v = isNum(p.v) && p.v >= 1 ? Math.floor(p.v) : 1;
@@ -65,6 +73,7 @@ function planProblems(p) {
   n((p.openings || []).some((o) => !walls.has(o.wall)), 'ouverture sur un mur manquant');
   n((p.elec || []).some((e) => e.cid && !circs.has(e.cid)), 'symbole relié à un circuit manquant');
   n((p.circuits || []).some((c) => c.rcd && !rcds.has(c.rcd)), 'circuit relié à un différentiel manquant');
+  n((p.fonds || []).some((f) => !(p.fondImg || {})[f.img]), 'fond de plan sans image');
   n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
   return out;
 }

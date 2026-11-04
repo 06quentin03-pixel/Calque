@@ -23,6 +23,8 @@ Mise à jour : phase 1b (4 novembre 2026).
 | `bibliotheque.js` | Rangement de la bibliothèque : domaines, sous-catégories, recherche | oui |
 | `technique.js` | Bibliothèque technique générique (articles, fiabilité, recherche, fusion des références) | oui |
 | `composants.js` | Composants personnalisés : contrôle, fusion, pose, copie dans le plan | oui |
+| `fondcalc.js` | Fond de plan : échelle par 2 points, échelle PDF, rotation, lecture des longueurs | oui |
+| `fond.js` | Fond de plan : import image/PDF, dessin sous les murs, outils « échelle » et « déplacer », réglages | non |
 | `mabiblio.js` | Ce que l'utilisateur ajoute aux bibliothèques, enregistré sur l'appareil (IndexedDB `meta`/`biblio`) | non |
 | `biblioui.js` | Fenêtre « Bibliothèque technique », saisie des références, section « Matériel » de l'inspecteur | non |
 | `evenements.js` | Signaux entre modules (« le plan a changé ») | oui |
@@ -52,6 +54,7 @@ Les futurs moteurs (calculs électriques, règles NF C 15-100) seront écrits ai
 4. **Rendu 2D** : tout changement du plan appelle `requestRender()` sans argument. `requestRender(true)` est réservé aux changements de la seule couche du dessus (curseur, aperçu).
 5. **Format des plans** : toute évolution ajoute une fonction `MIGRATIONS[n]` (dans `stockage.js`), incrémente `PLAN_VERSION` et ajoute un test.
 
+7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus).
 6. **Domaine de bibliothèque ajouté par un module** : `LIB_EXTRA` (dans `bibliotheque.js`, pour être disponible dès le chargement).
 
 ## Événements (`evenements.js`)
@@ -75,7 +78,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 3) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 4) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -91,6 +94,8 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
 | `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]` |
 | `comps[]` | Copies des composants personnalisés utilisés par le plan (v3) : `id`, `kind` (`furn`/`elec`), `n`, `base` (modèle), `rang`, `w`, `d` ou `h`, `mark`, `tech` |
+| `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
+| `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret) |
 
 Données dérivées, jamais enregistrées : `IDX` (index par identifiant), `GEO` (géométrie par niveau : polygones des murs, pièces, surfaces).

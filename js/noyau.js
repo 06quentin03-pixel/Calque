@@ -138,19 +138,20 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 3;
+const PLAN_VERSION = 4;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
     levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }],
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
-    circuits: [], rcds: [], links: [], ducts: [], comps: [], install: { kva: 9, parafoudre: false, row: 13 },
+    circuits: [], rcds: [], links: [], ducts: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
   };
 }
 function normalizePlan(p) {
   const b = blankPlan(p && p.name);
   const o = Object.assign(b, p || {});
-  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'comps']) if (!Array.isArray(o[k])) o[k] = [];
+  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'comps', 'fonds']) if (!Array.isArray(o[k])) o[k] = [];
+  if (!o.fondImg || typeof o.fondImg !== 'object' || Array.isArray(o.fondImg)) o.fondImg = {};
   o.ducts = o.ducts.filter((d) => d && Array.isArray(d.pts) && d.pts.length >= 2);
   if (!o.install || typeof o.install !== 'object') o.install = { kva: 9, parafoudre: false, row: 13 };
   if (!o.levels.length) o.levels = blankPlan().levels;
@@ -183,12 +184,16 @@ const ui = {
   pointerType: 'mouse', mouse: null, inspOpen: false, isExample: false, savedAt: 0,
 };
 const C = {};
+/* points d'extension : un module ajoute un outil, un bandeau d'aide ou un dessin sans modifier les moteurs.
+   tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
+   under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
+const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [] };
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setP(v) { P = v; }
 
-export { $, $$, C, DEG, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
+export { $, $$, C, DEG, EXT, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
   fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,
   ui, uid, vadd, vang, vcrs, vdir, vdist, vdot, vlen, vmid, vmul, vnorm, vperp, vsub };

@@ -136,7 +136,7 @@ test('migration v2 → v3 et plan reçu avec un composant absent de la biblioth�
   await seedPlan(ctx, plan);
   await boot(page);
   const m = await page.evaluate((p) => import('./js/stockage.js').then((S) => S.migratePlan(JSON.parse(JSON.stringify(p)))), plan);
-  assert.equal(m.from, 2); assert.equal(m.plan.v, 3);
+  assert.equal(m.from, 2); assert.ok(m.plan.v >= 3);
   assert.deepEqual(m.plan.comps, []);
   assert.ok(!('comp' in m.plan.items[0]), 'valeur invalide retirée');
   assert.equal(m.plan.elec[0].art, 'pc-2pt-16', 'champ de la v2 conservé');

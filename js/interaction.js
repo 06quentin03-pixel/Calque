@@ -1,6 +1,6 @@
 /* Calque — module « interaction » : interaction : vue, sélection, outils, aimantation, Apple Pencil.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, C, DEG, IDX, NF0, P, S, bboxOf, clamp, fmtArea, fmtLen, fmtLenU, inPoly, levelOf, levelsSorted, lineX,
+import { $, C, DEG, EXT, IDX, NF0, P, S, bboxOf, clamp, fmtArea, fmtLen, fmtLenU, inPoly, levelOf, levelsSorted, lineX,
   nodeOf, projSeg, saveSettings, setGEO, setP, snapTo, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
   vnorm, vperp, vsub } from './noyau.js';
 import { geo, roomOfLabel, syncRooms } from './geometrie.js';
@@ -413,7 +413,7 @@ cv.addEventListener('pointerdown', (e) => {
   // mode Apple Pencil : avec un outil de dessin, un doigt déplace le plan au lieu de dessiner
   if (e.pointerType === 'touch' && pencilMode() && ui.tool !== 'select') { drag = panDrag(sp, null); return; }
   const wp = screenToWorld(sp.x, sp.y);
-  const T = TOOLS[ui.tool] || TOOLS.select;
+  const T = TOOLS[ui.tool] || EXT.tools[ui.tool] || TOOLS.select;
   downState = { sel: ui.sel, insp: ui.inspOpen };
   drag = T.down(wp, sp, e) || null;
   requestRender();
@@ -435,7 +435,7 @@ cv.addEventListener('pointermove', (e) => {
   if (drag && ptrs.has(e.pointerId)) ui.mouse = e.pointerType === 'mouse' ? wp : null;
   else if (!drag) ui.mouse = hovering ? wp : null;
   if (drag) { if (ptrs.has(e.pointerId) && drag.move) { drag.move(wp, sp, e); requestRender(!!drag.overlay); } return; }
-  if (hovering && !ignoreUntilUp) { if (e.pointerType === 'pen') ui.pointerType = 'pen'; const T = TOOLS[ui.tool]; if (T && T.hover) T.hover(wp, sp, e); requestRender(true); }
+  if (hovering && !ignoreUntilUp) { if (e.pointerType === 'pen') ui.pointerType = 'pen'; const T = TOOLS[ui.tool] || EXT.tools[ui.tool]; if (T && T.hover) T.hover(wp, sp, e); requestRender(true); }
 });
 function ptrEnd(e) {
   if (e.pointerId === penDown) penDown = 0;
@@ -947,6 +947,7 @@ function drawOverlay() {
   c.lineJoin = 'round'; c.lineCap = 'round';
   if (ui.hover && ui.tool === 'select' && !drag && !(ui.sel && ui.hover.id === ui.sel.id)) drawSelShape(ui.hover, true);
   if (ui.sel) drawSelShape(ui.sel, false);
+  for (const f of EXT.overlay) { c.save(); try { f(c, px); } finally { c.restore(); } setWorld(); }
   // aperçu d'un mur en cours
   if (ui.tool === 'wall' && ui.cursor) {
     const cur = ui.cursor;
