@@ -31,15 +31,21 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-04 (ph. 3) | cos φ = 1 « estimé » seulement pour le chauffage et le chauffe-eau ; aucune puissance par défaut pour les prises | Charges résistives ; ailleurs, ce serait deviner |
 | 2026-11-04 (ph. 3) | Tableaux absents du guide Legrand « Points clés » reportés en phase 8 ; d'ici là « manquante » et contrôles « vérification nécessaire » | Décision de l'utilisateur (documents payants) ; aucune valeur inventée |
 | 2026-11-04 (ph. 3) | Chute de tension calculée « toute la charge en bout de ligne », circuit seul | Calcul défavorable et simple ; l'amont s'ajoute |
+| 2026-11-04 (ph. 4) | Les cheminements restent des `ducts` (`sys: 'elec'`) enrichis (`kind`, `pose`, `z`, `lw`, `lh`, `cids`), pas un nouvel objet | Partir des conduits existants : dessin, sélection, poignées, 3D et filtres déjà en place |
+| 2026-11-04 (ph. 4) | Gaine existante : type et pose « non précisés » ; verticales « non comptées » tant que la pose manque | Aucune valeur devinée |
+| 2026-11-04 (ph. 4) | Hauteur d'un symbole : sa hauteur de pose ; valeur par défaut de Calque marquée « estimée » ; symbole au plafond = hauteur du niveau | Les verticales doivent être tracées jusqu'à leur source |
+| 2026-11-04 (ph. 4) | Passage entre étages = deux symboles `traversee` jumeaux (`to`), un par niveau | Les gaines s'y raccordent comme à tout symbole ; rien à changer dans la sélection ni dans l'enregistrement |
+| 2026-11-04 (ph. 4) | Copie de sécurité dans l'historique avant toute mise à jour du format à l'ouverture | Règle 7 de CLAUDE.md : migration + copie de sécurité |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v14`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v15`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 
 ## Dépendances entre modules (calcul)
 `noyau` ← `elecdonnees` ← `calcul` ← `normes`
 `calcul` + `electricite` + `interface` ← `fiche` ← (`tableau`, `interface`)
+`noyau` + `mutations` + `symboles` ← `cheminement` ← (`reseaux`, `vue3d`, `stockage`, `calcul`)

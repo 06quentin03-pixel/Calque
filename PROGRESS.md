@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 3 terminée, demande de fusion n°2 fusionnée à la demande de l'utilisateur).
+Dernière mise à jour : 4 novembre 2026 (phase 4 en cours, étape 1 terminée).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -55,8 +55,12 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 4 : extrait Legrand « Points clés » (révision 23 août 2024) reçu ; 2 tableaux recopiés (sections/calibres par circuit et chauffage ; différentiels) et contrôles ajoutés ; sèche-linge et pompe à chaleur en type A. Fichiers `PROJECT_STATE.md`, `TECHNICAL_DECISIONS.md`, `NEXT_SESSION.md`. Tests : **59/59 réussis**.
 - ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : **reportés en phase 8** par l'utilisateur le 4 novembre 2026 (documents payants). Les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire » ; textes « à fournir » retirés de l'interface.
 
+## Phase 4 — cheminements et métrés (en cours)
+- ✅ Étape 1 : cheminements (types ICTA, IRL, goulotte, chemin de câbles ; pose sol / plafond / hauteur ; verticales ; autres circuits ; passages entre étages), module `js/cheminement.js`, format des plans v6 avec migration et copie de sécurité avant mise à jour du format. 3 tests dans `tests/cheminement.test.mjs`. Tests : **62/62 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (pas de débordement ; choix du type en pastilles pour tenir dans l'inspecteur).
+
 ## Tâche en cours
-- Aucune. Phase 3 terminée et fusionnée dans `main` (demande n°2, fusion demandée explicitement par l'utilisateur le 4 novembre 2026). Essais iPad à faire : liste dans `NEXT_SESSION.md`.
+- Phase 4, étape 2 : longueurs (géométrique, de cheminement, à commander) et longueur L de la fiche de calcul.
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.

@@ -13,6 +13,8 @@ import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h
   renderInspector, sec, segCtl, setTool, setWallFace, setWallLength, showPop, toast, toggleRow, updateHint,
   wallSideName } from './interface.js';
 import { v3Refresh } from './vue3d.js';
+import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
+  tailleChemin, typeChemin } from './cheminement.js';
 
 /* ============================================================
    CALQUE — réseaux : filtres d'affichage, conduits (VMC et gaines
@@ -145,7 +147,7 @@ function openFilterPop(anchor) {
 const DUCT_DIAS = { vmc: [80, 125, 160, 200], elec: [16, 20, 25, 32] };
 const VENT_GROUPS = new Set(['vmc_groupe', 'vmc_df']);
 const VENT_DUCT_ONLY = new Set(['vmc', 'vmc_insuff', 'sortie_toit', 'prise_air_neuf', 'plenum']);
-function ductAnchor(e) { const def = ELEC_BY.get(e.type); return def && def.wall ? itemToWorld(e, 0, 0.42 * S_ELEC) : { x: e.x, y: e.y }; }
+const ductAnchor = ancrage; // point de raccordement d'un symbole (règle commune : cheminement.js)
 function ductPts(d) {
   const pts = d.pts.map((p) => ({ x: p.x, y: p.y }));
   if (d.a) { const e = IDX.elec.get(d.a); if (e) pts[0] = ductAnchor(e); }
@@ -231,13 +233,28 @@ function drawDucts(lv, opts) {
         c.strokeStyle = col; c.lineWidth = 1.6 * px; c.stroke();
       }
     } else {
-      ductPath(c, pts); c.strokeStyle = col; c.lineWidth = Math.max(2 * px, ((d.dia || 20) / 10) * 0.7); c.setLineDash([10 * px, 3 * px, 2.5 * px, 3 * px]); c.stroke(); c.setLineDash([]);
+      drawGaine(c, d, pts, col, px);
     }
     c.fillStyle = col;
     if (!d.a || !IDX.elec.get(d.a)) { c.beginPath(); c.arc(pts[0].x, pts[0].y, 3 * px, 0, Math.PI * 2); c.fill(); }
     if (!d.b || !IDX.elec.get(d.b)) { const p = pts[pts.length - 1]; c.beginPath(); c.arc(p.x, p.y, 3 * px, 0, Math.PI * 2); c.fill(); }
     c.restore();
   }
+}
+/* gaine électrique selon son type : ICTA (tirets, comme avant), IRL (trait plein), goulotte (bande), chemin de câbles (échelle) */
+function drawGaine(c, d, pts, col, px) {
+  const k = kindOf(d);
+  if (k === 'goulotte' || k === 'cdc') {
+    const w = Math.max(5 * px, (isNum(d.lw) ? d.lw : 60) / 10);
+    ductPath(c, pts); c.strokeStyle = col; c.lineWidth = w + 1.4 * px; c.stroke();
+    ductPath(c, pts); c.strokeStyle = RC.C.room; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.stroke();
+    if (k === 'cdc') { ductPath(c, pts); c.strokeStyle = col; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.lineCap = 'butt'; c.setLineDash([1.2 * px, 7 * px]); c.stroke(); c.setLineDash([]); c.lineCap = 'round'; }
+    else { ductPath(c, pts); c.strokeStyle = col; c.globalAlpha = 0.18; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.stroke(); c.globalAlpha = 1; }
+    return;
+  }
+  ductPath(c, pts); c.strokeStyle = col; c.lineWidth = Math.max(2 * px, ((d.dia || 20) / 10) * 0.7);
+  if (k !== 'irl') c.setLineDash([10 * px, 3 * px, 2.5 * px, 3 * px]);
+  c.stroke(); c.setLineDash([]);
 }
 /* diamètre écrit le long du plus grand tronçon (repère écran) */
 function drawDuctLabels(lv, opts) {
@@ -254,7 +271,7 @@ function drawDuctLabels(lv, opts) {
     if (ang > Math.PI / 2 + 0.01) ang -= Math.PI; else if (ang < -Math.PI / 2 + 0.01) ang += Math.PI;
     const m = vmid(a, b), n = { x: -Math.sin(ang), y: Math.cos(ang) };
     const off = (d.sys === 'vmc' ? ((d.dia || 125) / 20) * RC.s : 1) + TS(8);
-    const str = 'Ø' + (d.dia || '');
+    const str = d.sys === 'vmc' ? 'Ø' + (d.dia || '') : [typeChemin(d) ? typeChemin(d).court : '', tailleChemin(d)].filter(Boolean).join(' ');
     c.save(); c.translate(m.x - n.x * off + (vdist(a, b) > 160 ? (b.x - a.x) * 0.22 : 0), m.y - n.y * off + (vdist(a, b) > 160 ? (b.y - a.y) * 0.22 : 0)); c.rotate(ang);
     c.fillStyle = ductColor(d, !!opts.export); textHalo(c, str, 0, 0); c.restore();
   }
@@ -407,12 +424,16 @@ function finishDuct() {
     const ends = [d.b, d.a].map((id) => id && IDX.elec.get(id)).filter(Boolean);
     const pick = ends.find((e) => e.cid && !['tableau', 'tab_div', 'derivation', 'gtl'].includes(e.type)) || ends.find((e) => e.cid);
     if (pick) d.cid = pick.cid;
+    /* type et pose : ceux que l'utilisateur a choisis en dernier (rien n'est deviné : sans choix, « non précisé ») */
+    if (S.ductKind && TYPES_CHEMIN[S.ductKind]) d.kind = S.ductKind;
+    if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (d.pose === 'hauteur' && isNum(S.ductZ)) d.z = S.ductZ; else if (d.pose === 'hauteur') delete d.pose; }
   } else d.mat = 'souple';
   d.dia = ui.ductDia || autoDuctDia(d);
   if (ui.ductDia) d.diaSet = 1;
+  if (d.kind && TYPES_CHEMIN[d.kind].forme === 'rect') { delete d.dia; if (isNum(S.ductLw) && isNum(S.ductLh)) { d.lw = S.ductLw; d.lh = S.ductLh; } }
   P.ducts.push(d); IDX.ducts.set(d.id, d);
   commit();
-  toast(`${d.sys === 'vmc' ? 'Conduit Ø' + d.dia : 'Gaine Ø' + d.dia} de ${fmtLenU(ductLen(d))} ajouté${d.sys === 'vmc' ? '' : 'e'}.`);
+  toast(d.sys === 'vmc' ? `Conduit Ø${d.dia} de ${fmtLenU(ductLen(d))} ajouté.` : `${typeChemin(d) ? typeChemin(d).n : 'Gaine'} ${tailleChemin(d)} de ${fmtLenU(ductLen(d))} ajouté${d.kind === 'goulotte' || !d.kind || d.kind === 'icta' ? 'e' : ''}.`);
   updateHint();
   return d;
 }
@@ -618,7 +639,80 @@ function ventSection(e) {
   }
   return sec('Ventilation', ...parts);
 }
+/* inspecteur d'une gaine électrique : type, taille, pose, circuits, longueurs (avec les verticales) */
+function rememberGaine(d) { S.ductKind = d.kind || null; S.ductPose = d.pose || null; S.ductZ = isNum(d.z) ? d.z : null; S.ductLw = isNum(d.lw) ? d.lw : null; S.ductLh = isNum(d.lh) ? d.lh : null; saveSettings(); }
+function inspGaine(d) {
+  const pts = ductPts(d), lg = longueurGaine(P, d, IDX.elec), nums = circNumbers(), t = typeChemin(d);
+  const setKind = (v) => {
+    d.kind = v;
+    if (TYPES_CHEMIN[v].forme === 'rect') { delete d.dia; delete d.diaSet; }
+    else { delete d.lw; delete d.lh; const ds = TYPES_CHEMIN[v].dias; if (!isNum(d.dia) || !ds.includes(d.dia)) d.dia = ds.includes(autoDuctDia(d)) ? autoDuctDia(d) : ds[1]; }
+    rememberGaine(d); commit();
+  };
+  const taille = t && t.forme === 'rect'
+    ? h('div', null, h('div', { class: 'row' },
+      numField('Largeur', d.lw, 'mm', (v) => { d.lw = v; rememberGaine(d); commit(); }, { id: 'f-dlw', min: 5, max: 2000 }),
+      numField('Hauteur', d.lh, 'mm', (v) => { d.lh = v; rememberGaine(d); commit(); }, { id: 'f-dlh', min: 5, max: 2000 })),
+      h('p', { class: 'note' }, isNum(d.lw) && isNum(d.lh) ? 'Dimensions saisies.' : 'Dimensions non indiquées : relevez-les sur le matériel choisi.'))
+    : h('div', null, chipRow(t ? t.dias : DUCT_DIAS.elec, d.dia, (v) => { d.dia = v; d.diaSet = 1; commit(); }, (v) => 'Ø' + v),
+      h('p', { class: 'note' }, 'Gaine ICTA : Ø16 pour du 1,5 mm², Ø20 pour du 2,5 mm², Ø25 pour du 6 mm², Ø32 pour du 10 mm² (habitudes de pose, à vérifier).'));
+  const zr = hauteurParcours(P, d);
+  const pose = sec('Pose',
+    segCtl(Object.keys(POSES).map((k) => ({ v: k, n: POSES[k].court })), d.pose, (v) => { d.pose = v; if (v === 'hauteur' && !isNum(d.z)) d.z = isNum(S.ductZ) ? S.ductZ : 30; if (v !== 'hauteur') delete d.z; rememberGaine(d); commit(); }),
+    d.pose === 'hauteur' ? numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; rememberGaine(d); commit(); }, { id: 'f-dz', min: 0, max: 600 }) : null,
+    h('p', { class: 'note' }, d.pose ? POSES[d.pose].note + (zr != null ? ` Parcours à ${fmtIn(zr)} cm du sol fini.` : '') : 'Pose non précisée : les verticales jusqu’aux appareils ne sont pas comptées.'));
+  /* circuits */
+  const sel = h('select', { class: 'txt', id: 'f-dcirc', 'aria-label': 'Circuit' }, h('option', { value: '' }, 'Aucun circuit'),
+    P.circuits.map((c) => h('option', { value: c.id, selected: c.id === d.cid }, `${nums.get(c.id)} · ${c.name}`)));
+  sel.addEventListener('change', () => {
+    if (sel.value) { d.cid = sel.value; if (!d.diaSet && (!t || t.forme === 'rond')) d.dia = gaineDia(circById(sel.value)); if (d.cids) { d.cids = d.cids.filter((x) => x !== d.cid); if (!d.cids.length) delete d.cids; } } else delete d.cid;
+    commit();
+  });
+  const c = d.cid && circById(d.cid);
+  const autres = P.circuits.filter((x) => x.id !== d.cid);
+  const togAutre = (id) => { const l = new Set(d.cids || []); if (l.has(id)) l.delete(id); else l.add(id); if (l.size) d.cids = [...l]; else delete d.cids; commit(); };
+  const circ = sec('Circuits', sel,
+    c ? h('p', { class: 'note' }, `${c.cal} A · ${String(c.sec).replace('.', ',')} mm² : gaine ICTA Ø${gaineDia(c)} conseillée.`)
+      : h('p', { class: 'note' }, P.circuits.length ? 'Le circuit donne sa couleur à la gaine et permet de la filtrer. Une gaine sans circuit peut servir à tous les circuits.' : 'Générez le tableau pour rattacher la gaine à un circuit.'),
+    d.cid && autres.length ? h('div', null, h('p', { class: 'note' }, 'Autres circuits passant dans ce cheminement :'),
+      h('div', { class: 'chips' }, autres.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(circuitsDe(d).includes(x.id)), onclick: () => togAutre(x.id) }, `${nums.get(x.id)} · ${x.name}`)))) : null);
+  const vtxt = lg.verts.length ? lg.verts.map((v) => fmtLenU(v.h)).join(' + ') : '—';
+  return [
+    inspHead(nomChemin(d), `${fmtLenU(lg.total)}${tailleChemin(d) ? ' · ' + tailleChemin(d) : ''}`),
+    body(
+      kv([['Départ', ductEndName(d.a)], ['Arrivée', ductEndName(d.b)], ['Longueur horizontale', fmtLenU(lg.horiz)], ['Verticales', vtxt], ['Longueur totale', fmtLenU(lg.total)], ['Coudes', String(Math.max(0, pts.length - 2))]]),
+      lg.inconnu ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${lg.inconnu} verticale${lg.inconnu > 1 ? 's' : ''} non comptée${lg.inconnu > 1 ? 's' : ''} : ${d.pose ? 'hauteur du symbole inconnue' : 'indiquez la pose de la gaine'}.`) : null,
+      sec('Type de cheminement', h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((k) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.kind === k), onclick: () => setKind(k) }, TYPES_CHEMIN[k].court))),
+        h('p', { class: 'note' }, t ? t.note : 'Type non précisé : choisissez-le (il sera repris pour les gaines suivantes).')),
+      sec(t && t.forme === 'rect' ? 'Dimensions' : 'Diamètre', taille),
+      pose, circ,
+      h('p', { class: 'note' }, 'Faites glisser un point rond pour déplacer un coude, ou un petit point au milieu d’un tronçon pour en ajouter un. Double-touchez un coude pour le retirer.'),
+      sec(null, btns(btn('Inverser le sens', () => reverseDuct(d), '', 'swap'), btn('Supprimer', deleteSel, 'danger', 'del'))),
+    ),
+  ];
+}
+/* passage entre étages : niveau relié (le jumeau est créé au même endroit sur l'autre niveau) */
+function traverseeSection(e) {
+  if (e.type !== TRAVERSEE) return null;
+  const tw = jumelle(P, e, IDX.elec);
+  const others = P.levels.filter((l) => l.id !== e.lv);
+  if (!others.length) return sec('Passage entre étages', h('p', { class: 'note' }, 'Ajoutez un autre niveau pour relier ce passage.'));
+  const relier = (lv) => {
+    if (tw) { tw.to = null; delete tw.to; }
+    let t = P.elec.find((x) => x.type === TRAVERSEE && x.lv === lv && !x.to && Math.hypot(x.x - e.x, x.y - e.y) < 30);
+    if (!t) { t = { id: uid('e'), lv, type: TRAVERSEE, x: e.x, y: e.y, rot: 0, h: null }; P.elec.push(t); IDX.elec.set(t.id, t); }
+    t.to = e.id; e.to = t.id; commit();
+    toast(`Passage relié au niveau « ${(P.levels.find((l) => l.id === lv) || {}).name} ».`);
+  };
+  const delier = () => { if (tw) delete tw.to; delete e.to; commit(); };
+  return sec('Passage entre étages',
+    segCtl(others.map((l) => ({ v: l.id, n: l.name })), tw ? tw.lv : null, relier),
+    tw ? h('p', { class: 'note' }, `Relié à « ${(P.levels.find((l) => l.id === tw.lv) || {}).name} ». Les gaines raccordées des deux côtés forment un seul cheminement ; la hauteur entre les deux niveaux est comptée.${Math.hypot(tw.x - e.x, tw.y - e.y) > 5 ? ' Attention : les deux symboles ne sont pas l’un au-dessus de l’autre.' : ''}`)
+      : h('p', { class: 'note', style: e.to ? 'color:var(--bad)' : null }, e.to ? 'Le passage relié n’existe plus : choisissez à nouveau le niveau.' : 'Choisissez le niveau à relier : un passage est créé au même endroit sur ce niveau.'),
+    tw ? btns(btn('Voir l’autre côté', () => goToRef({ t: 'elec', id: tw.id }), 'sm'), btn('Délier', delier, 'sm')) : null);
+}
 function inspDuct(d) {
+  if (d.sys !== 'vmc') return inspGaine(d);
   const vmc = d.sys === 'vmc';
   const pts = ductPts(d), L = ductLen(d), nums = circNumbers();
   let circ = null;
@@ -718,5 +812,5 @@ export { DIMHIT, DUCT_DIAS, FAMS, KITCHEN_Q, PRESETS, VENT_DUCT_ONLY, VENT_GROUP
   ductLen, ductPath, ductPts, ductTap, ductVisible, elecAt, elecRoom, elecVisible, famCount, famOn, filtCirc,
   filterActive, filterSummary, finishDuct, fold, gaineDia, inspDuct, linkVisible, networkSummary, openDimEdit,
   openFilterPop, presetMatch, renderFilterPop, resetFilters, reverseDuct, roomKindName, setDIMHIT, snapDuctPoint,
-  startDuctFrom, syncDucts, updateFilterUI, vchkList, ventCounts, ventGroupSection, ventNeed, ventRooms, ventSection,
+  startDuctFrom, syncDucts, traverseeSection, updateFilterUI, vchkList, ventCounts, ventGroupSection, ventNeed, ventRooms, ventSection,
   vmcChecks, vmcGraph };

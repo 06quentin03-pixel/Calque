@@ -10,6 +10,7 @@ import { ELEC_BY, furnDef, isStair, stairInfo, stairModel } from './symboles.js'
 import { FONT_LABEL, FONT_UI, V, closetLeafHinges, closetPlane } from './rendu2d.js';
 import { LIGHTS, circById, circuitColor, circuitLabel, isDarkTheme, roomAt, roomName } from './electricite.js';
 import { ductLen, ductPts, ductVisible, elecVisible } from './reseaux.js';
+import { hauteurParcours } from './cheminement.js';
 import { OPENING_NAMES, SCR, openingModels, refreshUI, requestRender, wallHeightOf } from './interaction.js';
 import { goToRef, setView } from './tableau.js';
 import { ICON, btn, btns, fmtIn, h, ico, kv, openingSizeText, sec, segCtl, toast } from './interface.js';
@@ -692,7 +693,9 @@ function elec3(G, e, E, Lh, id) {
 function duct3(G, d, E, Lh, id, o) {
   const pts = ductPts(d); if (pts.length < 2) return;
   const r = Math.max(0.8, (d.dia || (d.sys === 'vmc' ? 125 : 20)) / 20);
-  const y = d.sys === 'vmc' || o.route !== 'sol' ? E + Lh - r - 1.5 : E + r + 1;
+  /* gaine dont la pose est précisée : à sa hauteur ; sinon, réglage « par le plafond / par le sol » de la vue 3D */
+  const zr = hauteurParcours(P, d);
+  const y = zr != null ? clamp(E + zr, E + r + 1, E + Lh - r - 1.5) : d.sys === 'vmc' || o.route !== 'sol' ? E + Lh - r - 1.5 : E + r + 1;
   const col = d.sys === 'vmc' ? K3.vmc : (d.cid && hexRGB(circuitColor(d.cid, true) || '#7C63D2')) || K3.gaine;
   const P3 = pts.map((p) => [p.x, y, p.y]);
   const drops = [];

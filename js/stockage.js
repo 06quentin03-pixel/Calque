@@ -9,6 +9,7 @@ import { btn, btns, closeModal, confirmBtn, h, openModal, setTool, toast } from 
 import { exportJSON } from './export.js';
 import { samplePlan } from './demarrage.js';
 import { EV, emit } from './evenements.js';
+import { nettoyerGaine, nettoyerZone } from './cheminement.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -66,6 +67,20 @@ const MIGRATIONS = {
     }
     return p;
   },
+  /* v5 → v6 (phase 4) : cheminements. Une gaine électrique peut porter `kind` (icta, irl, goulotte, cdc), `pose`
+     (sol, plafond, hauteur), `z` (cm), `lw` / `lh` (mm, goulotte et chemin de câbles), `cids` (autres circuits) ;
+     un passage entre étages (`traversee`) désigne son jumeau par `to` ; le plan a des zones interdites `zones[]` ;
+     l'installation, une réserve de câble `reserve` (en %) ; un circuit, le diamètre extérieur du câble `calc.dcab` (mm).
+     Les plans v5 n'en ont pas : RIEN n'est deviné (type et pose restent « non précisés »). Valeurs invalides retirées. */
+  5(p) {
+    for (const d of Array.isArray(p.ducts) ? p.ducts : []) nettoyerGaine(d);
+    for (const e of Array.isArray(p.elec) ? p.elec : []) if (e && 'to' in e && (e.type !== 'traversee' || typeof e.to !== 'string' || !e.to)) delete e.to;
+    p.zones = (Array.isArray(p.zones) ? p.zones : []).map(nettoyerZone).filter(Boolean);
+    for (const c of Array.isArray(p.circuits) ? p.circuits : []) if (c && 'calc' in c) { const k = cleanCalc(c.calc); if (k) c.calc = k; else delete c.calc; }
+    const i = p.install;
+    if (i && typeof i === 'object' && 'reserve' in i) { const d = cleanDonnee(i.reserve, (v) => v >= 0 && v <= 100); if (d) i.reserve = d; else delete i.reserve; }
+    return p;
+  },
 };
 /* donnée de calcul enregistrée : { v (nombre), st ('verifiee' exige src, 'saisie', 'estimee'), src } */
 function cleanDonnee(d, ok) {
@@ -79,7 +94,8 @@ function cleanCalc(k) {
   if (!k || typeof k !== 'object' || Array.isArray(k)) return null;
   const o = {};
   const p = cleanDonnee(k.p, (v) => v > 0), cos = cleanDonnee(k.cos, (v) => v > 0 && v <= 1), len = cleanDonnee(k.len, (v) => v > 0);
-  if (p) o.p = p; if (cos) o.cos = cos; if (len) o.len = len;
+  const dcab = cleanDonnee(k.dcab, (v) => v > 0 && v <= 100);
+  if (p) o.p = p; if (cos) o.cos = cos; if (len) o.len = len; if (dcab) o.dcab = dcab;
   if (k.mat === 'cu' || k.mat === 'al') o.mat = k.mat;
   if (['L1', 'L2', 'L3', 'tri'].includes(k.phase)) o.phase = k.phase;
   return Object.keys(o).length ? o : null;
@@ -104,7 +120,7 @@ function planProblems(p) {
   n((p.elec || []).some((e) => e.cid && !circs.has(e.cid)), 'symbole relié à un circuit manquant');
   n((p.circuits || []).some((c) => c.rcd && !rcds.has(c.rcd)), 'circuit relié à un différentiel manquant');
   n((p.fonds || []).some((f) => !(p.fondImg || {})[f.img]), 'fond de plan sans image');
-  n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
+  n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts', 'zones'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
   return out;
 }
 
@@ -316,7 +332,10 @@ async function askPersist() {
 }
 function openPlan(plan, id, opts) {
   opts = opts || {};
+  /* copie de sécurité du plan tel qu'il était avant la mise à jour de son format (restaurable dans l'historique) */
+  const before = !opts.example && plan && typeof plan === 'object' && !(isNum(plan.v) && plan.v >= PLAN_VERSION) ? JSON.stringify(plan) : null;
   const mig = migratePlan(plan);
+  if (before && id) addVersion(id, plan.name || 'Plan', before, `Copie de sécurité avant mise à jour du format (v${mig.from} → v${PLAN_VERSION})`).catch(() => { });
   setP(normalizePlan(mig.plan)); P.id = id; delete P.savedAt;
   touch(); syncRooms();
   const L = levelsSorted();

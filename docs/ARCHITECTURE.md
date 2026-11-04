@@ -1,6 +1,6 @@
 # Architecture de Calque
 
-Mise à jour : phase 3 (4 novembre 2026).
+Mise à jour : phase 4 (4 novembre 2026).
 
 ## Principe
 
@@ -33,6 +33,7 @@ Mise à jour : phase 3 (4 novembre 2026).
 | `elecdonnees.js` | Données électriques sans écran sorties de `electricite.js` : classement des symboles, types de circuits (`CK`), valeurs du contrôle (`SEC_MAX`…), puissance des symboles avec statut | oui |
 | `normes.js` | Tableaux NF C 15-100 (extraits Legrand, source, édition, page, statut « manquante » ou « vérifiée » ; 2 recopiés), constantes estimées, règles citées | oui |
 | `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts (section/calibre, points, type et calibre des différentiels…), fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
+| `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, nettoyage (migration) | oui |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |
@@ -83,25 +84,26 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 5) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 6) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
 | `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) |
 | `openings[]` | Ouvertures : `id`, `wall`, `t` (position du milieu le long du mur depuis l'angle `a`), `w` (largeur), `kind` (`door`, `window`, `gap`, `closet`), `type`, `side`, `hinge`, `leaves`, `h`, `sill` (allège) |
 | `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif), `comp` (composant personnalisé, v3) |
-| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3) |
+| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6) |
 | `rooms[]` | Étiquettes des pièces : `id`, `lv`, `name`, `x`, `y`, `tint` (couleur). Le contour de la pièce est calculé depuis les murs |
 | `dims[]` | Cotes libres : `id`, `lv`, `ax`, `ay`, `bx`, `by` |
 | `texts[]` | Textes : `id`, `lv`, `x`, `y`, `text`, `size` (`s`, `m`, `l`), `rot` |
-| `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl`, `calc` (données de calcul, facultatif, v5 : `p` puissance en W, `cos`, `len` longueur en m — chacune `{ v, st, src }` ; `mat` `cu`/`al` ; `phase` `L1`/`L2`/`L3`/`tri`) |
+| `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl`, `calc` (données de calcul, facultatif, v5 : `p` puissance en W, `cos`, `len` longueur en m, `dcab` diamètre extérieur du câble en mm (v6) — chacune `{ v, st, src }` ; `mat` `cu`/`al` ; `phase` `L1`/`L2`/`L3`/`tri`) |
 | `rcds[]` | Interrupteurs différentiels : `id`, `type` (`AC`, `A`…), `cal` (calibre en A) |
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
-| `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]` |
+| `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]`. Gaine électrique (v6, facultatifs) : `cid` (circuit principal), `cids[]` (autres circuits), `kind` (`icta`, `irl`, `goulotte`, `cdc`), `pose` (`sol`, `plafond`, `hauteur`), `z` (hauteur du parcours en cm, pose `hauteur`), `lw`, `lh` (largeur et hauteur en mm, goulotte et chemin de câbles) |
+| `zones[]` | Zones interdites aux cheminements (v6) : `id`, `lv`, `pts[]` (contour), `name` |
 | `comps[]` | Copies des composants personnalisés utilisés par le plan (v3) : `id`, `kind` (`furn`/`elec`), `n`, `base` (modèle), `rang`, `w`, `d` ou `h`, `mark`, `tech` |
 | `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
-| `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5) |
+| `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.
 

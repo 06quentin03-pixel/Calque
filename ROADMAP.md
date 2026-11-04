@@ -52,9 +52,9 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
 - ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : **reportés en phase 8** (documents payants). Les contrôles concernés restent « vérification nécessaire » d'ici là.
 
-## Phase 4 — Cheminements et métrés
+## Phase 4 — Cheminements et métrés 🟨
 Dépend de : 3.
-- ⬜ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages.
+- ✅ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages (`js/cheminement.js`, format v6, 3 tests dans `tests/cheminement.test.mjs`).
 - ⬜ Longueurs géométriques, longueurs de cheminement et longueurs à commander, avec réserve.
 - ⬜ Recherche d'itinéraire avec zones interdites et détection des conflits (portes, murs, réseaux).
 - ⬜ Taux de remplissage des conduits, liste de matériel.

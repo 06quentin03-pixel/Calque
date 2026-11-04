@@ -1,5 +1,21 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 4, étape 1 : cheminements, verticales et passages entre étages
+- Nouveau module sans écran **`js/cheminement.js`** : types de cheminement, pose, hauteurs des symboles, verticales, longueur d’une gaine, passages entre étages, nettoyage des données.
+- **Type de cheminement** d’une gaine électrique : gaine ICTA, tube IRL, goulotte, chemin de câbles. Les gaines existantes restent « type non précisé » (rien de deviné) et gardent leur aspect.
+  - Diamètres proposés selon le type (ICTA Ø16 à Ø40, IRL Ø16 à Ø50) ; goulotte et chemin de câbles : largeur × hauteur à saisir (aucune dimension par défaut).
+  - Dessin 2D : ICTA et non précisé en tirets (comme avant), IRL en trait plein, goulotte en bande, chemin de câbles en échelle. Étiquette « IRL Ø20 », « Goulotte 60 × 40 mm ».
+- **Pose** d’une gaine : dans le sol, au plafond ou à une hauteur donnée. Les **verticales** jusqu’à chaque appareil sont comptées (hauteur de pose du symbole) ; sans pose, elles sont signalées « non comptées ».
+  - La 3D place la gaine à sa hauteur de pose (sinon, réglage « par le plafond / par le sol » comme avant).
+- **Autres circuits** passant dans un cheminement (goulotte, chemin de câbles partagés).
+- Le type et la pose choisis en dernier sont repris pour les gaines suivantes ; choix du type aussi dans la barre de l’outil Conduit.
+- **Passage entre étages** : nouveau symbole (Électricité › Tableau & énergie). Dans l’inspecteur, on choisit le niveau à relier : un passage jumeau est créé au même endroit sur ce niveau.
+- **Format des plans v6** (gaines : `kind`, `pose`, `z`, `lw`, `lh`, `cids` ; passage : `to` ; `zones[]` ; `install.reserve` ; `calc.dcab`). Migration v5 → v6 : rien n’est ajouté ni deviné, les valeurs invalides sont retirées.
+- **Copie de sécurité avant mise à jour du format** : à l’ouverture d’un plan d’une version précédente, le plan d’origine est gardé dans l’historique des versions (« Copie de sécurité avant mise à jour du format (v5 → v6) »).
+- Correction : l’étiquette d’une gaine sélectionnée sans diamètre n’affiche plus « Øundefined ».
+- Service Worker : cache `calque-v15`, `js/cheminement.js` ajouté.
+- Ajout de `tests/cheminement.test.mjs` (3 tests) ; `tests/bibliotheque.test.mjs` compte 177 symboles (un ajouté, aucun perdu).
+
 ## 2026-11-04 — Phase 3 : tableaux Legrand manquants reportés en phase 8
 - Décision de l’utilisateur : les tableaux absents du guide « Points clés » (Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes, simultanéité) sont reportés à la toute fin (phase 8), car les documents sont payants.
 - Interface : « extrait à fournir » remplacé par « non couvert par l’extrait Legrand fourni ». Les contrôles concernés restent « vérification nécessaire » (aucune valeur inventée).
