@@ -1,10 +1,11 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026.
+Dernière mise à jour : 4 novembre 2026 (essais iPad de la phase 1 validés).
 
 ## Branche
 - Travail : `claude/layer-modification-prompt-feasibility-nw7oa4`.
-- `main` (version utilisée au quotidien) : **non modifiée**. L'utilisateur fusionne lui-même (procédure expliquée : Pull requests > New pull request > base main ← branche de travail > Merge).
+- `main` (version utilisée au quotidien) : l'utilisateur a fusionné la demande n°1 (phases 0, 1a, 1b, 1c et phase 2). Il fusionne lui-même ; on ne modifie jamais `main` directement.
+- Toute nouvelle fusion passe par une **nouvelle** demande de fusion (la n°1 est terminée).
 
 ## Phases terminées
 - Phase 0 : audit.
@@ -22,10 +23,12 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Export PDF identique à l'octet près (21 993 octets) ; vues 3D et Tableau, catalogues, inspecteur et raccourcis clavier sans erreur.
 - **Mise à jour simulée depuis la version actuelle de `main`** : l'ancien cache `calque-v3` est remplacé par `calque-v6`, le plan dessiné avec l'ancienne version est conservé, l'application marche ensuite hors ligne.
 
-À vérifier sur l'iPad (Safari et Apple Pencil réels indisponibles ici) :
-- Phase 1b : démarrage après la mise à jour, puis hors ligne (mode avion).
-- Phase 1c : dessin au Pencil, déplacement au doigt, paume, survol, fluidité d'un gros plan.
-- Phase 1a : bouton « Envoyer… », reprise des plans existants.
+**Essais sur l'iPad de l'utilisateur : validés le 4 novembre 2026** (« tout marche »), selon la liste fournie :
+- mise à jour et reprise des plans, hors ligne (mode avion) ;
+- Apple Pencil (dessin, doigt qui déplace, paume, survol, réglage), fluidité, annuler/rétablir ;
+- envoi par le menu de partage, sauvegarde complète, historique des versions, exports PDF et image ;
+- barre du haut en paysage et en portrait.
+- Reste à observer lors d'une prochaine mise à jour : le bandeau « nouvelle version disponible ».
 
 ## Phase 2 — dessin et bibliothèque (en cours)
 - ✅ Étape 1 : bibliothèque par domaines et sous-catégories (`js/bibliotheque.js`). 3 tests dans `tests/bibliotheque.test.mjs`. Captures vérifiées en 1180×820 et 820×1180.
