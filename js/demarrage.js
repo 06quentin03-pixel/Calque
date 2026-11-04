@@ -11,6 +11,7 @@ import { closeDimEdit, finishDuct, openFilterPop } from './reseaux.js';
 import { SCR, finishChain, fitView, keys, makeElecFromDef, makeItemFromDef, newOpening, redo, requestRender,
   resizeCanvas, select, undo, zoomAt } from './interaction.js';
 import { renderEvMain, setView } from './tableau.js';
+import { loadUserLib } from './mabiblio.js';
 import { ICON, closeModal, closePops, copyWalls, deleteSel, duplicateSel, h, nudgeSel, renderInspector, renderMenuPop,
   renderViewPop, rotateSel, setTool, showPop, toast, updateHint } from './interface.js';
 import { DB, Store, askPersist, getDownloads, listProjects, loadProject, lsGet, openPlan, openProjects, saveNow,
@@ -183,6 +184,7 @@ async function boot() {
   bindUI();
   /* stockage principal IndexedDB ; reprise des plans de l'ancien stockage (localStorage, laissé intact) */
   if (typeof indexedDB !== 'undefined' && await DB.open()) { await syncFromLocal(); askPersist(); }
+  await loadUserLib(); // références fabricant et composants personnalisés de l'appareil
   let curId = lsGet('calque.cur');
   if (!curId) { const list = await listProjects(); if (list.length) curId = list[0].id; }
   let ok = false;

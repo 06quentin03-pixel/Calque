@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 2, étape 2 : bibliothèque technique générique
+- **Bibliothèque technique** (menu … > Bibliothèque technique) : 110 articles génériques désignés comme sur le chantier : disjoncteurs (courbes B, C, D), interrupteurs et disjoncteurs différentiels, disjoncteurs de branchement, parafoudres, télérupteurs, contacteurs, appareillage, câbles R2V et conducteurs H07V, conduits ICTA/IRL/TPC, boîtes et coffrets.
+- **Aucune référence fabricant n’est fournie par Calque.** Chaque article peut recevoir *votre* référence et le fabricant (facultatif), une source et une remarque.
+- **Badge de fiabilité** sur chaque article : Vérifiée (source obligatoire), Saisie, Estimée. Les articles génériques sont « Saisie ».
+- Recherche de chantier : abréviations (dj, id, ddr, tlr…), « 20a courbe c », « 3G2,5 ».
+- Inspecteur d’un symbole électrique : section **Matériel** pour choisir l’article correspondant (ex. prise → « Prise de courant 2P+T 16 A ») et saisir sa référence.
+- Les références sont enregistrées sur l’appareil (IndexedDB + copie de secours) et incluses dans « Sauvegarder tous mes plans ». À l’import, une référence déjà saisie n’est jamais remplacée.
+- **Format des plans v2** : champ facultatif `art` sur les symboles électriques. Migration v1 → v2 (les anciens plans s’ouvrent sans changement). `PLAN_VERSION` est désormais défini dans `noyau.js`.
+- Service Worker : cache `calque-v8`.
+- Ajout de `tests/technique.test.mjs` (5 tests).
+
 ## 2026-11-04 — Phase 2, étape 1 : bibliothèque par catégories
 - Les outils Mobilier, Escalier et Électricité ouvrent une seule **Bibliothèque** en quatre domaines : Mobilier, Équipements du bâtiment, Électricité, Tertiaire, chacun avec ses sous-catégories.
 - Les 71 meubles et les 176 symboles sont tous conservés et rangés (`js/bibliotheque.js`). « Tertiaire » regroupe des éléments existants (postes de travail, salle de réunion, éclairage, courants faibles, sécurité incendie, contrôle d’accès, locaux techniques) sans nouveau dessin.

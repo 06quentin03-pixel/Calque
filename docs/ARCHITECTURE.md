@@ -21,6 +21,9 @@ Mise à jour : phase 1b (4 novembre 2026).
 | `historique.js` | Annuler / rétablir (blocs partagés entre étapes) | oui |
 | `symboles.js` | Mobilier, escaliers, 176 symboles électriques, catalogues | oui |
 | `bibliotheque.js` | Rangement de la bibliothèque : domaines, sous-catégories, recherche | oui |
+| `technique.js` | Bibliothèque technique générique (articles, fiabilité, recherche, fusion des références) | oui |
+| `mabiblio.js` | Ce que l'utilisateur ajoute aux bibliothèques, enregistré sur l'appareil (IndexedDB `meta`/`biblio`) | non |
+| `biblioui.js` | Fenêtre « Bibliothèque technique », saisie des références, section « Matériel » de l'inspecteur | non |
 | `evenements.js` | Signaux entre modules (« le plan a changé ») | oui |
 | `rendu2d.js` | Dessin du plan en 2D (canvas), zone visible | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 | non (pour l'instant) |
@@ -69,14 +72,14 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION`, actuellement 1) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 2) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
 | `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) |
 | `openings[]` | Ouvertures : `id`, `wall`, `t` (position du milieu le long du mur depuis l'angle `a`), `w` (largeur), `kind` (`door`, `window`, `gap`, `closet`), `type`, `side`, `hinge`, `leaves`, `h`, `sill` (allège) |
 | `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif) |
-| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit) |
+| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2) |
 | `rooms[]` | Étiquettes des pièces : `id`, `lv`, `name`, `x`, `y`, `tint` (couleur). Le contour de la pièce est calculé depuis les murs |
 | `dims[]` | Cotes libres : `id`, `lv`, `ax`, `ay`, `bx`, `by` |
 | `texts[]` | Textes : `id`, `lv`, `x`, `y`, `text`, `size` (`s`, `m`, `l`), `rot` |
@@ -88,6 +91,13 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 Données dérivées, jamais enregistrées : `IDX` (index par identifiant), `GEO` (géométrie par niveau : polygones des murs, pièces, surfaces).
 Elles sont recalculées par `touch()` après chaque modification.
+
+## Bibliothèques de l'utilisateur (hors plan)
+
+Enregistrées sur l'appareil dans IndexedDB (magasin `meta`, clé `biblio`) et dans `localStorage` (`calque.biblio`, secours) :
+`{ refs: { [idArticle]: { ref, fab, fiab, source, note, at } }, comps: [], savedAt }`.
+Elles sont ajoutées à la sauvegarde complète (champ `biblio`) ; l'import ne remplace jamais une donnée existante.
+Fiabilité : `verifiee` (source obligatoire), `saisie`, `estimee`.
 
 ## Hors ligne et mises à jour
 

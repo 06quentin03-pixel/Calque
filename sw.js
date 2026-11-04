@@ -2,9 +2,9 @@
    Réseau d'abord pour les fichiers du site (les mises à jour arrivent dès qu'il y a internet),
    copie locale sinon. Tous les modules de js/ sont mis en cache à l'installation : l'application marche hors ligne.
    À chaque ajout de fichier : l'ajouter à CORE et changer le nom du cache (un test le vérifie). */
-const CACHE = 'calque-v7';
+const CACHE = 'calque-v8';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png',
-  './js/bibliotheque.js', './js/demarrage.js', './js/electricite.js', './js/evenements.js', './js/export.js', './js/geometrie.js', './js/historique.js', './js/interaction.js', './js/interface.js', './js/main.js', './js/miseajour.js', './js/mutations.js', './js/noyau.js', './js/rendu2d.js', './js/reseaux.js', './js/stockage.js', './js/symboles.js', './js/tableau.js', './js/vue3d.js'];
+  './js/biblioui.js', './js/bibliotheque.js', './js/demarrage.js', './js/electricite.js', './js/evenements.js', './js/export.js', './js/geometrie.js', './js/historique.js', './js/interaction.js', './js/interface.js', './js/mabiblio.js', './js/main.js', './js/miseajour.js', './js/mutations.js', './js/noyau.js', './js/rendu2d.js', './js/reseaux.js', './js/stockage.js', './js/symboles.js', './js/tableau.js', './js/technique.js', './js/vue3d.js'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
 });

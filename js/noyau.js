@@ -137,9 +137,11 @@ let P = null;          // plan courant
 const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: new Map(), elec: new Map(), rooms: new Map(), dims: new Map(), texts: new Map(), levels: new Map(), ducts: new Map() };
 let GEO = {};          // géométrie dérivée par niveau
 
+/* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
+const PLAN_VERSION = 2;
 function blankPlan(name) {
   return {
-    v: 1, name: name || 'Nouveau plan',
+    v: PLAN_VERSION, name: name || 'Nouveau plan',
     levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }],
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
     circuits: [], rcds: [], links: [], ducts: [], install: { kva: 9, parafoudre: false, row: 13 },
@@ -186,7 +188,7 @@ function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setP(v) { P = v; }
 
-export { $, $$, C, DEG, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
+export { $, $$, C, DEG, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
   fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,
   ui, uid, vadd, vang, vcrs, vdir, vdist, vdot, vlen, vmid, vmul, vnorm, vperp, vsub };

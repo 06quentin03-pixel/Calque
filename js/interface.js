@@ -19,6 +19,7 @@ import { setView } from './tableau.js';
 import { newPlan, openProjects, openSample, openVersions } from './stockage.js';
 import { exportAll, exportJSON, openExport } from './export.js';
 import { f3Def, itemHeight3 } from './vue3d.js';
+import { materielSection, openTechLib } from './biblioui.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -51,6 +52,7 @@ const ICON = {
   flip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3v18" stroke-dasharray="2 2"/><path d="M9 7L3 17h6zM15 7l6 10h-6z"/></svg>',
   dup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>',
   del: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3M9 7h6M9 10.5h6"/></svg>',
   folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H9l2 2.5h8.5A1.5 1.5 0 0 1 21 9v9.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg>',
   plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
   pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M13.5 6.5l4 4"/></svg>',
@@ -417,6 +419,7 @@ function inspElec(e) {
       h('p', { class: 'note' }, def.desc),
       sec('Symbole', sel),
       circuitSection(e),
+      materielSection(e),
       ventSection(e),
       CMDS.has(e.type) ? linksSection(e) : null,
       sec('Pose',
@@ -874,6 +877,8 @@ function renderMenuPop() {
     menuItem('folder', 'Mes plans', openProjects),
     menuItem('plus', 'Nouveau plan', newPlan),
     menuItem('pen', 'Renommer le plan', renamePlan),
+    h('hr'),
+    menuItem('book', 'Bibliothèque technique', openTechLib),
     h('hr'),
     menuItem('img', 'Exporter en image ou en PDF', openExport),
     menuItem('up', 'Envoyer le fichier du plan', exportJSON),

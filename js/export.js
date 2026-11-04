@@ -11,6 +11,7 @@ import { btn, btns, closeModal, h, openModal, sec, segCtl, toast } from './inter
 import { LIGHT, addVersion, getDownloads, listProjects, loadProject, lsSet, migratePlan, notifySaveFail, openPlan,
   openProjects, saveBlobLocal, saveNow, scheduleSave, slug, writePlanLocal } from './stockage.js';
 import { photo3D } from './vue3d.js';
+import { exportUserLib, importUserLib } from './mabiblio.js';
 
 /* ============================================================
    CALQUE — export du plan : image PNG (copier, partager) et PDF
@@ -712,7 +713,8 @@ async function exportAll() {
   }
   if (!plans.length) { toast('Aucun plan enregistré à sauvegarder.'); return; }
   const d = new Date(), pad = (n) => String(n).padStart(2, '0');
-  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans });
+  /* « biblio » : références fabricant et composants personnalisés de l'appareil (ajouté en phase 2 ; ignoré par les anciennes versions) */
+  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib() });
   deliverFile('Sauvegarder tous mes plans', data, `calque-sauvegarde-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.calque.json`,
     `${plans.length} plan${plans.length > 1 ? 's' : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`);
 }
@@ -738,6 +740,10 @@ async function importBackup(o) {
   }
   if (P) lsSet('calque.cur', P.id);
   const parts = [];
+  const lib = o.biblio ? await importUserLib(o.biblio) : null;
+  if (lib && lib.refs.added) parts.push(`${lib.refs.added} référence${lib.refs.added > 1 ? 's' : ''} fabricant ajoutée${lib.refs.added > 1 ? 's' : ''}`);
+  if (lib && lib.refs.kept) parts.push(`${lib.refs.kept} référence${lib.refs.kept > 1 ? 's' : ''} différente${lib.refs.kept > 1 ? 's' : ''} ignorée${lib.refs.kept > 1 ? 's' : ''} (la vôtre est gardée)`);
+  if (lib && !lib.ok) parts.push('bibliothèque non enregistrée (stockage indisponible)');
   if (added) parts.push(`${added} plan${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`);
   if (copies) parts.push(`${copies} en copie (un plan du même nom existait déjà et n’a pas été modifié)`);
   if (same) parts.push(`${same} déjà à jour`);

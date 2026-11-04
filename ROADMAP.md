@@ -37,7 +37,7 @@ Dépend de : phase 0.
 ## Phase 2 — Dessin et bibliothèque 🟨
 Dépend de : 1a, 1b.
 - ✅ Bibliothèque organisée par catégories et sous-catégories (mobilier, équipements du bâtiment, électricité, tertiaire) : `js/bibliotheque.js`, 247 éléments rangés, rien supprimé (3 tests dans `tests/bibliotheque.test.mjs`).
-- ⬜ Bibliothèque technique générique, lisible sur chantier (« Disjoncteur 20 A courbe C »…), avec un champ référence fabricant optionnel et un badge de fiabilité.
+- ✅ Bibliothèque technique générique, lisible sur chantier (« Disjoncteur 1P+N 20 A courbe C »…), avec un champ référence fabricant optionnel et un badge de fiabilité : 110 articles sans aucune référence inventée (`js/technique.js`), références de l’utilisateur enregistrées sur l’appareil (`js/mabiblio.js`), format des plans v2 (5 tests dans `tests/technique.test.mjs`).
 - ⬜ Composants personnalisés.
 - ⬜ Import de catalogues fabricants (CSV/Excel, FAB-DIS) ⏸ (fichiers à fournir par l'utilisateur).
 - ⬜ Import de plans (image ou PDF en fond de calque).

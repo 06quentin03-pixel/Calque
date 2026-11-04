@@ -142,6 +142,21 @@ button { cursor: pointer; }
 .pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
 .pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
 .pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+/* bibliothèque technique : désignations lisibles sur chantier, badge de fiabilité */
+.badge { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 12px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
+.badge.b-verifiee { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }
+.badge.b-saisie { color: var(--elec); background: color-mix(in srgb, var(--elec) 11%, transparent); }
+.badge.b-estimee { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); border-style: dashed; border-color: var(--warn); }
+.art-list { display: flex; flex-direction: column; gap: 6px; }
+.art-li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 10px; background: var(--c-room); min-height: 44px; }
+.art-li b { display: block; font-size: 15px; line-height: 1.25; }
+.art-li small { display: block; color: var(--ink-3); font-size: 12px; margin-top: 2px; overflow-wrap: anywhere; }
+.art-li .btn.sm { height: 36px; padding: 0 12px; }
+.art-mini { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px; }
+.art-mini-l { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.art-mini-l small { color: var(--ink-3); font-size: 12px; overflow-wrap: anywhere; }
+.art-mini .btn.sm { height: 36px; }
+.fiab-legend { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
 .kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 13px; }
 .kv dt { color: var(--ink-2); }
 .kv dd { margin: 0; font-family: var(--f-num); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }

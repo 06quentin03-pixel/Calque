@@ -1,6 +1,6 @@
 /* Calque — module « stockage » : enregistrement : IndexedDB, versions, sauvegarde, import / export du fichier.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, NF1, P, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
+import { $, $$, NF1, P, PLAN_VERSION, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
 import { syncRooms } from './geometrie.js';
 import { historyReset, snapshot } from './historique.js';
 import { fitView, refreshUI } from './interaction.js';
@@ -27,8 +27,14 @@ function localIndex() { try { const a = JSON.parse(lsGet('calque.idx') || '[]');
 function setLocalIndex(a) { return lsSet('calque.idx', JSON.stringify(a)); }
 
 /* version du format des plans : chaque évolution du format ajoute une fonction MIGRATIONS[n] (plan v n → v n+1) */
-const PLAN_VERSION = 1;
-const MIGRATIONS = {};
+const MIGRATIONS = {
+  /* v1 → v2 (phase 2) : un symbole électrique peut désigner un article de la bibliothèque technique (champ `art`,
+     facultatif). Les plans v1 n'ont pas ce champ : rien à convertir ; une valeur invalide éventuelle est retirée. */
+  1(p) {
+    for (const e of Array.isArray(p.elec) ? p.elec : []) if (e && 'art' in e && (typeof e.art !== 'string' || !e.art)) delete e.art;
+    return p;
+  },
+};
 function migratePlan(p) {
   let v = isNum(p.v) && p.v >= 1 ? Math.floor(p.v) : 1;
   const from = v;
