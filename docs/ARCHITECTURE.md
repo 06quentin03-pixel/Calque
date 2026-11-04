@@ -22,6 +22,7 @@ Mise à jour : phase 1b (4 novembre 2026).
 | `symboles.js` | Mobilier, escaliers, 176 symboles électriques, catalogues | oui |
 | `bibliotheque.js` | Rangement de la bibliothèque : domaines, sous-catégories, recherche | oui |
 | `technique.js` | Bibliothèque technique générique (articles, fiabilité, recherche, fusion des références) | oui |
+| `catalogue.js` | Lecture des catalogues fabricants CSV et .xlsx, reconnaissance des colonnes (préparation, pas encore d'écran) | oui |
 | `composants.js` | Composants personnalisés : contrôle, fusion, pose, copie dans le plan | oui |
 | `fondcalc.js` | Fond de plan : échelle par 2 points, échelle PDF, rotation, lecture des longueurs | oui |
 | `fond.js` | Fond de plan : import image/PDF, dessin sous les murs, outils « échelle » et « déplacer », réglages | non |

@@ -34,12 +34,12 @@ Dépend de : phase 0.
 - ✅ Correction de la barre du haut sur téléphone (deux lignes).
 - Validation : 7 tests automatisés dans `tests/ipad.test.mjs`, tous réussis.
 
-## Phase 2 — Dessin et bibliothèque 🟨
+## Phase 2 — Dessin et bibliothèque 🟨 (tout est fait sauf l’import des catalogues, en attente des fichiers)
 Dépend de : 1a, 1b.
 - ✅ Bibliothèque organisée par catégories et sous-catégories (mobilier, équipements du bâtiment, électricité, tertiaire) : `js/bibliotheque.js`, 247 éléments rangés, rien supprimé (3 tests dans `tests/bibliotheque.test.mjs`).
 - ✅ Bibliothèque technique générique, lisible sur chantier (« Disjoncteur 1P+N 20 A courbe C »…), avec un champ référence fabricant optionnel et un badge de fiabilité : 110 articles sans aucune référence inventée (`js/technique.js`), références de l’utilisateur enregistrées sur l’appareil (`js/mabiblio.js`), format des plans v2 (5 tests dans `tests/technique.test.mjs`).
 - ✅ Composants personnalisés : créés par l’utilisateur à partir d’un modèle existant, enregistrés hors ligne, inclus dans les sauvegardes, copiés dans chaque plan qui les utilise (format v3). `js/composants.js`, 4 tests dans `tests/composants.test.mjs`.
-- ⬜ Import de catalogues fabricants (CSV/Excel, FAB-DIS) ⏸ (fichiers à fournir par l'utilisateur).
+- ⏸ Import de catalogues fabricants (CSV/Excel, FAB-DIS) : **préparé** (lecture CSV et .xlsx sans bibliothèque, reconnaissance des colonnes, conversion en articles, 4 tests dans `tests/catalogue.test.mjs`). En attente des fichiers de l'utilisateur pour : colonnes FAB-DIS, enregistrement selon le volume, écran d'import.
 - ✅ Import de plans (image ou PDF en fond de calque) : un fond par niveau, mise à l’échelle par 2 points ou par l’échelle d’impression du PDF, opacité, déplacement, rotation (format v4). `js/fond.js`, `js/fondcalc.js`, 4 tests dans `tests/fond.test.mjs`. PDF : première page, lue par Safari (à vérifier sur iPad).
 
 ## Phase 3 — Électricité et calculs

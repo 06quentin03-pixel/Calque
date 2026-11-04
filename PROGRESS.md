@@ -35,9 +35,23 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 4 : fond de plan (image ou PDF), format des plans v4 avec migration. 4 tests dans `tests/fond.test.mjs`. Tests : **36/36 réussis**.
   - Mesure (pire cas, photo de 10,8 Mo) : un réglage enregistré en 14 ms, dessin en 1,5 ms ; l'annulation ne recopie pas l'image.
   - Non vérifiable ici : lecture d'un PDF par Safari sur iPad (Chromium ne lit pas les PDF comme images ; le message d'explication est testé).
-- ⏸ Étape 5 : import des catalogues fabricants (préparation seulement, en attente des fichiers).
+- ⏸ Étape 5 : import des catalogues fabricants. **Préparé** (`js/catalogue.js`, 4 tests dans `tests/catalogue.test.mjs`), vérifié aussi sur un .xlsx produit par un autre logiciel. Tests : **40/40 réussis**.
+  - En attente des fichiers de l'utilisateur : un extrait de catalogue (CSV, Excel ou FAB-DIS) par fabricant utilisé, pour régler les colonnes, choisir l'enregistrement selon le volume, puis faire l'écran d'import.
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
 ## Tâche en cours
-- Phase 2, étape 5 (préparation de l'import des catalogues fabricants).
+- Aucune. Phase 2 terminée, sauf l'import des catalogues (en attente des fichiers).
+
+## À vérifier sur l'iPad (phase 2)
+- Bibliothèque au doigt et au Pencil, paysage et portrait.
+- Bibliothèque technique : saisie d'une référence, puis fermeture et réouverture de l'application.
+- Composants : création, pose, mode avion.
+- Fond de plan : photo prise avec l'iPad, image, et **PDF** (lecture par Safari non testable ici) ; mise à l'échelle par 2 points au Pencil.
+
+## Points d'attention
+- Format des plans passé de v1 à v4 (migrations testées). Un plan enregistré avec cette version, rouvert avec l'ancienne version de `main`, affiche « vient d'une version plus récente » ; les données restent dans le fichier.
+- Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
+
+## Prochaine action prévue
+- Fusion par l'utilisateur, essais sur iPad, puis réception des catalogues fabricants, ou phase 3 (moteur de calcul).

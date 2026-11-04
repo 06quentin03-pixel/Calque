@@ -1,5 +1,13 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 2, étape 5 : préparation de l’import des catalogues fabricants
+- `js/catalogue.js` (sans écran) : lecture des fichiers **CSV** (UTF-8 ou Windows-1252, séparateur détecté, guillemets) et **Excel .xlsx** (sans bibliothèque externe), reconnaissance des colonnes usuelles (référence, désignation, marque, EAN, famille, unité, prix), conversion en articles.
+- Aucune valeur inventée : une colonne vide reste absente ; doublons et lignes vides comptés ; un article sans référence est signalé.
+- Fiabilité : « vérifiée » seulement si l’utilisateur confirme que le fichier vient du fabricant ou du distributeur (source = nom du fichier), sinon « saisie ».
+- Pas encore d’écran d’import ni d’enregistrement : ils dépendent des fichiers réels (volume, colonnes FAB-DIS).
+- Service Worker : cache `calque-v11`.
+- Ajout de `tests/catalogue.test.mjs` (4 tests, avec des données de test évidentes « TEST-… »).
+
 ## 2026-11-04 — Phase 2, étape 4 : fond de plan (image ou PDF)
 - **Importer un fond de plan** (menu … ou inspecteur du niveau) : photo, image (JPEG, PNG, HEIC sur iPad) ou PDF, placé sous le dessin du niveau courant, à 50 % de transparence.
 - **Mise à l’échelle par 2 points** : touchez deux points d’une longueur connue (une cote, un mur), saisissez la longueur réelle (« 350 » ou « 3,50 m »). Le premier point reste en place.
