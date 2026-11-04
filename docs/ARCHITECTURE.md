@@ -34,6 +34,8 @@ Mise à jour : phase 4 (4 novembre 2026).
 | `normes.js` | Tableaux NF C 15-100 (extraits Legrand, source, édition, page, statut « manquante » ou « vérifiée » ; 2 recopiés), constantes estimées, règles citées | oui |
 | `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts (section/calibre, points, type et calibre des différentiels…), fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
 | `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
+| `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
+| `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
 | `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve | non |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
@@ -61,7 +63,7 @@ Les futurs moteurs (calculs électriques, règles NF C 15-100) seront écrits ai
 4. **Rendu 2D** : tout changement du plan appelle `requestRender()` sans argument. `requestRender(true)` est réservé aux changements de la seule couche du dessus (curseur, aperçu).
 5. **Format des plans** : toute évolution ajoute une fonction `MIGRATIONS[n]` (dans `stockage.js`), incrémente `PLAN_VERSION` et ajoute un test.
 
-7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus).
+7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus), `EXT.insp` (inspecteur d'un type d'objet, ex. `zone`).
 6. **Domaine de bibliothèque ajouté par un module** : `LIB_EXTRA` (dans `bibliotheque.js`, pour être disponible dès le chargement).
 
 ## Événements (`evenements.js`)

@@ -1,5 +1,17 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 4, étape 3 : recherche d’itinéraire, zones interdites et conflits
+- Nouveau module sans écran **`js/itineraire.js`** : recherche d’itinéraire sur une grille du niveau (quatre directions, virages limités), conflits d’une gaine et de tout le plan.
+  - Les traversées de murs et de cloisons coûtent cher (chacune = un percement) ; les zones interdites sont infranchissables (avec une marge) ; les conduits de VMC sont évités ; pour une gaine posée « à une hauteur donnée », les portes sont infranchissables.
+  - Aucun itinéraire possible → message, rien n’est inventé.
+- **Zones interdites** (trémie, conduit de fumée, zone humide…) : outil depuis la barre de l’outil Conduit (gaine électrique) ou depuis l’inspecteur d’un symbole ; angles touchés au doigt ou au Pencil ; zone hachurée en rouge, sélectionnable (nom, suppression), enregistrée dans le plan (`zones[]`, format v6).
+- **Proposer un itinéraire** : dans l’inspecteur d’un appareil relié à un circuit et pas encore raccordé. Départ : le point déjà raccordé au tableau le plus proche sur le même niveau (tableau, appareil du même circuit, passage entre étages, boîte de dérivation). Aperçu sur le plan, puis « Créer la gaine » (type et pose repris du dernier choix) ; la gaine reste modifiable et « Annuler » la retire.
+- **Conflits** (points d’attention de Calque, pas des règles de la norme) : gaine qui coupe une porte ou une fenêtre (selon sa pose), passe dans une zone interdite, croise un conduit de VMC ; traversées de murs et de cloisons (percements à prévoir). Affichés dans l’inspecteur de la gaine et dans l’onglet Cheminements (avec « Voir »).
+- La liste « Autres circuits » d’une gaine simple est repliée (toujours ouverte pour une goulotte ou un chemin de câbles).
+- Toucher l’intérieur d’une zone interdite la sélectionne (le nom de la pièce reste prioritaire).
+- Service Worker : cache `calque-v17`, `js/itineraire.js` et `js/routeui.js` ajoutés.
+- `tests/cheminement.test.mjs` : 7 tests (dont une zone dessinée au doigt et un itinéraire créé depuis l’inspecteur).
+
 ## 2026-11-04 — Phase 4, étape 2 : longueurs des circuits et longueur L de la fiche de calcul
 - **Réseau des gaines** (`js/cheminement.js`, sans écran) : tronçons, verticales jusqu’aux appareils, jonctions entre gaines (une extrémité libre posée sur une autre gaine s’y raccorde), passages entre étages (différence d’altitude entre les parcours des deux niveaux).
   - Un circuit n’emprunte que ses gaines et les gaines sans circuit ; il ne traverse pas l’appareil d’un autre circuit (seuls le tableau, les boîtes de dérivation, la GTL et les passages se traversent).

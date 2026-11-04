@@ -229,3 +229,96 @@ test('onglet Cheminements et fiche : longueurs du plan, réserve saisie et enreg
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+/* deux pièces de 3 m × 4 m séparées par une cloison avec une porte (y de 155 à 245) */
+function planPieces(extra = {}) {
+  const N = [['a', 0, 0], ['b', 600, 0], ['c', 600, 400], ['d', 0, 400], ['e', 300, 0], ['f', 300, 400]].map(([id, x, y]) => ({ id, lv: 'L0', x, y }));
+  const W = [['a', 'b', 'mur', 20], ['b', 'c', 'mur', 20], ['c', 'd', 'mur', 20], ['d', 'a', 'mur', 20], ['e', 'f', 'cloison', 7]].map(([a, b, kind, th], i) => ({ id: 'w' + i, lv: 'L0', a, b, kind, th }));
+  return Object.assign({ v: 6, levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }], nodes: N, walls: W,
+    openings: [{ id: 'o', wall: 'w4', t: 200, w: 90, kind: 'door', type: 'interieure', side: 1, hinge: 0, leaves: 1, h: 215, sill: 0 }],
+    elec: [], ducts: [], zones: [], items: [], rooms: [], dims: [], texts: [], links: [], comps: [], fonds: [], fondImg: {}, circuits: [], rcds: [], install: {} }, extra);
+}
+
+test('itinéraire et conflits (sans écran) : murs, porte, zone interdite, VMC', async () => {
+  const I = await import(path.join(ROOT, 'js', 'itineraire.js'));
+  const p = planPieces();
+  /* au sol : traverse la cloison (moins long que le détour par la porte) */
+  let r = I.chercherItineraire(p, 'L0', { x: 50, y: 50 }, { x: 550, y: 50 }, { pose: 'sol' });
+  assert.ok(r); assert.equal(r.cloisons, 1); assert.equal(r.murs, 0); assert.equal(Math.round(r.len), 500);
+  /* zone interdite entre les deux points : contournée, et la gaine obtenue ne la traverse pas */
+  p.zones = [{ id: 'z', lv: 'L0', name: 'Trémie', pts: [{ x: 100, y: 10 }, { x: 200, y: 10 }, { x: 200, y: 330 }, { x: 100, y: 330 }] }];
+  r = I.chercherItineraire(p, 'L0', { x: 50, y: 50 }, { x: 550, y: 50 }, { pose: 'sol' });
+  assert.ok(r && r.pts.length > 2, 'détour');
+  const d = { id: 'g', lv: 'L0', sys: 'elec', pose: 'sol', pts: r.pts };
+  assert.ok(!I.conflitsGaine(p, d).some((c) => c.kind === 'zone'), 'la zone est évitée');
+  /* point d'arrivée enfermé dans une zone : aucun itinéraire (rien d'inventé) */
+  p.zones.push({ id: 'z2', lv: 'L0', pts: [{ x: 480, y: 15 }, { x: 590, y: 15 }, { x: 590, y: 120 }, { x: 480, y: 120 }] });
+  assert.equal(I.chercherItineraire(p, 'L0', { x: 50, y: 50 }, { x: 550, y: 50 }, { pose: 'sol' }), null);
+  /* conflits d'une gaine droite à 30 cm du sol (plinthe) : porte coupée, zone traversée, cloison */
+  const p2 = planPieces({ zones: [{ id: 'z', lv: 'L0', pts: [{ x: 100, y: 150 }, { x: 200, y: 150 }, { x: 200, y: 250 }, { x: 100, y: 250 }] }],
+    ducts: [{ id: 'v', lv: 'L0', sys: 'vmc', dia: 125, pts: [{ x: 450, y: 50 }, { x: 450, y: 350 }] }] });
+  const g = { id: 'g', lv: 'L0', sys: 'elec', pose: 'hauteur', z: 30, pts: [{ x: 50, y: 200 }, { x: 550, y: 200 }] };
+  const kinds = (x) => I.conflitsGaine(p2, x).map((c) => c.kind + ':' + c.sev).sort();
+  assert.deepEqual(kinds(g), ['porte:warn', 'reseau:info', 'zone:warn']);
+  g.pose = 'sol'; delete g.z;
+  assert.deepEqual(kinds(g), ['reseau:info', 'zone:warn'], 'au sol, la porte n’est pas gênée');
+  delete g.pose;
+  assert.deepEqual(kinds(g), ['porte:info', 'reseau:info', 'zone:warn'], 'pose non précisée : à vérifier');
+  g.pts = [{ x: 50, y: 50 }, { x: 550, y: 50 }]; g.pose = 'sol';
+  assert.deepEqual(kinds(g), ['cloison:info'], 'traversée de cloison signalée');
+  /* à une hauteur donnée, la porte est infranchissable : le chemin traverse la cloison ailleurs */
+  r = I.chercherItineraire(planPieces(), 'L0', { x: 50, y: 200 }, { x: 550, y: 200 }, { pose: 'hauteur' });
+  assert.ok(r); assert.ok(!I.conflitsGaine(planPieces(), { id: 'h', lv: 'L0', sys: 'elec', pose: 'hauteur', z: 30, pts: r.pts }).some((c) => c.kind === 'porte'));
+});
+
+test('plan : zone interdite dessinée au doigt, itinéraire proposé puis créé, longueur dans la fiche', async () => {
+  const { ctx, page, errors } = await fresh({ touch: true });
+  const p = planPieces({ id: 'pC8', name: 'Plan itinéraire',
+    elec: [{ id: 't', lv: 'L0', type: 'tableau', x: 40, y: 10, rot: 0, h: 130 }, { id: 'p1', lv: 'L0', type: 'pc', x: 560, y: 10, rot: 0, h: 30, cid: 'c1' }],
+    circuits: [{ id: 'c1', kind: 'prises', name: 'Prises', cal: 20, sec: 2.5, rcd: 'r1', dda: false, ctrl: null }], rcds: [{ id: 'r1', type: 'A', cal: 40 }] });
+  await seedPlan(ctx, p);
+  await boot(page);
+  const tapW = async (x, y) => {
+    const s = await page.evaluate(async ([x, y]) => { const R = await import('./js/rendu2d.js'); const r = document.getElementById('cv').getBoundingClientRect(); const q = R.w2s({ x, y }); return { x: q.x + r.left, y: q.y + r.top }; }, [x, y]);
+    await page.touchscreen.tap(s.x, s.y); await wait(page, 120);
+  };
+  /* zone interdite : outil depuis la barre de l'outil Conduit (gaine électrique) */
+  await page.evaluate(async () => { const N = await import('./js/noyau.js'); N.S.ductSys = 'elec'; (await import('./js/interface.js')).setTool('duct'); });
+  await wait(page, 200);
+  await page.click('#hint button:has-text("Zone interdite")'); await wait(page, 200);
+  for (const [x, y] of [[100, 15], [200, 15], [200, 330], [100, 330]]) await tapW(x, y);
+  await page.click('#hint button:has-text("Terminer")'); await wait(page, 300);
+  assert.match(await page.textContent('#insp'), /Zone interdite/);
+  let z = await page.evaluate(async () => (await import('./js/noyau.js')).P.zones);
+  assert.equal(z.length, 1); assert.equal(z[0].pts.length, 4);
+  /* sélection de la zone en la touchant, puis nom */
+  await page.evaluate(async () => (await import('./js/interaction.js')).select(null)); await wait(page, 100);
+  await tapW(120, 310); // loin du nom de la pièce (prioritaire)
+  assert.match(await page.textContent('#insp'), /Les itinéraires proposés évitent cette zone/);
+  await page.fill('#f-zname', 'Trémie'); await page.press('#f-zname', 'Enter'); await wait(page, 200);
+  /* itinéraire depuis l'inspecteur de la prise */
+  await page.evaluate(async () => (await import('./js/interaction.js')).select({ t: 'elec', id: 'p1' })); await wait(page, 300);
+  assert.match(await page.textContent('#insp'), /Pas encore raccordé au tableau/);
+  await page.click('#insp button:has-text("Proposer un itinéraire")'); await wait(page, 300);
+  assert.match(await page.textContent('#hint'), /Itinéraire proposé/);
+  await page.click('#hint button:has-text("Créer la gaine")'); await wait(page, 400);
+  const g = await page.evaluate(async () => { const N = await import('./js/noyau.js'); const d = N.P.ducts[N.P.ducts.length - 1]; return { a: d.a, b: d.b, cid: d.cid, sys: d.sys, n: d.pts.length, pts: d.pts }; });
+  assert.deepEqual([g.a, g.b, g.cid, g.sys], ['t', 'p1', 'c1', 'elec']);
+  assert.ok(g.n > 2, 'la gaine contourne la zone');
+  const I = await import(path.join(ROOT, 'js', 'itineraire.js'));
+  const st0 = await page.evaluate(async () => JSON.parse(JSON.stringify((await import('./js/noyau.js')).P)));
+  assert.ok(!I.conflitsGaine(st0, st0.ducts[st0.ducts.length - 1]).some((c) => c.kind === 'zone'));
+  assert.match(await page.textContent('#insp'), /Conflits/);
+  /* le circuit est raccordé : la fiche reçoit une longueur estimée */
+  const L = await page.evaluate(async () => { const K = await import('./js/calcul.js'), N = await import('./js/noyau.js'); return K.entreesDuPlan(N.P, N.P.circuits[0]).L; });
+  assert.equal(L.st, 'estimee'); assert.ok(L.v > 5);
+  await wait(page, 1200);
+  const st = await storedPlan(page, 'pC8');
+  assert.equal(st.zones[0].name, 'Trémie');
+  /* annuler : la gaine disparaît, la zone reste */
+  await page.evaluate(async () => (await import('./js/interaction.js')).undo()); await wait(page, 200);
+  z = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { d: N.P.ducts.length, z: N.P.zones.length }; });
+  assert.deepEqual(z, { d: 0, z: 1 });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

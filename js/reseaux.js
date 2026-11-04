@@ -13,6 +13,7 @@ import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h
   renderInspector, sec, segCtl, setTool, setWallFace, setWallLength, showPop, toast, toggleRow, updateHint,
   wallSideName } from './interface.js';
 import { v3Refresh } from './vue3d.js';
+import { conflitsSection } from './routeui.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -674,7 +675,9 @@ function inspGaine(d) {
   const circ = sec('Circuits', sel,
     c ? h('p', { class: 'note' }, `${c.cal} A · ${String(c.sec).replace('.', ',')} mm² : gaine ICTA Ø${gaineDia(c)} conseillée.`)
       : h('p', { class: 'note' }, P.circuits.length ? 'Le circuit donne sa couleur à la gaine et permet de la filtrer. Une gaine sans circuit peut servir à tous les circuits.' : 'Générez le tableau pour rattacher la gaine à un circuit.'),
-    d.cid && autres.length ? h('div', null, h('p', { class: 'note' }, 'Autres circuits passant dans ce cheminement :'),
+    d.cid && autres.length && !(d.kind === 'goulotte' || d.kind === 'cdc' || (d.cids && d.cids.length) || ui.gaineCids === d.id)
+      ? btns(btn('Autres circuits dans ce cheminement…', () => { ui.gaineCids = d.id; renderInspector(); }, 'sm')) : null,
+    d.cid && autres.length && (d.kind === 'goulotte' || d.kind === 'cdc' || (d.cids && d.cids.length) || ui.gaineCids === d.id) ? h('div', null, h('p', { class: 'note' }, 'Autres circuits passant dans ce cheminement :'),
       h('div', { class: 'chips' }, autres.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(circuitsDe(d).includes(x.id)), onclick: () => togAutre(x.id) }, `${nums.get(x.id)} · ${x.name}`)))) : null);
   const vtxt = lg.verts.length ? lg.verts.map((v) => fmtLenU(v.h)).join(' + ') : '—';
   return [
@@ -685,7 +688,7 @@ function inspGaine(d) {
       sec('Type de cheminement', h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((k) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.kind === k), onclick: () => setKind(k) }, TYPES_CHEMIN[k].court))),
         h('p', { class: 'note' }, t ? t.note : 'Type non précisé : choisissez-le (il sera repris pour les gaines suivantes).')),
       sec(t && t.forme === 'rect' ? 'Dimensions' : 'Diamètre', taille),
-      pose, circ,
+      pose, circ, conflitsSection(d),
       h('p', { class: 'note' }, 'Faites glisser un point rond pour déplacer un coude, ou un petit point au milieu d’un tronçon pour en ajouter un. Double-touchez un coude pour le retirer.'),
       sec(null, btns(btn('Inverser le sens', () => reverseDuct(d), '', 'swap'), btn('Supprimer', deleteSel, 'danger', 'del'))),
     ),

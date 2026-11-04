@@ -56,7 +56,7 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 Dépend de : 3.
 - ✅ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages (`js/cheminement.js`, format v6, 3 tests dans `tests/cheminement.test.mjs`).
 - ✅ Longueurs géométriques, longueurs de cheminement et longueurs à commander, avec réserve ; la longueur L de la fiche de calcul vient du plan (« estimée »), remplaçable par une saisie. Onglet « Cheminements » (`js/metres.js`).
-- ⬜ Recherche d'itinéraire avec zones interdites et détection des conflits (portes, murs, réseaux).
+- ✅ Recherche d'itinéraire avec zones interdites et détection des conflits (portes, fenêtres, murs, réseaux) : `js/itineraire.js`, `js/routeui.js`.
 - ⬜ Taux de remplissage des conduits, liste de matériel.
 
 ## Phase 5 — Éclairage et 3D avancée

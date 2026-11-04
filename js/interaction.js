@@ -19,6 +19,7 @@ import { scheduleSave } from './stockage.js';
 import { v3Refresh } from './vue3d.js';
 import { applyComp, upsertPlanComp } from './composants.js';
 import { tailleChemin } from './cheminement.js';
+import { zoneAt } from './routeui.js';
 
 /* ============================================================
    CALQUE — interaction : vue, sélection, outils, aimantation
@@ -188,6 +189,7 @@ function hitTest(p, tolPx) {
     const hw = Math.max(34, (r.label.name || '').length * 4.2 + 8);
     if (Math.abs(ps.x - sp.x) <= hw && Math.abs(ps.y - sp.y) <= 18) return { t: 'label', id: r.label.id };
   }
+  const zid = zoneAt(p); if (zid) return { t: 'zone', id: zid }; // zone interdite : avant la pièce qui la contient
   for (const r of g.rooms) if (r.label && inPoly(p, r.loop) && !r.holes.some((h) => inPoly(p, h))) return { t: 'room', id: r.label.id };
   return null;
 }
@@ -312,7 +314,7 @@ function select(h) {
 }
 function selObj(sel) {
   sel = sel || ui.sel; if (!sel) return null;
-  const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts };
+  const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts, zone: IDX.zones };
   return map[sel.t] ? map[sel.t].get(sel.id) || null : null;
 }
 function validateSel() {

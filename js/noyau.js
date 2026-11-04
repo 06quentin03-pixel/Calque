@@ -187,7 +187,7 @@ const C = {};
 /* points d'extension : un module ajoute un outil, un bandeau d'aide ou un dessin sans modifier les moteurs.
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
-const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [] };
+const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {} }; // insp : inspecteur d'un type d'objet ajouté par un module
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */

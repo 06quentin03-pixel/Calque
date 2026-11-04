@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 4 en cours, étapes 1 et 2 terminées).
+Dernière mise à jour : 4 novembre 2026 (phase 4 en cours, étapes 1 à 3 terminées).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -63,8 +63,11 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Mesure : réseau de 144 gaines construit en 43 ms (une fois, puis mémorisé), 21 circuits en 3 ms.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844.
 
+- ✅ Étape 3 : recherche d'itinéraire (grille, percements comptés, zones interdites, portes selon la pose, VMC évitée), zones interdites (outil, sélection, nom), conflits dans l'inspecteur et l'onglet Cheminements (`js/itineraire.js`, `js/routeui.js`). 2 tests de plus. Tests : **66/66 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (aperçu de l'itinéraire, gaine créée, liste des conflits).
+
 ## Tâche en cours
-- Phase 4, étape 3 : recherche d'itinéraire, zones interdites, conflits (portes, murs, réseaux).
+- Phase 4, étape 4 : taux de remplissage des conduits (« vérification nécessaire ») et liste de matériel.
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.

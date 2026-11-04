@@ -6,6 +6,8 @@ import { aCommander, cheminCircuit, reserveDe } from './cheminement.js';
 import { LIB_STATUT, fmt } from './calcul.js';
 import { circNumbers, circuitColor } from './electricite.js';
 import { btn, h } from './interface.js';
+import { conflitsPlan } from './itineraire.js';
+import { goToRef } from './tableau.js';
 import { badgeDonnee, champDonnee, openFiche } from './fiche.js';
 
 const m = (cm, d = 1) => (cm == null ? '—' : fmt(cm / 100, d) + ' m');
@@ -51,10 +53,23 @@ function longueursSection(lignes) {
   ];
 }
 
+/* conflits de toutes les gaines électriques du plan */
+function conflitsSectionPlan() {
+  const cs = conflitsPlan(P), lv = new Map(P.levels.map((l) => [l.id, l.name]));
+  const warn = cs.filter((c) => c.sev === 'warn'), info = cs.filter((c) => c.sev !== 'warn');
+  const perc = info.filter((c) => c.kind === 'mur' || c.kind === 'cloison').length;
+  const item = (c) => h('div', { class: 'ev-chk ' + (c.sev === 'warn' ? 'warn' : 'info') }, h('span', { class: 'ic' }, c.sev === 'warn' ? '!' : 'i'),
+    h('span', { class: 'tx' }, c.msg, h('small', null, lv.get(c.lv) || '')), btn('Voir', () => goToRef({ t: 'duct', id: c.duct }), 'sm'));
+  return h('section', null, h('h3', null, 'Conflits des cheminements'),
+    h('p', { class: 'note' }, cs.length ? `${warn.length} point${warn.length > 1 ? 's' : ''} à revoir, ${perc} traversée${perc > 1 ? 's' : ''} de mur ou de cloison (percements à prévoir). Points d’attention de Calque, pas des règles de la norme.` : 'Aucun conflit détecté avec les portes, fenêtres, zones interdites et conduits de VMC.'),
+    cs.length ? h('div', { class: 'ev-list' }, [...warn, ...info.filter((c) => c.kind !== 'mur' && c.kind !== 'cloison')].map(item)) : null);
+}
+
 function metresView() {
   const parts = [];
   if (!P.circuits.length) parts.push(h('p', { class: 'note' }, 'Générez d’abord le tableau (onglet Schéma unifilaire) : les longueurs sont calculées par circuit.'));
   else parts.push(...longueursSection(lignesCircuits(P)));
+  if ((P.ducts || []).some((d) => d.sys === 'elec')) parts.push(conflitsSectionPlan());
   return h('div', { class: 'ev-checks bilan metres' }, ...parts);
 }
 

@@ -23,6 +23,7 @@ import { compSection, materielSection, openTechLib } from './biblioui.js';
 import { ficheButton } from './fiche.js';
 import { fondSection, pickFond } from './fond.js';
 import { TYPES_CHEMIN } from './cheminement.js';
+import { itineraireSection, startZone } from './routeui.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -134,7 +135,7 @@ function renderInspector() {
   let parts;
   try {
     if (!ui.sel || !o) parts = inspLevel();
-    else parts = { wall: inspWall, node: inspNode, opening: inspOpening, item: inspItem, elec: inspElec, room: inspRoom, dim: inspDim, text: inspText, duct: inspDuct }[ui.sel.t](o);
+    else parts = { wall: inspWall, node: inspNode, opening: inspOpening, item: inspItem, elec: inspElec, room: inspRoom, dim: inspDim, text: inspText, duct: inspDuct, ...EXT.insp }[ui.sel.t](o);
   } catch (err) { console.error(err); parts = inspLevel(); }
   box.replaceChildren(...parts.filter(Boolean));
   box.classList.toggle('closed', !(ui.inspOpen || ui.sel));
@@ -426,6 +427,7 @@ function inspElec(e) {
       sec('Symbole', sel),
       circuitSection(e),
       traverseeSection(e),
+      itineraireSection(e),
       materielSection(e),
       sec('Marquage', textField(null, e.mark, (v) => { v = v.trim().slice(0, 8); if (v) e.mark = v; else delete e.mark; commit(); }, { id: 'f-emark', ph: 'Texte court affiché près du symbole (facultatif)' })),
       compSection(e, 'elec'),
@@ -578,7 +580,7 @@ function deleteSel() {
   else if (s.t === 'node') deleteNode(s.id);
   else if (s.t === 'room') { toast('Une pièce est définie par ses murs : supprimez un mur pour la retirer.'); return; }
   else {
-    const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts' }[s.t];
+    const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts', zone: 'zones' }[s.t];
     P[key] = P[key].filter((o) => o.id !== s.id); touch();
     if (s.t === 'elec') cleanLinks();
   }
@@ -724,6 +726,7 @@ function updateHint() {
       h('span', { class: 'msg' }, ductHintMsg()),
       dr && dr.pts.length > 1 ? btn('Retirer le dernier point', () => { dr.pts.pop(); updateHint(); requestRender(); }, 'sm') : null,
       dr ? btn('Annuler le tracé', () => { ui.duct = null; updateHint(); requestRender(); }, 'sm') : null,
+      sys === 'elec' && !dr ? btn('Zone interdite', startZone, 'sm') : null,
       done];
   } else if (t === 'dim') {
     kids = [h('b', null, 'Cote'), h('span', { class: 'msg' }, 'Faites glisser d’un point à un autre. Les angles des murs aimantent.'), done];
