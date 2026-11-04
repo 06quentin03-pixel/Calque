@@ -136,3 +136,96 @@ test('inspecteur : type, pose et longueurs d’une gaine ; passage entre étages
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+/* plan de calcul des longueurs : tableau (130 cm), deux prises du circuit c1 (30 cm) en chaîne dans le sol,
+   un passage vers l'étage, un point lumineux au plafond de l'étage (circuit c2) */
+function planLongueurs() {
+  return { v: 6, levels: [{ id: 'L0', elev: 0, h: 250 }, { id: 'L1', elev: 270, h: 250 }],
+    elec: [{ id: 't', lv: 'L0', type: 'tableau', x: 100, y: 100, rot: 0, h: 130 },
+      { id: 'p1', lv: 'L0', type: 'pc', x: 500, y: 100, rot: 0, h: 30, cid: 'c1' }, { id: 'p2', lv: 'L0', type: 'pc', x: 500, y: 400, rot: 0, h: 30, cid: 'c1' },
+      { id: 'ta', lv: 'L0', type: 'traversee', x: 100, y: 400, to: 'tb' }, { id: 'tb', lv: 'L1', type: 'traversee', x: 100, y: 400, to: 'ta' },
+      { id: 'l1', lv: 'L1', type: 'pl', x: 300, y: 400, h: null, cid: 'c2' }],
+    ducts: [{ id: 'g1', lv: 'L0', sys: 'elec', pose: 'sol', a: 't', b: 'p1', cid: 'c1', pts: [{ x: 100, y: 100 }, { x: 500, y: 100 }] },
+      { id: 'g2', lv: 'L0', sys: 'elec', pose: 'sol', a: 'p1', b: 'p2', cid: 'c1', pts: [{ x: 500, y: 100 }, { x: 500, y: 400 }] },
+      { id: 'g3', lv: 'L0', sys: 'elec', pose: 'plafond', a: 't', b: 'ta', pts: [{ x: 100, y: 100 }, { x: 100, y: 400 }] },
+      { id: 'g4', lv: 'L1', sys: 'elec', pose: 'sol', a: 'tb', b: 'l1', pts: [{ x: 100, y: 400 }, { x: 300, y: 400 }] }],
+    circuits: [{ id: 'c1', kind: 'prises', name: 'Prises', cal: 20, sec: 2.5 }, { id: 'c2', kind: 'eclairage', name: 'Éclairage étage', cal: 16, sec: 1.5 }], install: {} };
+}
+
+test('longueurs (sans écran) : verticales, chaîne de prises, passage entre étages, circuits séparés, réserve', async () => {
+  const p = planLongueurs();
+  /* c1 : 130 (descente du tableau) + 400 + 30 (remontée) = 560 jusqu'à p1 ; puis 30 + 300 + 30 → 920 jusqu'à p2 */
+  let r = CH.cheminCircuit(p, 'c1');
+  assert.ok(r.complet); assert.deepEqual(r.points.map((x) => x.dist), [560, 920]);
+  assert.equal(r.Lmax, 920); assert.equal(r.arbre, 920); assert.equal(r.vert, 220); assert.equal(r.inconnues, 0);
+  assert.deepEqual(r.ducts.sort(), ['g1', 'g2']);
+  assert.ok(Math.abs(r.Lgeo - Math.hypot(400, 300 + 12.6, 100) ) < 15, 'vol d’oiseau jusqu’à p2 (ordre de grandeur)');
+  /* c2 : gaines sans circuit (utilisables par tous) ; plafond du rez (250) → sol de l'étage (270) : 20 cm de traversée ;
+     120 (tableau → plafond) + 20 + 250 (remontée au plafond de l'étage) = 390 cm de verticales */
+  r = CH.cheminCircuit(p, 'c2');
+  assert.ok(r.complet); assert.equal(Math.round(r.vert), 390);
+  assert.equal(Math.round(r.Lmax), Math.round(r.horiz + r.vert));
+  /* une gaine réservée à un autre circuit n'est pas empruntée */
+  const q = planLongueurs(); q.ducts[2].cid = 'c1';
+  r = CH.cheminCircuit(q, 'c2');
+  assert.ok(!r.complet); assert.match(r.raison, /Aucun point du circuit/);
+  /* on ne traverse pas la prise d'un autre circuit : p1 et p2 passent au circuit c3, c1 n'a plus de point */
+  const q2 = planLongueurs(); q2.elec[1].cid = 'c3'; q2.elec[2].cid = 'c1'; q2.ducts[0].cid = null; q2.ducts[1].cid = null;
+  r = CH.cheminCircuit(q2, 'c1');
+  assert.ok(!r.complet, 'la prise d’un autre circuit n’est pas un point de passage');
+  /* pose non précisée : verticales non comptées, signalées */
+  const q3 = planLongueurs(); delete q3.ducts[0].pose;
+  r = CH.cheminCircuit(q3, 'c1');
+  assert.ok(r.complet); assert.equal(r.inconnues, 2); assert.equal(r.points[0].dist, 400);
+  /* jonction : une gaine qui part d'un point libre posé sur une autre gaine s'y raccorde */
+  const q4 = planLongueurs(); q4.elec.push({ id: 'p3', lv: 'L0', type: 'pc', x: 300, y: 300, rot: 0, h: 30, cid: 'c1' });
+  q4.ducts.push({ id: 'g5', lv: 'L0', sys: 'elec', pose: 'sol', a: null, b: 'p3', cid: 'c1', pts: [{ x: 101, y: 300 }, { x: 300, y: 300 }] });
+  r = CH.cheminCircuit(q4, 'c1');
+  assert.ok(r.complet, 'p3 atteinte par la jonction sur la gaine g3 (sans circuit)');
+  /* jonction plafond (g3) → sol (g5) : une verticale de 250 cm au point de jonction */
+  assert.ok(r.edges.some((e) => e.kind === 'jonction' && Math.abs(e.v - 250) < 1e-9));
+  /* réserve : 10 % par défaut, « estimée » ; longueur à commander arrondie au mètre supérieur */
+  assert.equal(CH.reserveDe(p).st, 'estimee'); assert.equal(CH.reserveDe(p).v, 10);
+  assert.equal(CH.aCommander(920, CH.reserveDe(p)), 11);
+  assert.equal(CH.aCommander(920, { v: 0 }), 10);
+  assert.equal(CH.reserveDe({ install: { reserve: { v: 15, st: 'saisie' } } }).v, 15);
+  /* longueur L pour la fiche de calcul : estimée depuis le plan, remplacée par une saisie */
+  const K = await import(path.join(ROOT, 'js', 'calcul.js'));
+  let en = K.entreesDuPlan(p, p.circuits[0]);
+  assert.deepEqual([en.L.v, en.L.st], [9.2, 'estimee']); assert.match(en.L.src, /Cheminement du plan/);
+  const f = K.ficheCircuit({ ...en, P: { v: 3680, st: 'saisie' }, cos: { v: 1, st: 'saisie' } });
+  assert.ok(f.hypotheses.some((x) => /mesurée sur le plan/.test(x)));
+  p.circuits[0].calc = { len: { v: 15, st: 'saisie' } };
+  en = K.entreesDuPlan(p, p.circuits[0]);
+  assert.deepEqual([en.L.v, en.L.st], [15, 'saisie'], 'la saisie remplace la longueur du plan');
+  assert.equal(en.Lplan.v, 9.2);
+  const q5 = planLongueurs(); q5.ducts = [];
+  en = K.entreesDuPlan(q5, q5.circuits[0]);
+  assert.equal(en.L, null, 'sans gaines : aucune longueur devinée');
+});
+
+test('onglet Cheminements et fiche : longueurs du plan, réserve saisie et enregistrée', async () => {
+  const { ctx, page, errors } = await fresh({ touch: true });
+  const p = Object.assign(planLongueurs(), { id: 'pC7', name: 'Plan longueurs', nodes: [], walls: [], openings: [], items: [], rooms: [], dims: [], texts: [], links: [], comps: [], fonds: [], fondImg: {}, zones: [],
+    rcds: [{ id: 'r1', type: 'A', cal: 40 }] });
+  p.levels = p.levels.map((l, i) => ({ ...l, name: i ? 'Étage' : 'Rez-de-chaussée', slab: 20 })); p.circuits.forEach((c) => { c.rcd = 'r1'; });
+  await seedPlan(ctx, p);
+  await boot(page);
+  await page.click('.vtab[data-view="elec"]'); await wait(page, 300);
+  await page.click('#evBar button:has-text("Cheminements")'); await wait(page, 300);
+  const row = (cid) => page.textContent(`#evCanvas tr[data-cid="${cid}"]`);
+  const r1 = await row('c1');
+  assert.match(r1, /2 \/ 2/); assert.match(r1, /9,2 m/); assert.match(r1, /11 m/); assert.match(r1, /Estimée/);
+  assert.match(await page.textContent('#evCanvas'), /2 \/ 2/);
+  await page.fill('#fi-reserve', '20'); await page.press('#fi-reserve', 'Enter'); await wait(page, 300);
+  assert.match(await row('c1'), /12 m/, '9,2 m + 20 % = 11,04 → 12 m');
+  await page.locator('#evCanvas tr[data-cid="c1"] .btn:has-text("Fiche")').click(); await wait(page, 300);
+  const t = await page.textContent('#modal');
+  assert.match(t, /Sans saisie, la longueur mesurée sur le plan est utilisée : 9,2 m/);
+  assert.match(t, /Chute de tension/);
+  await wait(page, 1200);
+  const st = await storedPlan(page, 'pC7');
+  assert.deepEqual(st.install.reserve, { v: 20, st: 'saisie' });
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

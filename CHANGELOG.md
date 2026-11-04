@@ -1,5 +1,15 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 4, étape 2 : longueurs des circuits et longueur L de la fiche de calcul
+- **Réseau des gaines** (`js/cheminement.js`, sans écran) : tronçons, verticales jusqu’aux appareils, jonctions entre gaines (une extrémité libre posée sur une autre gaine s’y raccorde), passages entre étages (différence d’altitude entre les parcours des deux niveaux).
+  - Un circuit n’emprunte que ses gaines et les gaines sans circuit ; il ne traverse pas l’appareil d’un autre circuit (seuls le tableau, les boîtes de dérivation, la GTL et les passages se traversent).
+- **Trois longueurs par circuit**, depuis le tableau principal : à vol d’oiseau (comparaison), le long des gaines jusqu’au point le plus éloigné, et longueur de câble pour desservir tous les points ; **à commander** = câble + réserve, arrondi au mètre supérieur.
+  - Réserve : 10 % par défaut (« estimée », valeur de Calque), modifiable (`install.reserve`).
+- **Fiche de calcul** : sans longueur saisie, la longueur L vient du plan (« estimée », le long des gaines, verticales comprises, sans réserve) ; une saisie la remplace. Si le circuit n’est pas entièrement raccordé par les gaines, la longueur reste « manquante » (aucune valeur devinée) et la raison est donnée. Verticales non comptées (pose non précisée) : alerte « longueur probablement sous-estimée ».
+- Nouvel onglet **Cheminements** dans Tableau électrique (`js/metres.js`) : circuits raccordés, câble à commander, réserve, tableau des longueurs par circuit avec accès à la fiche.
+- Service Worker : cache `calque-v16`, `js/metres.js` ajouté.
+- `tests/cheminement.test.mjs` : 5 tests (longueurs calculées à la main : 560 / 920 cm, 390 cm de verticales à travers un passage).
+
 ## 2026-11-04 — Phase 4, étape 1 : cheminements, verticales et passages entre étages
 - Nouveau module sans écran **`js/cheminement.js`** : types de cheminement, pose, hauteurs des symboles, verticales, longueur d’une gaine, passages entre étages, nettoyage des données.
 - **Type de cheminement** d’une gaine électrique : gaine ICTA, tube IRL, goulotte, chemin de câbles. Les gaines existantes restent « type non précisé » (rien de deviné) et gardent leur aspect.

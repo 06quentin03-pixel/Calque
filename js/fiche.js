@@ -42,6 +42,13 @@ function champDonnee(box, key, label, unit, o, clean) {
 }
 const calcBox = (c) => (create) => (create ? calcOf(c) : c.calc || null);
 
+/* longueur : mesurée sur le plan (le long des gaines) tant qu'aucune longueur n'est saisie */
+function noteLongueur(k, en) {
+  const lp = en.Lplan || {};
+  if (k.len) return lp.v != null ? `Mesurée sur le plan : ${fmt(lp.v, 1)} m (le long des gaines, verticales comprises). La valeur saisie est utilisée.` : null;
+  if (lp.v != null) return `Sans saisie, la longueur mesurée sur le plan est utilisée : ${fmt(lp.v, 1)} m (estimée, le long des gaines, verticales comprises, sans réserve). Une valeur saisie la remplace.`;
+  return `Mesurez ou estimez la longueur réelle du câble, ou tracez les gaines du circuit depuis le tableau sur le plan.${lp.raison ? ' ' + lp.raison : ''}`;
+}
 /* ---- contenu de la fiche ---- */
 function ficheBody(c) {
   const en = entreesDuPlan(P, c), f = ficheCircuit(en);
@@ -68,7 +75,7 @@ function ficheBody(c) {
   parts.push(sec('Données du circuit',
     champDonnee(calcBox(c), 'p', 'Puissance prévue', 'W', { min: 1, max: 1e6, note: pNote }, () => tidy(c)),
     champDonnee(calcBox(c), 'cos', 'Facteur de puissance cos φ', '', { min: 0.01, max: 1, chips: [1, 0.95, 0.9, 0.85, 0.8], note: cosNote }, () => tidy(c)),
-    champDonnee(calcBox(c), 'len', 'Longueur du câble (tableau → point le plus éloigné)', 'm', { min: 0.1, max: 10000, note: k.len ? null : 'Mesurez ou estimez la longueur réelle du câble. Le calcul depuis les cheminements viendra à la phase 4.' }, () => tidy(c)),
+    champDonnee(calcBox(c), 'len', 'Longueur du câble (tableau → point le plus éloigné)', 'm', { min: 0.1, max: 10000, note: noteLongueur(k, en) }, () => tidy(c)),
     h('div', { class: 'fi-champ' }, h('span', { class: 'fi-lab' }, 'Métal des conducteurs'),
       segCtl([{ v: null, n: 'Non précisé' }, { v: 'cu', n: 'Cuivre' }, { v: 'al', n: 'Aluminium' }], k.mat || null, (v) => { if (v) calcOf(c).mat = v; else if (c.calc) delete c.calc.mat; tidy(c); commit(); }),
       k.mat ? null : h('p', { class: 'note' }, 'Non précisé : cuivre retenu (estimé).')),
@@ -200,4 +207,4 @@ function bilanView() {
   return h('div', { class: 'ev-checks bilan' }, ...parts);
 }
 
-export { FI, bilanView, badgeDonnee, ficheBody, ficheButton, openFiche, pillStatut, renderFiche, statutCircuit };
+export { FI, bilanView, badgeDonnee, champDonnee, ficheBody, ficheButton, openFiche, pillStatut, renderFiche, statutCircuit };

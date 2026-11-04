@@ -33,7 +33,8 @@ Mise à jour : phase 4 (4 novembre 2026).
 | `elecdonnees.js` | Données électriques sans écran sorties de `electricite.js` : classement des symboles, types de circuits (`CK`), valeurs du contrôle (`SEC_MAX`…), puissance des symboles avec statut | oui |
 | `normes.js` | Tableaux NF C 15-100 (extraits Legrand, source, édition, page, statut « manquante » ou « vérifiée » ; 2 recopiés), constantes estimées, règles citées | oui |
 | `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts (section/calibre, points, type et calibre des différentiels…), fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
-| `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, nettoyage (migration) | oui |
+| `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
+| `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve | non |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |

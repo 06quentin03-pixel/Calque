@@ -36,12 +36,16 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-04 (ph. 4) | Hauteur d'un symbole : sa hauteur de pose ; valeur par défaut de Calque marquée « estimée » ; symbole au plafond = hauteur du niveau | Les verticales doivent être tracées jusqu'à leur source |
 | 2026-11-04 (ph. 4) | Passage entre étages = deux symboles `traversee` jumeaux (`to`), un par niveau | Les gaines s'y raccordent comme à tout symbole ; rien à changer dans la sélection ni dans l'enregistrement |
 | 2026-11-04 (ph. 4) | Copie de sécurité dans l'historique avant toute mise à jour du format à l'ouverture | Règle 7 de CLAUDE.md : migration + copie de sécurité |
+| 2026-11-04 (ph. 4) | Longueurs = plus courts chemins (Dijkstra) dans le réseau des gaines depuis le tableau principal ; un circuit n'emprunte que ses gaines ou les gaines sans circuit | Résultat reproductible et vérifiable à la main |
+| 2026-11-04 (ph. 4) | L de la fiche = longueur jusqu'au point le plus éloigné, « estimée » ; seulement si **tous** les points du circuit sont raccordés | Une longueur partielle sous-estimerait la chute de tension : elle reste « manquante » |
+| 2026-11-04 (ph. 4) | Réserve de câble 10 % par défaut, marquée « estimée » (valeur de Calque) | Usage courant ; modifiable, jamais présentée comme une règle |
+| 2026-11-04 (ph. 4) | Réseau des gaines mémorisé par plan (signature des gaines, symboles et niveaux) | La fiche et le bilan le demandent pour chaque circuit |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v15`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v16`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 

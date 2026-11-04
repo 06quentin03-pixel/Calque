@@ -12,6 +12,7 @@
    Unités : W, var, VA, V, A, m, mm², Ω·mm²/m, Ω/m. */
 import { CK, CMDS, LIGHTS, SEC_MAX, SOCKETS, SPOTLIKE, agcpOf, puissanceSymbole } from './elecdonnees.js';
 import { CONSTANTES, REGLES, TABLE_BY, tableDisponible } from './normes.js';
+import { longueurDuPlan } from './cheminement.js';
 
 /* ---------------- données marquées ---------------- */
 const STATUTS = ['verifiee', 'saisie', 'estimee'];
@@ -149,7 +150,11 @@ function ficheCircuit(e) {
   /* données manquantes */
   if (!e.P) M('Puissance active P', e.Pdetail && e.Pdetail.raison ? e.Pdetail.raison : 'Indiquez la puissance prévue du circuit.');
   if (!e.cos) M('Facteur de puissance cos φ', 'Indiquez le cos φ des appareils (1 pour une charge résistive ; voir la notice ou la plaque signalétique).');
-  if (!e.L) M('Longueur du câble L', 'Indiquez la longueur du câble entre le tableau et le point le plus éloigné.');
+  if (!e.L) M('Longueur du câble L', e.Lplan && e.Lplan.raison ? `${e.Lplan.raison} Indiquez la longueur du câble entre le tableau et le point le plus éloigné, ou complétez les gaines sur le plan.` : 'Indiquez la longueur du câble entre le tableau et le point le plus éloigné.');
+  if (e.L && e.L.st === 'estimee' && e.Lplan && e.Lplan.depuisPlan) {
+    out.hypotheses.push('Longueur L mesurée sur le plan, le long des gaines (verticales comprises) jusqu’au point le plus éloigné, sans réserve. Une longueur saisie la remplace.');
+    if (e.Lplan.inconnues) A('info', `Longueur du plan probablement sous-estimée : ${e.Lplan.inconnues} verticale${e.Lplan.inconnues > 1 ? 's' : ''} non comptée${e.Lplan.inconnues > 1 ? 's' : ''} (pose de gaine non précisée).`);
+  }
   if (reseau.v === 'tri' && !e.phase) M('Phase de raccordement', 'En triphasé, indiquez la phase (L1, L2, L3) du circuit pour l’équilibrage.');
   if (tri && reseau.v !== 'tri') A('bad', 'Circuit triphasé sur une installation monophasée : précisez le réseau de l’installation ou le raccordement du circuit.');
   if (e.Pdetail && e.Pdetail.estimees) A('info', `Puissance calculée avec ${e.Pdetail.estimees} valeur${e.Pdetail.estimees > 1 ? 's' : ''} par défaut de Calque (estimée${e.Pdetail.estimees > 1 ? 's' : ''}) : vérifiez la puissance réelle des appareils.`);
@@ -324,6 +329,13 @@ function puissanceCircuit(plan, c) {
   const estimees = ps.filter((x) => x.p.st === 'estimee').length;
   return { P: { v, st: statutDe(ps.map((x) => x.p)), src: `Somme des ${ms.length} appareils reliés` }, detail: { mode: 'symboles', estimees } };
 }
+/* longueur L : saisie dans la fiche, sinon mesurée le long des gaines du plan (« estimée ») */
+function longueurEntree(plan, c, calc) {
+  const saisie = lireDonnee(calc.len, (v) => fini(v) && v > 0);
+  const lp = longueurDuPlan(plan, c.id), ch = lp.ch;
+  const Lplan = { v: lp.L ? lp.L.v : null, raison: lp.L ? null : ch.raison, inconnues: ch.inconnues, depuisPlan: !saisie && !!lp.L };
+  return { L: saisie || lp.L, Lplan };
+}
 function entreesDuPlan(plan, c) {
   const calc = c.calc || {};
   const { P: Pw, detail } = puissanceCircuit(plan, c);
@@ -344,7 +356,7 @@ function entreesDuPlan(plan, c) {
     nom: c.name, kind: c.kind, reseau: reseauDe(plan), phase, points, rcdType: rc ? rc.type : null,
     priseVE: ms.some((e) => e.type === 'prise_ve') && !ms.some((e) => e.type === 'borne_ve'),
     P: Pw, Pdetail: detail, cos,
-    L: lireDonnee(calc.len, (v) => fini(v) && v > 0),
+    ...longueurEntree(plan, c, calc),
     sec: fini(c.sec) ? { v: c.sec, st: 'saisie', src: 'Section choisie dans le tableau' } : null,
     In: fini(c.cal) ? { v: c.cal, st: 'saisie', src: 'Calibre choisi dans le tableau' } : null,
     mat, secMaxCalque: fini(SEC_MAX[c.sec]) ? SEC_MAX[c.sec] : null,

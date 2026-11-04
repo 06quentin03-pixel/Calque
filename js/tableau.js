@@ -14,6 +14,7 @@ import { slug } from './stockage.js';
 import { openFileModal } from './export.js';
 import { v3Show } from './vue3d.js';
 import { bilanView, ficheButton } from './fiche.js';
+import { metresView } from './metres.js';
 
 /* ============================================================
    CALQUE — onglet « Tableau électrique »
@@ -439,9 +440,9 @@ function renderEvMain() {
   const bar = $('#evBar');
   const tab = (v, label, badge) => h('button', { type: 'button', 'aria-pressed': String(ui.evTab === v), onclick: () => { ui.evTab = v; renderEvMain(); } }, label, badge ? h('span', { class: 'ev-count' + (nErr ? ' err' : '') }, badge) : null);
   bar.replaceChildren(...[
-    h('div', { class: 'seg' }, tab('uni', 'Schéma unifilaire'), tab('panel', 'Coffret'), tab('check', 'Contrôle NF C 15-100', nErr ? String(nErr) : nWarn ? String(nWarn) : '✓'), tab('calc', 'Bilan')),
+    h('div', { class: 'seg' }, tab('uni', 'Schéma unifilaire'), tab('panel', 'Coffret'), tab('check', 'Contrôle NF C 15-100', nErr ? String(nErr) : nWarn ? String(nWarn) : '✓'), tab('calc', 'Bilan'), tab('chem', 'Cheminements')),
     h('div', { class: 'spacer' }),
-    ui.evTab !== 'check' && ui.evTab !== 'calc' ? h('div', { class: 'btns' },
+    ui.evTab !== 'check' && ui.evTab !== 'calc' && ui.evTab !== 'chem' ? h('div', { class: 'btns' },
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Dézoomer', title: 'Dézoomer', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg>', onclick: () => { ui.evZoom = clamp(ui.evZoom / 1.2, 0.3, 3); renderEvMain(); } }),
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Ajuster', title: 'Ajuster à la largeur', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>', onclick: () => { ui.evZoom = 0; renderEvMain(); } }),
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Zoomer', title: 'Zoomer', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg>', onclick: () => { ui.evZoom = clamp((ui.evZoom || 1) * 1.2, 0.3, 3); renderEvMain(); } }),
@@ -450,6 +451,7 @@ function renderEvMain() {
   const sel = ui.evSel && ui.evSel.t === 'circuit' ? ui.evSel.id : null;
   if (ui.evTab === 'check') { cv2.replaceChildren(checksView(checks)); return; }
   if (ui.evTab === 'calc') { const sc = cv2.scrollTop; cv2.replaceChildren(bilanView()); cv2.scrollTop = sc; return; }
+  if (ui.evTab === 'chem') { const sc = cv2.scrollTop; cv2.replaceChildren(metresView()); cv2.scrollTop = sc; return; }
   if (!P.circuits.length && !P.rcds.length) {
     cv2.replaceChildren(h('div', { class: 'ev-empty' }, h('h3', null, 'Pas encore de tableau'), h('p', null, 'Touchez « Générer depuis le plan » : Calque crée les circuits et les différentiels à partir des symboles électriques que vous avez posés.'), btn('Générer depuis le plan', () => { generateFromPlan(); commit(); }, 'pri', 'plus')));
     return;

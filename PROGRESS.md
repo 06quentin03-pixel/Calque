@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 4 en cours, étape 1 terminée).
+Dernière mise à jour : 4 novembre 2026 (phase 4 en cours, étapes 1 et 2 terminées).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -59,8 +59,12 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 1 : cheminements (types ICTA, IRL, goulotte, chemin de câbles ; pose sol / plafond / hauteur ; verticales ; autres circuits ; passages entre étages), module `js/cheminement.js`, format des plans v6 avec migration et copie de sécurité avant mise à jour du format. 3 tests dans `tests/cheminement.test.mjs`. Tests : **62/62 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (pas de débordement ; choix du type en pastilles pour tenir dans l'inspecteur).
 
+- ✅ Étape 2 : réseau des gaines, longueurs par circuit (vol d'oiseau, cheminement, câble, à commander avec réserve), longueur L de la fiche venue du plan, onglet « Cheminements » (`js/metres.js`). 2 tests de plus. Tests : **64/64 réussis**.
+  - Mesure : réseau de 144 gaines construit en 43 ms (une fois, puis mémorisé), 21 circuits en 3 ms.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844.
+
 ## Tâche en cours
-- Phase 4, étape 2 : longueurs (géométrique, de cheminement, à commander) et longueur L de la fiche de calcul.
+- Phase 4, étape 3 : recherche d'itinéraire, zones interdites, conflits (portes, murs, réseaux).
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
