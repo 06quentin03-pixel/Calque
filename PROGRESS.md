@@ -1,8 +1,9 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 3 terminée, demande de fusion n°2 préparée).
+Dernière mise à jour : 4 novembre 2026 (phase 3 terminée, demande de fusion n°2 fusionnée à la demande de l'utilisateur).
 
 ## Branche
+- Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
 - Travail : `claude/layer-modification-prompt-feasibility-nw7oa4`.
 - `main` (version utilisée au quotidien) : l'utilisateur a fusionné la demande n°1 (phases 0, 1a, 1b, 1c et phase 2). Il fusionne lui-même ; on ne modifie jamais `main` directement.
 - Toute nouvelle fusion passe par une **nouvelle** demande de fusion (la n°1 est terminée).
@@ -51,10 +52,11 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fiche entièrement visible, boutons de 44 px).
 - ✅ Étape 3 : onglet « Bilan » du tableau (bilan de puissance, coefficient ks, tableau des circuits, équilibrage des phases avec répartition proposée, liste des tableaux Legrand attendus). 1 test de plus dans `tests/fiche.test.mjs`. Tests : **57/57 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 ; correction du débordement horizontal de la barre d'onglets sur téléphone.
-- ⏸ Tableaux NF C 15-100 : emplacements prêts dans `js/normes.js`, **en attente des extraits Legrand** de l'utilisateur. Tant qu'ils manquent, la section (In ≤ Iz), la chute de tension maximale, les sections du logement et les coefficients de simultanéité restent « vérification nécessaire ».
+- ✅ Étape 4 : extrait Legrand « Points clés » (révision 23 août 2024) reçu ; 2 tableaux recopiés (sections/calibres par circuit et chauffage ; différentiels) et contrôles ajoutés ; sèche-linge et pompe à chaleur en type A. Fichiers `PROJECT_STATE.md`, `TECHNICAL_DECISIONS.md`, `NEXT_SESSION.md`. Tests : **59/59 réussis**.
+- ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire ».
 
 ## Tâche en cours
-- Aucune. Phase 3 terminée ; demande de fusion n°2 préparée (non fusionnée), en attente des essais sur iPad.
+- Aucune. Phase 3 terminée et fusionnée dans `main` (demande n°2, fusion demandée explicitement par l'utilisateur le 4 novembre 2026). Essais iPad à faire : liste dans `NEXT_SESSION.md`.
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
@@ -66,5 +68,5 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Recopier les tableaux Legrand dans `js/normes.js` dès que l'utilisateur les fournit (avec test), puis activer le contrôle In ≤ Iz et la limite de chute de tension.
+- Recopier les tableaux Legrand manquants dans `js/normes.js` dès que l'utilisateur les fournit (avec test), puis activer le contrôle In ≤ Iz et la limite de chute de tension.
 - Phase 4 : cheminements et métrés (la longueur des câbles alimentera la fiche de calcul).

@@ -361,7 +361,7 @@ function rcdEditor(r) {
   const cs = rcdCircuits(r.id);
   return h('div', { class: 'ev-edit' },
     sec('Type', segCtl([{ v: 'AC', n: 'Type AC' }, { v: 'A', n: 'Type A' }, { v: 'F', n: 'Type F' }], r.type, (v) => { r.type = v; commit(); }),
-      h('p', { class: 'note' }, r.type === 'AC' ? 'Usage courant : éclairage, prises, chauffage, chauffe-eau.' : r.type === 'A' ? 'Obligatoire pour la plaque de cuisson, le lave-linge et la borne de recharge.' : 'Type F : appareils à vitesse variable monophasés (pompe à chaleur, climatisation, pompe de piscine), congélateur.')),
+      h('p', { class: 'note' }, r.type === 'AC' ? 'Usage courant : éclairage, prises, chauffage, chauffe-eau.' : r.type === 'A' ? 'Obligatoire pour la plaque de cuisson, le lave-linge, le sèche-linge, la pompe à chaleur et la borne de recharge.' : 'Type F : appareils à vitesse variable monophasés (pompe à chaleur, climatisation, pompe de piscine), congélateur.')),
     sec('Calibre', segCtl([25, 40, 63].map((v) => ({ v, n: v + ' A' })), r.cal, (v) => { r.cal = v; commit(); }),
       kv([['Charge calculée', NF1.format(l) + ' A'], ['Réglage de l’AGCP', agcp + ' A'], ['Circuits', cs.length + ' / 8']]),
       h('p', { class: 'note' }, 'Charge = chauffage + chauffe-eau + borne à 100 %, autres circuits à 50 % de leur calibre. Le calibre doit couvrir cette charge ou le réglage de l’AGCP.')),

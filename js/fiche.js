@@ -3,9 +3,9 @@
    (avec leur statut), les données manquantes, les alertes et les contrôles à trois statuts.
    Les calculs eux-mêmes sont dans calcul.js (sans écran). Module JavaScript natif (aucune compilation). */
 import { $, P } from './noyau.js';
-import { CONF, LIB_STATUT, bilanDuPlan, entreesDuPlan, equilibrageDuPlan, ficheCircuit, fmt, puissanceCircuit } from './calcul.js';
+import { CONF, LIB_STATUT, bilanDuPlan, controlesDifferentiels, entreesDuPlan, equilibrageDuPlan, ficheCircuit, fmt, puissanceCircuit } from './calcul.js';
 import { TABLES, tableDisponible } from './normes.js';
-import { circById, circNumbers, circuitColor, nfcChecks } from './electricite.js';
+import { circById, circNumbers, circuitColor, nfcChecks, rcdNumbers } from './electricite.js';
 import { ICON, btn, btns, closeModal, h, numField, sec, segCtl, textField, toast } from './interface.js';
 import { commit } from './interaction.js';
 import { EV, on } from './evenements.js';
@@ -183,11 +183,20 @@ function bilanView() {
     }, 'pri sm')));
   }
   parts.push(ph);
+  // interrupteurs différentiels (extrait Legrand)
+  const dd = controlesDifferentiels(P), rn = rcdNumbers();
+  const ctlBox = (x) => h('div', { class: 'fi-c' }, h('div', { class: 'fi-ch' }, h('b', null, x.nom), pillStatut(x.statut)), h('span', null, x.detail), h('small', null, `Source : ${x.source} · Édition : ${x.edition}`));
+  parts.push(h('section', { class: 'fiche' }, h('h3', null, 'Interrupteurs différentiels'),
+    h('div', { class: 'fi-ctl' }, dd.global.map(ctlBox),
+      dd.rcds.map((r) => h('div', { class: 'fi-c' }, h('div', { class: 'fi-ch' }, h('b', null, `${rn.get(r.id)} · ${r.cal} A · type ${r.type} · ${r.n} circuit${r.n > 1 ? 's' : ''}`), pillStatut(r.statut)),
+        r.controles.map((x) => h('span', null, `${x.nom} : ${CONF[x.statut].toLowerCase()}. ${x.detail}`)),
+        h('small', null, `Source : ${r.controles[0].source.replace(/, p\. .*$/, '')} · Édition : ${r.controles[0].edition}`)))),
+    h('p', { class: 'note' }, 'Le contrôle actuel du tableau (onglet Contrôle) compte aussi la pompe à chaleur et la borne de recharge à 100 % : il est plus prudent que la règle de l’extrait.')));
   // tableaux NF C 15-100
   parts.push(h('section', null, h('h3', null, 'Tableaux NF C 15-100 (extraits Legrand)'),
-    h('p', { class: 'note' }, 'Emplacements prêts. Tant qu’un tableau manque, les contrôles qui en dépendent restent « vérification nécessaire ».'),
+    h('p', { class: 'note' }, 'Tant qu’un tableau manque, les contrôles qui en dépendent restent « vérification nécessaire ».'),
     h('div', { class: 'ev-list' }, TABLES.map((t) => h('div', { class: 'ev-chk ' + (tableDisponible(t.id) ? 'ok' : 'warn') }, h('span', { class: 'ic' }, tableDisponible(t.id) ? '✓' : '!'),
-      h('span', { class: 'tx' }, h('b', null, t.titre), t.contenu, h('small', null, tableDisponible(t.id) ? `Source : ${t.source} · Édition : ${t.edition}${t.page ? ' · ' + t.page : ''}` : 'Manquant : extrait à fournir')))))));
+      h('span', { class: 'tx' }, h('b', null, t.titre), t.contenu, h('small', null, tableDisponible(t.id) ? `Recopié de : ${t.source} · Édition : ${t.edition}${t.page ? ' · ' + t.page : ''}` : 'Manquant : extrait à fournir')))))));
   return h('div', { class: 'ev-checks bilan' }, ...parts);
 }
 

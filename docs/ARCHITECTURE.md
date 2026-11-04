@@ -31,8 +31,8 @@ Mise à jour : phase 3 (4 novembre 2026).
 | `evenements.js` | Signaux entre modules (« le plan a changé ») | oui |
 | `rendu2d.js` | Dessin du plan en 2D (canvas), zone visible | non |
 | `elecdonnees.js` | Données électriques sans écran sorties de `electricite.js` : classement des symboles, types de circuits (`CK`), valeurs du contrôle (`SEC_MAX`…), puissance des symboles avec statut | oui |
-| `normes.js` | Emplacement des tableaux NF C 15-100 (extraits Legrand, source, édition, statut « manquante » ou « vérifiée »), constantes estimées, règles citées | oui |
-| `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts, fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
+| `normes.js` | Tableaux NF C 15-100 (extraits Legrand, source, édition, page, statut « manquante » ou « vérifiée » ; 2 recopiés), constantes estimées, règles citées | oui |
+| `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts (section/calibre, points, type et calibre des différentiels…), fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |

@@ -80,17 +80,33 @@ test('données marquées : « vérifiée » exige une source, valeur absente = n
   assert.equal(K.statutDe({ st: 'saisie' }, { st: 'estimee' }), 'estimee');
 });
 
-test('tableaux NF C 15-100 : emplacements prêts, tous manquants tant que l’extrait Legrand n’est pas fourni', () => {
-  assert.ok(N.TABLES.length >= 6);
+const RECOPIES = ['section_protection_logement', 'differentiels_logement'];
+test('tableaux NF C 15-100 : 2 recopiés de l’extrait Legrand (source, édition, page), les autres manquants', () => {
+  assert.ok(N.TABLES.length >= 8);
   for (const t of N.TABLES) {
     assert.ok(t.id && t.titre && t.contenu && t.format && t.sert.length, t.id);
-    assert.equal(t.statut, 'manquante', `${t.id} manquant`);
-    assert.equal(t.donnees, null, `${t.id} sans données inventées`);
-    assert.equal(N.tableDisponible(t.id), false);
+    if (RECOPIES.includes(t.id)) {
+      assert.equal(t.statut, 'verifiee'); assert.ok(t.source.includes('Legrand') && t.edition.includes('23 août 2024') && t.page, t.id);
+      assert.equal(N.tableDisponible(t.id), true);
+    } else { assert.equal(t.statut, 'manquante', `${t.id} manquant`); assert.equal(t.donnees, null, `${t.id} sans données inventées`); assert.equal(N.tableDisponible(t.id), false); }
   }
-  assert.equal(N.tablesManquantes().length, N.TABLES.length);
+  assert.equal(N.tablesManquantes().length, N.TABLES.length - 2);
+  /* valeurs recopiées (extrait p. 16-17 et 28-29) */
+  const S = N.TABLE_BY.get('section_protection_logement').donnees;
+  assert.deepEqual(S.chauffage, [{ pMax: 3500, sec: 1.5, inMax: 16 }, { pMax: 4500, sec: 2.5, inMax: 20 }, { pMax: 5750, sec: 4, inMax: 25 }, { pMax: 7250, sec: 6, inMax: 32 }]);
+  const c = Object.fromEntries(S.circuits.map((x) => [x.id, x.choix]));
+  assert.deepEqual(c.eclairage, [{ sec: 1.5, inMax: 16, max: 8 }]);
+  assert.deepEqual(c.prises, [{ sec: 1.5, inMax: 16, max: 8 }, { sec: 2.5, inMax: 20, max: 12 }]);
+  assert.deepEqual(c.prises_cuisine, [{ sec: 2.5, inMax: 20, max: 6 }]);
+  assert.deepEqual(c.cuisson, [{ sec: 6, inMax: 32, max: 1 }]);
+  /* les valeurs du contrôle actuel de Calque sont confirmées par l'extrait */
+  for (const [sec, cal] of [[1.5, 16], [2.5, 20], [4, 25], [6, 32]]) assert.equal(D.SEC_MAX[sec], cal);
+  for (const r of S.chauffage) assert.equal(D.HEAT_MAX[r.inMax], r.pMax);
+  const DD = N.TABLE_BY.get('differentiels_logement').donnees;
+  assert.equal(DD.nbMin, 2); assert.equal(DD.nbTypeAMin, 1); assert.equal(DD.circuitsMax, 8); assert.equal(DD.aval.coefAutres, 0.5);
+  assert.deepEqual(DD.types.lave_linge, ['A', 'F', 'B']); assert.ok(DD.types.prises.includes('AC'));
   for (const [id, r] of Object.entries(N.REGLES)) assert.ok(r.nom && r.source && r.edition, `règle ${id} : nom, source, édition`);
-  for (const [id, c] of Object.entries(N.CONSTANTES)) assert.ok(c.st === 'estimee' && c.src, `constante ${id} marquée estimée avec son origine`);
+  for (const [id, k] of Object.entries(N.CONSTANTES)) assert.ok(k.st === 'estimee' && k.src, `constante ${id} marquée estimée avec son origine`);
 });
 
 /* entrée de fiche écrite à la main */
@@ -99,7 +115,7 @@ function chauffage3000() {
   return { nom: 'Chauffage', kind: 'chauffage', reseau: d('mono'), phase: null, P: d(3000), cos: d(1, 'estimee'), L: d(20), sec: d(2.5), In: d(20), mat: d('cu'), secMaxCalque: 20 };
 }
 
-test('fiche de calcul : formules, résultats, jamais « conforme » tant que les tableaux manquent', () => {
+test('fiche de calcul : formules, résultats, jamais « conforme » global tant qu’un tableau manque', () => {
   const f = K.ficheCircuit(chauffage3000());
   /* IB = 3000 / 230 = 13,0435 A ; ΔU = 2 × 0,0225 × 20 / 2,5 × 13,0435 = 4,69565 V = 2,0416 % */
   near(f.resultats.IB.v, 3000 / 230, 'IB'); assert.equal(f.resultats.IB.st, 'estimee', 'cos φ estimé → IB estimée');
@@ -107,7 +123,8 @@ test('fiche de calcul : formules, résultats, jamais « conforme » tant que les
   assert.deepEqual(f.manquantes, []);
   const ctl = Object.fromEntries(f.controles.map((c) => [c.id, c]));
   assert.equal(ctl.ib_in.statut, 'conforme');
-  for (const id of ['in_iz', 'sec_logement', 'chute_tension', 'pdc']) assert.equal(ctl[id].statut, 'verification', id);
+  assert.equal(ctl.sec_logement.statut, 'conforme', 'chauffage 3 000 W ≤ 4 500 W en 2,5 mm² / 20 A (extrait p. 29)');
+  for (const id of ['in_iz', 'chute_tension', 'pdc']) assert.equal(ctl[id].statut, 'verification', id);
   assert.ok(ctl.in_iz.tablesManquantes.length >= 1);
   assert.equal(f.statut, 'verification', 'pas de conformité globale');
   for (const c of f.controles) { assert.ok(['conforme', 'non_conforme', 'verification'].includes(c.statut)); assert.ok(c.source && c.edition, c.id); }
@@ -126,10 +143,10 @@ test('fiche de calcul : IB > In → non conforme ; donnée absente → signalée
   assert.deepEqual(g.manquantes.map((m) => m.nom).sort(), ['Facteur de puissance cos φ', 'Longueur du câble L', 'Puissance active P'].sort());
   assert.equal(g.resultats.IB, undefined); assert.equal(g.resultats.dU, undefined);
   assert.equal(g.controles.find((c) => c.id === 'ib_in').statut, 'verification');
-  /* calibre supérieur à la valeur actuelle de Calque : alerte, mais statut « vérification nécessaire » (source non vérifiée) */
+  /* chauffage 2,5 mm² protégé à 32 A : l'extrait exige 6 mm² → non conforme */
   const h = K.ficheCircuit({ ...chauffage3000(), In: d(32), secMaxCalque: 20 });
-  assert.equal(h.controles.find((c) => c.id === 'sec_logement').statut, 'verification');
-  assert.ok(h.alertes.some((a) => a.niveau === 'bad' && /contrôle actuel de Calque/.test(a.texte)));
+  assert.equal(h.controles.find((c) => c.id === 'sec_logement').statut, 'non_conforme');
+  assert.ok(h.alertes.some((a) => a.niveau === 'bad'));
 });
 
 test('fiche de calcul en triphasé : IB, ΔU avec b = 1', () => {
@@ -205,4 +222,57 @@ test('données électriques sorties de electricite.js : chargées sans écran, v
   assert.equal(D.defaultKindFor('pc32'), 'cuisson'); assert.equal(D.accepts('eclairage', 'spot'), true);
   assert.deepEqual(D.agcpOf(9), [15, 45]); assert.equal(D.circLoad({ kind: 'chauffage', cal: 20 }), 20); assert.equal(D.circLoad({ kind: 'prises', cal: 20 }), 10);
   assert.equal(D.puissanceSymbole({ type: 'pc' }), null, 'prise : aucune puissance devinée');
+});
+
+test('section et calibre selon l’extrait Legrand (p. 16-17, 28-29)', () => {
+  const st = (o) => K.ficheCircuit({ ...chauffage3000(), cos: null, L: null, ...o }).controles.find((c) => c.id === 'sec_logement').statut;
+  assert.equal(st({ kind: 'eclairage', sec: d(1.5), In: d(16) }), 'conforme');
+  assert.equal(st({ kind: 'eclairage', sec: d(1.5), In: d(20) }), 'non_conforme', 'lumières : 16 A maxi');
+  assert.equal(st({ kind: 'prises', sec: d(1.5), In: d(20) }), 'non_conforme', 'prises 1,5 mm² : 16 A maxi');
+  assert.equal(st({ kind: 'prises', sec: d(2.5), In: d(20) }), 'conforme');
+  assert.equal(st({ kind: 'cuisson', sec: d(4), In: d(32) }), 'non_conforme', 'cuisson : 6 mm²');
+  assert.equal(st({ kind: 'seche_linge', sec: d(2.5), In: d(20) }), 'conforme');
+  assert.equal(st({ kind: 'chauffage', sec: d(1.5), In: d(16), P: d(3500) }), 'conforme', '3 500 W en 1,5 mm² / 16 A');
+  assert.equal(st({ kind: 'chauffage', sec: d(1.5), In: d(16), P: d(3600) }), 'non_conforme', '3 600 W > 3 500 W');
+  assert.equal(st({ kind: 'chauffage', sec: d(4), In: d(25), P: null }), 'verification', 'puissance inconnue');
+  assert.equal(st({ kind: 'vmc', sec: d(1.5), In: d(2) }), 'verification', 'VMC : non couverte par l’extrait');
+  assert.equal(st({ kind: 'irve', sec: d(10), In: d(40), priseVE: false }), 'verification', 'borne : non couverte');
+  assert.equal(st({ kind: 'irve', sec: d(2.5), In: d(20), priseVE: true }), 'conforme', 'prise renforcée VE 2,5 mm² / 20 A');
+  /* nombre de prises : 2,5 mm² / 20 A → 12 au plus */
+  const f = K.ficheCircuit({ ...chauffage3000(), kind: 'prises', sec: d(2.5), In: d(20), points: { n: 13, unite: 'prises' } });
+  assert.equal(f.controles.find((c) => c.id === 'nb_points').statut, 'non_conforme');
+  const g = K.ficheCircuit({ ...chauffage3000(), kind: 'prises', sec: d(1.5), In: d(16), points: { n: 8, unite: 'prises' } });
+  assert.equal(g.controles.find((c) => c.id === 'nb_points').statut, 'conforme');
+  /* type du différentiel (p. 13) */
+  const t = (kind, rcdType) => K.ficheCircuit({ ...chauffage3000(), kind, rcdType }).controles.find((c) => c.id === 'type_dd').statut;
+  assert.equal(t('lave_linge', 'AC'), 'non_conforme'); assert.equal(t('lave_linge', 'A'), 'conforme');
+  assert.equal(t('seche_linge', 'AC'), 'non_conforme', 'sèche-linge : type A au moins (p. 13)');
+  assert.equal(t('prises', 'AC'), 'conforme'); assert.equal(t('cuisson', 'F'), 'conforme');
+  assert.equal(t('prises', null), 'non_conforme', 'sans différentiel');
+  assert.equal(t('congelateur', 'AC'), 'verification', 'non couvert par le tableau');
+});
+
+test('interrupteurs différentiels : exemple de l’extrait (20 + 0,5 × 16 + 0,5 × 10 = 33 A → 40 A)', () => {
+  const plan = (cal, kva, extra) => ({ install: { kva }, elec: extra || [],
+    rcds: [{ id: 'r1', type: 'AC', cal }, { id: 'r2', type: 'A', cal: 40 }],
+    circuits: [{ id: 'a', kind: 'chauffage', cal: 20, rcd: 'r1' }, { id: 'b', kind: 'prises', cal: 16, rcd: 'r1' }, { id: 'c', kind: 'eclairage', cal: 10, rcd: 'r1' }, { id: 'd', kind: 'eclairage', cal: 16, rcd: 'r2' }] });
+  let r = K.controlesDifferentiels(plan(40, 9));
+  near(r.rcds[0].aval, 33, 'règle de l’aval'); assert.equal(r.rcds[0].statut, 'conforme');
+  assert.equal(r.global.find((c) => c.id === 'dd_nombre').statut, 'conforme');
+  assert.equal(r.global.find((c) => c.id === 'dd_lp').statut, 'conforme');
+  /* 25 A < 33 A et 25 A < 45 A (abonné 9 kVA) → non conforme */
+  r = K.controlesDifferentiels(plan(25, 9));
+  assert.equal(r.rcds[0].controles.find((c) => c.id === 'dd_calibre').statut, 'non_conforme');
+  /* 25 A < 33 A mais ≥ 15 A (abonné 3 kVA) : règle de l'amont, mais réglage de l'abonné estimé → vérification nécessaire */
+  r = K.controlesDifferentiels(plan(25, 3));
+  assert.equal(r.rcds[0].controles.find((c) => c.id === 'dd_calibre').statut, 'verification');
+  /* avec un générateur : règle de l'amont non vérifiable */
+  r = K.controlesDifferentiels(plan(25, 3, [{ type: 'panneau_pv' }]));
+  assert.equal(r.rcds[0].controles.find((c) => c.id === 'dd_calibre').statut, 'verification');
+  /* 9 circuits sur un différentiel ; un seul différentiel, sans type A */
+  const p9 = { install: { kva: 9 }, rcds: [{ id: 'r1', type: 'AC', cal: 63 }], circuits: Array.from({ length: 9 }, (_, i) => ({ id: 'c' + i, kind: 'prises', cal: 16, rcd: 'r1' })) };
+  r = K.controlesDifferentiels(p9);
+  assert.equal(r.rcds[0].controles.find((c) => c.id === 'dd_circuits').statut, 'non_conforme');
+  assert.equal(r.global.find((c) => c.id === 'dd_nombre').statut, 'non_conforme');
+  assert.equal(r.global.find((c) => c.id === 'dd_lp').statut, 'non_conforme');
 });

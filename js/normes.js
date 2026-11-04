@@ -15,6 +15,9 @@
 */
 
 const NORME = 'NF C 15-100';
+/* extrait fourni par l'utilisateur le 4 novembre 2026 */
+const SRC_GUIDE = 'Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003, août 2026)';
+const ED_2024 = 'NF C 15-100, révision du 23 août 2024 (série NF C 15-100-1 à -11 ; logement : NF C 15-100-10)';
 
 /* statut d'un tableau : 'manquante' (pas encore d'extrait) ou 'verifiee' (recopié depuis un extrait Legrand) */
 const TABLES = [
@@ -46,11 +49,24 @@ const TABLES = [
     id: 'section_protection_logement',
     titre: 'Section des conducteurs et courant assigné de la protection, par type de circuit (logement)',
     contenu: 'Pour chaque circuit d’un logement (éclairage, prises, spécialisés, cuisson, chauffage…) : section minimale en cuivre et calibre maximal du disjoncteur, nombre maximal de points ou de socles.',
-    sert: ['Contrôle section / calibre des circuits', 'Remplacement des valeurs du contrôle actuel de Calque'],
-    format: '[{ circuit, section, calibreMax, maxPoints }]',
-    statut: 'manquante', source: null, edition: null, page: null, donnees: null,
-    /* valeurs utilisées aujourd'hui par le contrôle de Calque (electricite.js / elecdonnees.js), source non vérifiée */
-    valeursCalque: 'SEC_MAX (1,5 mm² → 16 A ; 2,5 → 20 ; 4 → 25 ; 6 → 32 ; 10 → 40 ; 16 → 63), 8 points d’éclairage, 12 socles en 2,5 mm², 8 en 1,5 mm², 6 en cuisine.',
+    sert: ['Contrôle section / calibre des circuits', 'Confirmation des valeurs du contrôle actuel de Calque'],
+    format: '{ circuits: [{ id, nom, choix: [{ sec, inMax, max? }] }], chauffage: [{ pMax, sec, inMax }] }',
+    statut: 'verifiee', source: SRC_GUIDE, edition: ED_2024,
+    page: 'p. 16-17 « Les protections par circuit » ; p. 24-25 « Les prises et circuits spécialisés » ; p. 26 « Le circuit volets roulants » ; p. 28-29 « Le circuit chauffage »',
+    donnees: {
+      /* sec : section mini des fils (mm², cuivre) ; inMax : intensité maxi du disjoncteur (A) ; max : points ou prises maxi par circuit */
+      circuits: [
+        { id: 'eclairage', nom: 'Lumières', choix: [{ sec: 1.5, inMax: 16, max: 8 }], note: 'Au moins 2 circuits par logement (un seul admis pour un studio ou T1) ; 8 points lumineux maxi par circuit.' },
+        { id: 'prises', nom: 'Prises 2P+T', choix: [{ sec: 1.5, inMax: 16, max: 8 }, { sec: 2.5, inMax: 20, max: 12 }] },
+        { id: 'prises_cuisine', nom: 'Prises cuisine (hors circuits spécialisés)', choix: [{ sec: 2.5, inMax: 20, max: 6 }] },
+        { id: 'volets', nom: 'Volets roulants', choix: [{ sec: 1.5, inMax: 16 }, { sec: 2.5, inMax: 20 }], note: 'Au moins 1 circuit dédié ; intensité choisie suivant la puissance des moteurs.' },
+        { id: 'specialise', nom: 'Circuits spécialisés (lave-vaisselle, lave-linge, sèche-linge, four, chauffe-eau, congélateur, micro-ondes)', choix: [{ sec: 2.5, inMax: 20, max: 1 }], note: '3 circuits minimum, 1 appareil par circuit.', kinds: ['lave_linge', 'lave_vaisselle', 'seche_linge', 'four', 'congelateur', 'specialise', 'chauffe_eau'] },
+        { id: 'cuisson', nom: 'Plaques de cuisson', choix: [{ sec: 6, inMax: 32, max: 1 }], note: '1 circuit dédié.' },
+        { id: 'prise_ve', nom: 'Prise recharge VE (prise renforcée)', choix: [{ sec: 2.5, inMax: 20, max: 1 }], note: '1 circuit dédié.' },
+      ],
+      chauffage: [{ pMax: 3500, sec: 1.5, inMax: 16 }, { pMax: 4500, sec: 2.5, inMax: 20 }, { pMax: 5750, sec: 4, inMax: 25 }, { pMax: 7250, sec: 6, inMax: 32 }],
+    },
+    valeursCalque: 'Confirmées par l’extrait : 1,5 mm² → 16 A ; 2,5 → 20 ; 4 → 25 (chauffage) ; 6 → 32 ; 8 points d’éclairage, 12 socles en 2,5 mm², 8 en 1,5 mm², 6 en cuisine ; chauffage 3 500 / 4 500 / 5 750 / 7 250 W. Non couvertes par l’extrait : 10 mm² → 40 A et 16 mm² → 63 A.',
   },
   {
     id: 'chute_tension_max',
@@ -79,10 +95,27 @@ const TABLES = [
   {
     id: 'differentiels_logement',
     titre: 'Interrupteurs différentiels : nombre, type et calibre minimal (logement)',
-    contenu: 'Nombre minimal d’interrupteurs différentiels 30 mA, type (AC, A, F) selon les circuits, et calibre minimal selon la puissance souscrite ou les circuits protégés.',
-    sert: ['Contrôle des différentiels'],
-    format: '[{ condition, nombre, type, calibre }]',
-    statut: 'manquante', source: null, edition: null, page: null, donnees: null,
+    contenu: 'Nombre minimal d’interrupteurs différentiels 30 mA, type (AC, A, F, B) selon les circuits, nombre maximal de circuits et calcul du calibre.',
+    sert: ['Contrôle des différentiels', 'Type de différentiel de chaque circuit'],
+    format: '{ nbMin, nbTypeAMin, circuitsMax, aval: { plein: [kinds], demi: "autres" }, types: { [kind]: [types admis] } }',
+    statut: 'verifiee', source: SRC_GUIDE, edition: ED_2024,
+    page: 'p. 12-13 « Le nombre d’interrupteurs différentiels », « La répartition des circuits », « Bien choisir son interrupteur différentiel » ; p. 14-15 « Le nombre de circuits », « Le calcul de l’intensité »',
+    donnees: {
+      nbMin: 2, nbTypeAMin: 1, sensibilite: 30, circuitsMax: 8,
+      /* éclairage et prises à répartir sous au moins 2 différentiels (type A ou AC indifféremment) */
+      lumieresPrisesMin: 2,
+      /* règle de l'aval : I différentiel ≥ 1 × Σ disjoncteurs (convecteurs, chauffe-eau) + 0,5 × Σ disjoncteurs (prises, lumières, autres usages) ;
+         règle de l'amont : I différentiel ≥ I disjoncteur d'abonné + I générateur (photovoltaïque, éolien…) */
+      aval: { plein: ['chauffage', 'chauffe_eau'], coefAutres: 0.5 },
+      /* exemple de l'extrait (p. 15) : convecteurs 20 A + prises 16 A + lumières 10 A → 20 + 8 + 5 = 33 A → différentiel 40 A */
+      /* types admis selon les appareils (tableau p. 13) ; un circuit absent de cette liste n'est pas couvert par l'extrait */
+      types: {
+        eclairage: ['AC', 'A', 'F', 'B'], prises: ['AC', 'A', 'F', 'B'], prises_cuisine: ['AC', 'A', 'F', 'B'], volets: ['AC', 'A', 'F', 'B'],
+        chauffage: ['AC', 'A', 'F', 'B'], chauffe_eau: ['AC', 'A', 'F', 'B'], four: ['AC', 'A', 'F', 'B'], lave_vaisselle: ['AC', 'A', 'F', 'B'],
+        lave_linge: ['A', 'F', 'B'], seche_linge: ['A', 'F', 'B'], cuisson: ['A', 'F', 'B'], pac: ['A', 'F', 'B'], irve: ['A', 'F', 'B'],
+      },
+      notes: { irve: 'Recharge VE mode 3 triphasé : type A ou F avec dispositif de détection 6 mA, ou type B.', pac: 'Climatiseur, pompe à chaleur, pompe de piscine : type B également compatible.' },
+    },
   },
 ];
 const TABLE_BY = new Map(TABLES.map((t) => [t.id, t]));
@@ -111,9 +144,15 @@ const CONSTANTES = {
 const REGLES = {
   ib_in: { nom: 'Courant d’emploi inférieur ou égal au calibre de la protection (IB ≤ In)', source: `${NORME}, partie 4-43 (protection contre les surintensités), condition IB ≤ In ≤ Iz`, edition: 'à confirmer avec l’extrait Legrand' },
   in_iz: { nom: 'Calibre de la protection inférieur ou égal au courant admissible du câble (In ≤ Iz)', source: `${NORME}, partie 4-43 et tableaux des courants admissibles (partie 5-52)`, edition: 'à confirmer avec l’extrait Legrand', tables: ['iz', 'modes_pose', 'facteurs_correction'] },
-  sec_logement: { nom: 'Section et calibre du circuit (logement)', source: `${NORME}, partie 7-771 (locaux d’habitation)`, edition: 'à confirmer avec l’extrait Legrand', tables: ['section_protection_logement'] },
+  sec_logement: { nom: 'Section et calibre du circuit (logement)', source: `${SRC_GUIDE}, p. 16-17 et 28-29`, edition: ED_2024, tables: ['section_protection_logement'] },
+  nb_points: { nom: 'Nombre maximal de points d’éclairage ou de prises par circuit', source: `${SRC_GUIDE}, p. 16-17, 22, 24`, edition: ED_2024, tables: ['section_protection_logement'] },
+  type_dd: { nom: 'Type de l’interrupteur différentiel adapté au circuit', source: `${SRC_GUIDE}, p. 12-13`, edition: ED_2024, tables: ['differentiels_logement'] },
+  dd_circuits: { nom: '8 circuits au maximum par interrupteur différentiel', source: `${SRC_GUIDE}, p. 14`, edition: ED_2024, tables: ['differentiels_logement'] },
+  dd_calibre: { nom: 'Calibre de l’interrupteur différentiel (règle de l’amont ou de l’aval)', source: `${SRC_GUIDE}, p. 14-15`, edition: ED_2024, tables: ['differentiels_logement'] },
+  dd_nombre: { nom: 'Au moins 2 interrupteurs différentiels 30 mA, dont au moins 1 de type A', source: `${SRC_GUIDE}, p. 12`, edition: ED_2024, tables: ['differentiels_logement'] },
+  dd_lp: { nom: 'Lumières et prises réparties sous au moins 2 interrupteurs différentiels', source: `${SRC_GUIDE}, p. 12`, edition: ED_2024, tables: ['differentiels_logement'] },
   chute_tension: { nom: 'Chute de tension inférieure à la limite admise', source: `${NORME}, partie 5-52 (chutes de tension)`, edition: 'à confirmer avec l’extrait Legrand', tables: ['chute_tension_max', 'chute_tension_calcul'] },
   pdc: { nom: 'Pouvoir de coupure et courbe du disjoncteur', source: `${NORME}, partie 4-43 (protection contre les courts-circuits)`, edition: 'à confirmer avec l’extrait Legrand' },
 };
 
-export { CONSTANTES, NORME, REGLES, TABLES, TABLE_BY, tableDisponible, tablesManquantes };
+export { CONSTANTES, ED_2024, NORME, REGLES, SRC_GUIDE, TABLES, TABLE_BY, tableDisponible, tablesManquantes };

@@ -1,5 +1,18 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 3, étape 4 : tableaux Legrand et fichiers de passage entre sessions
+- **Extrait Legrand reçu** (« NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand », réf. MM224003). Deux tableaux recopiés dans `js/normes.js`, avec source, édition et pages :
+  - section mini / calibre maxi / nombre de points par circuit du logement, et tableau du chauffage (p. 16-17, 24-29) ;
+  - interrupteurs différentiels : 2 au moins dont 1 de type A, 8 circuits maxi, types admis par appareil, calcul du calibre par la règle de l’amont ou de l’aval (p. 12-15).
+- Nouveaux contrôles (3 statuts, source et édition affichées) : section et calibre du circuit, nombre de points ou de prises, type du différentiel du circuit (fiche de calcul) ; nombre de différentiels, lumières et prises sur 2 différentiels, 8 circuits maxi, calibre de chaque différentiel (onglet Bilan, section « Interrupteurs différentiels »).
+- La règle de l’amont s’appuie sur le réglage estimé du disjoncteur d’abonné : elle donne au mieux « vérification nécessaire ».
+- **Correction** : le sèche-linge et la pompe à chaleur demandent un différentiel de type A au moins (extrait p. 13). Le générateur du tableau les place désormais sous un type A et le contrôle du tableau le signale. Les plans existants ne changent pas tant qu’on ne régénère pas le tableau.
+- Les valeurs du contrôle actuel de Calque (1,5 mm² → 16 A, 2,5 → 20, 4 → 25, 6 → 32, 8 points, 12/8/6 prises, chauffage 3 500/4 500/5 750/7 250 W) sont **confirmées** par l’extrait ; 10 mm² → 40 A et 16 mm² → 63 A ne sont pas couverts.
+- Toujours absents de l’extrait : courants admissibles Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes de calcul, coefficients de simultanéité.
+- Nouveaux fichiers de suivi : `PROJECT_STATE.md` (état du projet), `TECHNICAL_DECISIONS.md` (choix techniques), `NEXT_SESSION.md` (consignes pour la session suivante).
+- Service Worker : cache `calque-v14`.
+- `tests/calcul.test.mjs` : 15 tests (valeurs de l’extrait, dont l’exemple 20 + 8 + 5 = 33 A → 40 A).
+
 ## 2026-11-04 — Phase 3, étape 3 : bilan de puissance et équilibrage des phases
 - Nouvel onglet **Bilan** dans Tableau électrique : puissance installée, puissance apparente et cos φ global, puissance appelée (avec le coefficient de simultanéité ks, s’il est saisi), puissance souscrite.
 - Bilan **partiel** signalé quand des circuits n’ont pas de puissance ou de cos φ (les totaux sont alors des minimums). Aucun coefficient ks par défaut : le tableau Legrand des coefficients est attendu ; une valeur peut être saisie, avec sa fiabilité et son origine.

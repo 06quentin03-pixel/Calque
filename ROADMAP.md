@@ -42,14 +42,15 @@ Dépend de : 1a, 1b.
 - ⏸ Import de catalogues fabricants (CSV/Excel, FAB-DIS) : **mis de côté par l’utilisateur le 4 novembre 2026** (utilité jugée faible pour l’instant). Déjà préparé (lecture CSV et .xlsx sans bibliothèque, reconnaissance des colonnes, conversion en articles, 4 tests dans `tests/catalogue.test.mjs`). En attente des fichiers de l'utilisateur pour : colonnes FAB-DIS, enregistrement selon le volume, écran d'import.
 - ✅ Import de plans (image ou PDF en fond de calque) : un fond par niveau, mise à l’échelle par 2 points ou par l’échelle d’impression du PDF, opacité, déplacement, rotation (format v4). `js/fond.js`, `js/fondcalc.js`, 4 tests dans `tests/fond.test.mjs`. PDF : première page, lue par Safari (à vérifier sur iPad).
 
-## Phase 3 — Électricité et calculs ✅ (à vérifier sur iPad ; tableaux Legrand en attente)
+## Phase 3 — Électricité et calculs ✅ (fusionnée dans `main` ; essais iPad à faire ; une partie des tableaux Legrand en attente)
 Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indépendant).
 - ✅ Moteur de calcul pur et testé (`js/calcul.js`, 13 tests dans `tests/calcul.test.mjs`) : intensités mono et triphasées, puissances P/Q/S, cos φ, chute de tension, protections (IB ≤ In ; In ≤ Iz en attente du tableau), bilan de puissance, équilibrage des phases. La section et le contrôle In ≤ Iz restent « vérification nécessaire » tant que les tableaux Legrand manquent.
 - ✅ Partie sans écran d'`electricite.js` sortie dans `js/elecdonnees.js` (résultat du tableau et des contrôles inchangé).
 - ✅ Emplacement des tableaux NF C 15-100 préparé (`js/normes.js`), tous « manquants ».
 - ✅ Fiche de calcul d'un circuit depuis le plan et depuis le tableau : hypothèses, formules, données utilisées et manquantes, alertes, contrôles à 3 statuts (`js/fiche.js`, format v5, 3 tests dans `tests/fiche.test.mjs`).
 - ✅ Bilan de puissance et équilibrage des phases dans l'onglet Tableau (onglet « Bilan »).
-- ⬜ Tableaux de données issus des extraits Legrand ⏸ (documents à fournir par l'utilisateur).
+- ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
+- ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : autre document Legrand à fournir.
 
 ## Phase 4 — Cheminements et métrés
 Dépend de : 3.
@@ -78,5 +79,5 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 - ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
-- Extraits NF C 15-100 de Legrand (PDF).
+- Extraits NF C 15-100 de Legrand : reçu le guide « Points clés » ; manquent Iz, modes de pose, facteurs de correction, chutes de tension, simultanéité, remplissage des conduits (voir `NEXT_SESSION.md`).
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

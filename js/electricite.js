@@ -387,7 +387,7 @@ function nfcChecks() {
   for (const c of circs) {
     const k = CK[c.kind] || CK.autre, r = rcdById(c.rcd), ref = { t: 'circuit', id: c.id }, nm = nums.get(c.id);
     if (!r) { add('err', G1, `${nm} ${c.name} n'est protégé par aucun différentiel 30 mA.`, ref); continue; }
-    if (k.typeA && r.type === 'AC') add('err', G1, `${nm} ${c.name} doit être sous un différentiel de type A (ou F), pas AC.`, ref, 'Type A obligatoire : plaque de cuisson, lave-linge, borne de recharge.');
+    if (k.typeA && r.type === 'AC') add('err', G1, `${nm} ${c.name} doit être sous un différentiel de type A (ou F), pas AC.`, ref, 'Type A au moins (A, F ou B) : plaque de cuisson, lave-linge, sèche-linge, pompe à chaleur, borne de recharge (extrait Legrand, p. 13).');
     if (k.ownRcd && rcdCircuits(r.id).length > 1) add('err', G1, `${nm} ${c.name} : la borne doit avoir son propre différentiel 30 mA.`, ref);
   }
   const lp = circs.filter((c) => c.kind === 'eclairage' || c.kind === 'prises');

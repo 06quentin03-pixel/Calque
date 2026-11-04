@@ -10,7 +10,7 @@
      les contrôles qui en dépendent restent « vérification nécessaire ».
 
    Unités : W, var, VA, V, A, m, mm², Ω·mm²/m, Ω/m. */
-import { CK, CMDS, SEC_MAX, puissanceSymbole } from './elecdonnees.js';
+import { CK, CMDS, LIGHTS, SEC_MAX, SOCKETS, SPOTLIKE, agcpOf, puissanceSymbole } from './elecdonnees.js';
 import { CONSTANTES, REGLES, TABLE_BY, tableDisponible } from './normes.js';
 
 /* ---------------- données marquées ---------------- */
@@ -194,13 +194,15 @@ function ficheCircuit(e) {
   // In ≤ Iz
   const mIz = manque(REGLES.in_iz.tables);
   C('in_iz', 'verification', mIz.length ? `Tableaux manquants (extraits Legrand à fournir) : ${mIz.join(' ; ')}. Mode de pose non renseigné.` : 'Mode de pose et conditions d’installation non renseignés.', { tablesManquantes: mIz });
-  // section / calibre du logement
-  const mSec = manque(REGLES.sec_logement.tables);
-  const sm = e.secMaxCalque;
-  let dSec = mSec.length ? `Tableau manquant : ${mSec.join(' ; ')}.` : '';
-  if (fini(sm) && e.sec && e.In) dSec += ` Valeur du contrôle actuel de Calque (source non vérifiée) : ${fmt(e.sec.v, 1)} mm² → ${fmt(sm, 0)} A au plus.`;
-  C('sec_logement', 'verification', dSec.trim(), { tablesManquantes: mSec });
-  if (fini(sm) && e.In && e.In.v > sm) A('bad', `Le contrôle actuel de Calque signale un calibre de ${fmt(e.In.v, 0)} A trop élevé pour ${fmt(e.sec.v, 1)} mm² (${fmt(sm, 0)} A au plus). À confirmer avec l’extrait Legrand.`);
+  // section / calibre du logement (extrait Legrand) et nombre de points
+  const cs = controleSection(e);
+  C('sec_logement', cs.statut, cs.detail, { tablesManquantes: manque(REGLES.sec_logement.tables) });
+  if (cs.alerte) A(cs.alerte.niveau, cs.alerte.texte);
+  const cn = controlePoints(e, cs.choix);
+  if (cn) C('nb_points', cn.statut, cn.detail);
+  // type du différentiel
+  const ct = controleTypeDD(e);
+  if (ct) C('type_dd', ct.statut, ct.detail);
   // chute de tension
   const mDu = manque(REGLES.chute_tension.tables);
   if (dU) C('chute_tension', 'verification', `ΔU = ${fmt(dU.pct, 2)} % calculé (constantes estimées).${mDu.length ? ` Limite à confirmer, tableau manquant : ${mDu.join(' ; ')}.` : ''}`, { tablesManquantes: mDu });
@@ -210,6 +212,94 @@ function ficheCircuit(e) {
 
   out.statut = statutGlobal(out.controles);
   return out;
+}
+
+
+/* ---------------- contrôles issus de l'extrait Legrand (normes.js) ---------------- */
+const SEC_TAB = () => TABLE_BY.get('section_protection_logement').donnees;
+const DD_TAB = () => TABLE_BY.get('differentiels_logement').donnees;
+const mm2 = (v) => fmt(v, 1) + ' mm²';
+function ligneSection(e) {
+  const kind = e.kind === 'irve' ? (e.priseVE ? 'prise_ve' : null) : e.kind;
+  return kind ? SEC_TAB().circuits.find((c) => c.id === kind || (c.kinds && c.kinds.includes(kind))) || null : null;
+}
+function controleSection(e) {
+  if (!tableDisponible('section_protection_logement')) {
+    let d = 'Tableau manquant (extrait Legrand à fournir).';
+    if (fini(e.secMaxCalque) && e.sec && e.In) d += ` Valeur du contrôle actuel de Calque : ${mm2(e.sec.v)} → ${fmt(e.secMaxCalque, 0)} A au plus.`;
+    return { statut: 'verification', detail: d, alerte: fini(e.secMaxCalque) && e.In && e.In.v > e.secMaxCalque ? { niveau: 'bad', texte: `Le contrôle actuel de Calque signale un calibre de ${fmt(e.In.v, 0)} A trop élevé pour ${mm2(e.sec.v)}.` } : null };
+  }
+  if (!e.sec || !e.In) return { statut: 'verification', detail: 'Section ou calibre du circuit non renseigné.' };
+  if (e.kind === 'chauffage') {
+    const rows = SEC_TAB().chauffage, row = rows.find((r) => r.inMax === e.In.v);
+    if (!row) return { statut: 'verification', detail: `Calibre ${fmt(e.In.v, 0)} A absent du tableau du chauffage de l’extrait (16, 20, 25 ou 32 A).` };
+    if (e.sec.v < row.sec - 1e-9) return { statut: 'non_conforme', detail: `Chauffage protégé à ${fmt(e.In.v, 0)} A : section mini ${mm2(row.sec)}, le circuit a ${mm2(e.sec.v)}.`, alerte: { niveau: 'bad', texte: `Section ${mm2(e.sec.v)} insuffisante pour un disjoncteur de ${fmt(e.In.v, 0)} A (chauffage).` } };
+    if (!e.P) return { statut: 'verification', detail: `${mm2(e.sec.v)} / ${fmt(e.In.v, 0)} A admis pour ${fmt(row.pMax, 0)} W au plus : puissance du circuit inconnue.` };
+    if (e.P.v > row.pMax + 1e-9) return { statut: 'non_conforme', detail: `${fmt(e.P.v, 0)} W pour ${fmt(row.pMax, 0)} W au plus avec ${mm2(row.sec)} / ${fmt(row.inMax, 0)} A.`, alerte: { niveau: 'bad', texte: `Puissance de chauffage ${fmt(e.P.v, 0)} W supérieure aux ${fmt(row.pMax, 0)} W admis pour ce circuit : un circuit par tranche de 4 500 W.` } };
+    return { statut: 'conforme', detail: `${fmt(e.P.v, 0)} W ≤ ${fmt(row.pMax, 0)} W ; ${mm2(e.sec.v)} ≥ ${mm2(row.sec)} ; ${fmt(e.In.v, 0)} A.${e.P.st === 'estimee' ? ' (Puissance estimée.)' : ''}` };
+  }
+  const l = ligneSection(e);
+  if (!l) return { statut: 'verification', detail: 'Type de circuit non couvert par l’extrait Legrand fourni.' };
+  const choix = l.choix.filter((c) => e.sec.v >= c.sec - 1e-9 && e.In.v <= c.inMax + 1e-9);
+  const liste = l.choix.map((c) => `${mm2(c.sec)} / ${fmt(c.inMax, 0)} A`).join(' ou ');
+  if (!choix.length) return { statut: 'non_conforme', detail: `${l.nom} : ${mm2(e.sec.v)} / ${fmt(e.In.v, 0)} A ne respecte pas ${liste} (section mini / calibre maxi).`, alerte: { niveau: 'bad', texte: `${mm2(e.sec.v)} avec un disjoncteur de ${fmt(e.In.v, 0)} A : non admis pour « ${l.nom} » (${liste}).` } };
+  return { statut: 'conforme', detail: `${l.nom} : ${mm2(e.sec.v)} / ${fmt(e.In.v, 0)} A admis (${liste}).`, choix };
+}
+function controlePoints(e, choix) {
+  if (!tableDisponible('section_protection_logement') || !choix || !e.points) return null;
+  const max = Math.max(...choix.map((c) => c.max || 0));
+  if (!max) return null;
+  const p = e.points;
+  if (p.inconnu) return { statut: 'verification', detail: p.inconnu };
+  const u = p.unite;
+  if (p.n > max) return { statut: 'non_conforme', detail: `${p.n} ${u} pour ${max} au plus.` };
+  return { statut: 'conforme', detail: `${p.n} ${u} sur ${max} au plus.` };
+}
+function controleTypeDD(e) {
+  if (!tableDisponible('differentiels_logement')) return { statut: 'verification', detail: 'Tableau des différentiels manquant.' };
+  if (e.rcdType === undefined) return null;
+  if (!e.rcdType) return { statut: 'non_conforme', detail: 'Circuit protégé par aucun interrupteur différentiel 30 mA.' };
+  const ok = DD_TAB().types[e.kind];
+  if (!ok) return { statut: 'verification', detail: `Type ${e.rcdType} : appareil non couvert par le tableau de l’extrait.` };
+  const note = DD_TAB().notes[e.kind] ? ' ' + DD_TAB().notes[e.kind] : '';
+  return ok.includes(e.rcdType) ? { statut: 'conforme', detail: `Type ${e.rcdType} admis (${ok.join(', ')}).${note}` } : { statut: 'non_conforme', detail: `Type ${e.rcdType} non admis : ${ok.join(', ')}.${note}` };
+}
+/* contrôles des interrupteurs différentiels de l'installation (extrait Legrand p. 12-15) */
+const GENERATEURS = new Set(['panneau_pv', 'onduleur', 'groupe', 'batterie']);
+function controlesDifferentiels(plan) {
+  const C = (id, statut, detail) => ({ id, nom: REGLES[id].nom, source: REGLES[id].source, edition: REGLES[id].edition, statut, detail });
+  const rcds = plan.rcds || [], circs = plan.circuits || [];
+  if (!tableDisponible('differentiels_logement')) return { global: [C('dd_nombre', 'verification', 'Tableau manquant.')], rcds: [] };
+  const T = DD_TAB();
+  const inst = plan.install || {};
+  const agcp = fini(inst.kva) ? { v: agcpOf(inst.kva)[1], st: 'estimee', src: `Réglage usuel du disjoncteur d’abonné pour ${inst.kva} kVA (valeur de Calque, à vérifier sur le contrat)` } : null;
+  const gen = (plan.elec || []).some((x) => GENERATEURS.has(x.type));
+  const global = [];
+  const nA = rcds.filter((r) => r.type === 'A').length;
+  if (!circs.length) global.push(C('dd_nombre', 'verification', 'Aucun circuit.'));
+  else if (rcds.length < T.nbMin) global.push(C('dd_nombre', 'non_conforme', `${rcds.length} interrupteur${rcds.length > 1 ? 's' : ''} différentiel${rcds.length > 1 ? 's' : ''} : ${T.nbMin} au moins.`));
+  else if (nA < T.nbTypeAMin) global.push(C('dd_nombre', rcds.some((r) => r.type === 'F' || r.type === 'B') ? 'verification' : 'non_conforme', `Aucun différentiel de type A${rcds.some((r) => r.type === 'F' || r.type === 'B') ? ' (un type F ou B est présent : l’extrait demande « au minimum 1 de type A »)' : ''}.`));
+  else global.push(C('dd_nombre', 'conforme', `${rcds.length} interrupteurs différentiels 30 mA, dont ${nA} de type A.`));
+  const lp = circs.filter((c) => c.kind === 'eclairage' || c.kind === 'prises' || c.kind === 'prises_cuisine');
+  if (lp.length >= 2) {
+    const hosts = new Set(lp.map((c) => c.rcd).filter(Boolean));
+    global.push(C('dd_lp', hosts.size >= T.lumieresPrisesMin ? 'conforme' : 'non_conforme', `Lumières et prises sous ${hosts.size} différentiel${hosts.size > 1 ? 's' : ''}.`));
+  }
+  const out = rcds.map((r) => {
+    const cs = circs.filter((c) => c.rcd === r.id);
+    const ctl = [];
+    ctl.push(C('dd_circuits', cs.length <= T.circuitsMax ? 'conforme' : 'non_conforme', `${cs.length} circuit${cs.length > 1 ? 's' : ''} sur ${T.circuitsMax} au plus.`));
+    const plein = cs.filter((c) => T.aval.plein.includes(c.kind)).reduce((s, c) => s + (c.cal || 0), 0);
+    const autres = cs.filter((c) => !T.aval.plein.includes(c.kind)).reduce((s, c) => s + (c.cal || 0), 0);
+    const aval = plein + T.aval.coefAutres * autres;
+    const calc = `Règle de l’aval : 1 × ${fmt(plein, 0)} A (chauffage, chauffe-eau) + 0,5 × ${fmt(autres, 0)} A (autres) = ${fmt(aval, 1)} A`;
+    if (r.cal >= aval - 1e-9) ctl.push(C('dd_calibre', 'conforme', `${calc} ≤ ${fmt(r.cal, 0)} A.`));
+    else if (!gen && agcp && r.cal >= agcp.v) ctl.push(C('dd_calibre', 'verification', `${calc} > ${fmt(r.cal, 0)} A. Règle de l’amont respectée si le disjoncteur d’abonné est réglé à ${fmt(agcp.v, 0)} A au plus : réglage estimé, à vérifier sur le contrat.`));
+    else if (gen) ctl.push(C('dd_calibre', 'verification', `${calc} > ${fmt(r.cal, 0)} A. Règle de l’amont non vérifiable : intensité du générateur (photovoltaïque…) non renseignée.`));
+    else ctl.push(C('dd_calibre', 'non_conforme', `${calc} > ${fmt(r.cal, 0)} A, et ${fmt(r.cal, 0)} A < disjoncteur d’abonné ${agcp ? fmt(agcp.v, 0) + ' A' : '(non renseigné)'}.`));
+    return { id: r.id, type: r.type, cal: r.cal, n: cs.length, aval, controles: ctl, statut: statutGlobal(ctl) };
+  });
+  return { global, rcds: out, agcp };
 }
 
 /* ---------------- lecture d'un circuit du plan ----------------
@@ -242,8 +332,17 @@ function entreesDuPlan(plan, c) {
   let phase = PHASES.includes(calc.phase) ? { v: calc.phase, st: 'saisie', src: 'Choisi dans la fiche du circuit' } : null;
   if (!phase && (plan.elec || []).some((e) => e.cid === c.id && e.type === 'pc_tri')) phase = { v: 'tri', st: 'estimee', src: 'Une prise triphasée est reliée au circuit' };
   const mat = calc.mat === 'cu' || calc.mat === 'al' ? { v: calc.mat, st: 'saisie', src: 'Choisi dans la fiche du circuit' } : null;
+  const ms = (plan.elec || []).filter((e) => e.cid === c.id);
+  let points = null;
+  if (c.kind === 'prises' || c.kind === 'prises_cuisine') points = { n: ms.reduce((s, e) => s + (e.type === 'com' ? 2 : SOCKETS[e.type] || 0), 0), unite: 'prises' };
+  else if (c.kind === 'eclairage') {
+    const L = ms.filter((e) => LIGHTS.has(e.type));
+    points = L.some((e) => SPOTLIKE.has(e.type)) ? { inconnu: 'Spots ou rubans LED : leur décompte en points d’éclairage n’est pas donné par l’extrait (le contrôle du tableau compte 1 point par 300 VA).' } : { n: L.length, unite: 'points d’éclairage' };
+  } else if (ms.length) points = { n: ms.filter((e) => !CMDS.has(e.type)).length, unite: 'appareils' };
+  const rc = (plan.rcds || []).find((r) => r.id === c.rcd);
   return {
-    nom: c.name, kind: c.kind, reseau: reseauDe(plan), phase,
+    nom: c.name, kind: c.kind, reseau: reseauDe(plan), phase, points, rcdType: rc ? rc.type : null,
+    priseVE: ms.some((e) => e.type === 'prise_ve') && !ms.some((e) => e.type === 'borne_ve'),
     P: Pw, Pdetail: detail, cos,
     L: lireDonnee(calc.len, (v) => fini(v) && v > 0),
     sec: fini(c.sec) ? { v: c.sec, st: 'saisie', src: 'Section choisie dans le tableau' } : null,
@@ -301,5 +400,5 @@ function equilibrageDuPlan(plan, bilan) {
 }
 
 export { CONF, LIB_STATUT, MAT_NOM, PHASES, SQRT3, STATUTS, apparenteMono, apparenteTri, bilanDuPlan, bilanPuissance,
-  chuteTension, cosPhi, cosPhiPQ, courantMono, courantTri, donnee, entreesDuPlan, equilibrage, equilibrageDuPlan,
+  chuteTension, controlesDifferentiels, cosPhi, cosPhiPQ, courantMono, courantTri, donnee, entreesDuPlan, equilibrage, equilibrageDuPlan,
   ficheCircuit, ficheDuPlan, fmt, lireDonnee, puissanceCircuit, puissances, repartirPhases, reseauDe, statutDe, statutGlobal };
