@@ -17,6 +17,7 @@ import { renderElecView } from './tableau.js';
 import { closePops, fmtIn, parseNum, renderInspector, renderLevels, setTool, toast, updateHint, wallMovingEnds } from './interface.js';
 import { scheduleSave } from './stockage.js';
 import { v3Refresh } from './vue3d.js';
+import { applyComp, upsertPlanComp } from './composants.js';
 
 /* ============================================================
    CALQUE — interaction : vue, sélection, outils, aimantation
@@ -854,12 +855,14 @@ function placeFromCatalog(wp) {
   const pl = ui.place; if (!pl) return;
   if (pl.kind === 'elec') {
     const e = makeElecFromDef(pl.def, ui.lv);
+    if (pl.comp) { applyComp(e, pl.comp); upsertPlanComp(P, pl.comp); }
     placeElecAt(e, wp);
     P.elec.push(e); IDX.elec.set(e.id, e);
     ui.sel = { t: 'elec', id: e.id };
     commit();
   } else {
     const it = makeItemFromDef(pl.def, ui.lv);
+    if (pl.comp) { applyComp(it, pl.comp); upsertPlanComp(P, pl.comp); }
     placeItemAt(it, wp, pl.def);
     if (isStair(it.type) && !pl.def.mag) { const g = gridSnapItem(it, wp); it.x = g.x; it.y = g.y; }
     P.items.push(it); IDX.items.set(it.id, it);

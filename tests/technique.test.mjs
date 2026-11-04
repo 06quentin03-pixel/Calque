@@ -72,9 +72,9 @@ test('migration v1 → v2 : ancien plan ouvert sans perte, article choisi dans l
     const b = S.migratePlan(JSON.parse(JSON.stringify(a.plan)));
     return { ver: S.PLAN_VERSION, has: Object.keys(S.MIGRATIONS).map(Number), a, b };
   }, planV1('x'));
-  assert.equal(m.ver, 2);
+  assert.ok(m.ver >= 2);
   for (let v = 1; v < m.ver; v++) assert.ok(m.has.includes(v), `migration ${v} → ${v + 1} présente`);
-  assert.equal(m.a.from, 1); assert.equal(m.a.plan.v, 2);
+  assert.equal(m.a.from, 1); assert.equal(m.a.plan.v, m.ver);
   assert.ok(!('art' in m.a.plan.elec[1]), 'valeur invalide retirée');
   assert.deepEqual(m.a.plan.elec[0], planV1('x').elec[0], 'symbole valide inchangé');
   assert.deepEqual(m.b.plan, m.a.plan, 'migration sans effet sur un plan déjà à jour');
@@ -86,7 +86,7 @@ test('migration v1 → v2 : ancien plan ouvert sans perte, article choisi dans l
   assert.ok(opts.includes('Prise de courant 2P+T 16 A'), opts.join(' | '));
   await page.selectOption('#f-eart', 'pc-2pt-16'); await wait(page, 1400);
   const st = await storedPlan(page, 'pV1');
-  assert.equal(st.v, 2);
+  assert.ok(st.v >= 2);
   assert.equal(st.elec.find((e) => e.id === 'e1').art, 'pc-2pt-16');
   assert.equal(st.elec.find((e) => e.id === 'e1').cid, 'c1', 'circuit conservé');
   assert.deepEqual(errors, []);

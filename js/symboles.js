@@ -838,6 +838,20 @@ function drawElec(c, e, K) {
   def.draw(c, K2);
   c.restore();
 }
+/* marquage d'un composant personnalisé (« IP55 », « 20A »…), écrit à l'écart du symbole, toujours lisible */
+function drawElecMark(c, e, K) {
+  if (!e.mark) return;
+  const def = ELEC_BY.get(e.type), u = elecSize(K);
+  c.save();
+  c.translate(e.x, e.y); c.rotate((e.rot || 0) * DEG);
+  c.translate(0, (def && def.wall ? 1.08 : 0.72) * u);
+  if (needsFlip(e.rot)) c.rotate(Math.PI);
+  const size = Math.max(0.3 * u, 9 * K.px);
+  c.font = `700 ${size}px ${K.font}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.lineJoin = 'round'; c.lineWidth = 3 * K.px; c.strokeStyle = K.bg; c.strokeText(e.mark, 0, 0);
+  c.fillStyle = K.elec; c.fillText(e.mark, 0, 0);
+  c.restore();
+}
 function elecBox(e, K) {
   const def = ELEC_BY.get(e.type); const u = elecSize(K);
   if (!def) return { x0: -u / 2, y0: -u / 2, x1: u / 2, y1: u / 2 };
@@ -958,5 +972,5 @@ function drawItemLabel(c, it, K) {
 
 export { DR, ELEC, ELEC_BY, ELEC_CATS, FURN, FURN_BY, FURN_CATS, S_ELEC, _circ, _dash, _eBox, _eCom, _eCross, _eFan,
   _eFill, _eLabel, _eLever, _eMotor, _ePrise, _eRoundTag, _eStem, _eSwitchBase, _ell, _fs, _ln, _nodash, _r, _rr, _txt,
-  basin, drawElec, drawItem, drawItemLabel, drawStair, elecBox, elecSize, furnDef, isStair, needsFlip, rectSteps,
+  basin, drawElec, drawElecMark, drawItem, drawItemLabel, drawStair, elecBox, elecSize, furnDef, isStair, needsFlip, rectSteps,
   rectStepsX, stairInfo, stairModel };

@@ -34,6 +34,17 @@ const MIGRATIONS = {
     for (const e of Array.isArray(p.elec) ? p.elec : []) if (e && 'art' in e && (typeof e.art !== 'string' || !e.art)) delete e.art;
     return p;
   },
+  /* v2 → v3 (phase 2) : composants personnalisés. Le plan garde une copie des composants qu'il utilise (`comps`),
+     un meuble ou un symbole peut en désigner un (`comp`), un symbole peut afficher un marquage (`mark`).
+     Les plans v2 n'en ont pas : liste vide ; une valeur invalide éventuelle est retirée. */
+  2(p) {
+    if (!Array.isArray(p.comps)) p.comps = [];
+    for (const k of ['items', 'elec']) for (const o of Array.isArray(p[k]) ? p[k] : []) {
+      if (o && 'comp' in o && (typeof o.comp !== 'string' || !o.comp)) delete o.comp;
+      if (o && 'mark' in o && typeof o.mark !== 'string') delete o.mark;
+    }
+    return p;
+  },
 };
 function migratePlan(p) {
   let v = isNum(p.v) && p.v >= 1 ? Math.floor(p.v) : 1;

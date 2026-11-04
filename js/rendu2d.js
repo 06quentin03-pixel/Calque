@@ -4,7 +4,7 @@ import { C, DEG, IDX, P, S, bboxOf, clamp, fmtArea, fmtLen, inPoly, labelPoint, 
   vdist, vlen, vmid, vmul, vnorm, vperp, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToWorld } from './mutations.js';
-import { ELEC_BY, S_ELEC, _rr, drawElec, drawItem, elecSize, isStair } from './symboles.js';
+import { ELEC_BY, S_ELEC, _rr, drawElec, drawElecMark, drawItem, elecSize, isStair } from './symboles.js';
 import { circuitColor } from './electricite.js';
 import { DIMHIT, drawDuctLabels, drawDucts, elecVisible, linkVisible, setDIMHIT } from './reseaux.js';
 import { SCR } from './interaction.js';
@@ -101,6 +101,7 @@ function drawSceneIn(lv, opts) {
       if (S.layers.circ !== false && e.cid) { const col = circuitColor(e.cid, !!opts.export); if (col) K2 = Object.assign({}, K, { elec: col }); }
       if (!opts.export && ui.hl && e.cid === ui.hl) drawHalo(e);
       drawElec(c, e, K2);
+      if (e.mark) drawElecMark(c, e, K2);
     }
   }
   if (!opts.export || opts.dims !== false) drawDims(lv);

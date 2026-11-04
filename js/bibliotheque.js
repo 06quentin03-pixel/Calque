@@ -83,4 +83,8 @@ function searchEntries(q, list) {
   });
 }
 
-export { DOMAINES, DOM_BY, SUB_BY, allEntries, entriesOf, fold, homeOf, pathOf, searchEntries };
+/* domaines ajoutés par d'autres modules (ex. « Mes composants », biblioui.js), affichés après les quatre domaines :
+   { dom: { id, name, subs }, entries(subId) → entrées, all() → entrées, after?(subId) → éléments en fin de grille, note?(subId) } */
+const LIB_EXTRA = [];
+
+export { DOMAINES, DOM_BY, LIB_EXTRA, SUB_BY, allEntries, entriesOf, fold, homeOf, pathOf, searchEntries };

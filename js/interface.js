@@ -7,7 +7,7 @@ import { geo, roomOfLabel } from './geometrie.js';
 import { clampOpening, deleteNode, deleteWall, itemToWorld, mergeAtNode, normDeg, splitWall, wallsAt } from './mutations.js';
 import { ELEC, ELEC_BY, ELEC_CATS, drawItem, furnDef, isStair, stairInfo } from './symboles.js';
 import { FONT_LABEL, TINTS, TINT_NAMES } from './rendu2d.js';
-import { DOMAINES, allEntries, entriesOf, pathOf, searchEntries } from './bibliotheque.js';
+import { DOMAINES, LIB_EXTRA, allEntries, entriesOf, pathOf, searchEntries } from './bibliotheque.js';
 import { AUTONOMOUS, CK, CMDS, SOCKETS, SPOTLIKE, accepts, circById, circNumbers, circStats, circuitColor, cleanLinks,
   defaultKindFor, elecPower, fmtCount, orderCircuits, rcdCircuits, roomAt } from './electricite.js';
 import { DUCT_DIAS, afterFilter, closeDimEdit, ductHintMsg, ductPts, ductVisible, finishDuct, fold, inspDuct,
@@ -19,7 +19,7 @@ import { setView } from './tableau.js';
 import { newPlan, openProjects, openSample, openVersions } from './stockage.js';
 import { exportAll, exportJSON, openExport } from './export.js';
 import { f3Def, itemHeight3 } from './vue3d.js';
-import { materielSection, openTechLib } from './biblioui.js';
+import { compSection, materielSection, openTechLib } from './biblioui.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -399,6 +399,7 @@ function inspItem(it) {
         numField('Posé à', hz.z, 'cm', (v) => { it.zb = v; commit(); }, { id: 'f-izb', min: 0, max: 500 })),
       it.ht != null || it.zb != null ? btns(btn('Hauteurs par défaut', () => { delete it.ht; delete it.zb; commit(); }, 'sm', 'rotL')) : h('p', { class: 'note' }, `Par défaut : ${fmtIn(f3.h)} cm de haut${f3.z ? `, posé à ${fmtIn(f3.z)} cm du sol` : ''}.`)));
   }
+  parts.push(compSection(it, 'item'));
   parts.push(sec('Étiquette', textField(null, it.label, (v) => { it.label = v.trim(); commit(); }, { id: 'f-ilabel', ph: 'Texte affiché sur le plan (facultatif)', live: (v) => { it.label = v; requestRender(); } })));
   parts.push(sec(null, btns(btn('Dupliquer', duplicateSel, '', 'dup'), btn('Supprimer', deleteSel, 'danger', 'del'))));
   return [inspHead(it.name || (def && def.n) || 'Objet', `${fmtIn(it.w)} × ${fmtIn(it.d)} cm`), body(...parts)];
@@ -410,16 +411,20 @@ function inspElec(e) {
   sel.addEventListener('change', () => {
     const nd = ELEC_BY.get(sel.value); if (!nd) return;
     if (e.h === def.h) e.h = nd.h;
-    e.type = nd.t; commit();
+    e.type = nd.t;
+    delete e.comp; // autre symbole : ce n'est plus le composant personnalisé (le marquage reste modifiable)
+    commit();
   });
   const fixedPose = def.floor ? 'Au sol' : def.fullH ? 'Du sol au plafond' : !def.wall && e.h == null ? 'Au plafond' : null;
   return [
-    inspHead(def.n, cat ? cat.name : 'Électricité'),
+    inspHead((e.comp && ((P.comps || []).find((c) => c.id === e.comp) || {}).n) || def.n, cat ? cat.name : 'Électricité'),
     body(
       h('p', { class: 'note' }, def.desc),
       sec('Symbole', sel),
       circuitSection(e),
       materielSection(e),
+      sec('Marquage', textField(null, e.mark, (v) => { v = v.trim().slice(0, 8); if (v) e.mark = v; else delete e.mark; commit(); }, { id: 'f-emark', ph: 'Texte court affiché près du symbole (facultatif)' })),
+      compSection(e, 'elec'),
       ventSection(e),
       CMDS.has(e.type) ? linksSection(e) : null,
       sec('Pose',
@@ -697,7 +702,7 @@ function updateHint() {
     kids = [h('b', null, 'Ouverture'), h('span', { class: 'msg' }, 'Touchez un mur pour y percer une ouverture, puis réglez sa largeur et sa hauteur.'), btn('Annuler', () => setTool('select'), 'sm')];
   } else if (t === 'place' && ui.place) {
     const elec = ui.place.kind === 'elec';
-    kids = [h('b', null, ui.place.def.n), h('span', { class: 'msg' }, elec ? (ui.place.def.wall ? 'Touchez près d’un mur pour poser le symbole. Continuez pour en poser d’autres.' : 'Touchez le plan pour poser le symbole. Continuez pour en poser d’autres.') : 'Touchez le plan pour le placer.'),
+    kids = [h('b', null, (ui.place.comp && ui.place.comp.n) || ui.place.def.n), h('span', { class: 'msg' }, elec ? (ui.place.def.wall ? 'Touchez près d’un mur pour poser le symbole. Continuez pour en poser d’autres.' : 'Touchez le plan pour poser le symbole. Continuez pour en poser d’autres.') : 'Touchez le plan pour le placer.'),
       btn('Changer', () => openCatalog(ui.place.from), 'sm'), elec ? done : btn('Annuler', () => setTool('select'), 'sm')];
   } else if (t === 'link') {
     const src = ui.linkSrc && IDX.elec.get(ui.linkSrc);
@@ -760,7 +765,6 @@ ui.libSub = {};      // dernier emplacement ouvert par outil
 ui.libDomSub = {};   // dernière sous-catégorie ouverte dans chaque domaine
 ui.libQ = '';
 const LIB_DEFAULT = { furn: 'm_cuisine', stairs: 'b_escaliers', elec: 'e_prises' };
-const LIB_EXTRA = [];  // { dom: { id, name, subs: [{ id, name }] }, entries(subId) → entrées, all() → entrées, card?(x) }
 function libDomains() { return [...DOMAINES, ...LIB_EXTRA.map((x) => x.dom)]; }
 function libEntries(subId) {
   for (const x of LIB_EXTRA) if (x.dom.subs.some((s) => s.id === subId)) return x.entries(subId);
@@ -773,6 +777,7 @@ function libSubPath(subId) {
 function libAll() { return [...allEntries(), ...LIB_EXTRA.flatMap((x) => x.all())]; }
 function openCatalog(kind) {
   const pop = $('#catalog');
+  ui.libKind = kind;
   let subId = ui.libSub[kind] || LIB_DEFAULT[kind] || 'm_cuisine';
   if (!libSubPath(subId)) subId = LIB_DEFAULT[kind] || 'm_cuisine';
   let q = ui.libQ || '';
@@ -1010,7 +1015,7 @@ export { ICON, ROOM_NAMES, addLevel, addOpeningOnWall, applyWallLength, body, bt
   closeModal, closePops, closePopsOnly, confirmBtn, copyWalls, deleteLevel, deleteSel, ductsOf, duplicateSel,
   elecThumb, faceLen, floorName, fmtIn, furnThumb, h, hintKey, ico, inspCloset, inspDim, inspElec, inspGap, inspHead,
   inspItem, inspLevel, inspNode, inspOpening, inspRoom, inspText, inspWall, isNarrow, kv, linksSection, menuItem,
-  LIB_EXTRA, libAll, newCircuitFor, nudgeSel, numField, openCatalog, openHelp, openLevelPop, openModal, openingModelSelect,
+  libAll, newCircuitFor, nudgeSel, numField, openCatalog, openHelp, openLevelPop, openModal, openingModelSelect,
   openingPositionSec, openingSizeText, parseNum, renamePlan, renderInspector, renderLevels, renderMenuPop,
   renderViewPop, rotateSel, row, sec, segCtl, setOpeningModel, setTool, setWallAngle, setWallFace, setWallLength,
   showPop, stretchEnd, switchLevel, textField, toast, toastT, toggleRow, uniqueRoomName, updateHint, wallAngleDisp,

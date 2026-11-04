@@ -1,5 +1,17 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-04 — Phase 2, étape 3 : composants personnalisés
+- Nouveau domaine **Mes composants** dans la bibliothèque, avec le bouton « + Nouveau composant ».
+- Un composant reprend le dessin d’un meuble ou d’un symbole existant, avec **vos** valeurs : nom, dimensions (meuble), hauteur de pose et **marquage** affiché sur le plan (symbole, 8 caractères), rangement, désignation technique, référence fabricant, fabricant, fiabilité et source (facultatifs).
+- Sur le plan, il se comporte comme son modèle : circuits, tableau, contrôles, 3D et exports fonctionnent sans changement.
+- Inspecteur : « Enregistrer comme composant » depuis un meuble ou un symbole déjà posé ; « Modifier le composant » (le plan ouvert suit la modification) ; « Ajouter à ma bibliothèque » pour un plan reçu d’un autre appareil.
+- Marquage modifiable sur tout symbole électrique (inspecteur > Marquage).
+- Enregistrés sur l’appareil (hors ligne) et inclus dans « Sauvegarder tous mes plans ». Import sans doublon ni écrasement (un composant différent de même identifiant est ajouté en copie « (importé) »).
+- Supprimer un composant de la bibliothèque ne touche à aucun plan : **chaque plan garde une copie** des composants qu’il utilise.
+- **Format des plans v3** : `comps[]` (copies), `comp` sur les meubles et symboles, `mark` sur les symboles. Migration v2 → v3.
+- Service Worker : cache `calque-v9`.
+- Ajout de `tests/composants.test.mjs` (4 tests).
+
 ## 2026-11-04 — Phase 2, étape 2 : bibliothèque technique générique
 - **Bibliothèque technique** (menu … > Bibliothèque technique) : 110 articles génériques désignés comme sur le chantier : disjoncteurs (courbes B, C, D), interrupteurs et disjoncteurs différentiels, disjoncteurs de branchement, parafoudres, télérupteurs, contacteurs, appareillage, câbles R2V et conducteurs H07V, conduits ICTA/IRL/TPC, boîtes et coffrets.
 - **Aucune référence fabricant n’est fournie par Calque.** Chaque article peut recevoir *votre* référence et le fabricant (facultatif), une source et une remarque.

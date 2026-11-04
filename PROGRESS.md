@@ -31,11 +31,11 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 1 : bibliothèque par domaines et sous-catégories (`js/bibliotheque.js`). 3 tests dans `tests/bibliotheque.test.mjs`. Captures vérifiées en 1180×820 et 820×1180.
 - ✅ Étape 2 : bibliothèque technique générique, 110 articles, références de l'utilisateur, badge de fiabilité, format des plans v2 avec migration. 5 tests dans `tests/technique.test.mjs`. Tests : **28/28 réussis**.
   - Limite connue : les références saisies restent sur l'appareil ; un plan envoyé à quelqu'un d'autre garde le choix de l'article, mais pas votre référence.
-- ⬜ Étape 3 : composants personnalisés.
+- ✅ Étape 3 : composants personnalisés (`js/composants.js`), format des plans v3 avec migration. 4 tests dans `tests/composants.test.mjs`. Tests : **32/32 réussis**.
 - ⬜ Étape 4 : fond de plan (image ou PDF).
 - ⏸ Étape 5 : import des catalogues fabricants (préparation seulement, en attente des fichiers).
 
 À vérifier sur l'iPad : ouvrir la bibliothèque au doigt et au Pencil, en paysage et en portrait.
 
 ## Tâche en cours
-- Phase 2, étape 3 (composants personnalisés).
+- Phase 2, étape 4 (fond de plan).

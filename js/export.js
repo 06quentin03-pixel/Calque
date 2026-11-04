@@ -743,6 +743,7 @@ async function importBackup(o) {
   const lib = o.biblio ? await importUserLib(o.biblio) : null;
   if (lib && lib.refs.added) parts.push(`${lib.refs.added} référence${lib.refs.added > 1 ? 's' : ''} fabricant ajoutée${lib.refs.added > 1 ? 's' : ''}`);
   if (lib && lib.refs.kept) parts.push(`${lib.refs.kept} référence${lib.refs.kept > 1 ? 's' : ''} différente${lib.refs.kept > 1 ? 's' : ''} ignorée${lib.refs.kept > 1 ? 's' : ''} (la vôtre est gardée)`);
+  if (lib && lib.comps.added + lib.comps.copies) { const n = lib.comps.added + lib.comps.copies; parts.push(`${n} composant${n > 1 ? 's' : ''} personnalisé${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''}`); }
   if (lib && !lib.ok) parts.push('bibliothèque non enregistrée (stockage indisponible)');
   if (added) parts.push(`${added} plan${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`);
   if (copies) parts.push(`${copies} en copie (un plan du même nom existait déjà et n’a pas été modifié)`);
