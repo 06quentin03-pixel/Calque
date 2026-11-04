@@ -96,7 +96,7 @@ function ficheBody(c) {
   parts.push(sec('Hypothèses', h('ul', { class: 'fi-hyp' }, f.hypotheses.map((t) => h('li', null, t)))));
   // tableaux manquants
   const manq = [...new Set(f.controles.flatMap((x) => x.tablesManquantes || []))];
-  if (manq.length) parts.push(sec('Tableaux NF C 15-100 manquants', h('p', { class: 'note' }, 'Ils seront recopiés depuis les extraits Legrand. Tant qu’ils manquent, les contrôles qui en dépendent restent « vérification nécessaire ».'),
+  if (manq.length) parts.push(sec('Tableaux NF C 15-100 non couverts', h('p', { class: 'note' }, 'Ces tableaux ne figurent pas dans l’extrait Legrand fourni : les contrôles qui en dépendent restent « vérification nécessaire » (à vérifier par un professionnel).'),
     h('ul', { class: 'fi-hyp' }, manq.map((t) => h('li', null, t)))));
   parts.push(h('p', { class: 'note' }, 'Calcul indicatif établi avec Calque. Il ne remplace pas l’étude d’un professionnel.'));
   return parts;
@@ -151,7 +151,7 @@ function bilanView() {
   if (b.manquantes.length) parts.push(h('section', null, h('h3', null, 'Données manquantes'), h('ul', { class: 'fi-manq' }, b.manquantes.map((m) => h('li', null, h('b', null, m.nom), ' — ', m.pourquoi)))));
   const ksBox = (create) => (create ? (P.install || (P.install = {})) : P.install || null);
   parts.push(h('section', null, h('h3', null, 'Coefficient de simultanéité'),
-    champDonnee(ksBox, 'ks', 'ks (entre 0 et 1)', '', { min: 0.01, max: 1, note: tableDisponible('simultaneite') ? null : 'Aucune valeur par défaut : le tableau des coefficients (extrait Legrand) n’a pas encore été fourni. Saisissez une valeur si vous la connaissez.' })));
+    champDonnee(ksBox, 'ks', 'ks (entre 0 et 1)', '', { min: 0.01, max: 1, note: tableDisponible('simultaneite') ? null : 'Aucune valeur par défaut (non couvert par l’extrait Legrand fourni). Saisissez une valeur si vous la connaissez.' })));
   // circuits
   parts.push(h('section', null, h('h3', null, 'Circuits'), h('div', { class: 'ev-table bi-table' }, h('table', null,
     h('thead', null, h('tr', null, ['Repère', 'Désignation', 'P', 'cos φ', 'S', 'IB', 'Phase', 'Statut', ''].map((t) => h('th', null, t)))),
@@ -196,7 +196,7 @@ function bilanView() {
   parts.push(h('section', null, h('h3', null, 'Tableaux NF C 15-100 (extraits Legrand)'),
     h('p', { class: 'note' }, 'Tant qu’un tableau manque, les contrôles qui en dépendent restent « vérification nécessaire ».'),
     h('div', { class: 'ev-list' }, TABLES.map((t) => h('div', { class: 'ev-chk ' + (tableDisponible(t.id) ? 'ok' : 'warn') }, h('span', { class: 'ic' }, tableDisponible(t.id) ? '✓' : '!'),
-      h('span', { class: 'tx' }, h('b', null, t.titre), t.contenu, h('small', null, tableDisponible(t.id) ? `Recopié de : ${t.source} · Édition : ${t.edition}${t.page ? ' · ' + t.page : ''}` : 'Manquant : extrait à fournir')))))));
+      h('span', { class: 'tx' }, h('b', null, t.titre), t.contenu, h('small', null, tableDisponible(t.id) ? `Recopié de : ${t.source} · Édition : ${t.edition}${t.page ? ' · ' + t.page : ''}` : 'Non couvert par l’extrait fourni')))))));
   return h('div', { class: 'ev-checks bilan' }, ...parts);
 }
 

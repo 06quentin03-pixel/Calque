@@ -34,14 +34,16 @@ Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 aoû
 |---|---|
 | Section et calibre par circuit du logement (+ chauffage) | ✅ recopié (p. 16-17, 24-29) |
 | Interrupteurs différentiels (nombre, types, 8 circuits, calibre) | ✅ recopié (p. 12-15) |
-| Courants admissibles Iz | ⏸ absent de l'extrait |
-| Modes de pose / méthodes de référence | ⏸ absent de l'extrait |
-| Facteurs de correction (température, groupement) | ⏸ absent de l'extrait |
-| Chutes de tension maximales | ⏸ absent de l'extrait |
-| Formule et constantes de chute de tension (ρ, λ) | ⏸ absent de l'extrait (valeurs usuelles marquées « estimée ») |
-| Coefficients de simultanéité | ⏸ absent de l'extrait |
+| Courants admissibles Iz | ✖ absent de l'extrait, non demandé |
+| Modes de pose / méthodes de référence | ✖ absent de l'extrait, non demandé |
+| Facteurs de correction (température, groupement) | ✖ absent de l'extrait, non demandé |
+| Chutes de tension maximales | ✖ absent de l'extrait, non demandé |
+| Formule et constantes de chute de tension (ρ, λ) | ✖ absent de l'extrait, non demandé (valeurs usuelles marquées « estimée ») |
+| Coefficients de simultanéité | ✖ absent de l'extrait, non demandé (ks saisissable) |
 
-Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de coupure restent « vérification nécessaire ». **Aucun circuit ne peut donc être « conforme » globalement** tant que ces tableaux manquent : c'est voulu.
+Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de coupure restent « vérification nécessaire ». **Aucun circuit ne peut donc être « conforme » globalement** : c'est voulu.
+
+**Décision de l'utilisateur (4 novembre 2026)** : on s'en tient au guide « Points clés » ; les tableaux absents ne seront pas demandés.
 
 ## Tests
 - `node --test tests/*.test.mjs` : **59/59 réussis** (fin de phase 3).
@@ -50,7 +52,6 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 
 ## Points ouverts
 - Essais iPad de la phase 3 : à faire par l'utilisateur (liste dans `NEXT_SESSION.md`).
-- Extraits Legrand manquants (voir ci-dessus).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).
 - Le disjoncteur d'abonné affiché en triphasé reste celui du monophasé (à reprendre).
 - Longueur des câbles : saisie à la main dans la fiche ; elle viendra des cheminements en phase 4.

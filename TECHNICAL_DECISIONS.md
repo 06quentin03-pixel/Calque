@@ -29,6 +29,7 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-04 (ph. 3) | Sèche-linge et pompe à chaleur passés en « type A requis » (`CK`) | Extrait Legrand p. 13 ; le générateur produisait un tableau non conforme |
 | 2026-11-04 (ph. 3) | Le contrôle existant `nfcChecks` est conservé tel quel ; la fiche l'affiche comme « indicatif » | Ne pas casser l'existant ; il sera repris par le moteur de règles (phase 6) |
 | 2026-11-04 (ph. 3) | cos φ = 1 « estimé » seulement pour le chauffage et le chauffe-eau ; aucune puissance par défaut pour les prises | Charges résistives ; ailleurs, ce serait deviner |
+| 2026-11-04 (ph. 3) | On s'en tient au guide Legrand « Points clés » : les tableaux absents ne sont plus demandés ; ils restent « manquante » et leurs contrôles « vérification nécessaire » | Décision de l'utilisateur ; aucune valeur inventée |
 | 2026-11-04 (ph. 3) | Chute de tension calculée « toute la charge en bout de ligne », circuit seul | Calcul défavorable et simple ; l'amont s'ajoute |
 
 ## Conventions de code

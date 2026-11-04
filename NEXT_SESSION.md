@@ -30,7 +30,7 @@ Ensuite, fais la phase 4 de ROADMAP.md, dans l'ordre :
 Contraintes : celles de CLAUDE.md (données vérifiée/saisie/estimée, trois statuts, extraits Legrand seuls,
 migration PLAN_VERSION/MIGRATIONS avec test, CORE de sw.js + nouveau nom de cache, iPad paysage/portrait
 et Pencil, tests et captures hors du dépôt). Les taux de remplissage des conduits sont une règle de la
-NF C 15-100 : sans extrait Legrand, ils restent « vérification nécessaire ».
+NF C 15-100 absente du guide Legrand fourni : ils restent « vérification nécessaire » (ne pas redemander d'extrait).
 
 À la fin de chaque étape : mets à jour PROJECT_STATE.md, PROGRESS.md, CHANGELOG.md, ROADMAP.md
 (et TECHNICAL_DECISIONS.md si une décision est prise), commit explicite, push sur la branche.
@@ -55,13 +55,7 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
    10. Onglet « Bilan » › Interrupteurs différentiels : les contrôles et la source Legrand s'affichent.
    11. « Régénérer depuis le plan » sur un plan avec sèche-linge : il passe sous un différentiel de type A.
    12. Fermer et rouvrir l'appli : les saisies sont conservées.
-2. **Extraits Legrand encore manquants** (à fournir quand vous les avez) : un document Legrand qui contient
-   - les courants admissibles des câbles (Iz) selon la section, l'isolant et le mode de pose ;
-   - les modes de pose et leur méthode de référence ;
-   - les facteurs de correction (température ambiante, groupement de circuits) ;
-   - les chutes de tension maximales admises (éclairage / autres usages) et les constantes de calcul (ρ, λ) ;
-   - les coefficients de simultanéité ;
-   - pour la phase 4 : les taux de remplissage des conduits.
-   Le guide « Points clés » déjà fourni ne les contient pas ; ils se trouvent en général dans les guides techniques
-   Legrand de dimensionnement des canalisations (à confirmer sur legrand.fr).
+2. **Extraits Legrand** : décision de l'utilisateur (4 novembre 2026) — on s'en tient au guide « Points clés » déjà fourni.
+   Ne plus demander d'autres extraits. Ce qui n'y figure pas (Iz, modes de pose, facteurs de correction, chutes de tension
+   maximales, simultanéité, remplissage des conduits) reste « vérification nécessaire », sans valeur inventée.
 3. Décision à prendre plus tard : afficher en triphasé le bon disjoncteur d'abonné (aujourd'hui, celui du monophasé).

@@ -193,7 +193,7 @@ function ficheCircuit(e) {
   } else C('ib_in', 'verification', 'Intensité d’emploi non calculée : données manquantes.');
   // In ≤ Iz
   const mIz = manque(REGLES.in_iz.tables);
-  C('in_iz', 'verification', mIz.length ? `Tableaux manquants (extraits Legrand à fournir) : ${mIz.join(' ; ')}. Mode de pose non renseigné.` : 'Mode de pose et conditions d’installation non renseignés.', { tablesManquantes: mIz });
+  C('in_iz', 'verification', mIz.length ? `Non couvert par l’extrait Legrand fourni : ${mIz.join(' ; ')}. À vérifier par un professionnel.` : 'Mode de pose et conditions d’installation non renseignés.', { tablesManquantes: mIz });
   // section / calibre du logement (extrait Legrand) et nombre de points
   const cs = controleSection(e);
   C('sec_logement', cs.statut, cs.detail, { tablesManquantes: manque(REGLES.sec_logement.tables) });
@@ -205,7 +205,7 @@ function ficheCircuit(e) {
   if (ct) C('type_dd', ct.statut, ct.detail);
   // chute de tension
   const mDu = manque(REGLES.chute_tension.tables);
-  if (dU) C('chute_tension', 'verification', `ΔU = ${fmt(dU.pct, 2)} % calculé (constantes estimées).${mDu.length ? ` Limite à confirmer, tableau manquant : ${mDu.join(' ; ')}.` : ''}`, { tablesManquantes: mDu });
+  if (dU) C('chute_tension', 'verification', `ΔU = ${fmt(dU.pct, 2)} % calculé (constantes estimées).${mDu.length ? ` Limite non couverte par l’extrait Legrand fourni : à vérifier par un professionnel.` : ''}`, { tablesManquantes: mDu });
   else C('chute_tension', 'verification', 'Chute de tension non calculée : données manquantes.', { tablesManquantes: mDu });
   // pouvoir de coupure
   C('pdc', 'verification', 'Courant de court-circuit au point d’installation, courbe et pouvoir de coupure du disjoncteur non renseignés.');
@@ -225,7 +225,7 @@ function ligneSection(e) {
 }
 function controleSection(e) {
   if (!tableDisponible('section_protection_logement')) {
-    let d = 'Tableau manquant (extrait Legrand à fournir).';
+    let d = 'Non couvert par l’extrait Legrand fourni.';
     if (fini(e.secMaxCalque) && e.sec && e.In) d += ` Valeur du contrôle actuel de Calque : ${mm2(e.sec.v)} → ${fmt(e.secMaxCalque, 0)} A au plus.`;
     return { statut: 'verification', detail: d, alerte: fini(e.secMaxCalque) && e.In && e.In.v > e.secMaxCalque ? { niveau: 'bad', texte: `Le contrôle actuel de Calque signale un calibre de ${fmt(e.In.v, 0)} A trop élevé pour ${mm2(e.sec.v)}.` } : null };
   }
@@ -372,7 +372,7 @@ function bilanDuPlan(plan) {
   const sansP = lignes.filter((l) => !fini(l.P)), sansCos = avecP.filter((l) => !fini(l.Q));
   if (sansP.length) manquantes.push({ nom: 'Puissance', pourquoi: `${sansP.length} circuit${sansP.length > 1 ? 's' : ''} sans puissance connue : ${sansP.map((l) => l.nom).slice(0, 4).join(', ')}${sansP.length > 4 ? '…' : ''}.` });
   if (sansCos.length) manquantes.push({ nom: 'Facteur de puissance cos φ', pourquoi: `${sansCos.length} circuit${sansCos.length > 1 ? 's' : ''} sans cos φ : puissances réactive et apparente incomplètes.` });
-  if (!ks) manquantes.push({ nom: 'Coefficient de simultanéité ks', pourquoi: tableDisponible('simultaneite') ? 'Choisissez le coefficient à appliquer.' : 'Tableau des coefficients manquant (extrait Legrand à fournir) : saisissez une valeur si vous la connaissez.' });
+  if (!ks) manquantes.push({ nom: 'Coefficient de simultanéité ks', pourquoi: tableDisponible('simultaneite') ? 'Choisissez le coefficient à appliquer.' : 'Non couvert par l’extrait Legrand fourni : saisissez une valeur si vous la connaissez.' });
   const complet = !sansP.length && !sansCos.length;
   const alertes = [];
   if (!complet) alertes.push({ niveau: 'info', texte: 'Bilan partiel : les totaux ne comptent que les circuits dont les données sont connues (valeurs minimales).' });

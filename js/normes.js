@@ -6,7 +6,11 @@
    (champ `donnees` rempli, avec `source`, `edition` et `page`), il est « manquant » : tout résultat qui en dépend
    reste « vérification nécessaire ».
 
-   Pour remplir un tableau (quand l'utilisateur aura fourni l'extrait) :
+   Décision de l'utilisateur (4 novembre 2026) : on s'en tient au guide « Points clés » fourni ; les tableaux absents
+   de ce guide ne seront pas demandés. Ils restent « manquante » (aucune valeur inventée) et les contrôles qui en
+   dépendent restent « vérification nécessaire ».
+
+   Pour remplir un tableau (si un extrait est fourni un jour) :
      - recopier les valeurs dans `donnees` (format indiqué dans `format`) ;
      - indiquer `source` (titre exact du document Legrand), `edition` (édition de la norme citée par le document),
        `page` (page ou numéro du tableau dans le document) ;

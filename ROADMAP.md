@@ -1,7 +1,7 @@
 # ROADMAP — évolution de Calque
 
 Ordre logique de développement. Chaque phase doit être validée (tests et absence de régression) avant la suivante.
-Légende : ⬜ à faire · 🟨 en cours · ✅ terminé · ⏸ en attente d'une décision ou de données de l'utilisateur
+Légende : ⬜ à faire · 🟨 en cours · ✅ terminé · ⏸ en attente d'une décision ou de données de l'utilisateur · ✖ abandonné par l'utilisateur
 
 ## Phase 0 — Audit ✅
 - ✅ Lecture du code, tests automatisés, état des lieux dans `AUDIT.md`.
@@ -50,7 +50,7 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Fiche de calcul d'un circuit depuis le plan et depuis le tableau : hypothèses, formules, données utilisées et manquantes, alertes, contrôles à 3 statuts (`js/fiche.js`, format v5, 3 tests dans `tests/fiche.test.mjs`).
 - ✅ Bilan de puissance et équilibrage des phases dans l'onglet Tableau (onglet « Bilan »).
 - ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
-- ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : autre document Legrand à fournir.
+- ✖ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : abandonnés par l'utilisateur (4 novembre 2026). Les contrôles concernés restent « vérification nécessaire ».
 
 ## Phase 4 — Cheminements et métrés
 Dépend de : 3.
@@ -79,5 +79,5 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 - ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
-- Extraits NF C 15-100 de Legrand : reçu le guide « Points clés » ; manquent Iz, modes de pose, facteurs de correction, chutes de tension, simultanéité, remplissage des conduits (voir `NEXT_SESSION.md`).
+- Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; on s'en tient à ce guide (décision de l'utilisateur).
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).
