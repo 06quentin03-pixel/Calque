@@ -15,6 +15,7 @@ Avant toute modification :
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
 2. Vérifie que la branche contient tout main (la demande n°2, phase 3, a été fusionnée).
    Si elle est en retard, remets-la au niveau de main avant de commencer.
+   Normal : la branche a aussi 2 petites retouches de suivi pas encore dans main ; elles partiront avec la phase 4.
 3. Lance node --test tests/*.test.mjs : tout doit réussir (59/59 à la fin de la phase 3).
 4. Vérifie l'état réel du code (js/reseaux.js : conduits ; js/calcul.js : longueur des câbles ;
    js/fiche.js), puis dis-moi en quelques lignes où on en est.
@@ -35,7 +36,9 @@ NF C 15-100 absente du guide Legrand fourni : ils restent « vérification néce
 À la fin de chaque étape : mets à jour PROJECT_STATE.md, PROGRESS.md, CHANGELOG.md, ROADMAP.md
 (et TECHNICAL_DECISIONS.md si une décision est prise), commit explicite, push sur la branche.
 À la fin de la phase : réécris NEXT_SESSION.md pour la phase 5, prépare une nouvelle demande de fusion
-vers main et donne-moi la liste des tests à faire sur l'iPad.
+vers main et donne-moi la liste des tests à faire sur l'iPad : uniquement ce que tu ne peux pas tester
+toi-même (Safari sur iPad, Pencil, clavier, appli installée, mode avion, lisibilité), pas ce que tes tests
+automatiques vérifient déjà.
 Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise un iPad.
 ```
 
