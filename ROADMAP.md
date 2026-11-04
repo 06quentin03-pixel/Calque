@@ -25,11 +25,12 @@ Dépend de : phase 0.
 - ⬜ Modèle de données commun documenté, avec un système d'événements « le plan a changé ».
 - ⬜ Mise à jour du Service Worker pour les nouveaux fichiers et affichage « nouvelle version disponible ».
 
-**1c. Performances et iPad**
-- ⬜ Rendu 2D limité à la zone visible, mise en cache des couches fixes.
-- ⬜ Annuler/rétablir moins gourmand en mémoire.
-- ⬜ Apple Pencil : dessin au stylet, déplacement au doigt, précision adaptée.
-- ⬜ Correction de la barre du haut sur téléphone.
+**1c. Performances et iPad** ✅ (testée automatiquement ; à vérifier sur iPad)
+- ✅ Rendu 2D limité à la zone visible, image mémorisée du plan pendant les aperçus (curseur, tracé de mur).
+- ✅ Annuler/rétablir moins gourmand en mémoire (blocs partagés entre étapes).
+- ✅ Apple Pencil : dessin au stylet, déplacement au doigt, paume ignorée, précision plus fine, aperçu au survol.
+- ✅ Correction de la barre du haut sur téléphone (deux lignes).
+- Validation : 7 tests automatisés dans `tests/ipad.test.mjs`, tous réussis.
 
 ## Phase 2 — Dessin et bibliothèque
 Dépend de : 1a, 1b.

@@ -17,3 +17,13 @@
 - Enregistrement aussi à la fermeture de l'app (`pagehide`, plus fiable sur iPad).
 - Service Worker : cache `calque-v4`.
 - Ajout de `tests/stockage.test.mjs` (7 tests).
+
+## 2026-11-04 — Phase 1c : performances et iPad
+- **Gros plans plus fluides** : à l'écran, seuls les objets visibles sont dessinés (30 ms → 10 ms par image sur un plan de 25 logements zoomé). Les exports PDF et image contiennent toujours tout le plan.
+- **Image mémorisée du plan** : pendant le tracé d'un mur ou d'une pièce, et au survol, seul l'aperçu est redessiné (23 ms → 0,4 ms par image). Elle n'est utilisée que pour les plans lourds.
+- **Annuler/rétablir économe** : les parties du plan qui n'ont pas changé sont partagées entre les étapes au lieu d'être recopiées. Limite de 150 étapes, et désormais aussi de mémoire.
+- **Apple Pencil** : le stylet dessine et le doigt déplace le plan (activé automatiquement au premier contact du stylet, réglable dans Affichage). La paume posée pendant le dessin est ignorée. La précision est plus fine au stylet. L'aperçu s'affiche au survol du stylet, sans toucher l'écran, sur les iPad compatibles.
+- **Téléphone** : la barre du haut passe sur deux lignes et ne déborde plus.
+- Service Worker : cache `calque-v5`.
+- Ajout de `tests/ipad.test.mjs` (7 tests) et `tests/outils.mjs` (outils communs).
+- `CLAUDE.md` corrigé (nom du cache, numéros de ligne).

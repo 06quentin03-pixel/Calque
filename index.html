@@ -292,6 +292,18 @@ button.ev-chk:hover { background: var(--panel-2); }
   .brand b { display: none; }
   .save b { display: none; }
 }
+/* téléphone : la barre du haut passe sur deux lignes (avant, elle débordait de l'écran) */
+@media (max-width: 560px) {
+  .topbar { flex-wrap: wrap; row-gap: 3px; }
+  .topbar::after { content: ''; order: 6; flex-basis: 100%; height: 0; } /* retour à la ligne */
+  .topbar .spacer { display: none; }
+  .proj { order: 1; flex: 1 1 auto; max-width: none; justify-content: flex-start; }
+  .topbar .save { order: 2; }
+  #btnUndo { order: 3; } #btnRedo { order: 4; } #btnMenu { order: 5; }
+  .vtabs { order: 7; }
+  .levels { order: 7; flex: 1 1 0; }
+  #btnFilter { order: 8; } #btnView { order: 9; } #btnExport { order: 10; }
+}
 @media (max-width: 760px) {
   .ev { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .ev-side { max-height: 42vh; }
@@ -574,6 +586,7 @@ const S = {
   layers: { grid: true, dims: true, areas: true, furn: true, elec: true, ghost: true, names: true },
   thMur: 20, thCloison: 7, wallEnd: 'auto',
   filt: { off: [], circ: null }, ductSys: 'vmc',
+  pencil: false, pencilSeen: false, // Apple Pencil : le stylet dessine, le doigt déplace le plan (activé au premier usage du stylet)
 };
 function loadSettings() {
   try {
@@ -978,9 +991,50 @@ function nearestFace(lv, p, maxDist) {
 /* ============================================================
    HISTORIQUE
    ============================================================ */
+/* Annuler/rétablir économe en mémoire : chaque état du plan est rangé en blocs de texte (une propriété du plan,
+   ou 64 objets d'une liste). Un bloc identique à un bloc de l'état précédent est partagé, pas recopié :
+   une étape ne coûte que les blocs qu'elle a modifiés. Limites : 150 étapes et environ 30 millions de caractères. */
 const H = { u: [], r: [], cur: null };
+const H_STEPS = 150, H_CHARS = 30e6, H_BLOCK = 64;
 function snapshot() { return JSON.stringify(P); }
-function historyReset() { H.u = []; H.r = []; H.cur = snapshot(); }
+function packPlan(p, prev) {
+  const reuse = new Map();
+  if (prev) for (const b of prev.blocks) reuse.set(b, b);
+  const pk = { keys: [], blocks: [], size: 0, fresh: 0 };
+  const add = (str) => { const old = reuse.get(str); if (old !== undefined) str = old; else pk.fresh += str.length; pk.blocks.push(str); pk.size += str.length; };
+  for (const k of Object.keys(p)) {
+    const v = p[k];
+    if (Array.isArray(v)) {
+      const n = Math.ceil(v.length / H_BLOCK); pk.keys.push([k, n]);
+      for (let i = 0; i < n; i++) add(JSON.stringify(v.slice(i * H_BLOCK, (i + 1) * H_BLOCK)));
+    } else {
+      const str = JSON.stringify(v); if (str === undefined) continue; // même règle que JSON.stringify(P)
+      pk.keys.push([k, -1]); add(str);
+    }
+  }
+  return pk;
+}
+function unpackPlan(pk) {
+  const p = {}; let bi = 0;
+  for (const [k, n] of pk.keys) {
+    if (n < 0) { p[k] = JSON.parse(pk.blocks[bi++]); continue; }
+    const a = [];
+    for (let i = 0; i < n; i++) for (const o of JSON.parse(pk.blocks[bi++])) a.push(o);
+    p[k] = a;
+  }
+  return p;
+}
+function samePack(a, b) {
+  if (!a || !b || a.blocks.length !== b.blocks.length || a.keys.length !== b.keys.length) return false;
+  for (let i = 0; i < a.keys.length; i++) if (a.keys[i][0] !== b.keys[i][0] || a.keys[i][1] !== b.keys[i][1]) return false;
+  for (let i = 0; i < a.blocks.length; i++) if (a.blocks[i] !== b.blocks[i]) return false;
+  return true;
+}
+function historyTrim() {
+  let total = 0; for (const e of H.u) total += e.fresh;
+  while (H.u.length > H_STEPS || (H.u.length > 10 && total > H_CHARS)) total -= H.u.shift().fresh;
+}
+function historyReset() { H.u = []; H.r = []; H.cur = packPlan(P, null); }
 /* ============================================================
    CALQUE — symboles : mobilier, escaliers, électricité, catalogues
    Chaque objet se dessine dans son repère local (cm), centré,
@@ -1953,6 +2007,21 @@ function K_() {
 const TS = (v) => v * (RC.ts || 1);
 function setWorld() { RC.ctx.setTransform(RC.dpr * RC.s, 0, 0, RC.dpr * RC.s, RC.dpr * RC.ox, RC.dpr * RC.oy); }
 function setScreen() { RC.ctx.setTransform(RC.dpr, 0, 0, RC.dpr, 0, 0); }
+/* zone visible (repère du plan), avec une marge en pixels d'écran : à l'écran, seuls les objets qui la touchent
+   sont dessinés. Elle vaut null pour les exports (PDF, image), qui dessinent toujours tout. */
+let VIEW = null;
+const VIEW_MARGIN = 160;
+/* diagnostic pour les tests automatiques uniquement : ?debug=nocull (tout dessiner), nocache / cache (image mémorisée jamais / toujours) */
+const DEBUG = (() => { try { return (new URLSearchParams(location.search).get('debug') || '').split(','); } catch (e) { return []; } })();
+function viewRect() {
+  const s = RC.s, m = VIEW_MARGIN / s;
+  return { x0: -RC.ox / s - m, y0: -RC.oy / s - m, x1: (RC.w - RC.ox) / s + m, y1: (RC.h - RC.oy) / s + m };
+}
+const inView = (x, y, r) => !VIEW || (x + r >= VIEW.x0 && x - r <= VIEW.x1 && y + r >= VIEW.y0 && y - r <= VIEW.y1);
+const bbInView = (b) => !VIEW || (b.x1 >= VIEW.x0 && b.x0 <= VIEW.x1 && b.y1 >= VIEW.y0 && b.y0 <= VIEW.y1);
+/* boîte englobante mémorisée sur l'objet de géométrie (recalculé à chaque modification du plan) */
+function bbOf(o, pts) { return o._bb || (o._bb = bboxOf(pts)); }
+const wallInView = (wg) => !VIEW || bbInView(bbOf(wg, wg.poly));
 function w2s(p) { return { x: p.x * RC.s + RC.ox, y: p.y * RC.s + RC.oy }; }
 function pathPoly(c, pts) { if (!pts.length) return; c.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.closePath(); }
 function arcShort(c, cx, cy, r, a0, a1) {
@@ -1967,6 +2036,10 @@ const TINT_NAMES = ['Aucune', 'Sable', 'Sauge', 'Ciel', 'Rose', 'Lavande', 'Ardo
 /* ---------------- scène ---------------- */
 function drawScene(lv, opts) {
   opts = opts || {};
+  VIEW = opts.export || RC !== SCR || DEBUG.includes('nocull') ? null : viewRect();
+  try { drawSceneIn(lv, opts); } finally { VIEW = null; }
+}
+function drawSceneIn(lv, opts) {
   const c = RC.ctx, Cc = RC.C;
   setScreen();
   c.fillStyle = Cc.paper; c.fillRect(0, 0, RC.w, RC.h);
@@ -1976,6 +2049,7 @@ function drawScene(lv, opts) {
   const below = levelBelow(lv);
   // pièces
   for (const r of g.rooms) {
+    if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
     c.beginPath(); pathPoly(c, r.poly); for (const h of r.holes) pathPoly(c, h);
     const tint = r.label && r.label.tint ? Cc[TINTS[r.label.tint]] : null;
     c.fillStyle = Cc.room; c.fill('evenodd');
@@ -1985,13 +2059,13 @@ function drawScene(lv, opts) {
   setWorld();
   if (below && S.layers.ghost && !opts.export) drawGhost(below.id);
   // trémies des escaliers du niveau inférieur
-  if (below) for (const it of P.items) if (it.lv === below.id && isStair(it.type)) drawItem(c, it, K, 'upper');
+  if (below) for (const it of P.items) if (it.lv === below.id && isStair(it.type) && itemInView(it)) drawItem(c, it, K, 'upper');
   // mobilier
   if (opts.export ? opts.furn !== false : S.layers.furn) {
-    for (const it of P.items) if (it.lv === lv && isStair(it.type)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
-    for (const it of P.items) if (it.lv === lv && !isStair(it.type)) drawItem(c, it, K);
+    for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
+    for (const it of P.items) if (it.lv === lv && !isStair(it.type) && itemInView(it)) drawItem(c, it, K);
   } else {
-    for (const it of P.items) if (it.lv === lv && isStair(it.type)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
+    for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
   }
   drawWalls(g);
   drawOpenings(g);
@@ -2000,6 +2074,7 @@ function drawScene(lv, opts) {
     if (S.layers.links !== false) drawLinks(lv, opts);
     for (const e of P.elec) {
       if (e.lv !== lv || !elecVisible(e)) continue;
+      if (VIEW && !inView(e.x, e.y, elecSize(K) * 1.6)) continue;
       let K2 = K;
       if (S.layers.circ !== false && e.cid) { const col = circuitColor(e.cid, !!opts.export); if (col) K2 = Object.assign({}, K, { elec: col }); }
       if (!opts.export && ui.hl && e.cid === ui.hl) drawHalo(e);
@@ -2017,6 +2092,7 @@ function drawScene(lv, opts) {
   if (!opts.export || opts.dims !== false) drawDimLabels(lv);
 }
 
+const itemInView = (it) => !VIEW || inView(it.x, it.y, 0.5 * Math.hypot(it.w || 0, it.d || 0) + 10);
 function linkAnchorRC(e) {
   const def = ELEC_BY.get(e.type); const u = Math.max(S_ELEC, 20 * RC.px);
   return def && def.wall ? itemToWorld(e, 0, 0.42 * u) : { x: e.x, y: e.y };
@@ -2029,6 +2105,7 @@ function drawLinks(lv, opts) {
     const pa = linkAnchorRC(a), pb = linkAnchorRC(b);
     const d = vsub(pb, pa), L = vlen(d); if (L < 1) continue;
     const n = vperp(vmul(d, 1 / L)), bow = Math.min(L * 0.2, 140);
+    if (VIEW && !inView((pa.x + pb.x) / 2, (pa.y + pb.y) / 2, L / 2 + bow + 10)) continue;
     const ctl = vadd(vmid(pa, pb), vmul(n, bow));
     const col = (S.layers.circ !== false && (a.cid || b.cid) && circuitColor(a.cid || b.cid, !!opts.export)) || RC.C.elec;
     const hi = !opts.export && ui.sel && ui.sel.t === 'elec' && (ui.sel.id === l.a || ui.sel.id === l.b);
@@ -2065,7 +2142,7 @@ function drawGhost(lv) {
   const c = RC.ctx, g = geo(lv);
   c.save(); c.globalAlpha = 0.9;
   c.beginPath();
-  for (const wg of g.walls.values()) pathPoly(c, wg.poly);
+  for (const wg of g.walls.values()) if (wallInView(wg)) pathPoly(c, wg.poly);
   c.fillStyle = RC.C.ghost; c.fill();
   c.restore();
 }
@@ -2074,14 +2151,16 @@ function drawWalls(g) {
   const c = RC.ctx, px = RC.px;
   const pm = mkPath(c), pc = mkPath(c);
   for (const wg of g.walls.values()) {
+    if (!wallInView(wg)) continue;
     const p = wg.w.kind === 'cloison' ? pc : pm;
     const q = wg.poly; p.moveTo(q[0].x, q[0].y); for (let i = 1; i < 4; i++) p.lineTo(q[i].x, q[i].y); p.closePath();
   }
-  for (const hb of g.hubs) { const p = hb.mur ? pm : pc; p.moveTo(hb.pts[0].x, hb.pts[0].y); for (let i = 1; i < hb.pts.length; i++) p.lineTo(hb.pts[i].x, hb.pts[i].y); p.closePath(); }
+  for (const hb of g.hubs) { if (VIEW && !bbInView(bbOf(hb, hb.pts))) continue; const p = hb.mur ? pm : pc; p.moveTo(hb.pts[0].x, hb.pts[0].y); for (let i = 1; i < hb.pts.length; i++) p.lineTo(hb.pts[i].x, hb.pts[i].y); p.closePath(); }
   c.fillStyle = RC.C.wall; c.fill(pm);
   c.fillStyle = RC.C.part; c.fill(pc);
   c.beginPath();
   for (const wg of g.walls.values()) {
+    if (!wallInView(wg)) continue;
     const { h0, h1 } = wg;
     c.moveTo(h0.P.x, h0.P.y); c.lineTo(h1.N.x, h1.N.y);
     c.moveTo(h1.P.x, h1.P.y); c.lineTo(h0.N.x, h0.N.y);
@@ -2095,6 +2174,7 @@ function drawOpenings(g) {
   const c = RC.ctx, px = RC.px;
   for (const o of P.openings) {
     const wg = g.walls.get(o.wall); if (!wg) continue;
+    if (VIEW) { const b = bbOf(wg, wg.poly), m = o.w || 0; if (!bbInView({ x0: b.x0 - m, y0: b.y0 - m, x1: b.x1 + m, y1: b.y1 + m })) continue; }
     c.save();
     c.translate(wg.A.x, wg.A.y); c.rotate(wg.ang);
     const h2 = wg.th / 2, x0 = o.t - o.w / 2, x1 = o.t + o.w / 2;
@@ -2289,6 +2369,7 @@ function roomLabelRects(g) {
   if (!S.layers.names && !S.layers.areas) return out;
   const c = RC.ctx;
   for (const r of g.rooms) {
+    if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
     const p = r.label ? w2s(r.label) : w2s(labelPoint(r.poly));
     c.font = `650 ${TS(13)}px ${FONT_UI}`;
     const w1 = r.label && S.layers.names ? c.measureText(r.label.name).width : 0;
@@ -2307,6 +2388,7 @@ function drawWallDims(g, occ) {
   c.fillStyle = RC.C.ink2;
   const roomsLoops = g.rooms.map((r) => r.loop);
   for (const wg of g.walls.values()) {
+    if (!wallInView(wg)) continue;
     const items = [];
     if (S.dimMode === 'axe') {
       const mid = vmid(wg.A, wg.B);
@@ -2347,6 +2429,7 @@ function drawRoomLabels(g) {
   const c = RC.ctx;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   for (const r of g.rooms) {
+    if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
     const lbl = r.label;
     const p = lbl ? w2s(lbl) : w2s(labelPoint(r.poly));
     const showName = S.layers.names && lbl;
@@ -2362,11 +2445,12 @@ function drawRoomLabels(g) {
     }
   }
 }
+const dimInView = (d) => !VIEW || bbInView({ x0: Math.min(d.ax, d.bx), y0: Math.min(d.ay, d.by), x1: Math.max(d.ax, d.bx), y1: Math.max(d.ay, d.by) });
 function drawDims(lv) {
   const c = RC.ctx, px = RC.px;
   c.save(); c.strokeStyle = RC.C.ink; c.lineWidth = 0.9 * px;
   for (const d of P.dims) {
-    if (d.lv !== lv) continue;
+    if (d.lv !== lv || !dimInView(d)) continue;
     const a = { x: d.ax, y: d.ay }, b = { x: d.bx, y: d.by };
     const u = vnorm(vsub(b, a)), n = vperp(u), t = 5 * px;
     c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y);
@@ -2379,7 +2463,7 @@ function drawDimLabels(lv) {
   const c = RC.ctx;
   c.font = `600 ${TS(11.5)}px ${FONT_LABEL}`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = RC.C.ink;
   for (const d of P.dims) {
-    if (d.lv !== lv) continue;
+    if (d.lv !== lv || !dimInView(d)) continue;
     const a = w2s({ x: d.ax, y: d.ay }), b = w2s({ x: d.bx, y: d.by });
     const L = vdist({ x: d.ax, y: d.ay }, { x: d.bx, y: d.by });
     let ang = Math.atan2(b.y - a.y, b.x - a.x);
@@ -2393,6 +2477,7 @@ function drawTexts(lv) {
   const c = RC.ctx;
   for (const t of P.texts) {
     if (t.lv !== lv) continue;
+    if (VIEW && !inView(t.x, t.y, ((t.text || ' ').length * 0.7 + 1) * Math.max(9 / RC.s, TEXT_SIZES[t.size] || 24))) continue;
     const p = w2s(t);
     const fs = Math.max(9, (TEXT_SIZES[t.size] || 24) * RC.s);
     c.save(); c.translate(p.x, p.y); c.rotate((t.rot || 0) * DEG);
@@ -3210,6 +3295,7 @@ function drawDucts(lv, opts) {
   for (const d of P.ducts) {
     if (d.lv !== lv || !ductVisible(d)) continue;
     const pts = ductPts(d); if (pts.length < 2) continue;
+    if (VIEW && !bbInView(bboxOf(pts))) continue;
     const col = ductColor(d, !!opts.export);
     c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
     if (d.sys === 'vmc') {
@@ -3242,6 +3328,7 @@ function drawDuctLabels(lv, opts) {
   for (const d of P.ducts) {
     if (d.lv !== lv || !ductVisible(d)) continue;
     const pts = ductPts(d); let bi = -1, bl = 0;
+    if (VIEW && pts.length && !bbInView(bboxOf(pts))) continue;
     for (let i = 1; i < pts.length; i++) { const L = vdist(pts[i - 1], pts[i]) * RC.s; if (L > bl) { bl = L; bi = i; } }
     if (bi < 0 || bl < 90) continue;
     const a = w2s(pts[bi - 1]), b = w2s(pts[bi]);
@@ -3731,13 +3818,36 @@ function resizeCanvas() {
   requestRender();
 }
 let rafId = 0;
-function requestRender() { if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; render(); }); }
+/* requestRender(true) : seule la couche du dessus change (curseur, aperçu d'un mur en cours, survol).
+   Le plan lui-même est alors repris d'une image mémorisée, sans être redessiné. Tout autre appel redessine le plan. */
+let sceneDirty = true;
+function requestRender(overlayOnly) {
+  if (!overlayOnly) sceneDirty = true;
+  if (!rafId) rafId = requestAnimationFrame(() => { rafId = 0; render(); });
+}
+/* image mémorisée du plan (couches fixes) : utilisée seulement quand le dessin du plan est coûteux (gros plans) */
+const SCENE = { cv: null, key: '', slow: false };
+const SCENE_SLOW_MS = 4;
 function render() {
   if (!P) return;
   SCR.s = V.s; SCR.ox = V.ox; SCR.oy = V.oy; SCR.px = 1 / V.s; SCR.C = C;
   RC = SCR;
+  const key = [V.s, V.ox, V.oy, SCR.w, SCR.h, SCR.dpr, cv.width, cv.height, ui.lv].join('|');
+  const reuse = !sceneDirty && SCENE.cv && SCENE.key === key;
+  sceneDirty = false;
   ctx.save();
-  drawScene(ui.lv);
+  if (reuse) { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(SCENE.cv, 0, 0); }
+  else {
+    const t0 = performance.now();
+    drawScene(ui.lv);
+    SCENE.slow = DEBUG.includes('cache') || (!DEBUG.includes('nocache') && performance.now() - t0 > SCENE_SLOW_MS);
+    if (SCENE.slow) {
+      if (!SCENE.cv) SCENE.cv = document.createElement('canvas');
+      if (SCENE.cv.width !== cv.width || SCENE.cv.height !== cv.height) { SCENE.cv.width = cv.width; SCENE.cv.height = cv.height; }
+      const sc = SCENE.cv.getContext('2d'); sc.setTransform(1, 0, 0, 1, 0, 0); sc.clearRect(0, 0, cv.width, cv.height); sc.drawImage(cv, 0, 0);
+      SCENE.key = key;
+    } else if (SCENE.cv) { SCENE.cv.width = SCENE.cv.height = 0; SCENE.cv = null; SCENE.key = ''; } // petit plan : pas de mémoire utilisée
+  }
   drawOverlay();
   ctx.restore();
   updateStatus();
@@ -3770,8 +3880,9 @@ function fitView() {
   V.oy = topPad + (Hh - topPad - pad - bh * V.s) / 2 - bb.y0 * V.s;
   requestRender();
 }
-const hitTol = () => (ui.pointerType === 'mouse' ? 7 : 15);
-const TAP = () => (ui.pointerType === 'mouse' ? 4 : 10);
+/* tolérances en pixels d'écran : la souris et l'Apple Pencil sont précis, le doigt beaucoup moins */
+const hitTol = () => (ui.pointerType === 'mouse' ? 7 : ui.pointerType === 'pen' ? 9 : 15);
+const TAP = () => (ui.pointerType === 'mouse' ? 4 : ui.pointerType === 'pen' ? 5 : 10);
 
 /* ---------------- test de sélection ---------------- */
 function K_screen() { return { px: 1 / V.s }; }
@@ -3990,18 +4101,18 @@ function validateSel() {
 function commit() {
   syncRooms();
   syncDucts();
-  const s = snapshot();
-  if (s === H.cur) { refreshUI(); return; }
-  H.u.push(H.cur); if (H.u.length > 150) H.u.shift();
-  H.r.length = 0; H.cur = s;
+  const pk = packPlan(P, H.cur);
+  if (samePack(pk, H.cur)) { refreshUI(); return; }
+  H.u.push(H.cur); H.r.length = 0; H.cur = pk;
+  historyTrim();
   scheduleSave();
   refreshUI();
 }
-function revert() { P = JSON.parse(H.cur); touch(); refreshUI(); }
+function revert() { P = unpackPlan(H.cur); touch(); refreshUI(); }
 function undo() {
   if (!H.u.length) return;
   H.r.push(H.cur); H.cur = H.u.pop();
-  P = JSON.parse(H.cur); touch();
+  P = unpackPlan(H.cur); touch();
   if (ui.chain) undoChainStep();
   if (!IDX.levels.has(ui.lv)) ui.lv = levelsSorted()[0].id;
   scheduleSave(); refreshUI();
@@ -4009,7 +4120,7 @@ function undo() {
 function redo() {
   if (!H.r.length) return;
   H.u.push(H.cur); H.cur = H.r.pop();
-  P = JSON.parse(H.cur); touch();
+  P = unpackPlan(H.cur); touch();
   if (ui.chain) finishChain();
   if (!IDX.levels.has(ui.lv)) ui.lv = levelsSorted()[0].id;
   scheduleSave(); refreshUI();
@@ -4036,7 +4147,26 @@ function isDoubleTap(sp, key) {
   return ok;
 }
 cv.addEventListener('contextmenu', (e) => e.preventDefault());
+/* Apple Pencil : un stylet posé = la main repose sur l'écran ; les contacts du doigt (paume) sont ignorés */
+let penDown = 0;
+const pencilMode = () => !!S.pencil;
+function pencilFirstUse() {
+  if (S.pencilSeen) return;
+  S.pencilSeen = true; S.pencil = true; saveSettings();
+  toast('Apple Pencil détecté : le stylet dessine, le doigt déplace le plan. Réglage dans Affichage (icône des calques).');
+}
 cv.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'pen') {
+    pencilFirstUse();
+    penDown = e.pointerId;
+    // la paume s'est posée avant le stylet : on annule ce qu'elle avait commencé
+    if (pencilMode() && ptrs.size) {
+      for (const id of [...ptrs.keys()]) { ptrs.delete(id); try { cv.releasePointerCapture(id); } catch (err) { } }
+      if (drag) { if (drag.cancel) drag.cancel(); drag = null; }
+      if (downState && (JSON.stringify(ui.sel) !== JSON.stringify(downState.sel) || ui.inspOpen !== downState.insp)) { ui.sel = downState.sel; ui.inspOpen = downState.insp; renderInspector(); }
+      gest = null; ignoreUntilUp = false;
+    }
+  } else if (e.pointerType === 'touch' && pencilMode() && penDown) return; // paume pendant le dessin au stylet
   ui.pointerType = e.pointerType || 'mouse';
   closePops();
   closeDimEdit();
@@ -4055,6 +4185,8 @@ cv.addEventListener('pointerdown', (e) => {
   if (e.button === 2) return;
   ignoreUntilUp = false;
   if (e.pointerType === 'mouse') cv.focus({ preventScroll: true });
+  // mode Apple Pencil : avec un outil de dessin, un doigt déplace le plan au lieu de dessiner
+  if (e.pointerType === 'touch' && pencilMode() && ui.tool !== 'select') { drag = panDrag(sp, null); return; }
   const wp = screenToWorld(sp.x, sp.y);
   const T = TOOLS[ui.tool] || TOOLS.select;
   downState = { sel: ui.sel, insp: ui.inspOpen };
@@ -4073,11 +4205,15 @@ cv.addEventListener('pointermove', (e) => {
     requestRender(); return;
   }
   const wp = screenToWorld(sp.x, sp.y);
-  ui.mouse = e.pointerType === 'mouse' ? wp : null;
-  if (drag) { if (drag.move) drag.move(wp, sp, e); requestRender(); return; }
-  if (e.pointerType === 'mouse' && !ignoreUntilUp) { const T = TOOLS[ui.tool]; if (T && T.hover) T.hover(wp, sp, e); requestRender(); }
+  // survol : souris, ou Apple Pencil approché de l'écran sans le toucher (iPad compatible avec le survol)
+  const hovering = e.pointerType === 'mouse' || (e.pointerType === 'pen' && !ptrs.has(e.pointerId) && !e.buttons);
+  if (drag && ptrs.has(e.pointerId)) ui.mouse = e.pointerType === 'mouse' ? wp : null;
+  else if (!drag) ui.mouse = hovering ? wp : null;
+  if (drag) { if (ptrs.has(e.pointerId) && drag.move) { drag.move(wp, sp, e); requestRender(!!drag.overlay); } return; }
+  if (hovering && !ignoreUntilUp) { if (e.pointerType === 'pen') ui.pointerType = 'pen'; const T = TOOLS[ui.tool]; if (T && T.hover) T.hover(wp, sp, e); requestRender(true); }
 });
 function ptrEnd(e) {
+  if (e.pointerId === penDown) penDown = 0;
   const had = ptrs.has(e.pointerId);
   ptrs.delete(e.pointerId);
   if (gest) { if (ptrs.size < 2) gest = null; if (ptrs.size === 0) ignoreUntilUp = false; return; }
@@ -4093,7 +4229,7 @@ function ptrEnd(e) {
 }
 cv.addEventListener('pointerup', ptrEnd);
 cv.addEventListener('pointercancel', ptrEnd);
-cv.addEventListener('pointerleave', () => { if (ui.pointerType === 'mouse' && !drag) { ui.mouse = null; ui.ghost = null; if (!ui.chain) ui.cursor = null; ui.hover = null; requestRender(); } });
+cv.addEventListener('pointerleave', (e) => { if ((e.pointerType === 'mouse' || e.pointerType === 'pen') && !drag && !ptrs.size) { ui.mouse = null; ui.ghost = null; if (!ui.chain) ui.cursor = null; ui.hover = null; requestRender(); } });
 cv.addEventListener('wheel', (e) => {
   e.preventDefault();
   const sp = evPos(e);
@@ -4271,6 +4407,7 @@ TOOLS.wall = {
   down(wp) {
     ui.cursor = wallCursor(wp);
     return {
+      overlay: true, // le plan ne change pas pendant le geste : seul l'aperçu bouge
       move(wp2) { ui.cursor = wallCursor(wp2); },
       up(wp2, sp2) { const pt = ui.cursor || wallCursor(wp2); wallClick(pt, sp2); },
       cancel() { },
@@ -4361,6 +4498,7 @@ TOOLS.room = {
     const a = snapPoint(wp);
     ui.roomDraft = { a, b: a };
     return {
+      overlay: true,
       move(wp2) { ui.roomDraft.b = snapPoint(wp2); },
       up() {
         const { a, b } = ui.roomDraft; ui.roomDraft = null;
@@ -6113,6 +6251,8 @@ function renderViewPop() {
     toggleRow('Angles droits et à 45°', () => S.ortho, (v) => (S.ortho = v)),
     toggleRow('Coller les objets aux murs', () => S.magnet, (v) => (S.magnet = v)),
     segCtl([{ v: 1, n: 'Pas de 1 cm' }, { v: 5, n: '5 cm' }, { v: 10, n: '10 cm' }], S.grid, (v) => { S.grid = v; saveSettings(); renderViewPop(); }),
+    h('h4', null, 'Apple Pencil'),
+    toggleRow('Le stylet dessine, le doigt déplace le plan', () => S.pencil, (v) => { S.pencil = v; S.pencilSeen = true; }),
     h('h4', null, 'Épaisseurs par défaut'),
     h('div', { class: 'row', style: 'padding:0 8px 10px' },
       numField('Mur porteur', S.thMur, 'cm', (v) => { S.thMur = v; saveSettings(); updateHint(); }, { id: 'f-dthm', min: 1, max: 100 }),
@@ -8316,7 +8456,7 @@ function camTo(tgt, animate) {
 
 /* ---------------- état de la vue 3D ---------------- */
 const V3 = { G: null, key: '', sel: 0, raf: 0, anim: null, joy: null, keys: new Set(), lastT: 0, labelEls: [], inited: false, failed: false, needFit: true };
-function v3Key() { const o = v3o(); return [H.cur && H.cur.length, ui.lv, o.mode, o.above, o.furn, o.elec, o.ducts, o.labels, o.walls, o.route, S.layers.circ, JSON.stringify(S.filt), isDarkTheme()].join('|'); }
+function v3Key() { const o = v3o(); return [H.cur && H.cur.size, ui.lv, o.mode, o.above, o.furn, o.elec, o.ducts, o.labels, o.walls, o.route, S.layers.circ, JSON.stringify(S.filt), isDarkTheme()].join('|'); }
 function v3Rebuild(force) {
   if (!R3.ok) return;
   const key = v3Key();

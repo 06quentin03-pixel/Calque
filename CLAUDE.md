@@ -30,7 +30,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 
 ## Architecture actuelle (voir `AUDIT.md` pour le détail)
 
-- `index.html` contient toute l'application (environ 590 Ko). Le CSS est aux lignes 7–368, le HTML aux lignes 369–454 et le JS aux lignes 455–8534, dans une seule fonction anonyme.
+- `index.html` contient toute l'application (environ 610 Ko, 9 000 lignes). Le CSS est aux lignes 7–380, le HTML juste après, et le JS de la ligne 467 à la fin, dans une seule fonction anonyme. Les numéros de ligne bougent à chaque modification : chercher les fonctions par leur nom.
 - Pas de bibliothèque externe ni de compilation. 3D en WebGL 2 écrit à la main, PDF généré par un module intégré.
 - Modèle de données : un plan est un objet JSON `P` (`levels, nodes, walls, openings, items, elec, rooms, dims, texts, circuits, rcds, links, ducts, install`).
   - Unités : centimètres, axe Y vers le bas. Chaque objet a un `id` unique et un niveau `lv`.
@@ -40,8 +40,15 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
   - Format des plans : `PLAN_VERSION` + `MIGRATIONS[n]` (fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
-- `sw.js` : Service Worker « réseau d'abord » (cache `calque-v3`).
+- `sw.js` : Service Worker « réseau d'abord » (cache `calque-v5`).
   - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier.
+
+- Rendu 2D (depuis la phase 1c) :
+  - `drawScene` ne dessine à l'écran que les objets de la zone visible (`VIEW`, marge de 160 px). Les exports PDF/PNG dessinent toujours tout.
+  - `requestRender(true)` = seule la couche du dessus change (curseur, aperçu). Le plan est alors repris d'une image mémorisée (`SCENE`), utilisée seulement si le dessin du plan dépasse 4 ms. **Tout changement du plan doit appeler `requestRender()` sans argument.**
+  - Diagnostic pour les tests : `?debug=nocull`, `?debug=cache`, `?debug=nocache`.
+- Annuler/rétablir : `packPlan`/`unpackPlan`, états découpés en blocs partagés entre étapes (150 étapes, environ 30 millions de caractères au maximum).
+- Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible
 
@@ -53,7 +60,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 
 - Serveur local : `python3 -m http.server 8765` à la racine du dépôt.
 - Navigateur : Chromium est installé avec Playwright (`require('playwright')`). WebKit n'est pas disponible dans l'environnement cloud.
-- Tests : `node --test tests/*.test.mjs` (Playwright + Chromium, serveur intégré au test).
+- Tests : `node --test tests/*.test.mjs` (Playwright + Chromium, serveur intégré au test). Outils communs et plan de test de grande taille : `tests/outils.mjs`.
 - Tailles d'écran à vérifier : 1180×820 (iPad paysage), 820×1180 (iPad portrait), 390×844 (téléphone).
 - Ne jamais laisser de fichiers de test (captures, etc.) dans le dépôt : utiliser le dossier temporaire de la session.
 
