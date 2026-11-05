@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Phase 6, étape 2 : moteur de règles versionnées (fin de la phase 6)
+- Nouveau **moteur de règles** `js/regles.js` (sans écran, testé avec Node) : catalogue de **51 règles versionnées** (identifiant, version, groupe, source, édition de la norme, origine, données utilisées). Version du jeu de règles : « Calque-règles 2026.11 (1) ».
+- Chaque résultat a l'un des **trois statuts** (conforme / non conforme / vérification nécessaire), avec le détail, l'objet concerné (circuit, différentiel, cheminement, symbole, pièce), les **données utilisées** (avec leur statut : vérifiée, saisie, estimée) et les **données manquantes** (dont les tableaux de la norme non fournis).
+- **Tous les contrôles existants sont repris** : ceux du moteur de calcul (fiche de chaque circuit, interrupteurs différentiels, remplissage des cheminements) et les 49 contrôles de l'ancien onglet « Contrôle NF C 15-100 » (même message, même objet).
+- Règle d'honnêteté : « conforme » n'est possible que pour une règle dont la source est vérifiée (extrait Legrand fourni, ou condition calculée comme IB ≤ In). Une règle de Calque dont la source n'est pas encore rattachée à un extrait est au mieux « vérification nécessaire » (« respecté d'après le contrôle de Calque, à confirmer ») ; un manquement reste « non conforme ». Les recommandations et points d'attention ne sont jamais « non conformes ».
+- **Jamais de conformité globale** si tout n'est pas vérifié : l'avis du rapport le dit clairement. La pastille de l'onglet n'affiche plus de coche verte (nombre de non-conformités, sinon nombre de vérifications, en orange).
+- Onglet **« Contrôle NF C 15-100 »** refait (`js/reglesui.js`) : trois compteurs, avis, filtre (Tous / Non conformes / À vérifier / Conformes), pour chaque contrôle le statut, le détail, « Règle, source et données » à déplier, bouton « Voir » ; catalogue des règles avec leur version.
+- **Dossier PDF** : nouveau chapitre **« Rapport de contrôle »** (version du moteur, synthèse, avis, chaque contrôle avec sa règle, sa source, son édition, ses données). La version des règles est notée dans le cartouche et à chaque indice de révision.
+- Service Worker : cache `calque-v22`.
+- Nouveau fichier de tests `tests/regles.test.mjs` (5 tests). Tests : 89/89.
+
 ## 2026-11-05 — Phase 6, étape 1 : moteur documentaire (dossier PDF)
 - Nouveau **Menu › Dossier PDF** : un seul fichier PDF qui regroupe la page de garde (sommaire, tableau des révisions, explication des statuts), les plans techniques (un niveau par page, à une échelle normalisée, avec légende), le schéma unifilaire et le coffret (vectoriels), les nomenclatures (circuits, différentiels, appareils par niveau, références de la bibliothèque technique avec leur fiabilité), le bilan de puissance, les métrés (longueurs, remplissage, matériel) et les études d'éclairage.
 - **Cartouche sur chaque page** : projet, client et adresse, entreprise et auteur, n° d'affaire, titre de la page, échelle, **indice de révision**, date, page n / N.

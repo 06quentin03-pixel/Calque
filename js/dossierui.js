@@ -13,12 +13,14 @@ import { dessinerPlanZone, fileActions } from './export.js';
 import { PRINT_COL, panelSVG, uniSVG } from './tableau.js';
 import { articleView } from './technique.js';
 import { UL } from './mabiblio.js';
+import { rapportDuPlan } from './reglesui.js';
+import { REGLES_VERSION } from './regles.js';
 import { CHAMPS_DOC, CHAPITRES, dossierPDF, indiceCourant, indiceSuivant, nettoyerDoc } from './documents.js';
 
 const LIB_CHAMP = { client: 'Client / maître d’ouvrage', adresse: 'Adresse du chantier', entreprise: 'Entreprise', auteur: 'Établi par', affaire: 'N° d’affaire' };
 const DS = { gen: 0, file: null, busy: false };
-/* chapitres proposés (le rapport de contrôle arrive avec le moteur de règles) */
-const CHAP_UI = CHAPITRES.filter((c) => c.id !== 'controles');
+/* chapitres proposés */
+const CHAP_UI = CHAPITRES;
 
 function reglages() {
   if (!S.dossier || typeof S.dossier !== 'object') S.dossier = {};
@@ -44,6 +46,7 @@ function optionsDossier(d) {
     svgUnifilaire: has ? uniSVG(PRINT_COL, null).svg : null,
     svgCoffret: has ? panelSVG(PRINT_COL, null).svg : null,
     pieceDe: (lbl) => { const r = roomOfLabel(lbl); return r ? { poly: r.poly, holes: r.holes || [], area: r.area } : null; },
+    rapport: d.chap.includes('controles') ? rapportDuPlan() : null,
     referenceDe: (e) => { if (!e.art) return null; const v = articleView(e.art, UL.refs); return v && v.ref ? { ref: v.ref, fab: v.fab, fiab: v.fiab } : null; },
   };
 }
@@ -96,7 +99,7 @@ function majActions() {
 }
 async function nouvelIndice(i, objet) {
   const D = docDuPlan(true);
-  D.revisions.push({ i, date: Date.now(), objet: String(objet || '').trim().slice(0, 300), ...(D.auteur ? { par: D.auteur } : {}) });
+  D.revisions.push({ i, date: Date.now(), objet: String(objet || '').trim().slice(0, 300), regles: REGLES_VERSION, ...(D.auteur ? { par: D.auteur } : {}) });
   commit();
   /* une version de l'historique garde le plan tel qu'il était à cet indice */
   addVersion(P.id, P.name || 'Plan', snapshot(), `Indice ${i} du dossier`).catch(() => { });

@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 5 novembre 2026, phase 6 en cours (étape 1 terminée).
+Mise à jour : 5 novembre 2026, fin de la phase 6.
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -18,7 +18,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
 | 4 | Cheminements et métrés | ✅ terminée, **fusionnée dans `main` (demande n°3, à la demande de l'utilisateur)**, essais iPad à faire |
 | 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, **validée sur iPad** (5 novembre 2026) |
-| 6 | Documents et moteur de règles | 🟨 en cours : moteur documentaire ✅, moteur de règles ⬜ |
+| 6 | Documents et moteur de règles | ✅ terminée, demande de fusion n°5 à faire fusionner par l'utilisateur, essais iPad à faire |
 | 7 | Chantier et variantes | ⬜ |
 | 8 | Validation finale | ⬜ |
 
@@ -37,10 +37,12 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Photométrie** `js/photometrie.js` (sans écran) : lecture des fichiers IES et LDT (flux intégré « vérifié », puissance du fichier), courbe photométrique ; fichiers enregistrés dans le plan.
 - **3D avancée** `js/vue3d.js` : goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits (option « Câbles »), coupes horizontale et verticales, murs transparents, masquage, modification depuis la fiche 3D (gaine, hauteur de pose, mur, meuble, suppression) et déplacement au doigt des symboles au plafond ou au sol.
 
-## Phase 6 (en cours)
+## Phase 6 (terminée)
 - **Moteur documentaire** (étape 1, terminée) : Menu › **Dossier PDF**. Un seul PDF avec un cartouche (projet, client, indice, date, page n / N) sur chaque page : page de garde (sommaire, révisions, lecture des statuts), plans techniques à l'échelle, schéma unifilaire et coffret vectoriels, nomenclatures, bilan, métrés et matériel, études d'éclairage. Valeurs estimées marquées « Estimée », valeurs manquantes « Manquante ». Indices de révision A, B, C… gardés dans le plan (format **v8**, champ `doc`).
   - Modules : `js/pdf.js`, `js/svgpdf.js`, `js/documents.js` (sans écran, testés avec Node), `js/dossierui.js` (écran).
-- **Moteur de règles versionnées** (étape 2) : à faire.
+- **Moteur de règles versionnées** (étape 2, terminée) : `js/regles.js` (sans écran) + onglet `js/reglesui.js`. 51 règles versionnées (« Calque-règles 2026.11 (1) »), chacune avec sa source, l'édition de la norme et son origine (extrait Legrand, règle générale, contrôle de Calque à rattacher, recommandation, point d'attention). Trois statuts, données utilisées et manquantes. Tous les contrôles existants sont repris (fiche de calcul, différentiels, remplissage, 49 contrôles de `nfcChecks`).
+  - Une règle de Calque dont la source n'est pas rattachée à un extrait Legrand n'est jamais « conforme » : respectée → « vérification nécessaire (à confirmer) ».
+  - Rapport aussi dans le dossier PDF (chapitre « Rapport de contrôle »).
 
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).
@@ -61,8 +63,8 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **84/84 réussis** (phase 6, étape 1).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests).
+- `node --test tests/*.test.mjs` : **89/89 réussis** (fin de phase 6).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests).
 - Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
 
 ## Points ouverts

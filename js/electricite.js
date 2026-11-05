@@ -361,86 +361,88 @@ function panelLayout() {
 /* ---------------- contrôle NF C 15-100 ---------------- */
 function nfcChecks() {
   const out = [];
-  const add = (sev, group, msg, ref, rule) => out.push({ sev, group, msg, ref, rule });
+  const add = (sev, group, msg, ref, rule, rid) => out.push({ sev, group, msg, ref, rule, rid });
+  /* rid : identifiant de la règle dans le catalogue du moteur de règles (regles.js) */
+  const addR = (rid, sev, group, msg, ref, rule) => add(sev, group, msg, ref, rule, rid);
   const nums = circNumbers(), rn = rcdNumbers();
   const G1 = 'Tableau et protections', G2 = 'Circuits', G3 = 'Pièces', G4 = 'Hauteurs de pose';
   const circs = P.circuits, rcds = P.rcds;
   const inst = P.install || defaultInstall();
-  if (!circs.length) { add('err', G1, 'Aucun circuit : générez le tableau à partir du plan ou ajoutez des circuits.', null); }
+  if (!circs.length) { addR('cq_circuits', 'err', G1, 'Aucun circuit : générez le tableau à partir du plan ou ajoutez des circuits.', null); }
   // différentiels
   const nonOwn = rcds;
   if (circs.length) {
-    if (nonOwn.length < 2) add('err', G1, `${nonOwn.length} interrupteur différentiel 30 mA : il en faut au moins 2.`, null, 'Au moins 2 dispositifs différentiels 30 mA par logement.');
-    else add('ok', G1, `${nonOwn.length} interrupteurs différentiels 30 mA.`, null);
-    if (!rcds.some((r) => r.type === 'A' || r.type === 'F') && circs.length) add('err', G1, 'Aucun différentiel de type A : obligatoire pour la plaque de cuisson et le lave-linge.', null);
+    if (nonOwn.length < 2) addR('cq_dd_nombre', 'err', G1, `${nonOwn.length} interrupteur différentiel 30 mA : il en faut au moins 2.`, null, 'Au moins 2 dispositifs différentiels 30 mA par logement.');
+    else addR('cq_dd_nombre', 'ok', G1, `${nonOwn.length} interrupteurs différentiels 30 mA.`, null);
+    if (!rcds.some((r) => r.type === 'A' || r.type === 'F') && circs.length) addR('cq_dd_type_a', 'err', G1, 'Aucun différentiel de type A : obligatoire pour la plaque de cuisson et le lave-linge.', null);
   }
   for (const r of rcds) {
     const cs = rcdCircuits(r.id), l = rcdLoad(r.id), nm = rn.get(r.id);
     const ref = { t: 'rcd', id: r.id };
-    if (cs.length > 8) add('err', G1, `${nm} protège ${cs.length} circuits : 8 au maximum.`, ref);
-    if (!cs.length) add('warn', G1, `${nm} ne protège aucun circuit.`, ref);
+    if (cs.length > 8) addR('cq_dd_8', 'err', G1, `${nm} protège ${cs.length} circuits : 8 au maximum.`, ref);
+    if (!cs.length) addR('cq_dd_vide', 'warn', G1, `${nm} ne protège aucun circuit.`, ref);
     const agcp = agcpOf(inst.kva)[1];
-    if (r.cal < l && r.cal < agcp) add('err', G1, `${nm} ${r.cal} A : la somme des protections en aval vaut ${NF1.format(l)} A et l'AGCP est réglé à ${agcp} A. Passez à ${l <= 63 ? '63 A' : 'deux différentiels'}.`, ref, 'Calibre ≥ réglage de l’AGCP, ou ≥ chauffage + chauffe-eau + IRVE + 50 % des autres circuits.');
-    else if (cs.length) add('ok', G1, `${nm} ${r.cal} A type ${r.type} : charge calculée ${NF1.format(l)} A, ${cs.length} circuit${cs.length > 1 ? 's' : ''}.`, ref);
-    if (r.own && cs.some((c) => c.kind !== 'irve')) add('err', G1, `${nm} est réservé à la borne de recharge : il ne doit protéger aucun autre circuit.`, ref);
+    if (r.cal < l && r.cal < agcp) addR('cq_dd_calibre', 'err', G1, `${nm} ${r.cal} A : la somme des protections en aval vaut ${NF1.format(l)} A et l'AGCP est réglé à ${agcp} A. Passez à ${l <= 63 ? '63 A' : 'deux différentiels'}.`, ref, 'Calibre ≥ réglage de l’AGCP, ou ≥ chauffage + chauffe-eau + IRVE + 50 % des autres circuits.');
+    else if (cs.length) addR('cq_dd_calibre', 'ok', G1, `${nm} ${r.cal} A type ${r.type} : charge calculée ${NF1.format(l)} A, ${cs.length} circuit${cs.length > 1 ? 's' : ''}.`, ref);
+    if (r.own && cs.some((c) => c.kind !== 'irve')) addR('cq_irve_dd', 'err', G1, `${nm} est réservé à la borne de recharge : il ne doit protéger aucun autre circuit.`, ref);
   }
   for (const c of circs) {
     const k = CK[c.kind] || CK.autre, r = rcdById(c.rcd), ref = { t: 'circuit', id: c.id }, nm = nums.get(c.id);
-    if (!r) { add('err', G1, `${nm} ${c.name} n'est protégé par aucun différentiel 30 mA.`, ref); continue; }
-    if (k.typeA && r.type === 'AC') add('err', G1, `${nm} ${c.name} doit être sous un différentiel de type A (ou F), pas AC.`, ref, 'Type A au moins (A, F ou B) : plaque de cuisson, lave-linge, sèche-linge, pompe à chaleur, borne de recharge (extrait Legrand, p. 13).');
-    if (k.ownRcd && rcdCircuits(r.id).length > 1) add('err', G1, `${nm} ${c.name} : la borne doit avoir son propre différentiel 30 mA.`, ref);
+    if (!r) { addR('cq_circuit_dd', 'err', G1, `${nm} ${c.name} n'est protégé par aucun différentiel 30 mA.`, ref); continue; }
+    if (k.typeA && r.type === 'AC') addR('cq_type_a_circuit', 'err', G1, `${nm} ${c.name} doit être sous un différentiel de type A (ou F), pas AC.`, ref, 'Type A au moins (A, F ou B) : plaque de cuisson, lave-linge, sèche-linge, pompe à chaleur, borne de recharge (extrait Legrand, p. 13).');
+    if (k.ownRcd && rcdCircuits(r.id).length > 1) addR('cq_irve_dd', 'err', G1, `${nm} ${c.name} : la borne doit avoir son propre différentiel 30 mA.`, ref);
   }
   const lp = circs.filter((c) => c.kind === 'eclairage' || c.kind === 'prises');
   if (lp.length >= 2) {
     const hosts = new Set(lp.map((c) => c.rcd).filter(Boolean));
-    if (hosts.size < 2) add('err', G1, 'Les circuits d’éclairage et de prises sont tous sous le même différentiel : répartissez-les sur au moins 2.', null);
-    else add('ok', G1, 'Éclairage et prises répartis sur plusieurs différentiels.', null);
+    if (hosts.size < 2) addR('cq_dd_lp', 'err', G1, 'Les circuits d’éclairage et de prises sont tous sous le même différentiel : répartissez-les sur au moins 2.', null);
+    else addR('cq_dd_lp', 'ok', G1, 'Éclairage et prises répartis sur plusieurs différentiels.', null);
   }
   if (circs.length) {
     const lay = panelLayout();
-    if (lay.reserve < 0.2) add('err', G1, `Réserve de ${Math.round(lay.reserve * 100)} % : il faut au moins 20 % de modules libres.`, null);
-    else add('ok', G1, `Réserve de ${Math.round(lay.reserve * 100)} % (${lay.free} modules libres sur ${lay.total}).`, null);
+    if (lay.reserve < 0.2) addR('cq_reserve', 'err', G1, `Réserve de ${Math.round(lay.reserve * 100)} % : il faut au moins 20 % de modules libres.`, null);
+    else addR('cq_reserve', 'ok', G1, `Réserve de ${Math.round(lay.reserve * 100)} % (${lay.free} modules libres sur ${lay.total}).`, null);
   }
-  add(inst.parafoudre ? 'ok' : 'info', G1, inst.parafoudre ? 'Parafoudre prévu en tête du tableau (In ≥ 5 kA).' : 'Pas de parafoudre : il est obligatoire si le bâtiment a un paratonnerre et dans certaines zones exposées à la foudre.', null);
+  addR('cq_parafoudre', inst.parafoudre ? 'ok' : 'info', G1, inst.parafoudre ? 'Parafoudre prévu en tête du tableau (In ≥ 5 kA).' : 'Pas de parafoudre : il est obligatoire si le bâtiment a un paratonnerre et dans certaines zones exposées à la foudre.', null);
   // circuits
   const nLight = circs.filter((c) => c.kind === 'eclairage').length;
   for (const c of circs) {
     const st = circStats(c), ref = { t: 'circuit', id: c.id }, nm = nums.get(c.id);
     const smax = SEC_MAX[c.sec];
-    if (smax && c.cal > smax) add('err', G2, `${nm} ${c.name} : ${c.sec} mm² n'admet pas plus de ${smax} A (disjoncteur de ${c.cal} A).`, ref);
-    if (c.kind === 'eclairage' && c.cal > 16) add('err', G2, `${nm} ${c.name} : un circuit d'éclairage est protégé à 16 A au plus.`, ref);
+    if (smax && c.cal > smax) addR('cq_sec_cal', 'err', G2, `${nm} ${c.name} : ${c.sec} mm² n'admet pas plus de ${smax} A (disjoncteur de ${c.cal} A).`, ref);
+    if (c.kind === 'eclairage' && c.cal > 16) addR('cq_ecl_16', 'err', G2, `${nm} ${c.name} : un circuit d'éclairage est protégé à 16 A au plus.`, ref);
     if (st.over) {
       const why = st.unit === 'pt' ? '8 points lumineux maximum par circuit (spots : 1 point par tranche de 300 VA).'
         : st.unit === 'socle' ? (c.kind === 'prises_cuisine' ? '6 socles maximum sur le circuit dédié de la cuisine.' : c.sec >= 2.5 ? '12 socles maximum en 2,5 mm² / 20 A.' : '8 socles maximum en 1,5 mm² / 16 A.')
         : st.unit === 'W' ? `${NF0.format(st.max)} W maximum pour un disjoncteur de ${c.cal} A.` : 'Un seul appareil par circuit spécialisé.';
-      add('err', G2, `${nm} ${c.name} : ${fmtCount(st)}. ${why}`, ref);
-    } else if (st.ms.length) add('ok', G2, `${nm} ${c.name} : ${fmtCount(st)}.`, ref);
-    else add('info', G2, `${nm} ${c.name} : aucun symbole du plan n'y est relié.`, ref);
+      addR('cq_points', 'err', G2, `${nm} ${c.name} : ${fmtCount(st)}. ${why}`, ref);
+    } else if (st.ms.length) addR('cq_points', 'ok', G2, `${nm} ${c.name} : ${fmtCount(st)}.`, ref);
+    else addR('cq_points', 'info', G2, `${nm} ${c.name} : aucun symbole du plan n'y est relié.`, ref);
     if (c.kind === 'prises_cuisine') {
       const out2 = st.ms.filter((e) => { const r = roomAt(e); return !(r && r.label && /cuisine/i.test(r.label.name)); });
-      if (out2.length) add('warn', G2, `${nm} ${c.name} alimente ${out2.length} prise${out2.length > 1 ? 's' : ''} hors de la cuisine : ce circuit doit lui être dédié.`, ref);
+      if (out2.length) addR('cq_cuisine_dedie', 'warn', G2, `${nm} ${c.name} alimente ${out2.length} prise${out2.length > 1 ? 's' : ''} hors de la cuisine : ce circuit doit lui être dédié.`, ref);
     }
-    for (const e of st.ms) if (!accepts(c.kind, e.type)) { const d = ELEC_BY.get(e.type); add('warn', G2, `${d ? d.n : e.type} relié à ${nm} ${c.name}, qui n'est pas un circuit adapté.`, { t: 'elec', id: e.id }); }
+    for (const e of st.ms) if (!accepts(c.kind, e.type)) { const d = ELEC_BY.get(e.type); addR('cq_circuit_adapte', 'warn', G2, `${d ? d.n : e.type} relié à ${nm} ${c.name}, qui n'est pas un circuit adapté.`, { t: 'elec', id: e.id }); }
   }
   const lightsOnPlan = P.elec.filter((e) => LIGHTS.has(e.type));
   const orphans = P.elec.filter((e) => !NO_CIRCUIT.has(e.type) && !e.cid && !(ALARM.has(e.type) && e.type !== 'centrale'));
-  if (orphans.length) add('warn', G2, `${orphans.length} symbole${orphans.length > 1 ? 's' : ''} du plan sans circuit (${[...new Set(orphans.map((e) => (ELEC_BY.get(e.type) || {}).n))].slice(0, 3).join(', ')}${orphans.length > 3 ? '…' : ''}).`, { t: 'elec', id: orphans[0].id });
+  if (orphans.length) addR('cq_sans_circuit', 'warn', G2, `${orphans.length} symbole${orphans.length > 1 ? 's' : ''} du plan sans circuit (${[...new Set(orphans.map((e) => (ELEC_BY.get(e.type) || {}).n))].slice(0, 3).join(', ')}${orphans.length > 3 ? '…' : ''}).`, { t: 'elec', id: orphans[0].id });
   const mainRooms = [];
   for (const L of P.levels) for (const r of geo(L.id).rooms) if (r.label && /s[ée]jour|chambre|salon/i.test(r.label.name)) mainRooms.push(r);
-  if (mainRooms.length >= 2 && lightsOnPlan.length && nLight < 2) add('err', G2, `${nLight} circuit d'éclairage : il en faut au moins 2 quand le logement a 2 pièces principales ou plus.`, null);
+  if (mainRooms.length >= 2 && lightsOnPlan.length && nLight < 2) addR('cq_ecl_2', 'err', G2, `${nLight} circuit d'éclairage : il en faut au moins 2 quand le logement a 2 pièces principales ou plus.`, null);
   const nSpec = circs.filter((c) => CK[c.kind] && CK[c.kind].spec).length;
   if (circs.length) {
-    if (nSpec < 3) add('err', G2, `${nSpec} circuit${nSpec > 1 ? 's' : ''} spécialisé${nSpec > 1 ? 's' : ''} (lave-linge, lave-vaisselle, sèche-linge, four, congélateur) : il en faut au moins 3.`, null);
-    else add('ok', G2, `${nSpec} circuits spécialisés.`, null);
+    if (nSpec < 3) addR('cq_specialises', 'err', G2, `${nSpec} circuit${nSpec > 1 ? 's' : ''} spécialisé${nSpec > 1 ? 's' : ''} (lave-linge, lave-vaisselle, sèche-linge, four, congélateur) : il en faut au moins 3.`, null);
+    else addR('cq_specialises', 'ok', G2, `${nSpec} circuits spécialisés.`, null);
     const hasKitchen = P.rooms.some((r) => /cuisine/i.test(r.name));
-    if (hasKitchen && !circs.some((c) => c.kind === 'cuisson')) add('err', G2, 'Pas de circuit de cuisson : une sortie 32 A en 6 mm² est obligatoire dans la cuisine.', null);
+    if (hasKitchen && !circs.some((c) => c.kind === 'cuisson')) addR('cq_cuisson', 'err', G2, 'Pas de circuit de cuisson : une sortie 32 A en 6 mm² est obligatoire dans la cuisine.', null);
   }
   for (const c of circs.filter((x) => x.kind === 'prises' && !x.dda)) {
-    if (circStats(c).ms.some((e) => { const r = roomAt(e); return r && r.label && /chambre/i.test(r.label.name); })) add('info', G2, `${nums.get(c.id)} ${c.name} dessert une chambre : un détecteur d'arc (DDA) est recommandé.`, { t: 'circuit', id: c.id });
+    if (circStats(c).ms.some((e) => { const r = roomAt(e); return r && r.label && /chambre/i.test(r.label.name); })) addR('cq_dda', 'info', G2, `${nums.get(c.id)} ${c.name} dessert une chambre : un détecteur d'arc (DDA) est recommandé.`, { t: 'circuit', id: c.id });
   }
-  if (!P.elec.some((e) => e.type === 'daaf')) add('err', G3, 'Aucun détecteur de fumée (DAAF) : au moins un par logement est obligatoire.', null);
-  for (const e of P.elec.filter((x) => x.type === 'pc_2p')) add('err', G3, 'Prise sans terre : interdite en installation neuve, chaque prise doit avoir son contact de terre.', { t: 'elec', id: e.id });
-  if (P.elec.some((e) => e.type === 'tableau') && !P.elec.some((e) => e.type === 'gtl')) add('info', G1, 'Pas de GTL sur le plan : en logement neuf, le tableau et le coffret de communication se placent dans une gaine technique logement.', null);
+  if (!P.elec.some((e) => e.type === 'daaf')) addR('cq_daaf', 'err', G3, 'Aucun détecteur de fumée (DAAF) : au moins un par logement est obligatoire.', null);
+  for (const e of P.elec.filter((x) => x.type === 'pc_2p')) addR('cq_terre', 'err', G3, 'Prise sans terre : interdite en installation neuve, chaque prise doit avoir son contact de terre.', { t: 'elec', id: e.id });
+  if (P.elec.some((e) => e.type === 'tableau') && !P.elec.some((e) => e.type === 'gtl')) addR('cq_gtl', 'info', G1, 'Pas de GTL sur le plan : en logement neuf, le tableau et le coffret de communication se placent dans une gaine technique logement.', null);
   // pièces
   for (const L of P.levels) {
     const g = geo(L.id);
@@ -459,13 +461,13 @@ function nfcChecks() {
       else if (/salle (de bain|d.eau)|sdb/i.test(name)) { need = 1; why = '1 hors volumes'; }
       else if (!/wc|toilette/i.test(name) && area > 4) { need = 1; why = '1 dans toute pièce de plus de 4 m² (hors WC)'; }
       if (need) {
-        if (socles < need) add('err', G3, `${name} : ${socles} socle${socles > 1 ? 's' : ''} de prise, ${need} requis (${why}).`, ref);
-        else add('ok', G3, `${name} : ${socles} socles de prise (${need} requis).`, ref);
+        if (socles < need) addR('cq_socles_piece', 'err', G3, `${name} : ${socles} socle${socles > 1 ? 's' : ''} de prise, ${need} requis (${why}).`, ref);
+        else addR('cq_socles_piece', 'ok', G3, `${name} : ${socles} socles de prise (${need} requis).`, ref);
       }
-      if (/cuisine/i.test(name) && area > 4 && pt < 4) add('err', G3, `${name} : ${pt} prise${pt > 1 ? 's' : ''} au-dessus du plan de travail, 4 requises.`, ref);
-      if (/cuisine/i.test(name) && !inside.some((e) => e.type === 'pc32')) add('err', G3, `${name} : pas de sortie 32 A pour la plaque de cuisson.`, ref);
-      if (!lights) add(/dressing|placard|cellier/i.test(name) ? 'warn' : 'err', G3, `${name} : aucun point d'éclairage.`, ref);
-      if (/s[ée]jour|chambre|salon/i.test(name) && !inside.some((e) => e.type === 'rj45' || e.type === 'rj45_2')) add('info', G3, `${name} : une prise RJ45 est conseillée dans chaque pièce principale.`, ref);
+      if (/cuisine/i.test(name) && area > 4 && pt < 4) addR('cq_cuisine_pt', 'err', G3, `${name} : ${pt} prise${pt > 1 ? 's' : ''} au-dessus du plan de travail, 4 requises.`, ref);
+      if (/cuisine/i.test(name) && !inside.some((e) => e.type === 'pc32')) addR('cq_cuisine_32', 'err', G3, `${name} : pas de sortie 32 A pour la plaque de cuisson.`, ref);
+      if (!lights) addR('cq_eclairage_piece', /dressing|placard|cellier/i.test(name) ? 'warn' : 'err', G3, `${name} : aucun point d'éclairage.`, ref);
+      if (/s[ée]jour|chambre|salon/i.test(name) && !inside.some((e) => e.type === 'rj45' || e.type === 'rj45_2')) addR('cq_rj45', 'info', G3, `${name} : une prise RJ45 est conseillée dans chaque pièce principale.`, ref);
       // salle de bain : volume 2 (0,60 m autour de la baignoire ou de la douche)
       if (/salle (de bain|d.eau)|sdb/i.test(name) || P.items.some((it) => it.lv === L.id && /baignoire|douche/.test(it.type) && inPoly(it, r.loop))) {
         const wet = P.items.filter((it) => it.lv === L.id && /^(baignoire|baignoire_ilot|douche|douche_ita)$/.test(it.type));
@@ -473,7 +475,7 @@ function nfcChecks() {
           for (const it of wet) {
             const l = itemToLocal(it, e);
             const dx = Math.max(0, Math.abs(l.x) - it.w / 2), dy = Math.max(0, Math.abs(l.y) - it.d / 2);
-            if (Math.hypot(dx, dy) < 60) { add('err', G3, `${name} : prise à moins de 60 cm de ${it.type.startsWith('douche') ? 'la douche' : 'la baignoire'} (volumes 1 et 2 interdits).`, { t: 'elec', id: e.id }); break; }
+            if (Math.hypot(dx, dy) < 60) { addR('cq_sdb_volumes', 'err', G3, `${name} : prise à moins de 60 cm de ${it.type.startsWith('douche') ? 'la douche' : 'la baignoire'} (volumes 1 et 2 interdits).`, { t: 'elec', id: e.id }); break; }
           }
         }
       }
@@ -483,7 +485,7 @@ function nfcChecks() {
           if ((e.h || 0) >= 180) continue;
           for (const it of hot) {
             const l = itemToLocal(it, e);
-            if (Math.abs(l.x) <= it.w / 2 && l.y <= -it.d / 2 + 12 && l.y >= -it.d / 2 - 25) { add('err', G3, `${name} : prise au-dessus ${/evier/.test(it.type) ? 'de l’évier' : 'de la plaque'} (interdit, sauf prise de hotte à 1,80 m).`, { t: 'elec', id: e.id }); break; }
+            if (Math.abs(l.x) <= it.w / 2 && l.y <= -it.d / 2 + 12 && l.y >= -it.d / 2 - 25) { addR('cq_cuisine_evier', 'err', G3, `${name} : prise au-dessus ${/evier/.test(it.type) ? 'de l’évier' : 'de la plaque'} (interdit, sauf prise de hotte à 1,80 m).`, { t: 'elec', id: e.id }); break; }
           }
         }
       }
@@ -491,7 +493,7 @@ function nfcChecks() {
     // prise de courant à côté de chaque prise TV / RJ45
     for (const e of els.filter((x) => COMM_OUTLETS.has(x.type))) {
       const ok = els.some((x) => x.type in SOCKETS && vdist(x, e) <= 100);
-      if (!ok) add('warn', G3, `${(ELEC_BY.get(e.type) || {}).n} sans prise de courant à moins d'un mètre (1 socle à côté de chaque prise de communication).`, { t: 'elec', id: e.id });
+      if (!ok) addR('cq_prise_com', 'warn', G3, `${(ELEC_BY.get(e.type) || {}).n} sans prise de courant à moins d'un mètre (1 socle à côté de chaque prise de communication).`, { t: 'elec', id: e.id });
     }
     // éclairage extérieur au-dessus de chaque accès
     for (const o of P.openings.filter((x) => x.kind === 'door')) {
@@ -500,7 +502,7 @@ function nfcChecks() {
       const mid = vadd(wg.A, vmul(wg.d, o.t));
       const outPt = vsub(mid, vmul(wg.n, side * (wg.th / 2 + 20)));
       const ok = els.some((x) => LIGHTS.has(x.type) && vdist(x, outPt) <= 180 && !g.rooms.some((r) => inPoly(x, r.loop)));
-      if (!ok) add('warn', G3, `Accès extérieur sans point d'éclairage au-dessus (${L.name}).`, { t: 'opening', id: o.id, lv: L.id });
+      if (!ok) addR('cq_eclairage_acces', 'warn', G3, `Accès extérieur sans point d'éclairage au-dessus (${L.name}).`, { t: 'opening', id: o.id, lv: L.id });
     }
   }
   // hauteurs
@@ -508,15 +510,15 @@ function nfcChecks() {
     const d = ELEC_BY.get(e.type); if (!d) continue;
     const h = e.h, ref = { t: 'elec', id: e.id };
     if (h == null) continue;
-    if ((CMDS.has(e.type) && !CMDS_FREE_H.has(e.type)) || e.type === 'cmd_vr' || e.type === 'cmd_vr_c') { if (h < 90 || h > 130) add('err', G4, `${d.n} à ${h} cm : les commandes se placent entre 90 et 130 cm du sol fini.`, ref); }
-    else if (e.type === 'pc32') { if (h < 12 || h > 130) add('err', G4, `${d.n} à ${h} cm : entre 12 et 130 cm (axe).`, ref); }
+    if ((CMDS.has(e.type) && !CMDS_FREE_H.has(e.type)) || e.type === 'cmd_vr' || e.type === 'cmd_vr_c') { if (h < 90 || h > 130) addR('cq_h_commandes', 'err', G4, `${d.n} à ${h} cm : les commandes se placent entre 90 et 130 cm du sol fini.`, ref); }
+    else if (e.type === 'pc32') { if (h < 12 || h > 130) addR('cq_h_pc32', 'err', G4, `${d.n} à ${h} cm : entre 12 et 130 cm (axe).`, ref); }
     else if (e.type in SOCKETS || isSpecOutlet(e.type)) {
-      if (h < 5) add('err', G4, `${d.n} à ${h} cm : l'axe doit être à 5 cm au moins du sol fini.`, ref);
-      else if (h > 130 && e.type !== 'pc_pt' && h < 175) add('warn', G4, `${d.n} à ${h} cm : 130 cm au plus, sauf au-dessus d'un plan de travail ou pour la hotte (1,80 m).`, ref);
-    } else if (e.type === 'tableau' || e.type === 'tab_div') { if (h < 90 || h > 180) add('err', G4, `Tableau à ${h} cm : ses organes de manœuvre doivent être entre 0,90 m et 1,80 m environ.`, ref); }
+      if (h < 5) addR('cq_h_prises', 'err', G4, `${d.n} à ${h} cm : l'axe doit être à 5 cm au moins du sol fini.`, ref);
+      else if (h > 130 && e.type !== 'pc_pt' && h < 175) addR('cq_h_prises', 'warn', G4, `${d.n} à ${h} cm : 130 cm au plus, sauf au-dessus d'un plan de travail ou pour la hotte (1,80 m).`, ref);
+    } else if (e.type === 'tableau' || e.type === 'tab_div') { if (h < 90 || h > 180) addR('cq_h_tableau', 'err', G4, `Tableau à ${h} cm : ses organes de manœuvre doivent être entre 0,90 m et 1,80 m environ.`, ref); }
   }
   const G5 = 'Ventilation (VMC)';
-  for (const v of vmcChecks()) add(v.sev, G5, v.msg, v.ref);
+  for (const v of vmcChecks()) addR('cq_vmc', v.sev, G5, v.msg, v.ref);
   const rank = { err: 0, warn: 1, info: 2, ok: 3 };
   out.sort((a, b) => [G1, G2, G3, G4, G5].indexOf(a.group) - [G1, G2, G3, G4, G5].indexOf(b.group) || rank[a.sev] - rank[b.sev]);
   return out;

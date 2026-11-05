@@ -85,14 +85,18 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (panneau, fiche modifiable, coupe, câbles, photo).
   - Le test instable connu (`ipad.test.mjs`, rendu limité à la zone visible) a échoué une fois dans une suite complète, puis réussi seul deux fois et à la suite complète suivante.
 
-## Phase 6 — documents et moteur de règles (en cours)
+## Phase 6 — documents et moteur de règles (terminée, à fusionner et à vérifier sur iPad)
 - ✅ Étape 1 : moteur documentaire. Dossier PDF avec cartouche et indice de révision (`js/pdf.js`, `js/svgpdf.js` et `js/documents.js`, tous les trois sans écran ; fenêtre `js/dossierui.js`). Format des plans v8 (`doc`). 7 tests dans `tests/documents.test.mjs`. Tests : **84/84 réussis**.
   - Vérifié dans Node : structure du PDF (table des objets), cartouche et indice sur chaque page, sommaire, révisions, mentions « Estimée » et « Manquante », schéma SVG redessiné en vectoriel.
   - Vérifié dans Chromium : la fenêtre en 1180×820, 820×1180 et 390×844 (sans défilement horizontal, boutons de 44 px), la saisie du cartouche au clavier, l'enregistrement d'un indice (dans le plan et dans l'historique), la préparation du PDF (12 pages pour le plan d'exemple).
   - Pages contrôlées à l'œil (images converties) : page de garde, plan au 1:100 avec légende, schéma unifilaire, nomenclatures, métrés, éclairage.
 
+- ✅ Étape 2 : moteur de règles versionnées (`js/regles.js`, sans écran ; onglet `js/reglesui.js`). 51 règles versionnées, trois statuts, source, édition, données utilisées et manquantes ; tous les contrôles existants repris. 5 tests dans `tests/regles.test.mjs`. Tests : **89/89 réussis**.
+  - Vérifié dans Node : même nombre de contrôles et mêmes statuts que le moteur de calcul ; aucune règle de Calque « conforme » ; jamais de conformité globale ; chaque contrôle de l'ancien `nfcChecks` porte une règle du catalogue (49 appels).
+  - Vérifié dans Chromium (plan d'exemple) : chaque contrôle de l'ancien onglet est repris avec le même message ; les non-conformités restent « non conformes » ; affichage en 1180×820, 820×1180 et 390×844 sans défilement horizontal ; rapport dans le dossier PDF (28 pages pour le plan d'exemple).
+
 ## Tâche en cours
-- Phase 6, étape 2 : moteur de règles versionnées (`js/regles.js`).
+- Aucune : phase 6 terminée. Demande de fusion n°5 préparée ; essais iPad à faire (liste dans `NEXT_SESSION.md`).
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**
@@ -107,4 +111,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Fusion de la phase 5 (par l'utilisateur), essais iPad des phases 4 et 5, puis phase 6 : documents et moteur de règles.
+- Fusion de la phase 6 (par l'utilisateur), essais iPad de la phase 6 (et de la phase 4), puis phase 7 : chantier et variantes.

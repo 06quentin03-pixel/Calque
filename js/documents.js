@@ -19,6 +19,7 @@ import { CK } from './elecdonnees.js';
 import { ELEC_BY } from './symboles.js';
 import { lignesCircuits, listeMateriel, remplissageGaines } from './materiel.js';
 import { implantationActuelle, propositions, TYPES_ECL } from './eclairage.js';
+import { REGLES_VERSION } from './regles.js';
 
 /* ---------------- réglages de mise en page ---------------- */
 const FORMATS = { A4: [595.28, 841.89], A3: [841.89, 1190.55] };
@@ -42,7 +43,7 @@ const CHAPITRES = [
 const CHAP_BY = new Map(CHAPITRES.map((c) => [c.id, c]));
 
 /* ---------------- informations du dossier (plan.doc, format v8) ----------------
-   doc : { client, adresse, auteur, entreprise, affaire, revisions: [{ i (indice), date (ms), objet, par }] } */
+   doc : { client, adresse, auteur, entreprise, affaire, revisions: [{ i (indice), date (ms), objet, par, regles (version des règles) }] } */
 const CHAMPS_DOC = ['client', 'adresse', 'auteur', 'entreprise', 'affaire'];
 const txt = (s, max) => (typeof s === 'string' ? s.replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max || 200) : '');
 function nettoyerDoc(d) {
@@ -54,6 +55,7 @@ function nettoyerDoc(d) {
     const i = txt(r.i, 4), date = typeof r.date === 'number' && Number.isFinite(r.date) && r.date > 0 ? r.date : null;
     if (!i || !date) continue;
     const x = { i, date, objet: txt(r.objet, 300) }; const par = txt(r.par, 80); if (par) x.par = par;
+    const rg = txt(r.regles, 80); if (rg) x.regles = rg; // version du moteur de règles à cet indice
     o.revisions.push(x);
   }
   return o;
@@ -270,8 +272,8 @@ function chapGarde(R, plan, o) {
   R.y += 14 * CHAPITRES.length + 14;
   R.titre('Révisions', 2);
   const revs = (plan.doc && plan.doc.revisions) || [];
-  if (revs.length) R.tableau([{ t: 'Indice', w: 0.6 }, { t: 'Date', w: 1 }, { t: 'Objet de la révision', w: 4 }, { t: 'Par', w: 1.4 }],
-    revs.slice().reverse().map((r) => [{ t: r.i, b: true }, fmtJourCourt(r.date), r.objet || '—', r.par || '']));
+  if (revs.length) R.tableau([{ t: 'Indice', w: 0.6 }, { t: 'Date', w: 1 }, { t: 'Objet de la révision', w: 3.2 }, { t: 'Par', w: 1.2 }, { t: 'Règles', w: 1.4 }],
+    revs.slice().reverse().map((r) => [{ t: r.i, b: true }, fmtJourCourt(r.date), r.objet || '—', r.par || '', { t: r.regles || '—', petit: true }]));
   else R.texte('Aucun indice enregistré : ce dossier est un document de travail. Enregistrez un indice (A, B, C…) au moment de le diffuser.', { color: COL.ink2 });
   R.titre('Lecture du dossier', 2);
   R.tableau([{ t: 'Mention', w: 1.2 }, { t: 'Signification', w: 5 }], [
@@ -485,7 +487,7 @@ function chapControles(R, plan, o) {
 function infoDossier(plan, o) {
   const d = nettoyerDoc(plan.doc);
   return { projet: plan.name || 'Plan', client: d.client, adresse: d.adresse, auteur: d.auteur, entreprise: d.entreprise, affaire: d.affaire,
-    indice: indiceCourant(d), date: o.date || Date.now(), regles: o.rapport ? o.rapport.version : 'contrôles de Calque' };
+    indice: indiceCourant(d), date: o.date || Date.now(), regles: o.rapport ? o.rapport.version : REGLES_VERSION };
 }
 /* compose le dossier : renvoie les pages (PdfCtx) et la table des chapitres */
 function composerDossier(plan, opts) {
