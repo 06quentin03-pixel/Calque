@@ -37,7 +37,7 @@ Mise à jour : phase 5 (5 novembre 2026).
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
 | `materiel.js` | Remplissage des cheminements (« vérification nécessaire »), liste de matériel estimée | oui |
-| `photometrie.js` | Photométries des luminaires : intensité I(C, γ) (interpolation), flux intégré, nettoyage ; lecture des fichiers IES / LDT (étape 2) | oui |
+| `photometrie.js` | Photométries des luminaires : lecture des fichiers IES (LM-63, type C) et LDT (EULUMDAT), symétries, intensité I(C, γ) (interpolation), flux intégré, nettoyage | oui |
 | `eclairage.js` | Concepteur d'éclairage : méthode des lumens, calcul point par point (composante directe), dispositions, trois propositions, implantation actuelle, nettoyage (migration) | oui |
 | `eclairageui.js` | Fenêtre « Éclairage · pièce », section « Éclairage » de l'inspecteur d'une pièce, section « Photométrie » d'un luminaire, implantation | non |
 | `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve, conflits, remplissage, matériel | non |

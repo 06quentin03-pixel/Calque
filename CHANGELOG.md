@@ -1,5 +1,17 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Phase 5, étape 2 : lecture des fichiers IES et LDT
+- `js/photometrie.js` lit, **sans bibliothèque et hors ligne**, les fichiers **IES** (IESNA LM-63, photométrie de type C ; plans 0°, 0–90°, 0–180°, 90–270°, 0–360° ; TILT=NONE ou INCLUDE) et **LDT** (EULUMDAT, les cinq symétries). La répartition est complétée par symétrie sur 360°.
+  - **Flux du luminaire** : calculé en intégrant la répartition lue (lumière qui sort réellement du luminaire), « vérifiée », source = nom du fichier et fabricant. Le flux déclaré par le fichier (lampes × rendement) est affiché pour comparaison, avec une alerte au-delà de 5 % d'écart.
+  - **Puissance** : celle indiquée par le fichier (« vérifiée »), sinon « non indiquée » (rien n'est deviné).
+  - Fichier illisible, incomplet ou de type B / A : message clair, **rien n'est ajouté** au plan.
+  - Texte en UTF-8 ou Windows-1252 (fichiers européens), reconnu automatiquement.
+- Bouton **« Importer un fichier IES / LDT »** dans la fenêtre Éclairage (pour chaque luminaire étudié) et dans la section « Photométrie » d'un luminaire. Fiche du fichier : luminaire, fabricant, flux, puissance, efficacité (lm/W), **courbe photométrique** (C0–C180 et C90–C270).
+- Le concepteur utilise la répartition du fichier (orientation du luminaire comprise) à la place de l'hypothèse lambertienne.
+- Les fichiers sont enregistrés **dans le plan** (`photometries[]`) : disponibles hors ligne, envoyés avec le plan ; liste « Fichiers photométriques du plan » (retrait possible s'il n'est plus utilisé).
+- Un luminaire relié à un fichier garde une copie du flux et de la puissance (statut et source) : le tableau et le bilan connaissent sa puissance.
+- Tests : `tests/eclairage.test.mjs` passe à 6 tests (fichiers de synthèse `tests/synthese.mjs`, répartition au flux connu). Tests : 74/74.
+
 ## 2026-11-05 — Phase 5, étape 1 : concepteur d'éclairage (méthode des lumens, estimation)
 - Nouveau module sans écran **`js/eclairage.js`** : méthode des lumens (E = N × Φ × U × MF / A), calcul point par point de la composante directe (éclairement minimal, uniformité Emin / Emoy), dispositions régulières jusqu'à 12 × 12, **trois propositions** distinctes (la plus économe, le moins de luminaires, la plus uniforme ; « autre disposition » à égalité).
   - **Aucune valeur d'éclairement réglementaire** : l'éclairement visé est toujours saisi (avec sa source si on veut). Sans lui, ou sans flux du luminaire : « données manquantes », aucune proposition.

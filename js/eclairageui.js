@@ -7,6 +7,7 @@ import { ELEC_BY } from './symboles.js';
 import { LIGHTS, cleanLinks } from './electricite.js';
 import { HU_DEFAUT, LIB, MF_DEFAUT, TYPES_ECL, TYPES_ECL_IDS, dansPiece, implantationActuelle, lumDuSymbole, propositions } from './eclairage.js';
 import { badgeDonnee, champDonnee } from './fiche.js';
+import { intensitePhotometrie, lireFichierPhotometrique } from './photometrie.js';
 import { fmt } from './calcul.js';
 import { ICON, btn, btns, closeModal, h, kv, sec, segCtl, toast } from './interface.js';
 import { commit, makeElecFromDef } from './interaction.js';
@@ -56,6 +57,65 @@ function lignesResultat(r, en) {
   ];
 }
 
+/* ---------------- fichiers photométriques (IES / LDT) ---------------- */
+/* texte d'un fichier : UTF-8 si possible, sinon Windows-1252 (fichiers européens courants) */
+async function texteDe(file) {
+  const buf = await file.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { return new TextDecoder('windows-1252').decode(buf); }
+}
+/* ouvre le sélecteur de fichiers (Fichiers de l'iPad) ; `fait(id)` reçoit la photométrie ajoutée au plan */
+function importerPhotometrie(fait) {
+  const inp = h('input', { type: 'file', style: 'display:none' });
+  inp.addEventListener('change', async () => {
+    const f = inp.files && inp.files[0]; inp.remove(); if (!f) return;
+    if (f.size > 5e6) { toast('Fichier trop lourd pour un fichier photométrique.'); return; }
+    let r;
+    try { r = lireFichierPhotometrique(await texteDe(f), f.name); } catch (e) { r = { erreur: 'Lecture impossible : ' + e.message }; }
+    if (r.erreur) { toast(r.erreur + ' Rien n’a été ajouté.'); return; }
+    if (!Array.isArray(P.photometries)) P.photometries = [];
+    // même fichier déjà importé : on le réutilise
+    const deja = P.photometries.find((x) => x.file === r.file && x.flux.v === r.flux.v && x.C.length === r.C.length && x.G.length === r.G.length);
+    const ph = deja || Object.assign({ id: uid('ph') }, r);
+    if (!deja) P.photometries.push(ph);
+    fait(ph.id);
+    commit();
+    toast(`« ${ph.name} » : ${fmt(ph.flux.v, 0)} lm${ph.p ? `, ${fmt(ph.p.v, 1)} W` : ''}.`);
+  });
+  document.body.append(inp);
+  inp.click();
+}
+/* courbe photométrique : plans C0–C180 (trait plein) et C90–C270 (tirets), 0° vers le bas */
+function courbe(ph) {
+  let mx = 0; for (const r of ph.I) for (const v of r) if (v > mx) mx = v;
+  if (!(mx > 0)) return null;
+  const R = 62, cx = 75, cy = 75;
+  const trace = (c1, c2) => {
+    const pts = [];
+    for (let g = 0; g <= 180; g += 2.5) { const r = (intensitePhotometrie(ph, c1, g) / mx) * R, a = (g * Math.PI) / 180; pts.push([cx + r * Math.sin(a), cy + r * Math.cos(a)]); }
+    for (let g = 180; g >= 0; g -= 2.5) { const r = (intensitePhotometrie(ph, c2, g) / mx) * R, a = (g * Math.PI) / 180; pts.push([cx - r * Math.sin(a), cy + r * Math.cos(a)]); }
+    return 'M' + pts.map((p) => p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('L') + 'Z';
+  };
+  const cercles = [0.5, 1].map((k) => `<circle cx="${cx}" cy="${cy}" r="${R * k}" class="ec-grid"/>`).join('');
+  return h('div', { class: 'ec-polar', html: `<svg viewBox="0 0 150 150" width="150" height="150" role="img" aria-label="Courbe photométrique">${cercles}<path d="M${cx} ${cy - R}V${cy + R}M${cx - R} ${cy}H${cx + R}" class="ec-grid"/><path d="${trace(90, 270)}" class="ec-c90"/><path d="${trace(0, 180)}" class="ec-c0"/></svg>` },
+    h('small', null, `Max. ${fmt(mx, 0)} cd · trait plein C0–C180, tirets C90–C270`));
+}
+function fichePhotometrie(ph) {
+  const ecart = ph.fluxLampes ? Math.abs(ph.fluxLampes - ph.flux.v) / ph.fluxLampes : 0;
+  return h('div', { class: 'ec-phot' },
+    h('div', null, kv([
+      ['Luminaire', ph.name || '—'],
+      ph.fab ? ['Fabricant', ph.fab] : null,
+      ['Fichier', `${ph.file || '—'} (${ph.fmt.toUpperCase()})`],
+      ['Flux du luminaire', h('span', null, `${fmt(ph.flux.v, 0)} lm `, badgeDonnee(ph.flux.st))],
+      ph.fluxLampes ? ['Flux déclaré par le fichier', `${fmt(ph.fluxLampes, 0)} lm`] : null,
+      ['Puissance', ph.p ? h('span', null, `${fmt(ph.p.v, 1)} W `, badgeDonnee(ph.p.st)) : 'non indiquée par le fichier'],
+      ph.p ? ['Efficacité', `${fmt(ph.flux.v / ph.p.v, 0)} lm/W`] : null,
+      ['Mesures', `${ph.C.length} plan${ph.C.length > 1 ? 's' : ''} C × ${ph.G.length} angles γ`],
+    ].filter(Boolean)),
+    h('p', { class: 'note' }, 'Flux calculé en intégrant la répartition lue dans le fichier.' + (ecart > 0.05 ? ` Écart de ${fmt(ecart * 100, 0)} % avec le flux déclaré : vérifiez le fichier.` : ''))),
+    courbe(ph));
+}
+
 /* ---------------- fenêtre ---------------- */
 function corps(lbl) {
   const r = roomOfLabel(lbl), L = levelOf(lbl.lv);
@@ -83,6 +143,12 @@ function corps(lbl) {
   parts.push(sec('Luminaires étudiés', ...lumParts,
     et.lums.length < 3 ? btns(btn(et.lums.length ? 'Comparer avec un autre luminaire' : 'Choisir un luminaire', () => { const e = etudeDe(lbl, true); e.lums.push({ type: e.lums.length ? e.lums[e.lums.length - 1].type : 'spot' }); commit(); }, 'sm', 'plus')) : null,
     h('p', { class: 'note' }, 'Jusqu’à trois luminaires : les propositions sont choisies parmi toutes leurs dispositions régulières.')));
+  /* fichiers du plan */
+  if (photometries().length) parts.push(sec('Fichiers photométriques du plan', h('div', { class: 'ec-files' }, photometries().map((p) => {
+    const n = P.elec.filter((e) => e.lum && e.lum.ph === p.id).length + (P.etudes || []).reduce((t, x) => t + (x.lums || []).filter((l) => l.ph === p.id).length, 0);
+    return h('div', { class: 'ec-file' }, h('span', null, h('b', null, p.name), ` · ${fmt(p.flux.v, 0)} lm${p.p ? ' · ' + fmt(p.p.v, 1) + ' W' : ''} · ${p.file}`),
+      n ? h('small', null, `utilisé ${n} fois`) : btn('Retirer', () => { P.photometries = P.photometries.filter((x) => x.id !== p.id); commit(); }, 'sm', 'del'));
+  })), h('p', { class: 'note' }, 'Les fichiers sont enregistrés dans le plan : ils restent disponibles hors ligne et sont envoyés avec le plan.')));
   /* propositions */
   const pr = propositions(et, piece, L, photometries());
   if (pr.en.manquantes.length) parts.push(sec('Données manquantes', h('ul', { class: 'fi-manq' }, pr.en.manquantes.map((m) => h('li', null, h('b', null, m.nom), ' — ', m.pourquoi)))));
@@ -114,14 +180,19 @@ function corps(lbl) {
   return parts;
 }
 
-/* luminaire : photométrie importée (étape 2) ou saisie directe */
+/* luminaire étudié : fichier photométrique (IES / LDT) ou saisie directe du flux et de la puissance */
 function photometrieChoix(l) {
-  const list = photometries();
-  if (!list.length) return null;
-  const sel = h('select', { class: 'txt', 'aria-label': 'Fichier photométrique' }, h('option', { value: '' }, 'Saisir le flux et la puissance'),
-    list.map((p) => h('option', { value: p.id, selected: p.id === l.ph }, `${p.name}${p.fab ? ' · ' + p.fab : ''} (${fmt(p.flux.v, 0)} lm)`)));
-  sel.addEventListener('change', () => { if (sel.value) l.ph = sel.value; else delete l.ph; commit(); });
-  return h('label', { class: 'fld' }, h('span', null, 'Données du luminaire'), sel);
+  const list = photometries(), ph = l.ph ? list.find((p) => p.id === l.ph) : null;
+  const kids = [];
+  if (list.length) {
+    const sel = h('select', { class: 'txt', 'aria-label': 'Données du luminaire' }, h('option', { value: '' }, 'Saisir le flux et la puissance'),
+      list.map((p) => h('option', { value: p.id, selected: p.id === l.ph }, `${p.name}${p.fab ? ' · ' + p.fab : ''} (${fmt(p.flux.v, 0)} lm)`)));
+    sel.addEventListener('change', () => { if (sel.value) l.ph = sel.value; else delete l.ph; commit(); });
+    kids.push(h('label', { class: 'fld' }, h('span', null, 'Données du luminaire'), sel));
+  }
+  kids.push(btns(btn('Importer un fichier IES / LDT', () => importerPhotometrie((id) => { l.ph = id; }), 'sm', 'up')));
+  if (ph) kids.push(fichePhotometrie(ph));
+  return kids;
 }
 
 function renderEclairage(first) {
@@ -146,6 +217,18 @@ function openEclairage(roomId) {
 }
 on(EV.PLAN_CHANGE, () => { if (EC.room && !$('#modal').hidden && $('#modal').querySelector('.eclairage')) renderEclairage(false); });
 
+/* photométrie d'un symbole reprise d'un fichier : copie du flux et de la puissance (avec leur statut et leur source),
+   pour que le tableau et le bilan connaissent la puissance sans relire le fichier */
+function lierFichier(lum, ph) {
+  lum.ph = ph.id; lum.flux = Object.assign({}, ph.flux);
+  if (ph.p) lum.p = Object.assign({}, ph.p); else if (lum.p && /^Fichier /.test(lum.p.src || '')) delete lum.p;
+  return lum;
+}
+function delierFichier(lum) {
+  delete lum.ph;
+  for (const k of ['flux', 'p']) if (lum[k] && /^Fichier /.test(lum[k].src || '')) delete lum[k];
+}
+
 /* ---------------- implantation d'une proposition ----------------
    Les luminaires posés par une implantation précédente de cette étude sont remplacés ; les autres sont conservés.
    Chaque luminaire garde sa photométrie (flux et puissance, avec leur statut) dans `lum`. */
@@ -167,10 +250,12 @@ function implanter(lbl, prop, ld) {
     const e = makeElecFromDef(def, lbl.lv);
     Object.assign(e, { x: p.x, y: p.y, rot, h: null });
     if (cid) e.cid = cid[0];
-    const lum = {};
-    if (ld && ld.ph) lum.ph = ld.ph;
-    if (ld && ld.flux) lum.flux = Object.assign({}, ld.flux);
-    if (ld && ld.p) lum.p = Object.assign({}, ld.p);
+    const lum = {}, ph = ld && ld.ph ? photometries().find((x) => x.id === ld.ph) : null;
+    if (ph) lierFichier(lum, ph);
+    else {
+      if (ld && ld.flux) lum.flux = Object.assign({}, ld.flux);
+      if (ld && ld.p) lum.p = Object.assign({}, ld.p);
+    }
     if (Object.keys(lum).length) e.lum = lum;
     P.elec.push(e); ids.push(e.id);
   }
@@ -201,10 +286,11 @@ function lumSection(e) {
   if (list.length) {
     const sel = h('select', { class: 'txt', id: 'f-eph', 'aria-label': 'Fichier photométrique' }, h('option', { value: '' }, 'Aucun fichier (saisie)'),
       list.map((p) => h('option', { value: p.id, selected: ph && p.id === ph.id }, `${p.name} (${fmt(p.flux.v, 0)} lm)`)));
-    sel.addEventListener('change', () => { if (sel.value) box(true).ph = sel.value; else if (e.lum) { delete e.lum.ph; clean(); } commit(); });
+    sel.addEventListener('change', () => { const p = list.find((x) => x.id === sel.value); if (p) lierFichier(box(true), p); else if (e.lum) { delierFichier(e.lum); clean(); } commit(); });
     kids.push(h('label', { class: 'fld' }, h('span', null, 'Fichier photométrique'), sel));
   }
-  if (ph) kids.push(kv([['Flux', `${fmt(ph.flux.v, 0)} lm`], ['Puissance', ph.p ? `${fmt(ph.p.v, 1)} W` : 'non indiquée'], ['Fichier', ph.file || '—']]));
+  kids.push(btns(btn('Importer un fichier IES / LDT', () => importerPhotometrie((id) => { lierFichier(box(true), photometries().find((x) => x.id === id)); }), 'sm', 'up')));
+  if (ph) kids.push(fichePhotometrie(ph));
   else {
     kids.push(champDonnee(box, 'flux', 'Flux lumineux', 'lm', { id: 'f-elflux', min: 1, max: 1e6, note: e.lum && e.lum.flux ? null : 'Facultatif : sert au calcul d’éclairement de la pièce.' }, clean));
     kids.push(champDonnee(box, 'p', 'Puissance du luminaire', 'W', { id: 'f-elp', min: 0.1, max: 1e5 }, clean));
@@ -214,4 +300,4 @@ function lumSection(e) {
   return sec('Photométrie', ...kids);
 }
 
-export { EC, apercu, eclairageSection, etudeDe, implanter, lumSection, openEclairage, renderEclairage };
+export { EC, apercu, courbe, eclairageSection, etudeDe, fichePhotometrie, implanter, importerPhotometrie, lierFichier, lumSection, openEclairage, renderEclairage };

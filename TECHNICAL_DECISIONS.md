@@ -53,6 +53,10 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-05 (ph. 5) | Trois propositions = trois critères écrits (puissance, nombre, uniformité), dispositions régulières ≤ 12 × 12, au plus deux fois le nombre minimal | Choix explicables et distincts ; calcul rapide sur iPad |
 | 2026-11-05 (ph. 5) | Implantation = symboles ordinaires portant `lum` (copie du flux et de la puissance) ; l'étude garde leurs `ids` pour les remplacer | Modifiables comme tout symbole ; une nouvelle implantation n'efface jamais les luminaires posés à la main |
 | 2026-11-05 (ph. 5) | Format v7 : `photometries[]` (répartition complète, dans le plan), `etudes[]`, `elec[].lum` | Le plan reste autonome hors ligne et partageable |
+| 2026-11-05 (ph. 5) | Flux d'un fichier IES / LDT = intégrale de la répartition lue, « vérifiée » (source = fichier) ; flux déclaré affiché pour comparaison | C'est la lumière qui sort du luminaire ; le flux des lampes seules surestimerait |
+| 2026-11-05 (ph. 5) | IES : type C seulement ; LDT : intensités converties avec le flux du premier jeu de lampes | Cas des luminaires d'intérieur ; usage courant des logiciels d'éclairage |
+| 2026-11-05 (ph. 5) | Répartition enregistrée complétée sur 360° (au plus 200 000 valeurs), arrondie au centième de candela | Lecture simple et rapide ; taille raisonnable dans le plan |
+| 2026-11-05 (ph. 5) | Sélecteur de fichiers sans filtre d'extension, contrôle après lecture | Sur iPad, un filtre `.ies` peut griser les fichiers dans l'app Fichiers |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².

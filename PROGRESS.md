@@ -75,8 +75,12 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Valeurs vérifiées à la main : 79,58 lx sous un luminaire lambertien de 1 000 lm à 2 m ; 19,89 lx à 2 m de distance horizontale ; formule des lumens sur une pièce de 20 m².
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fenêtre lisible, pas de débordement, implantation et recalcul).
 
+- ✅ Étape 2 : lecture des fichiers IES (LM-63, type C) et LDT (EULUMDAT, 5 symétries) sans bibliothèque, import dans la fenêtre Éclairage et dans l'inspecteur d'un luminaire, fiche du fichier et courbe photométrique, fichiers enregistrés dans le plan. 2 tests de plus (fichiers de synthèse au flux connu). Tests : **74/74 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fiche du fichier, courbe, fichier refusé).
+  - Non vérifiable ici : choisir un vrai fichier .ies / .ldt dans l'app Fichiers de l'iPad (aucun fichier de fabricant n'est inclus dans le dépôt).
+
 ## Tâche en cours
-- Phase 5, étape 2 : lecture des fichiers IES / LDT.
+- Phase 5, étape 3 : 3D (câbles et chemins de câbles, coupes, transparence, masquage, modification depuis la 3D).
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**

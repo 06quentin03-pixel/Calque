@@ -63,7 +63,7 @@ Dépend de : 3.
 ## Phase 5 — Éclairage et 3D avancée 🟨
 Dépend de : 2, 4.
 - ✅ Concepteur d'éclairage par la méthode des lumens, **présenté comme une estimation** : 3 propositions, implantation modifiable (`js/eclairage.js`, `js/eclairageui.js`, format v7, 4 tests dans `tests/eclairage.test.mjs`).
-- ⬜ Lecture des fichiers IES/LDT, pour le flux et la puissance.
+- ✅ Lecture des fichiers IES/LDT, pour le flux et la puissance (`js/photometrie.js`, sans bibliothèque, hors ligne ; 2 tests).
 - ⬜ 3D : câbles et chemins de câbles, coupes, transparence, masquage, modification depuis la 3D.
 
 ## Phase 6 — Documents et réglementation
