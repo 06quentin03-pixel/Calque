@@ -1,5 +1,61 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Suivi
+- Essais iPad de la phase 3 validés par l'utilisateur. Fusion de la demande n°3 (phase 4) demandée par l'utilisateur.
+
+## 2026-11-04 — Phase 4, étape 4 : remplissage des cheminements et liste de matériel (fin de la phase 4)
+- Nouveau module sans écran **`js/materiel.js`**.
+- **Remplissage** de chaque gaine, goulotte ou chemin de câbles : circuits qui y passent (déclarés ou dont le cheminement l’emprunte, un câble par circuit), occupation de la section nominale si le diamètre extérieur de chaque câble et les dimensions du cheminement sont connus.
+  - Statut **toujours « vérification nécessaire »** : le taux maximal admis n’est pas dans l’extrait Legrand fourni (tableau « Remplissage des conduits et goulottes » ajouté à `js/normes.js`, « manquant », reporté en phase 8). Source et édition affichées.
+  - Données manquantes listées (type, diamètre ou dimensions, diamètre extérieur des câbles) : aucune valeur devinée.
+- **Diamètre extérieur du câble** saisissable dans la fiche de calcul du circuit (`calc.dcab`, facultatif, avec sa fiabilité).
+- **Liste de matériel (estimation)** dans l’onglet Cheminements : cheminements par type et taille (longueur verticales comprises + réserve), conducteurs par section (phase, neutre, terre ; navettes non comptées) pour les circuits entièrement raccordés, boîtes d’encastrement, boîtiers DCL, boîtes de dérivation, passages entre étages, traversées de murs et de cloisons. Toutes les quantités sont « estimées », sans référence fabricant.
+- Remplissage aussi dans l’inspecteur d’une gaine.
+- Service Worker : cache `calque-v18`, `js/materiel.js` ajouté.
+- `tests/cheminement.test.mjs` : 9 tests. Tests : 68/68.
+
+## 2026-11-04 — Phase 4, étape 3 : recherche d’itinéraire, zones interdites et conflits
+- Nouveau module sans écran **`js/itineraire.js`** : recherche d’itinéraire sur une grille du niveau (quatre directions, virages limités), conflits d’une gaine et de tout le plan.
+  - Les traversées de murs et de cloisons coûtent cher (chacune = un percement) ; les zones interdites sont infranchissables (avec une marge) ; les conduits de VMC sont évités ; pour une gaine posée « à une hauteur donnée », les portes sont infranchissables.
+  - Aucun itinéraire possible → message, rien n’est inventé.
+- **Zones interdites** (trémie, conduit de fumée, zone humide…) : outil depuis la barre de l’outil Conduit (gaine électrique) ou depuis l’inspecteur d’un symbole ; angles touchés au doigt ou au Pencil ; zone hachurée en rouge, sélectionnable (nom, suppression), enregistrée dans le plan (`zones[]`, format v6).
+- **Proposer un itinéraire** : dans l’inspecteur d’un appareil relié à un circuit et pas encore raccordé. Départ : le point déjà raccordé au tableau le plus proche sur le même niveau (tableau, appareil du même circuit, passage entre étages, boîte de dérivation). Aperçu sur le plan, puis « Créer la gaine » (type et pose repris du dernier choix) ; la gaine reste modifiable et « Annuler » la retire.
+- **Conflits** (points d’attention de Calque, pas des règles de la norme) : gaine qui coupe une porte ou une fenêtre (selon sa pose), passe dans une zone interdite, croise un conduit de VMC ; traversées de murs et de cloisons (percements à prévoir). Affichés dans l’inspecteur de la gaine et dans l’onglet Cheminements (avec « Voir »).
+- La liste « Autres circuits » d’une gaine simple est repliée (toujours ouverte pour une goulotte ou un chemin de câbles).
+- Toucher l’intérieur d’une zone interdite la sélectionne (le nom de la pièce reste prioritaire).
+- Service Worker : cache `calque-v17`, `js/itineraire.js` et `js/routeui.js` ajoutés.
+- `tests/cheminement.test.mjs` : 7 tests (dont une zone dessinée au doigt et un itinéraire créé depuis l’inspecteur).
+
+## 2026-11-04 — Phase 4, étape 2 : longueurs des circuits et longueur L de la fiche de calcul
+- **Réseau des gaines** (`js/cheminement.js`, sans écran) : tronçons, verticales jusqu’aux appareils, jonctions entre gaines (une extrémité libre posée sur une autre gaine s’y raccorde), passages entre étages (différence d’altitude entre les parcours des deux niveaux).
+  - Un circuit n’emprunte que ses gaines et les gaines sans circuit ; il ne traverse pas l’appareil d’un autre circuit (seuls le tableau, les boîtes de dérivation, la GTL et les passages se traversent).
+- **Trois longueurs par circuit**, depuis le tableau principal : à vol d’oiseau (comparaison), le long des gaines jusqu’au point le plus éloigné, et longueur de câble pour desservir tous les points ; **à commander** = câble + réserve, arrondi au mètre supérieur.
+  - Réserve : 10 % par défaut (« estimée », valeur de Calque), modifiable (`install.reserve`).
+- **Fiche de calcul** : sans longueur saisie, la longueur L vient du plan (« estimée », le long des gaines, verticales comprises, sans réserve) ; une saisie la remplace. Si le circuit n’est pas entièrement raccordé par les gaines, la longueur reste « manquante » (aucune valeur devinée) et la raison est donnée. Verticales non comptées (pose non précisée) : alerte « longueur probablement sous-estimée ».
+- Nouvel onglet **Cheminements** dans Tableau électrique (`js/metres.js`) : circuits raccordés, câble à commander, réserve, tableau des longueurs par circuit avec accès à la fiche.
+- Service Worker : cache `calque-v16`, `js/metres.js` ajouté.
+- `tests/cheminement.test.mjs` : 5 tests (longueurs calculées à la main : 560 / 920 cm, 390 cm de verticales à travers un passage).
+
+## 2026-11-04 — Phase 4, étape 1 : cheminements, verticales et passages entre étages
+- Nouveau module sans écran **`js/cheminement.js`** : types de cheminement, pose, hauteurs des symboles, verticales, longueur d’une gaine, passages entre étages, nettoyage des données.
+- **Type de cheminement** d’une gaine électrique : gaine ICTA, tube IRL, goulotte, chemin de câbles. Les gaines existantes restent « type non précisé » (rien de deviné) et gardent leur aspect.
+  - Diamètres proposés selon le type (ICTA Ø16 à Ø40, IRL Ø16 à Ø50) ; goulotte et chemin de câbles : largeur × hauteur à saisir (aucune dimension par défaut).
+  - Dessin 2D : ICTA et non précisé en tirets (comme avant), IRL en trait plein, goulotte en bande, chemin de câbles en échelle. Étiquette « IRL Ø20 », « Goulotte 60 × 40 mm ».
+- **Pose** d’une gaine : dans le sol, au plafond ou à une hauteur donnée. Les **verticales** jusqu’à chaque appareil sont comptées (hauteur de pose du symbole) ; sans pose, elles sont signalées « non comptées ».
+  - La 3D place la gaine à sa hauteur de pose (sinon, réglage « par le plafond / par le sol » comme avant).
+- **Autres circuits** passant dans un cheminement (goulotte, chemin de câbles partagés).
+- Le type et la pose choisis en dernier sont repris pour les gaines suivantes ; choix du type aussi dans la barre de l’outil Conduit.
+- **Passage entre étages** : nouveau symbole (Électricité › Tableau & énergie). Dans l’inspecteur, on choisit le niveau à relier : un passage jumeau est créé au même endroit sur ce niveau.
+- **Format des plans v6** (gaines : `kind`, `pose`, `z`, `lw`, `lh`, `cids` ; passage : `to` ; `zones[]` ; `install.reserve` ; `calc.dcab`). Migration v5 → v6 : rien n’est ajouté ni deviné, les valeurs invalides sont retirées.
+- **Copie de sécurité avant mise à jour du format** : à l’ouverture d’un plan d’une version précédente, le plan d’origine est gardé dans l’historique des versions (« Copie de sécurité avant mise à jour du format (v5 → v6) »).
+- Correction : l’étiquette d’une gaine sélectionnée sans diamètre n’affiche plus « Øundefined ».
+- Service Worker : cache `calque-v15`, `js/cheminement.js` ajouté.
+- Ajout de `tests/cheminement.test.mjs` (3 tests) ; `tests/bibliotheque.test.mjs` compte 177 symboles (un ajouté, aucun perdu).
+
+## 2026-11-04 — Phase 3 : tableaux Legrand manquants reportés en phase 8
+- Décision de l’utilisateur : les tableaux absents du guide « Points clés » (Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes, simultanéité) sont reportés à la toute fin (phase 8), car les documents sont payants.
+- Interface : « extrait à fournir » remplacé par « non couvert par l’extrait Legrand fourni ». Les contrôles concernés restent « vérification nécessaire » (aucune valeur inventée).
+
 ## 2026-11-04 — Phase 3, étape 4 : tableaux Legrand et fichiers de passage entre sessions
 - **Extrait Legrand reçu** (« NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand », réf. MM224003). Deux tableaux recopiés dans `js/normes.js`, avec source, édition et pages :
   - section mini / calibre maxi / nombre de points par circuit du logement, et tableau du chauffage (p. 16-17, 24-29) ;

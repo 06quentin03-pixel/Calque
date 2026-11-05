@@ -29,16 +29,33 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-04 (ph. 3) | Sèche-linge et pompe à chaleur passés en « type A requis » (`CK`) | Extrait Legrand p. 13 ; le générateur produisait un tableau non conforme |
 | 2026-11-04 (ph. 3) | Le contrôle existant `nfcChecks` est conservé tel quel ; la fiche l'affiche comme « indicatif » | Ne pas casser l'existant ; il sera repris par le moteur de règles (phase 6) |
 | 2026-11-04 (ph. 3) | cos φ = 1 « estimé » seulement pour le chauffage et le chauffe-eau ; aucune puissance par défaut pour les prises | Charges résistives ; ailleurs, ce serait deviner |
+| 2026-11-04 (ph. 3) | Tableaux absents du guide Legrand « Points clés » reportés en phase 8 ; d'ici là « manquante » et contrôles « vérification nécessaire » | Décision de l'utilisateur (documents payants) ; aucune valeur inventée |
 | 2026-11-04 (ph. 3) | Chute de tension calculée « toute la charge en bout de ligne », circuit seul | Calcul défavorable et simple ; l'amont s'ajoute |
+| 2026-11-04 (ph. 4) | Les cheminements restent des `ducts` (`sys: 'elec'`) enrichis (`kind`, `pose`, `z`, `lw`, `lh`, `cids`), pas un nouvel objet | Partir des conduits existants : dessin, sélection, poignées, 3D et filtres déjà en place |
+| 2026-11-04 (ph. 4) | Gaine existante : type et pose « non précisés » ; verticales « non comptées » tant que la pose manque | Aucune valeur devinée |
+| 2026-11-04 (ph. 4) | Hauteur d'un symbole : sa hauteur de pose ; valeur par défaut de Calque marquée « estimée » ; symbole au plafond = hauteur du niveau | Les verticales doivent être tracées jusqu'à leur source |
+| 2026-11-04 (ph. 4) | Passage entre étages = deux symboles `traversee` jumeaux (`to`), un par niveau | Les gaines s'y raccordent comme à tout symbole ; rien à changer dans la sélection ni dans l'enregistrement |
+| 2026-11-04 (ph. 4) | Copie de sécurité dans l'historique avant toute mise à jour du format à l'ouverture | Règle 7 de CLAUDE.md : migration + copie de sécurité |
+| 2026-11-04 (ph. 4) | Longueurs = plus courts chemins (Dijkstra) dans le réseau des gaines depuis le tableau principal ; un circuit n'emprunte que ses gaines ou les gaines sans circuit | Résultat reproductible et vérifiable à la main |
+| 2026-11-04 (ph. 4) | L de la fiche = longueur jusqu'au point le plus éloigné, « estimée » ; seulement si **tous** les points du circuit sont raccordés | Une longueur partielle sous-estimerait la chute de tension : elle reste « manquante » |
+| 2026-11-04 (ph. 4) | Réserve de câble 10 % par défaut, marquée « estimée » (valeur de Calque) | Usage courant ; modifiable, jamais présentée comme une règle |
+| 2026-11-04 (ph. 4) | Réseau des gaines mémorisé par plan (signature des gaines, symboles et niveaux) | La fiche et le bilan le demandent pour chaque circuit |
+| 2026-11-04 (ph. 4) | Itinéraire : A* sur grille (cellule 5 cm ou plus, 60 000 cases au plus), 4 directions, coûts : virage 40, mur 300, cloison 80, abords VMC 4 | Tracés droits et orthogonaux comme sur chantier ; calcul rapide sur iPad |
+| 2026-11-04 (ph. 4) | Conflits = points d'attention de Calque (« à revoir » / information), jamais « conforme » | Ce ne sont pas des règles de la norme |
+| 2026-11-04 (ph. 4) | Inspecteur d'un type ajouté par un module : `EXT.insp` | Les zones interdites sont gérées par `routeui.js` sans alourdir `interface.js` |
+| 2026-11-04 (ph. 4) | Remplissage : occupation calculée sur la section **nominale**, présentée comme « indicative », statut toujours « vérification nécessaire » | Diamètre intérieur réel et taux maximal inconnus (extrait non fourni) ; aucune conclusion de conformité |
+| 2026-11-04 (ph. 4) | Matériel : un câble par circuit, phase + neutre + terre (5 conducteurs en triphasé), navettes non comptées ; toutes les quantités « estimées » | Hypothèses simples, écrites à côté des quantités |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v14`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v18`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 
 ## Dépendances entre modules (calcul)
 `noyau` ← `elecdonnees` ← `calcul` ← `normes`
 `calcul` + `electricite` + `interface` ← `fiche` ← (`tableau`, `interface`)
+`noyau` + `mutations` + `symboles` ← `cheminement` ← (`reseaux`, `vue3d`, `stockage`, `calcul`)
+`cheminement` ← `itineraire` ← `materiel` ← (`metres`, `reseaux`) ; `routeui` (écran) utilise `itineraire` et `cheminement`

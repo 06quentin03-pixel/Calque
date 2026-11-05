@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 3 terminée, demande de fusion n°2 fusionnée à la demande de l'utilisateur).
+Dernière mise à jour : 4 novembre 2026 (phase 4 terminée, demande de fusion n°3 préparée).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -53,10 +53,27 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 3 : onglet « Bilan » du tableau (bilan de puissance, coefficient ks, tableau des circuits, équilibrage des phases avec répartition proposée, liste des tableaux Legrand attendus). 1 test de plus dans `tests/fiche.test.mjs`. Tests : **57/57 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 ; correction du débordement horizontal de la barre d'onglets sur téléphone.
 - ✅ Étape 4 : extrait Legrand « Points clés » (révision 23 août 2024) reçu ; 2 tableaux recopiés (sections/calibres par circuit et chauffage ; différentiels) et contrôles ajoutés ; sèche-linge et pompe à chaleur en type A. Fichiers `PROJECT_STATE.md`, `TECHNICAL_DECISIONS.md`, `NEXT_SESSION.md`. Tests : **59/59 réussis**.
-- ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire ».
+- ⏸ Tableaux absents de l'extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, ρ et λ, simultanéité) : **reportés en phase 8** par l'utilisateur le 4 novembre 2026 (documents payants). Les contrôles In ≤ Iz et chute de tension restent « vérification nécessaire » ; textes « à fournir » retirés de l'interface.
+
+## Phase 4 — cheminements et métrés (terminée, à fusionner et à vérifier sur iPad)
+- ✅ Étape 1 : cheminements (types ICTA, IRL, goulotte, chemin de câbles ; pose sol / plafond / hauteur ; verticales ; autres circuits ; passages entre étages), module `js/cheminement.js`, format des plans v6 avec migration et copie de sécurité avant mise à jour du format. 3 tests dans `tests/cheminement.test.mjs`. Tests : **62/62 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (pas de débordement ; choix du type en pastilles pour tenir dans l'inspecteur).
+
+- ✅ Étape 2 : réseau des gaines, longueurs par circuit (vol d'oiseau, cheminement, câble, à commander avec réserve), longueur L de la fiche venue du plan, onglet « Cheminements » (`js/metres.js`). 2 tests de plus. Tests : **64/64 réussis**.
+  - Mesure : réseau de 144 gaines construit en 43 ms (une fois, puis mémorisé), 21 circuits en 3 ms.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844.
+
+- ✅ Étape 3 : recherche d'itinéraire (grille, percements comptés, zones interdites, portes selon la pose, VMC évitée), zones interdites (outil, sélection, nom), conflits dans l'inspecteur et l'onglet Cheminements (`js/itineraire.js`, `js/routeui.js`). 2 tests de plus. Tests : **66/66 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (aperçu de l'itinéraire, gaine créée, liste des conflits).
+
+- ✅ Étape 4 : remplissage des cheminements (toujours « vérification nécessaire »), diamètre extérieur du câble dans la fiche, liste de matériel estimée (`js/materiel.js`). 2 tests de plus. Tests : **68/68 réussis**.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844.
 
 ## Tâche en cours
-- Aucune. Phase 3 terminée et fusionnée dans `main` (demande n°2, fusion demandée explicitement par l'utilisateur le 4 novembre 2026). Essais iPad à faire : liste dans `NEXT_SESSION.md`.
+- Aucune. Phase 4 terminée et fusionnée dans `main` (demande n°3, fusion demandée explicitement par l'utilisateur le 5 novembre 2026). Essais iPad de la phase 4 à faire (liste dans `NEXT_SESSION.md`).
+
+## Essais sur l'iPad (phase 3)
+**Validés par l'utilisateur le 5 novembre 2026.**
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
@@ -68,5 +85,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Recopier les tableaux Legrand manquants dans `js/normes.js` dès que l'utilisateur les fournit (avec test), puis activer le contrôle In ≤ Iz et la limite de chute de tension.
-- Phase 4 : cheminements et métrés (la longueur des câbles alimentera la fiche de calcul).
+- Essais iPad de la phase 4, puis phase 5 : éclairage et 3D avancée.

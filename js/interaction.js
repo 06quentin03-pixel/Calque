@@ -1,6 +1,6 @@
 /* Calque — module « interaction » : interaction : vue, sélection, outils, aimantation, Apple Pencil.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, C, DEG, EXT, IDX, NF0, P, S, bboxOf, clamp, fmtArea, fmtLen, fmtLenU, inPoly, levelOf, levelsSorted, lineX,
+import { $, C, DEG, EXT, IDX, isNum, NF0, P, S, bboxOf, clamp, fmtArea, fmtLen, fmtLenU, inPoly, levelOf, levelsSorted, lineX,
   nodeOf, projSeg, saveSettings, setGEO, setP, snapTo, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
   vnorm, vperp, vsub } from './noyau.js';
 import { geo, roomOfLabel, syncRooms } from './geometrie.js';
@@ -18,6 +18,8 @@ import { closePops, fmtIn, parseNum, renderInspector, renderLevels, setTool, toa
 import { scheduleSave } from './stockage.js';
 import { v3Refresh } from './vue3d.js';
 import { applyComp, upsertPlanComp } from './composants.js';
+import { tailleChemin } from './cheminement.js';
+import { zoneAt } from './routeui.js';
 
 /* ============================================================
    CALQUE — interaction : vue, sélection, outils, aimantation
@@ -187,6 +189,7 @@ function hitTest(p, tolPx) {
     const hw = Math.max(34, (r.label.name || '').length * 4.2 + 8);
     if (Math.abs(ps.x - sp.x) <= hw && Math.abs(ps.y - sp.y) <= 18) return { t: 'label', id: r.label.id };
   }
+  const zid = zoneAt(p); if (zid) return { t: 'zone', id: zid }; // zone interdite : avant la pièce qui la contient
   for (const r of g.rooms) if (r.label && inPoly(p, r.loop) && !r.holes.some((h) => inPoly(p, h))) return { t: 'room', id: r.label.id };
   return null;
 }
@@ -311,7 +314,7 @@ function select(h) {
 }
 function selObj(sel) {
   sel = sel || ui.sel; if (!sel) return null;
-  const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts };
+  const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts, zone: IDX.zones };
   return map[sel.t] ? map[sel.t].get(sel.id) || null : null;
 }
 function validateSel() {
@@ -1094,7 +1097,7 @@ function drawSelShape(sel, hover) {
     if (d) {
       const pts = ductPts(d);
       c.save(); c.globalAlpha = hover ? 0.3 : 0.45; c.lineJoin = 'round'; c.lineCap = 'round';
-      c.lineWidth = (d.sys === 'vmc' ? (d.dia || 125) / 10 : 0) + 7 * px;
+      c.lineWidth = (d.sys === 'vmc' ? (d.dia || 125) / 10 : (d.kind === 'goulotte' || d.kind === 'cdc') && isNum(d.lw) ? d.lw / 10 : 0) + 7 * px;
       c.beginPath(); c.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i].x, pts[i].y); c.stroke(); c.restore();
       if (!hover) {
         for (const hd of ductHandles(d)) {
@@ -1102,7 +1105,7 @@ function drawSelShape(sel, hover) {
           else handleDot(hd.p);
         }
         let bi = 1, bl = -1; for (let i = 1; i < pts.length; i++) { const L = vdist(pts[i - 1], pts[i]); if (L > bl) { bl = L; bi = i; } }
-        setScreen(); const m = w2s(vmid(pts[bi - 1], pts[bi])); tag(m.x, m.y - 24, fmtLenU(ductLen(d)) + ' · Ø' + d.dia); setWorld();
+        setScreen(); const m = w2s(vmid(pts[bi - 1], pts[bi])); tag(m.x, m.y - 24, fmtLenU(ductLen(d)) + (d.sys === 'vmc' || isNum(d.dia) ? ' · Ø' + d.dia : tailleChemin(d) ? ' · ' + tailleChemin(d) : '')); setWorld();
       }
     }
   } else if (sel.t === 'room') {

@@ -594,6 +594,9 @@ const ELEC = [
     c.beginPath(); _ln(c, -0.7, 0, 0.7, 0.44); c.stroke(); } },
   { t: 'ccpi', cat: 'tableau', n: 'Coffret de coupure (CCPI)', desc: 'Coffret en limite de propriété où le réseau du distributeur arrive (coupe-circuit principal).', wall: 1, h: 100, draw(c, K) { _eBox(c, K, -0.42, 0, 0.84, 0.44); _eLabel(c, K, 'CCPI', 0, 0.23, 0.18); } },
   { t: 'gtl', cat: 'tableau', n: 'Gaine technique logement (GTL)', desc: 'Regroupe le tableau électrique et le coffret de communication, du sol au plafond. Obligatoire en logement neuf.', wall: 1, h: null, fullH: 1, bw: 0.64, draw(c, K) { _eBox(c, K, -0.6, 0, 1.2, 0.3); _eLabel(c, K, 'GTL', 0, 0.16, 0.18); } },
+  { t: 'traversee', cat: 'tableau', n: 'Passage entre étages', desc: 'Traversée de plancher (fourreau, trémie) : relie les gaines d’un niveau à celles d’un autre niveau.', wall: 0, h: null, draw(c, K) {
+    _circ(c, 0, 0, 0.26); _fs(c, K.bg); c.beginPath(); _ln(c, 0, -0.17, 0, 0.17); c.stroke();
+    c.beginPath(); c.moveTo(0, -0.2); c.lineTo(-0.09, -0.08); c.lineTo(0.09, -0.08); c.closePath(); c.moveTo(0, 0.2); c.lineTo(-0.09, 0.08); c.lineTo(0.09, 0.08); c.closePath(); c.fillStyle = K.elec; c.fill(); } },
   { t: 'terre', cat: 'tableau', n: 'Prise de terre', desc: 'Piquet ou boucle à fond de fouille, relié à la barrette de terre du tableau.', wall: 0, h: null, floor: 1, draw(c, K) {
     c.beginPath(); _ln(c, 0, -0.3, 0, 0); _ln(c, -0.3, 0, 0.3, 0); _ln(c, -0.19, 0.11, 0.19, 0.11); _ln(c, -0.08, 0.22, 0.08, 0.22); c.stroke(); } },
   { t: 'les', cat: 'tableau', n: 'Liaison équipotentielle', desc: 'Relie à la terre les éléments métalliques (canalisations, huisseries, baignoire métallique).', wall: 1, h: 30, draw(c, K) {

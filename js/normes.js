@@ -6,7 +6,11 @@
    (champ `donnees` rempli, avec `source`, `edition` et `page`), il est « manquant » : tout résultat qui en dépend
    reste « vérification nécessaire ».
 
-   Pour remplir un tableau (quand l'utilisateur aura fourni l'extrait) :
+   Décision de l'utilisateur (4 novembre 2026) : les tableaux absents du guide « Points clés » sont REPORTÉS à la fin
+   du projet (phase 8), car les documents qui les contiennent sont payants. En attendant, ils restent « manquante »
+   (aucune valeur inventée) et les contrôles qui en dépendent restent « vérification nécessaire ».
+
+   Pour remplir un tableau (quand l'extrait sera fourni) :
      - recopier les valeurs dans `donnees` (format indiqué dans `format`) ;
      - indiquer `source` (titre exact du document Legrand), `edition` (édition de la norme citée par le document),
        `page` (page ou numéro du tableau dans le document) ;
@@ -93,6 +97,14 @@ const TABLES = [
     statut: 'manquante', source: null, edition: null, page: null, donnees: null,
   },
   {
+    id: 'remplissage_conduits',
+    titre: 'Remplissage des conduits et goulottes',
+    contenu: 'Taux d’occupation maximal de la section d’un conduit, d’une goulotte ou d’un chemin de câbles par les conducteurs et câbles.',
+    sert: ['Taux de remplissage des cheminements (onglet Cheminements)'],
+    format: '{ [type de cheminement]: taux maximal en % }',
+    statut: 'manquante', source: null, edition: null, page: null, donnees: null,
+  },
+  {
     id: 'differentiels_logement',
     titre: 'Interrupteurs différentiels : nombre, type et calibre minimal (logement)',
     contenu: 'Nombre minimal d’interrupteurs différentiels 30 mA, type (AC, A, F, B) selon les circuits, nombre maximal de circuits et calcul du calibre.',
@@ -152,6 +164,7 @@ const REGLES = {
   dd_nombre: { nom: 'Au moins 2 interrupteurs différentiels 30 mA, dont au moins 1 de type A', source: `${SRC_GUIDE}, p. 12`, edition: ED_2024, tables: ['differentiels_logement'] },
   dd_lp: { nom: 'Lumières et prises réparties sous au moins 2 interrupteurs différentiels', source: `${SRC_GUIDE}, p. 12`, edition: ED_2024, tables: ['differentiels_logement'] },
   chute_tension: { nom: 'Chute de tension inférieure à la limite admise', source: `${NORME}, partie 5-52 (chutes de tension)`, edition: 'à confirmer avec l’extrait Legrand', tables: ['chute_tension_max', 'chute_tension_calcul'] },
+  remplissage: { nom: 'Taux de remplissage des conduits, goulottes et chemins de câbles', source: `${NORME}, règles de mise en œuvre des canalisations`, edition: 'à confirmer avec l’extrait Legrand', tables: ['remplissage_conduits'] },
   pdc: { nom: 'Pouvoir de coupure et courbe du disjoncteur', source: `${NORME}, partie 4-43 (protection contre les courts-circuits)`, edition: 'à confirmer avec l’extrait Legrand' },
 };
 

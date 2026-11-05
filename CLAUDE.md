@@ -44,7 +44,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 5) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 6) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
   - **Penser à changer le nom du cache et la liste `CORE`** à chaque ajout de fichier (un test le vérifie).
@@ -54,6 +54,9 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
   - `drawScene` ne dessine à l'écran que les objets de la zone visible (`VIEW`, marge de 160 px). Les exports PDF/PNG dessinent toujours tout.
   - `requestRender(true)` = seule la couche du dessus change (curseur, aperçu). Le plan est alors repris d'une image mémorisée (`SCENE`), utilisée seulement si le dessin du plan dépasse 4 ms. **Tout changement du plan doit appeler `requestRender()` sans argument.**
   - Diagnostic pour les tests : `?debug=nocull`, `?debug=cache`, `?debug=nocache`.
+- Cheminements (depuis la phase 4) : les gaines électriques sont des `ducts` (`sys: 'elec'`) avec `kind`, `pose`, `cids` ; passages entre étages = symboles `traversee` jumeaux ; zones interdites `zones[]`.
+  - Calculs sans écran : `cheminement.js` (réseau des gaines, longueurs), `itineraire.js` (itinéraire, conflits), `materiel.js` (remplissage, matériel). Écran : `routeui.js`, `metres.js` (onglet « Cheminements »).
+  - La longueur L de la fiche vient du plan (« estimée ») tant qu'aucune longueur n'est saisie.
 - Annuler/rétablir : `packPlan`/`unpackPlan`, états découpés en blocs partagés entre étapes (150 étapes, environ 30 millions de caractères au maximum).
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 

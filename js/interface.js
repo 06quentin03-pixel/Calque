@@ -11,7 +11,7 @@ import { DOMAINES, LIB_EXTRA, allEntries, entriesOf, pathOf, searchEntries } fro
 import { AUTONOMOUS, CK, CMDS, SOCKETS, SPOTLIKE, accepts, circById, circNumbers, circStats, circuitColor, cleanLinks,
   defaultKindFor, elecPower, fmtCount, orderCircuits, rcdCircuits, roomAt } from './electricite.js';
 import { DUCT_DIAS, afterFilter, closeDimEdit, ductHintMsg, ductPts, ductVisible, finishDuct, fold, inspDuct,
-  networkSummary, startDuctFrom, ventSection } from './reseaux.js';
+  networkSummary, startDuctFrom, traverseeSection, ventSection } from './reseaux.js';
 import { CLOSET_MODELS, DOOR_MODELS, GAP_MODELS, WIN_MODELS, commit, cv, lockedWallPoint, makeItemFromDef, newOpening,
   openingHeight, openingModels, refreshUI, refreshWallMsg, requestRender, selObj, select, undo, wallByLength,
   wallHeightSetting, wallHintMsg, wallLenLock, wallProps } from './interaction.js';
@@ -22,6 +22,8 @@ import { f3Def, itemHeight3 } from './vue3d.js';
 import { compSection, materielSection, openTechLib } from './biblioui.js';
 import { ficheButton } from './fiche.js';
 import { fondSection, pickFond } from './fond.js';
+import { TYPES_CHEMIN } from './cheminement.js';
+import { itineraireSection, startZone } from './routeui.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -133,7 +135,7 @@ function renderInspector() {
   let parts;
   try {
     if (!ui.sel || !o) parts = inspLevel();
-    else parts = { wall: inspWall, node: inspNode, opening: inspOpening, item: inspItem, elec: inspElec, room: inspRoom, dim: inspDim, text: inspText, duct: inspDuct }[ui.sel.t](o);
+    else parts = { wall: inspWall, node: inspNode, opening: inspOpening, item: inspItem, elec: inspElec, room: inspRoom, dim: inspDim, text: inspText, duct: inspDuct, ...EXT.insp }[ui.sel.t](o);
   } catch (err) { console.error(err); parts = inspLevel(); }
   box.replaceChildren(...parts.filter(Boolean));
   box.classList.toggle('closed', !(ui.inspOpen || ui.sel));
@@ -417,13 +419,15 @@ function inspElec(e) {
     delete e.comp; // autre symbole : ce n'est plus le composant personnalisé (le marquage reste modifiable)
     commit();
   });
-  const fixedPose = def.floor ? 'Au sol' : def.fullH ? 'Du sol au plafond' : !def.wall && e.h == null ? 'Au plafond' : null;
+  const fixedPose = e.type === 'traversee' ? 'Traverse le plancher' : def.floor ? 'Au sol' : def.fullH ? 'Du sol au plafond' : !def.wall && e.h == null ? 'Au plafond' : null;
   return [
     inspHead((e.comp && ((P.comps || []).find((c) => c.id === e.comp) || {}).n) || def.n, cat ? cat.name : 'Électricité'),
     body(
       h('p', { class: 'note' }, def.desc),
       sec('Symbole', sel),
       circuitSection(e),
+      traverseeSection(e),
+      itineraireSection(e),
       materielSection(e),
       sec('Marquage', textField(null, e.mark, (v) => { v = v.trim().slice(0, 8); if (v) e.mark = v; else delete e.mark; commit(); }, { id: 'f-emark', ph: 'Texte court affiché près du symbole (facultatif)' })),
       compSection(e, 'elec'),
@@ -576,7 +580,7 @@ function deleteSel() {
   else if (s.t === 'node') deleteNode(s.id);
   else if (s.t === 'room') { toast('Une pièce est définie par ses murs : supprimez un mur pour la retirer.'); return; }
   else {
-    const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts' }[s.t];
+    const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts', zone: 'zones' }[s.t];
     P[key] = P[key].filter((o) => o.id !== s.id); touch();
     if (s.t === 'elec') cleanLinks();
   }
@@ -642,7 +646,7 @@ let hintKey = '';
 function updateHint() {
   const el = $('#hint');
   const t = ui.tool;
-  const key = [t, ui.wallKind, ui.doorKind, !!ui.chain, ui.chain && ui.chain.stack.length > 0, ui.place && ui.place.def.t, S.thMur, S.thCloison, ui.hl, ui.linkSrc, ui.hl && circById(ui.hl) && circById(ui.hl).name, ui.duct ? ui.duct.pts.length + ui.duct.sys : '', S.ductSys, ui.ductDia, ...EXT.hintKey.map((f) => f())].join('|');
+  const key = [t, ui.wallKind, ui.doorKind, !!ui.chain, ui.chain && ui.chain.stack.length > 0, ui.place && ui.place.def.t, S.thMur, S.thCloison, ui.hl, ui.linkSrc, ui.hl && circById(ui.hl) && circById(ui.hl).name, ui.duct ? ui.duct.pts.length + ui.duct.sys : '', S.ductSys, S.ductKind, ui.ductDia, ...EXT.hintKey.map((f) => f())].join('|');
   if (key === hintKey && !el.hidden === (t !== 'select')) return;
   hintKey = key;
   if (t === 'select') {
@@ -717,10 +721,12 @@ function updateHint() {
     const dias = DUCT_DIAS[sys];
     kids = [h('b', null, 'Conduit'),
       segCtl([{ v: 'vmc', n: 'VMC' }, { v: 'elec', n: 'Gaine élec' }], sys, (v) => { S.ductSys = v; ui.ductDia = null; if (ui.duct) ui.duct.sys = v; saveSettings(); if (!ductVisible({ sys: v })) { S.filt.off = S.filt.off.filter((x) => x !== (v === 'vmc' ? 'ventilation' : 'gaines')); if (v === 'elec') S.filt.circ = null; afterFilter(); } updateHint(); requestRender(); }),
-      segCtl([{ v: 0, n: 'Ø auto' }, ...dias.map((v) => ({ v, n: 'Ø' + v }))], ui.ductDia && dias.includes(ui.ductDia) ? ui.ductDia : 0, (v) => { ui.ductDia = v || null; updateHint(); requestRender(); }),
+      sys === 'elec' ? segCtl(Object.keys(TYPES_CHEMIN).map((k) => ({ v: k, n: TYPES_CHEMIN[k].court })), S.ductKind, (v) => { S.ductKind = S.ductKind === v ? null : v; saveSettings(); updateHint(); }) : null,
+      sys === 'elec' && S.ductKind && TYPES_CHEMIN[S.ductKind].forme === 'rect' ? null : segCtl([{ v: 0, n: 'Ø auto' }, ...dias.map((v) => ({ v, n: 'Ø' + v }))], ui.ductDia && dias.includes(ui.ductDia) ? ui.ductDia : 0, (v) => { ui.ductDia = v || null; updateHint(); requestRender(); }),
       h('span', { class: 'msg' }, ductHintMsg()),
       dr && dr.pts.length > 1 ? btn('Retirer le dernier point', () => { dr.pts.pop(); updateHint(); requestRender(); }, 'sm') : null,
       dr ? btn('Annuler le tracé', () => { ui.duct = null; updateHint(); requestRender(); }, 'sm') : null,
+      sys === 'elec' && !dr ? btn('Zone interdite', startZone, 'sm') : null,
       done];
   } else if (t === 'dim') {
     kids = [h('b', null, 'Cote'), h('span', { class: 'msg' }, 'Faites glisser d’un point à un autre. Les angles des murs aimantent.'), done];
@@ -971,7 +977,7 @@ function deleteLevel(id) {
   if (P.levels.length < 2) return;
   const wallIds = new Set(P.walls.filter((w) => w.lv === id).map((w) => w.id));
   P.openings = P.openings.filter((o) => !wallIds.has(o.wall));
-  for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts']) P[k] = P[k].filter((o) => o.lv !== id);
+  for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones']) P[k] = P[k].filter((o) => o.lv !== id);
   for (const c of P.circuits) if (!P.elec.some((e) => e.cid === c.id)) { /* circuit conservé, sans symbole */ }
   P.levels = P.levels.filter((l) => l.id !== id);
   touch();

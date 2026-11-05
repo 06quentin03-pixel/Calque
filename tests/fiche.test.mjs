@@ -27,9 +27,9 @@ test('migration v4 → v5 : rien d’ajouté ni deviné, valeurs invalides retir
     const same = ['CK', 'SEC_MAX', 'LIGHTS', 'SOCKETS', 'accepts', 'defaultKindFor', 'elecPower', 'agcpOf', 'circLoad'].every((k) => E[k] === D[k]);
     return { ver: S.PLAN_VERSION, has: Object.keys(S.MIGRATIONS).map(Number), a, b, same };
   }, planV4('x'));
-  assert.equal(m.ver, 5);
+  assert.ok(m.ver >= 5);
   for (let v = 1; v < m.ver; v++) assert.ok(m.has.includes(v), `migration ${v} → ${v + 1}`);
-  assert.equal(m.a.from, 4); assert.equal(m.a.plan.v, 5);
+  assert.equal(m.a.from, 4); assert.equal(m.a.plan.v, m.ver);
   assert.ok(!('calc' in m.a.plan.circuits[0]), 'aucune donnée de calcul ajoutée');
   assert.deepEqual(m.a.plan.circuits[1].calc, { len: { v: 12, st: 'saisie' } }, 'seule la longueur valide reste ; « vérifiée » sans source → saisie');
   assert.ok(!('reseau' in m.a.plan.install) && !('ks' in m.a.plan.install), 'réseau et ks invalides retirés');
@@ -69,7 +69,7 @@ test('fiche de calcul depuis le tableau : saisie, résultats, statut, enregistre
   await page.fill('#fi-p-src', 'Notice de test'); await page.press('#fi-p-src', 'Enter'); await wait(page, 200);
   await page.locator('#modal .fi-champ').first().locator('.seg button:has-text("Vérifiée")').click(); await wait(page, 1400);
   const st = await storedPlan(page, 'pF4');
-  assert.equal(st.v, 5);
+  assert.equal(st.v, 6);
   assert.deepEqual(st.circuits.find((c) => c.id === 'c2').calc, { len: { v: 15, st: 'saisie' }, p: { v: 3680, st: 'verifiee', src: 'Notice de test' }, cos: { v: 1, st: 'saisie' } });
   const fiab = () => page.locator('#modal .fi-champ').first().locator('.seg button[aria-pressed="true"]').textContent();
   assert.equal(await fiab(), 'Vérifiée');

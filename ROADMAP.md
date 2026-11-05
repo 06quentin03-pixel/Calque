@@ -50,14 +50,15 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Fiche de calcul d'un circuit depuis le plan et depuis le tableau : hypothèses, formules, données utilisées et manquantes, alertes, contrôles à 3 statuts (`js/fiche.js`, format v5, 3 tests dans `tests/fiche.test.mjs`).
 - ✅ Bilan de puissance et équilibrage des phases dans l'onglet Tableau (onglet « Bilan »).
 - ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
-- ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : autre document Legrand à fournir.
+- ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : **reportés en phase 8** (documents payants). Les contrôles concernés restent « vérification nécessaire » d'ici là.
 
-## Phase 4 — Cheminements et métrés
+## Phase 4 — Cheminements et métrés ✅ (à fusionner ; essais iPad à faire)
 Dépend de : 3.
-- ⬜ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages.
-- ⬜ Longueurs géométriques, longueurs de cheminement et longueurs à commander, avec réserve.
-- ⬜ Recherche d'itinéraire avec zones interdites et détection des conflits (portes, murs, réseaux).
-- ⬜ Taux de remplissage des conduits, liste de matériel.
+- ✅ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages (`js/cheminement.js`, format v6, 3 tests dans `tests/cheminement.test.mjs`).
+- ✅ Longueurs géométriques, longueurs de cheminement et longueurs à commander, avec réserve ; la longueur L de la fiche de calcul vient du plan (« estimée »), remplaçable par une saisie. Onglet « Cheminements » (`js/metres.js`).
+- ✅ Recherche d'itinéraire avec zones interdites et détection des conflits (portes, fenêtres, murs, réseaux) : `js/itineraire.js`, `js/routeui.js`.
+- ✅ Taux de remplissage des conduits (« vérification nécessaire » : règle non couverte par l'extrait Legrand, reportée en phase 8), liste de matériel estimée (`js/materiel.js`).
+- Validation : 9 tests dans `tests/cheminement.test.mjs` ; 68/68 au total.
 
 ## Phase 5 — Éclairage et 3D avancée
 Dépend de : 2, 4.
@@ -77,7 +78,8 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 
 ## Phase 8 — Validation finale
 - ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.
+- ⬜ Tableaux NF C 15-100 manquants (extraits Legrand payants, à fournir par l'utilisateur) : courants admissibles Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage des conduits (emplacement `remplissage_conduits` prêt dans `js/normes.js`). Les recopier dans `js/normes.js` (avec tests), puis activer In ≤ Iz, la limite de chute de tension et le remplissage.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
-- Extraits NF C 15-100 de Legrand : reçu le guide « Points clés » ; manquent Iz, modes de pose, facteurs de correction, chutes de tension, simultanéité, remplissage des conduits (voir `NEXT_SESSION.md`).
+- Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

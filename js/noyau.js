@@ -119,7 +119,7 @@ const S = {
   grid: 5, ortho: true, magnet: true, unit: 'm', dimMode: 'faces',
   layers: { grid: true, dims: true, areas: true, furn: true, elec: true, ghost: true, names: true },
   thMur: 20, thCloison: 7, wallEnd: 'auto',
-  filt: { off: [], circ: null }, ductSys: 'vmc',
+  filt: { off: [], circ: null }, ductSys: 'vmc', ductKind: null, ductPose: null, // dernier type et dernière pose de gaine choisis
   pencil: false, pencilSeen: false, // Apple Pencil : le stylet dessine, le doigt déplace le plan (activé au premier usage du stylet)
 };
 function loadSettings() {
@@ -134,23 +134,23 @@ function saveSettings() { try { localStorage.setItem('calque.settings', JSON.str
 
 /* ---------- modèle ---------- */
 let P = null;          // plan courant
-const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: new Map(), elec: new Map(), rooms: new Map(), dims: new Map(), texts: new Map(), levels: new Map(), ducts: new Map() };
+const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: new Map(), elec: new Map(), rooms: new Map(), dims: new Map(), texts: new Map(), levels: new Map(), ducts: new Map(), zones: new Map() };
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 5;
+const PLAN_VERSION = 6;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
     levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }],
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
-    circuits: [], rcds: [], links: [], ducts: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
+    circuits: [], rcds: [], links: [], ducts: [], zones: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
   };
 }
 function normalizePlan(p) {
   const b = blankPlan(p && p.name);
   const o = Object.assign(b, p || {});
-  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'comps', 'fonds']) if (!Array.isArray(o[k])) o[k] = [];
+  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'zones', 'comps', 'fonds']) if (!Array.isArray(o[k])) o[k] = [];
   if (!o.fondImg || typeof o.fondImg !== 'object' || Array.isArray(o.fondImg)) o.fondImg = {};
   o.ducts = o.ducts.filter((d) => d && Array.isArray(d.pts) && d.pts.length >= 2);
   if (!o.install || typeof o.install !== 'object') o.install = { kva: 9, parafoudre: false, row: 13 };
@@ -158,7 +158,7 @@ function normalizePlan(p) {
   return o;
 }
 function touch() {
-  for (const k of ['nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'levels', 'ducts']) {
+  for (const k of ['nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'levels', 'ducts', 'zones']) {
     const m = IDX[k]; m.clear();
     for (const o of P[k]) m.set(o.id, o);
   }
@@ -187,7 +187,7 @@ const C = {};
 /* points d'extension : un module ajoute un outil, un bandeau d'aide ou un dessin sans modifier les moteurs.
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
-const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [] };
+const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {} }; // insp : inspecteur d'un type d'objet ajouté par un module
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
