@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Phase 6, étape 1 : moteur documentaire (dossier PDF)
+- Nouveau **Menu › Dossier PDF** : un seul fichier PDF qui regroupe la page de garde (sommaire, tableau des révisions, explication des statuts), les plans techniques (un niveau par page, à une échelle normalisée, avec légende), le schéma unifilaire et le coffret (vectoriels), les nomenclatures (circuits, différentiels, appareils par niveau, références de la bibliothèque technique avec leur fiabilité), le bilan de puissance, les métrés (longueurs, remplissage, matériel) et les études d'éclairage.
+- **Cartouche sur chaque page** : projet, client et adresse, entreprise et auteur, n° d'affaire, titre de la page, échelle, **indice de révision**, date, page n / N.
+- **Indices de révision** A, B, C… : « Enregistrer l'indice A » avec son objet. L'indice est gardé dans le plan, listé sur la page de garde, et une version de l'historique est enregistrée à chaque indice. Sans indice, le dossier est marqué « non diffusé » (aucun indice inventé).
+- Ce qui est **estimé** (longueurs, matériel, éclairage, surfaces) est marqué « Estimée » ; une donnée **manquante** est écrite « Manquante » ; les chapitres des métrés et de l'éclairage commencent par un avertissement.
+- Choix des chapitres, papier des plans et des schémas (A4 ou A3).
+- Technique : le PDF est écrit sans bibliothèque et sans réseau. Le moteur d'écriture est sorti de `export.js` dans `js/pdf.js` (sans écran) ; `js/svgpdf.js` redessine les SVG du tableau en vectoriel ; `js/documents.js` (sans écran) fait la mise en page ; `js/dossierui.js` gère la fenêtre. `lignesCircuits` a été déplacé de `metres.js` vers `materiel.js` (sans écran).
+- **Format des plans v8** : champ `doc` (cartouche et révisions). Migration v7 → v8 avec copie de sécurité dans l'historique ; rien n'est deviné.
+- Service Worker : cache `calque-v21`, nouveaux fichiers dans `CORE`.
+- Nouveau fichier de tests `tests/documents.test.mjs` (7 tests). Tests : 84/84.
+
 ## 2026-11-05 — Suivi
 - Demande n°4 (phase 5) fusionnée dans `main` à la demande de l'utilisateur.
 - Essais iPad de la phase 5 validés par l'utilisateur (« tout marche »).

@@ -12,6 +12,7 @@ import { EV, emit } from './evenements.js';
 import { nettoyerGaine, nettoyerZone } from './cheminement.js';
 import { nettoyerEtude, nettoyerLum } from './eclairage.js';
 import { nettoyerPhotometrie } from './photometrie.js';
+import { nettoyerDoc } from './documents.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -96,6 +97,12 @@ const MIGRATIONS = {
       const l = nettoyerLum(e.lum); if (l && l.ph && !phIds.has(l.ph)) delete l.ph;
       if (l && Object.keys(l).length) e.lum = l; else delete e.lum;
     }
+    return p;
+  },
+  /* v7 → v8 (phase 6) : informations du dossier PDF (`doc`) : cartouche (client, adresse, entreprise, auteur, affaire)
+     et indices de révision. Les plans v7 n'en ont pas : aucun indice (le dossier est « non diffusé ») ; rien n'est deviné. */
+  7(p) {
+    p.doc = nettoyerDoc(p.doc);
     return p;
   },
 };

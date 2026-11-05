@@ -104,4 +104,16 @@ function listeMateriel(plan) {
   return { lignes, reserve: res, sansLongueur: sansL, vertInconnues };
 }
 
-export { circuitsParGaine, conducteurs, listeMateriel, remplissageGaines };
+/* longueurs de tous les circuits (déplacé de metres.js en phase 6, pour le moteur documentaire) */
+function lignesCircuits(plan) {
+  const res = reserveDe(plan);
+  const out = (plan.circuits || []).map((c) => {
+    const ch = cheminCircuit(plan, c.id);
+    const L = c.calc && c.calc.len;
+    return { c, ch, cmd: ch.arbre != null ? aCommander(ch.arbre, res) : null, Lfiche: L || (ch.complet && ch.Lmax > 0 ? { v: Math.round(ch.Lmax) / 100, st: 'estimee' } : null) };
+  });
+  out.res = res;
+  return out;
+}
+
+export { circuitsParGaine, conducteurs, lignesCircuits, listeMateriel, remplissageGaines };

@@ -1,6 +1,6 @@
 # Architecture de Calque
 
-Mise à jour : phase 5 (5 novembre 2026).
+Mise à jour : phase 6 (5 novembre 2026).
 
 ## Principe
 
@@ -48,7 +48,11 @@ Mise à jour : phase 5 (5 novembre 2026).
 | `tableau.js` | Onglet « Tableau électrique » : unifilaire, coffret | non |
 | `interface.js` | Inspecteur, panneaux, niveaux, fenêtres | non |
 | `stockage.js` | Enregistrement IndexedDB, versions, sauvegarde, import / export du fichier | non |
-| `export.js` | PDF intégré, image PNG, partage | non |
+| `pdf.js` | Écriture d'un PDF sans bibliothèque : contexte canvas factice `PdfCtx`, polices Helvetica (WinAnsi), `buildPdf`, largeur d'un texte `textWidth` | oui |
+| `svgpdf.js` | Relecture d'un SVG de Calque (schéma unifilaire, coffret) et dessin vectoriel sur un contexte canvas ou `PdfCtx` | oui |
+| `documents.js` | Moteur documentaire : dossier PDF (page de garde, plans, schéma unifilaire, coffret, nomenclatures, bilan, métrés, éclairage, rapport de contrôle), cartouche et indice de révision, mentions « Estimée » / « Manquante », nettoyage de `doc` (migration v8) | oui |
+| `dossierui.js` | Fenêtre « Dossier PDF » : chapitres, papier, cartouche, indices de révision, préparation et envoi du fichier | non |
+| `export.js` | Export du plan : PDF à l'échelle, image PNG, partage ; plan d'un niveau dans une zone de page (`dessinerPlanZone`, pour le dossier) | non |
 | `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) : gaines, goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D | non |
 | `demarrage.js` | Plan d'exemple, raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
@@ -91,7 +95,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 7) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 8) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -112,6 +116,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `comps[]` | Copies des composants personnalisés utilisés par le plan (v3) : `id`, `kind` (`furn`/`elec`), `n`, `base` (modèle), `rang`, `w`, `d` ou `h`, `mark`, `tech` |
 | `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
+| `doc` | Dossier PDF (v8) : `client`, `adresse`, `entreprise`, `auteur`, `affaire` (textes facultatifs du cartouche), `revisions[]` (`i` indice A, B…, `date` en ms, `objet`, `par`) ; l'indice courant est la dernière révision |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.

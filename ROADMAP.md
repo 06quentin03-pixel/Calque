@@ -67,9 +67,9 @@ Dépend de : 2, 4.
 - ✅ 3D : câbles et chemins de câbles (dimensions, pose, verticales, passages entre étages), coupes, transparence, masquage, modification depuis la 3D (`js/vue3d.js`, 3 tests dans `tests/vue3d.test.mjs`).
 - Validation : 77/77 tests.
 
-## Phase 6 — Documents et réglementation
+## Phase 6 — Documents et réglementation 🟨
 Dépend de : 3, 4.
-- ⬜ Moteur documentaire : plans techniques, schéma unifilaire, nomenclatures, métrés, rapports, dossier complet en PDF avec cartouche et indice de révision.
+- ✅ Moteur documentaire : plans techniques, schéma unifilaire, coffret, nomenclatures, bilan, métrés et matériel, études d'éclairage, dossier complet en PDF avec cartouche et indice de révision (`js/pdf.js`, `js/svgpdf.js`, `js/documents.js`, `js/dossierui.js`, format v8, 7 tests dans `tests/documents.test.mjs`).
 - ⬜ Moteur de règles versionnées : édition, source, trois statuts, données utilisées et manquantes. Il reprend les contrôles existants.
 
 ## Phase 7 — Chantier et variantes

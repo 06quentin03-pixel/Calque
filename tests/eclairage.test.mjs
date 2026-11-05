@@ -109,10 +109,10 @@ test('migration v6 → v7 : listes vides, rien de deviné, valeurs invalides ret
     const z = S.migratePlan(JSON.parse(JSON.stringify(y.plan)));
     return { ver: S.PLAN_VERSION, has: Object.keys(S.MIGRATIONS).map(Number), x, y, z };
   }, [planV6('a'), bad]);
-  assert.equal(m.ver, 7);
+  assert.ok(m.ver >= 7, 'format v7 ou plus récent');
   for (let v = 1; v < m.ver; v++) assert.ok(m.has.includes(v), `migration ${v} → ${v + 1}`);
   /* plan v6 normal : listes vides, aucun flux ni éclairement ajouté */
-  assert.equal(m.x.from, 6); assert.equal(m.x.plan.v, 7);
+  assert.equal(m.x.from, 6); assert.equal(m.x.plan.v, m.ver);
   assert.deepEqual(m.x.plan.photometries, []); assert.deepEqual(m.x.plan.etudes, []);
   assert.ok(m.x.plan.elec.every((e) => !('lum' in e)));
   /* valeurs invalides retirées */
@@ -126,7 +126,7 @@ test('migration v6 → v7 : listes vides, rien de deviné, valeurs invalides ret
   /* le plan ouvert est passé en v7 ; la version v6 d'origine est gardée dans l'historique */
   await wait(page, 800);
   const vers = await idb(page, 'versions');
-  const v = vers.find((x) => x.pid === 'pE6' && /avant mise à jour du format \(v6 → v7\)/.test(x.why));
+  const v = vers.find((x) => x.pid === 'pE6' && new RegExp(`avant mise à jour du format \\(v6 → v${m.ver}\\)`).test(x.why));
   assert.ok(v, 'copie de sécurité avant mise à jour du format');
   assert.equal(JSON.parse((await idb(page, 'vdata', v.k)).json).v, 6, 'la copie est le plan d’origine, en v6');
   assert.deepEqual(errors, []);
@@ -153,7 +153,7 @@ test('concepteur dans l’application : saisie, trois propositions, implantation
   const n1 = await page.evaluate(async () => (await import('./js/noyau.js')).P.elec.length);
   await page.locator('.ec-prop').first().locator('button:has-text("Implanter")').click(); await wait(page, 1400);
   const st = await storedPlan(page, 'pE7');
-  assert.equal(st.v, 7);
+  assert.ok(st.v >= 7);
   const lums = st.elec.filter((e) => e.type === 'dalle_led');
   assert.ok(lums.length >= 2, 'luminaires posés');
   assert.deepEqual(lums[0].lum, { flux: { v: 3600, st: 'saisie' }, p: { v: 36, st: 'saisie' } });

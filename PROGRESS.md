@@ -69,7 +69,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 4 : remplissage des cheminements (toujours « vérification nécessaire »), diamètre extérieur du câble dans la fiche, liste de matériel estimée (`js/materiel.js`). 2 tests de plus. Tests : **68/68 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844.
 
-## Phase 5 — éclairage et 3D avancée (en cours)
+## Phase 5 — éclairage et 3D avancée (terminée, fusionnée dans `main`)
 - Début de session : branche remise au niveau de `main` (avance simple sur la fusion n°3), 68/68 tests réussis.
 - ✅ Étape 1 : concepteur d'éclairage par la méthode des lumens, présenté comme une estimation (`js/eclairage.js`, `js/eclairageui.js`, `js/photometrie.js` pour l'intensité), trois propositions, implantation modifiable, photométrie d'un luminaire dans l'inspecteur, format des plans v7 avec migration et copie de sécurité. 4 tests dans `tests/eclairage.test.mjs`. Tests : **72/72 réussis**.
   - Valeurs vérifiées à la main : 79,58 lx sous un luminaire lambertien de 1 000 lm à 2 m ; 19,89 lx à 2 m de distance horizontale ; formule des lumens sur une pièce de 20 m².
@@ -85,8 +85,14 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (panneau, fiche modifiable, coupe, câbles, photo).
   - Le test instable connu (`ipad.test.mjs`, rendu limité à la zone visible) a échoué une fois dans une suite complète, puis réussi seul deux fois et à la suite complète suivante.
 
+## Phase 6 — documents et moteur de règles (en cours)
+- ✅ Étape 1 : moteur documentaire. Dossier PDF avec cartouche et indice de révision (`js/pdf.js`, `js/svgpdf.js` et `js/documents.js`, tous les trois sans écran ; fenêtre `js/dossierui.js`). Format des plans v8 (`doc`). 7 tests dans `tests/documents.test.mjs`. Tests : **84/84 réussis**.
+  - Vérifié dans Node : structure du PDF (table des objets), cartouche et indice sur chaque page, sommaire, révisions, mentions « Estimée » et « Manquante », schéma SVG redessiné en vectoriel.
+  - Vérifié dans Chromium : la fenêtre en 1180×820, 820×1180 et 390×844 (sans défilement horizontal, boutons de 44 px), la saisie du cartouche au clavier, l'enregistrement d'un indice (dans le plan et dans l'historique), la préparation du PDF (12 pages pour le plan d'exemple).
+  - Pages contrôlées à l'œil (images converties) : page de garde, plan au 1:100 avec légende, schéma unifilaire, nomenclatures, métrés, éclairage.
+
 ## Tâche en cours
-- Aucune : phase 5 terminée et **fusionnée dans `main`** (demande n°4, fusion demandée explicitement par l'utilisateur le 5 novembre 2026). Essais iPad de la phase 5 **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »).
+- Phase 6, étape 2 : moteur de règles versionnées (`js/regles.js`).
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**
