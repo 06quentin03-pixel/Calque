@@ -52,7 +52,7 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
 - ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : **reportés en phase 8** (documents payants). Les contrôles concernés restent « vérification nécessaire » d'ici là.
 
-## Phase 4 — Cheminements et métrés ✅ (à fusionner ; essais iPad à faire)
+## Phase 4 — Cheminements et métrés ✅ (fusionnée dans `main` ; essais iPad à faire)
 Dépend de : 3.
 - ✅ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages (`js/cheminement.js`, format v6, 3 tests dans `tests/cheminement.test.mjs`).
 - ✅ Longueurs géométriques, longueurs de cheminement et longueurs à commander, avec réserve ; la longueur L de la fiche de calcul vient du plan (« estimée »), remplaçable par une saisie. Onglet « Cheminements » (`js/metres.js`).
@@ -60,9 +60,9 @@ Dépend de : 3.
 - ✅ Taux de remplissage des conduits (« vérification nécessaire » : règle non couverte par l'extrait Legrand, reportée en phase 8), liste de matériel estimée (`js/materiel.js`).
 - Validation : 9 tests dans `tests/cheminement.test.mjs` ; 68/68 au total.
 
-## Phase 5 — Éclairage et 3D avancée
+## Phase 5 — Éclairage et 3D avancée 🟨
 Dépend de : 2, 4.
-- ⬜ Concepteur d'éclairage par la méthode des lumens, **présenté comme une estimation** : 3 propositions, implantation modifiable.
+- ✅ Concepteur d'éclairage par la méthode des lumens, **présenté comme une estimation** : 3 propositions, implantation modifiable (`js/eclairage.js`, `js/eclairageui.js`, format v7, 4 tests dans `tests/eclairage.test.mjs`).
 - ⬜ Lecture des fichiers IES/LDT, pour le flux et la puissance.
 - ⬜ 3D : câbles et chemins de câbles, coupes, transparence, masquage, modification depuis la 3D.
 

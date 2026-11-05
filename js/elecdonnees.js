@@ -102,13 +102,17 @@ function circLoad(c) { const k = CK[c.kind] || CK.autre; return (k.full ? 1 : 0.
 /* ---------------- puissance des symboles ---------------- */
 /* puissances par défaut utilisées par le tableau (comptage du chauffage, des spots) : valeurs ESTIMÉES */
 const POWER_DEFAULT = { rad_elec: 1500, seche_serv_e: 500, spot: 10, led: 20, rail_spot: 40, plancher: 1000, soufflant_sdb: 2000 };
+/* puissance d'un luminaire portée par sa photométrie (`lum.p`, format v7), si elle est connue */
+const lumP = (e) => (e.lum && e.lum.p && isNum(e.lum.p.v) && e.lum.p.v > 0 ? e.lum.p : null);
 function elecPower(e) {
   if (isNum(e.p) && e.p > 0) return e.p;
+  const lp = lumP(e); if (lp) return lp.v;
   return POWER_DEFAULT[e.type] || 0;
 }
 /* même valeur, avec son statut : saisie (champ « Puissance » de l'inspecteur), estimée (valeur par défaut) ou absente (null) */
 function puissanceSymbole(e) {
   if (isNum(e.p) && e.p > 0) return { v: e.p, st: 'saisie', src: 'Puissance saisie sur le symbole' };
+  const lp = lumP(e); if (lp) return { v: lp.v, st: lp.st, src: lp.src || 'Puissance du luminaire (photométrie du symbole)' };
   if (POWER_DEFAULT[e.type]) return { v: POWER_DEFAULT[e.type], st: 'estimee', src: 'Valeur par défaut de Calque pour ce symbole' };
   return null;
 }

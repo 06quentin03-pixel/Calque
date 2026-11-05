@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 4 novembre 2026 (phase 4 terminée, demande de fusion n°3 préparée).
+Dernière mise à jour : 5 novembre 2026 (phase 5 en cours).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -69,8 +69,14 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Étape 4 : remplissage des cheminements (toujours « vérification nécessaire »), diamètre extérieur du câble dans la fiche, liste de matériel estimée (`js/materiel.js`). 2 tests de plus. Tests : **68/68 réussis**.
   - Captures vérifiées en 1180×820, 820×1180 et 390×844.
 
+## Phase 5 — éclairage et 3D avancée (en cours)
+- Début de session : branche remise au niveau de `main` (avance simple sur la fusion n°3), 68/68 tests réussis.
+- ✅ Étape 1 : concepteur d'éclairage par la méthode des lumens, présenté comme une estimation (`js/eclairage.js`, `js/eclairageui.js`, `js/photometrie.js` pour l'intensité), trois propositions, implantation modifiable, photométrie d'un luminaire dans l'inspecteur, format des plans v7 avec migration et copie de sécurité. 4 tests dans `tests/eclairage.test.mjs`. Tests : **72/72 réussis**.
+  - Valeurs vérifiées à la main : 79,58 lx sous un luminaire lambertien de 1 000 lm à 2 m ; 19,89 lx à 2 m de distance horizontale ; formule des lumens sur une pièce de 20 m².
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fenêtre lisible, pas de débordement, implantation et recalcul).
+
 ## Tâche en cours
-- Aucune. Phase 4 terminée et fusionnée dans `main` (demande n°3, fusion demandée explicitement par l'utilisateur le 5 novembre 2026). Essais iPad de la phase 4 à faire (liste dans `NEXT_SESSION.md`).
+- Phase 5, étape 2 : lecture des fichiers IES / LDT.
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**
@@ -85,4 +91,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Essais iPad de la phase 4, puis phase 5 : éclairage et 3D avancée.
+- Phase 5 : étape 2 (IES / LDT), puis étape 3 (3D : câbles et chemins de câbles, coupes, transparence, masquage, modification depuis la 3D).

@@ -138,19 +138,19 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 6;
+const PLAN_VERSION = 7;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
     levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }],
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
-    circuits: [], rcds: [], links: [], ducts: [], zones: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
+    circuits: [], rcds: [], links: [], ducts: [], zones: [], etudes: [], photometries: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
   };
 }
 function normalizePlan(p) {
   const b = blankPlan(p && p.name);
   const o = Object.assign(b, p || {});
-  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'zones', 'comps', 'fonds']) if (!Array.isArray(o[k])) o[k] = [];
+  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'zones', 'etudes', 'photometries', 'comps', 'fonds']) if (!Array.isArray(o[k])) o[k] = [];
   if (!o.fondImg || typeof o.fondImg !== 'object' || Array.isArray(o.fondImg)) o.fondImg = {};
   o.ducts = o.ducts.filter((d) => d && Array.isArray(d.pts) && d.pts.length >= 2);
   if (!o.install || typeof o.install !== 'object') o.install = { kva: 9, parafoudre: false, row: 13 };

@@ -69,7 +69,7 @@ test('fiche de calcul depuis le tableau : saisie, résultats, statut, enregistre
   await page.fill('#fi-p-src', 'Notice de test'); await page.press('#fi-p-src', 'Enter'); await wait(page, 200);
   await page.locator('#modal .fi-champ').first().locator('.seg button:has-text("Vérifiée")').click(); await wait(page, 1400);
   const st = await storedPlan(page, 'pF4');
-  assert.equal(st.v, 6);
+  assert.ok(st.v >= 6);
   assert.deepEqual(st.circuits.find((c) => c.id === 'c2').calc, { len: { v: 15, st: 'saisie' }, p: { v: 3680, st: 'verifiee', src: 'Notice de test' }, cos: { v: 1, st: 'saisie' } });
   const fiab = () => page.locator('#modal .fi-champ').first().locator('.seg button[aria-pressed="true"]').textContent();
   assert.equal(await fiab(), 'Vérifiée');

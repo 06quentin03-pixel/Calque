@@ -10,6 +10,8 @@ import { exportJSON } from './export.js';
 import { samplePlan } from './demarrage.js';
 import { EV, emit } from './evenements.js';
 import { nettoyerGaine, nettoyerZone } from './cheminement.js';
+import { nettoyerEtude, nettoyerLum } from './eclairage.js';
+import { nettoyerPhotometrie } from './photometrie.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -81,6 +83,21 @@ const MIGRATIONS = {
     if (i && typeof i === 'object' && 'reserve' in i) { const d = cleanDonnee(i.reserve, (v) => v >= 0 && v <= 100); if (d) i.reserve = d; else delete i.reserve; }
     return p;
   },
+  /* v6 → v7 (phase 5) : éclairage. Le plan peut porter des photométries de luminaires lues dans des fichiers IES / LDT
+     (`photometries[]`) et des études d'éclairage par pièce (`etudes[]` : éclairement visé, plan utile, facteurs,
+     luminaires étudiés) ; un symbole peut porter sa photométrie `lum` { ph, flux, p }.
+     Les plans v6 n'en ont pas : listes vides, RIEN n'est deviné (aucun flux, aucun éclairement). Valeurs invalides retirées. */
+  6(p) {
+    p.photometries = (Array.isArray(p.photometries) ? p.photometries : []).map(nettoyerPhotometrie).filter(Boolean);
+    const phIds = new Set(p.photometries.map((x) => x.id));
+    p.etudes = (Array.isArray(p.etudes) ? p.etudes : []).map(nettoyerEtude).filter(Boolean);
+    for (const et of p.etudes) for (const l of et.lums) if (l.ph && !phIds.has(l.ph)) delete l.ph;
+    for (const e of Array.isArray(p.elec) ? p.elec : []) if (e && 'lum' in e) {
+      const l = nettoyerLum(e.lum); if (l && l.ph && !phIds.has(l.ph)) delete l.ph;
+      if (l && Object.keys(l).length) e.lum = l; else delete e.lum;
+    }
+    return p;
+  },
 };
 /* donnée de calcul enregistrée : { v (nombre), st ('verifiee' exige src, 'saisie', 'estimee'), src } */
 function cleanDonnee(d, ok) {
@@ -120,7 +137,7 @@ function planProblems(p) {
   n((p.elec || []).some((e) => e.cid && !circs.has(e.cid)), 'symbole relié à un circuit manquant');
   n((p.circuits || []).some((c) => c.rcd && !rcds.has(c.rcd)), 'circuit relié à un différentiel manquant');
   n((p.fonds || []).some((f) => !(p.fondImg || {})[f.img]), 'fond de plan sans image');
-  n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts', 'zones'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
+  n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts', 'zones', 'etudes'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
   return out;
 }
 

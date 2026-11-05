@@ -25,16 +25,16 @@ function tidy(c) { if (c.calc && !Object.keys(c.calc).length) delete c.calc; }
 /* champ d'une donnée numérique : valeur, statut (saisie / vérifiée / estimée), origine, effacer.
    box(true) renvoie l'objet qui porte la donnée (créé au besoin), box(false) l'objet existant ou null ; clean() range après effacement */
 function champDonnee(box, key, label, unit, o, clean) {
-  const cur = box(false), d = cur && cur[key];
+  const cur = box(false), d = cur && cur[key], fid = o.id || 'fi-' + key;
   const setV = (v) => { box(true)[key] = Object.assign({ v, st: d ? d.st : 'saisie' }, d && d.src ? { src: d.src } : {}); commit(); };
-  const kids = [numField(label, d ? d.v : null, unit, setV, { id: 'fi-' + key, min: o.min, max: o.max })];
+  const kids = [numField(label, d ? d.v : null, unit, setV, { id: fid, min: o.min, max: o.max })];
   if (o.chips) kids.push(h('div', { class: 'chips' }, o.chips.map((v) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!!d && Math.abs(d.v - v) < 1e-9), onclick: () => setV(v) }, fmt(v, 3)))));
   if (d) {
     kids.push(h('div', { class: 'fi-st' }, h('span', { class: 'fi-lab' }, 'Fiabilité'), segCtl(STATUT_OPTS, d.st, (st) => {
-      if (st === 'verifiee' && !d.src) { toast('Indiquez d’abord l’origine de la valeur (notice, plaque, mesure…).'); const f = document.getElementById('fi-' + key + '-src'); if (f) f.focus(); return; }
+      if (st === 'verifiee' && !d.src) { toast('Indiquez d’abord l’origine de la valeur (notice, plaque, mesure…).'); const f = document.getElementById(fid + '-src'); if (f) f.focus(); return; }
       d.st = st; commit();
     })));
-    kids.push(textField(null, d.src, (v) => { v = v.trim(); if (v) d.src = v; else { delete d.src; if (d.st === 'verifiee') d.st = 'saisie'; } commit(); }, { id: 'fi-' + key + '-src', ph: 'Origine : notice, plaque signalétique, mesure…' }));
+    kids.push(textField(null, d.src, (v) => { v = v.trim(); if (v) d.src = v; else { delete d.src; if (d.st === 'verifiee') d.st = 'saisie'; } commit(); }, { id: fid + '-src', ph: 'Origine : notice, plaque signalétique, mesure…' }));
     kids.push(btns(btn('Effacer', () => { delete box(true)[key]; if (clean) clean(); commit(); }, 'sm', 'del')));
   }
   if (o.note) kids.push(h('p', { class: 'note' }, o.note));

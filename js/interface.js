@@ -24,6 +24,7 @@ import { ficheButton } from './fiche.js';
 import { fondSection, pickFond } from './fond.js';
 import { TYPES_CHEMIN } from './cheminement.js';
 import { itineraireSection, startZone } from './routeui.js';
+import { eclairageSection, lumSection } from './eclairageui.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -432,6 +433,7 @@ function inspElec(e) {
       sec('Marquage', textField(null, e.mark, (v) => { v = v.trim().slice(0, 8); if (v) e.mark = v; else delete e.mark; commit(); }, { id: 'f-emark', ph: 'Texte court affiché près du symbole (facultatif)' })),
       compSection(e, 'elec'),
       ventSection(e),
+      lumSection(e),
       CMDS.has(e.type) ? linksSection(e) : null,
       sec('Pose',
         fixedPose ? kv([['Hauteur de pose', fixedPose]]) : numField('Hauteur de pose (axe)', e.h != null ? e.h : def.h || 0, 'cm', (v) => { e.h = v; commit(); }, { id: 'f-eh', min: 0, max: 600 }),
@@ -499,6 +501,7 @@ function inspRoom(lbl) {
         style: `background:${i ? 'linear-gradient(' + C[k] + ',' + C[k] + '),var(--c-room)' : 'var(--c-room)'}`,
         onclick: () => { lbl.tint = i; commit(); },
       })))),
+      eclairageSection(lbl),
       sec(null, btns(btn('Recentrer l’étiquette', () => { const p = labelPoint(r.poly); lbl.x = Math.round(p.x); lbl.y = Math.round(p.y); commit(); }, 'sm', 'center'))),
       h('p', { class: 'note' }, 'La pièce est détectée à partir des murs qui la ferment. Touchez deux fois son nom sur le plan pour le modifier, ou faites-le glisser.'),
     ),
@@ -977,7 +980,7 @@ function deleteLevel(id) {
   if (P.levels.length < 2) return;
   const wallIds = new Set(P.walls.filter((w) => w.lv === id).map((w) => w.id));
   P.openings = P.openings.filter((o) => !wallIds.has(o.wall));
-  for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones']) P[k] = P[k].filter((o) => o.lv !== id);
+  for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'etudes']) P[k] = (P[k] || []).filter((o) => o.lv !== id);
   for (const c of P.circuits) if (!P.elec.some((e) => e.cid === c.id)) { /* circuit conservé, sans symbole */ }
   P.levels = P.levels.filter((l) => l.id !== id);
   touch();

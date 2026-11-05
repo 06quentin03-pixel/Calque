@@ -45,12 +45,20 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-04 (ph. 4) | Inspecteur d'un type ajouté par un module : `EXT.insp` | Les zones interdites sont gérées par `routeui.js` sans alourdir `interface.js` |
 | 2026-11-04 (ph. 4) | Remplissage : occupation calculée sur la section **nominale**, présentée comme « indicative », statut toujours « vérification nécessaire » | Diamètre intérieur réel et taux maximal inconnus (extrait non fourni) ; aucune conclusion de conformité |
 | 2026-11-04 (ph. 4) | Matériel : un câble par circuit, phase + neutre + terre (5 conducteurs en triphasé), navettes non comptées ; toutes les quantités « estimées » | Hypothèses simples, écrites à côté des quantités |
+| 2026-11-05 (ph. 5) | Éclairage : méthode des lumens + calcul point par point de la composante directe ; tout résultat est « estimé » | Simple, vérifiable à la main ; ne remplace pas une étude du fabricant |
+| 2026-11-05 (ph. 5) | Aucun éclairement par défaut : l'éclairement visé est saisi, avec sa source facultative | Aucune valeur réglementaire n'est dans l'extrait Legrand fourni |
+| 2026-11-05 (ph. 5) | Facteur d'utilance par défaut = part du flux qui atteint directement le plan utile (réflexions ignorées), « estimée » | Calculé, pas deviné, et prudent ; un U saisi (tableau du fabricant) le remplace |
+| 2026-11-05 (ph. 5) | Plan utile 80 cm et facteur de maintenance 0,8 : valeurs de Calque « estimées », modifiables | Valeurs courantes, jamais présentées comme une règle |
+| 2026-11-05 (ph. 5) | Sans fichier photométrique, répartition lambertienne (« estimée ») | Hypothèse classique d'un luminaire de plafond qui éclaire vers le bas |
+| 2026-11-05 (ph. 5) | Trois propositions = trois critères écrits (puissance, nombre, uniformité), dispositions régulières ≤ 12 × 12, au plus deux fois le nombre minimal | Choix explicables et distincts ; calcul rapide sur iPad |
+| 2026-11-05 (ph. 5) | Implantation = symboles ordinaires portant `lum` (copie du flux et de la puissance) ; l'étude garde leurs `ids` pour les remplacer | Modifiables comme tout symbole ; une nouvelle implantation n'efface jamais les luminaires posés à la main |
+| 2026-11-05 (ph. 5) | Format v7 : `photometries[]` (répartition complète, dans le plan), `etudes[]`, `elec[].lum` | Le plan reste autonome hors ligne et partageable |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v18`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v19`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 
@@ -59,3 +67,4 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 `calcul` + `electricite` + `interface` ← `fiche` ← (`tableau`, `interface`)
 `noyau` + `mutations` + `symboles` ← `cheminement` ← (`reseaux`, `vue3d`, `stockage`, `calcul`)
 `cheminement` ← `itineraire` ← `materiel` ← (`metres`, `reseaux`) ; `routeui` (écran) utilise `itineraire` et `cheminement`
+`noyau` + `photometrie` ← `eclairage` ← `eclairageui` (écran, avec `fiche`) ← `interface` ; `stockage` (migration v7) utilise `eclairage` et `photometrie`

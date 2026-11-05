@@ -443,6 +443,25 @@ button.ev-chk:hover { background: var(--panel-2); }
 .bilan .bi-box small { color: var(--ink-2); font-size: 11.5px; }
 .bilan .btn, .bilan .seg button { min-height: 44px; }
 .bilan .chip { height: 44px; min-width: 52px; }
+.eclairage .ec-warn { padding: 10px 12px; border-radius: 10px; border: 1px dashed var(--warn); background: color-mix(in srgb, var(--warn) 9%, transparent); font-size: 13px; line-height: 1.4; }
+.eclairage .ec-lumdef { display: flex; flex-direction: column; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.eclairage .ec-lh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.eclairage .ec-props { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.eclairage .ec-prop { display: flex; flex-direction: column; gap: 7px; padding: 12px; border: 1px solid var(--rule); border-radius: 12px; background: var(--panel); min-width: 0; }
+.eclairage .ec-ph { display: flex; flex-direction: column; gap: 2px; }
+.eclairage .ec-ph b { font-size: 14.5px; }
+.eclairage .ec-sub { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.eclairage .ec-ap { display: flex; justify-content: center; padding: 4px 0; }
+.eclairage .ec-ap svg { max-width: 100%; height: auto; }
+.eclairage .ec-room { fill: color-mix(in srgb, var(--elec) 6%, transparent); stroke: var(--ink-2); stroke-width: 1.5; }
+.eclairage .ec-lum { fill: #F2B632; stroke: #8A5A00; stroke-width: 1.2; }
+.eclairage .ec-big { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 8px; }
+.eclairage .ec-big b { font-size: 24px; font-weight: 750; font-family: var(--f-num); }
+.eclairage .ec-big span { font-size: 12.5px; color: var(--ink-2); }
+.eclairage .ec-f { font-family: var(--f-num); font-size: 11.5px; overflow-wrap: anywhere; }
+.eclairage .ec-atteint { margin: 0; font-weight: 650; font-size: 13.5px; }
+.eclairage .ec-atteint.ok { color: var(--ok); }
+.eclairage .ec-atteint.ko { color: var(--warn); }
 .bilan .fi-champ { display: flex; flex-direction: column; gap: 6px; max-width: 520px; }
 .bilan .fi-st { display: flex; flex-direction: column; gap: 4px; }
 .bilan .fi-lab { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }

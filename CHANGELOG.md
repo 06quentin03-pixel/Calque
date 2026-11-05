@@ -1,5 +1,19 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Phase 5, étape 1 : concepteur d'éclairage (méthode des lumens, estimation)
+- Nouveau module sans écran **`js/eclairage.js`** : méthode des lumens (E = N × Φ × U × MF / A), calcul point par point de la composante directe (éclairement minimal, uniformité Emin / Emoy), dispositions régulières jusqu'à 12 × 12, **trois propositions** distinctes (la plus économe, le moins de luminaires, la plus uniforme ; « autre disposition » à égalité).
+  - **Aucune valeur d'éclairement réglementaire** : l'éclairement visé est toujours saisi (avec sa source si on veut). Sans lui, ou sans flux du luminaire : « données manquantes », aucune proposition.
+  - Valeurs par défaut de Calque marquées « estimées » : plan utile 80 cm, facteur de maintenance 0,8. Facteur d'utilance : saisi (tableau du fabricant) ou, à défaut, calculé (part du flux qui arrive directement sur le plan utile, réflexions ignorées : estimation prudente).
+  - Répartition lumineuse supposée lambertienne (« estimée ») tant qu'aucun fichier photométrique n'est associé.
+- Nouveau module **`js/photometrie.js`** (sans écran) : intensité I(C, γ) d'une photométrie (interpolation), flux intégré, nettoyage. La lecture des fichiers IES / LDT arrive à l'étape 2.
+- Fenêtre **« Éclairage · pièce »** (`js/eclairageui.js`), ouverte depuis l'inspecteur d'une pièce (section « Éclairage ») : objectif, jusqu'à 3 luminaires comparés, 3 propositions avec petit plan de la disposition, formule chiffrée, puissance totale et W/m², bouton **« Implanter sur le plan »**.
+  - L'implantation pose des symboles normaux (déplaçables, supprimables, annulables) avec leur photométrie (`lum`) ; une nouvelle implantation remplace seulement les luminaires posés par l'étude. Circuit repris des autres luminaires de la pièce.
+  - Section **« Implantation actuelle »** : recalculée à chaque modification du plan (luminaires déplacés, ajoutés, supprimés) ; « objectif atteint / non atteint (estimation) », jamais « conforme ».
+- Inspecteur d'un luminaire : section **« Photométrie »** (flux et puissance avec leur fiabilité). La puissance du luminaire (`lum.p`) est reprise par le tableau et le bilan, avec son statut ; une puissance saisie sur le symbole reste prioritaire.
+- **Format des plans v7** : `photometries[]`, `etudes[]`, `elec[].lum` ; migration v6 → v7 (listes vides, rien de deviné, valeurs invalides retirées) et copie de sécurité avant mise à jour.
+- Service Worker : cache `calque-v19`, `js/eclairage.js`, `js/eclairageui.js`, `js/photometrie.js` ajoutés.
+- Nouveau fichier de tests `tests/eclairage.test.mjs` (4 tests, valeurs calculées à la main). Anciens tests de migration rendus indépendants du numéro de version courant. Tests : 72/72.
+
 ## 2026-11-05 — Suivi
 - Essais iPad de la phase 3 validés par l'utilisateur. Fusion de la demande n°3 (phase 4) demandée par l'utilisateur.
 
