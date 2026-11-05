@@ -13,7 +13,7 @@ sauf si je te demande explicitement de fusionner la demande de fusion).
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Vérifie que la branche contient tout main (la demande n°3, phase 4, doit avoir été fusionnée).
+2. Vérifie que la branche contient tout main (la demande n°3, phase 4, a été fusionnée le 5 novembre 2026).
    Si elle est en retard, remets-la au niveau de main avant de commencer.
 3. Lance node --test tests/*.test.mjs : tout doit réussir (68/68 à la fin de la phase 4).
 4. Vérifie l'état réel du code (js/vue3d.js : maquette 3D et gaines ; js/cheminement.js : pose et hauteurs ;
@@ -43,7 +43,7 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
 ---
 
 ## À faire avant ou pendant la prochaine session
-1. **Fusionner la demande n°3** (phase 4) dans `main`, si les essais ci-dessous vont bien.
+1. Demande n°3 (phase 4) **fusionnée** dans `main` le 5 novembre 2026, à la demande de l'utilisateur.
 2. **Essais iPad de la phase 4** (par l'utilisateur), en paysage et en portrait — seulement ce que les tests automatiques ne couvrent pas :
    1. L'appli installée se met à jour (bandeau « nouvelle version », ou fermer et rouvrir) ; les plans existants sont là.
    2. Ouvrir un ancien plan, puis Menu › Historique des versions : une ligne « Copie de sécurité avant mise à jour du format (v5 → v6) » est visible et se restaure.
@@ -56,7 +56,7 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
    9. Tableau électrique › Cheminements : lisibilité ; faire défiler les tableaux au doigt en portrait ; saisir la réserve ; bouton « Voir » d'un conflit.
    10. Fiche de calcul : la longueur « mesurée sur le plan » s'affiche ; saisir le diamètre du câble au clavier.
    11. Mode avion : refaire les points 7 et 9.
-3. **Essais iPad de la phase 3** (toujours à faire s'ils n'ont pas été faits) : voir l'historique de ce fichier dans GitHub (version de fin de phase 3) ou `PROGRESS.md`.
+3. Essais iPad de la phase 3 : **validés** par l'utilisateur le 5 novembre 2026.
 4. **Extraits Legrand manquants** : **reportés à la toute fin (phase 8)**, décision de l'utilisateur du 4 novembre 2026
    (documents payants). Ne pas les redemander avant la phase 8. En attendant, ce qui n'est pas dans le guide « Points clés »
    (Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage

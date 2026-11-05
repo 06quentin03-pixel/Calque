@@ -15,8 +15,8 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 1b | Architecture en modules natifs (`js/`) | ✅ fusionnée, validée sur iPad |
 | 1c | Performances et Apple Pencil | ✅ fusionnée, validée sur iPad |
 | 2 | Bibliothèque, références, composants, fond de plan | ✅ fusionnée, validée sur iPad (import des catalogues mis de côté) |
-| 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), essais iPad à faire |
-| 4 | Cheminements et métrés | ✅ terminée, **demande de fusion n°3 à fusionner**, essais iPad à faire |
+| 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
+| 4 | Cheminements et métrés | ✅ terminée, **fusionnée dans `main` (demande n°3, à la demande de l'utilisateur)**, essais iPad à faire |
 | 5 | Éclairage et 3D avancée | ⬜ prochaine phase |
 | 6 | Documents et moteur de règles | ⬜ |
 | 7 | Chantier et variantes | ⬜ |
@@ -56,7 +56,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
 
 ## Points ouverts
-- Essais iPad des phases 3 et 4 : à faire par l'utilisateur (liste dans `NEXT_SESSION.md`).
+- Essais iPad de la phase 4 : à faire par l'utilisateur (liste dans `NEXT_SESSION.md`). Phase 3 validée sur iPad le 5 novembre 2026.
 - Exports PDF des métrés et de la liste de matériel : prévus avec le moteur documentaire (phase 6).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).

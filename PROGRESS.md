@@ -70,7 +70,10 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Captures vérifiées en 1180×820, 820×1180 et 390×844.
 
 ## Tâche en cours
-- Aucune. Phase 4 terminée ; demande de fusion n°3 à fusionner par l'utilisateur ; essais iPad à faire (liste dans `NEXT_SESSION.md`).
+- Aucune. Phase 4 terminée et fusionnée dans `main` (demande n°3, fusion demandée explicitement par l'utilisateur le 5 novembre 2026). Essais iPad de la phase 4 à faire (liste dans `NEXT_SESSION.md`).
+
+## Essais sur l'iPad (phase 3)
+**Validés par l'utilisateur le 5 novembre 2026.**
 
 ## Essais sur l'iPad (phase 2)
 **Validés par l'utilisateur le 4 novembre 2026** (« tout marche ») : mise à jour et reprise des plans, bibliothèque au doigt et au Pencil, bibliothèque technique, composants personnalisés (mode avion compris), fond de plan (photo, image, PDF dans Safari, mise à l'échelle par 2 points), sauvegarde complète.
@@ -82,4 +85,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Fusion de la demande n°3 par l'utilisateur, essais iPad de la phase 4, puis phase 5 : éclairage et 3D avancée.
+- Essais iPad de la phase 4, puis phase 5 : éclairage et 3D avancée.

@@ -1,5 +1,8 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Suivi
+- Essais iPad de la phase 3 validés par l'utilisateur. Fusion de la demande n°3 (phase 4) demandée par l'utilisateur.
+
 ## 2026-11-04 — Phase 4, étape 4 : remplissage des cheminements et liste de matériel (fin de la phase 4)
 - Nouveau module sans écran **`js/materiel.js`**.
 - **Remplissage** de chaque gaine, goulotte ou chemin de câbles : circuits qui y passent (déclarés ou dont le cheminement l’emprunte, un câble par circuit), occupation de la section nominale si le diamètre extérieur de chaque câble et les dimensions du cheminement sont connus.
