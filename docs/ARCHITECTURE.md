@@ -1,6 +1,6 @@
 # Architecture de Calque
 
-Mise à jour : phase 4 (4 novembre 2026).
+Mise à jour : phase 5 (5 novembre 2026).
 
 ## Principe
 
@@ -37,6 +37,9 @@ Mise à jour : phase 4 (4 novembre 2026).
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
 | `materiel.js` | Remplissage des cheminements (« vérification nécessaire »), liste de matériel estimée | oui |
+| `photometrie.js` | Photométries des luminaires : lecture des fichiers IES (LM-63, type C) et LDT (EULUMDAT), symétries, intensité I(C, γ) (interpolation), flux intégré, nettoyage | oui |
+| `eclairage.js` | Concepteur d'éclairage : méthode des lumens, calcul point par point (composante directe), dispositions, trois propositions, implantation actuelle, nettoyage (migration) | oui |
+| `eclairageui.js` | Fenêtre « Éclairage · pièce », section « Éclairage » de l'inspecteur d'une pièce, section « Photométrie » d'un luminaire, implantation | non |
 | `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve, conflits, remplissage, matériel | non |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
 | `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
@@ -46,7 +49,7 @@ Mise à jour : phase 4 (4 novembre 2026).
 | `interface.js` | Inspecteur, panneaux, niveaux, fenêtres | non |
 | `stockage.js` | Enregistrement IndexedDB, versions, sauvegarde, import / export du fichier | non |
 | `export.js` | PDF intégré, image PNG, partage | non |
-| `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) | non |
+| `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) : gaines, goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D | non |
 | `demarrage.js` | Plan d'exemple, raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
 
@@ -88,14 +91,14 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 6) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 7) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
 | `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) |
 | `openings[]` | Ouvertures : `id`, `wall`, `t` (position du milieu le long du mur depuis l'angle `a`), `w` (largeur), `kind` (`door`, `window`, `gap`, `closet`), `type`, `side`, `hinge`, `leaves`, `h`, `sill` (allège) |
 | `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif), `comp` (composant personnalisé, v3) |
-| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6) |
+| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6), `lum` (luminaire, v7 : `ph` photométrie du plan, `flux` en lm et `p` en W, données `{ v, st, src }`) |
 | `rooms[]` | Étiquettes des pièces : `id`, `lv`, `name`, `x`, `y`, `tint` (couleur). Le contour de la pièce est calculé depuis les murs |
 | `dims[]` | Cotes libres : `id`, `lv`, `ax`, `ay`, `bx`, `by` |
 | `texts[]` | Textes : `id`, `lv`, `x`, `y`, `text`, `size` (`s`, `m`, `l`), `rot` |
@@ -104,6 +107,8 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
 | `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]`. Gaine électrique (v6, facultatifs) : `cid` (circuit principal), `cids[]` (autres circuits), `kind` (`icta`, `irl`, `goulotte`, `cdc`), `pose` (`sol`, `plafond`, `hauteur`), `z` (hauteur du parcours en cm, pose `hauteur`), `lw`, `lh` (largeur et hauteur en mm, goulotte et chemin de câbles) |
 | `zones[]` | Zones interdites aux cheminements (v6) : `id`, `lv`, `pts[]` (contour), `name` |
+| `photometries[]` | Photométries des luminaires (v7), lues dans des fichiers IES / LDT : `id`, `name`, `fab`, `file`, `fmt` (`ies`/`ldt`), `flux` et `p` (`{ v, st, src }`), `fluxLampes`, `C[]` et `G[]` (angles en degrés), `I[][]` (intensités en cd, une ligne par angle C) |
+| `etudes[]` | Études d'éclairage par pièce (v7) : `id`, `lv`, `room` (étiquette de la pièce), `E` (éclairement visé, lx), `hu` (plan utile, cm), `mf`, `u` (données `{ v, st, src }`, facultatives), `hlum` (hauteur des luminaires, cm, facultative), `lums[]` (jusqu'à 3 : `type`, `ph`, `flux`, `p`), `ids[]` (luminaires posés par la dernière implantation) |
 | `comps[]` | Copies des composants personnalisés utilisés par le plan (v3) : `id`, `kind` (`furn`/`elec`), `n`, `base` (modèle), `rang`, `w`, `d` ou `h`, `mark`, `tech` |
 | `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |

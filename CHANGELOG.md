@@ -1,5 +1,48 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Phase 5, étape 3 : 3D avancée (fin de la phase 5)
+- **Chemins de câbles et goulottes** dessinés à leurs vraies dimensions (largeur × hauteur saisies) : goulotte en boîte rectangulaire, chemin de câbles en U ouvert (fond et rebords), gaines ICTA / IRL rondes à leur diamètre. Sans dimensions, dessin indicatif 60 × 40 mm, signalé dans la fiche.
+- **Pose réelle** : chaque conduit est à la hauteur de sa pose (sol, plafond, hauteur donnée) ; descentes et remontées jusqu'aux appareils ; le réglage « par le plafond / par le sol » ne s'applique plus qu'aux gaines sans pose précisée. La fiche 3D d'une gaine affiche sa vraie pose, son type, sa taille et ses circuits.
+- **Passages entre étages** : conduit vertical entre les deux symboles jumeaux, à travers le plancher.
+- **Câbles** (option « Câbles ») : chemin réel de chaque circuit depuis le tableau, déduit des gaines (même calcul que les longueurs de l'onglet Cheminements), verticales et passages compris, un câble coloré par circuit, posé au fond des chemins de câbles et goulottes. Les gaines deviennent transparentes ; toucher un câble ouvre la fiche du circuit (points raccordés, longueurs, bouton « Fiche de calcul »).
+- **Coupes** : horizontale (hauteur au-dessus du sol du niveau) ou verticale dans les deux sens, avec un curseur et « Inverser le côté » ; calculée par la carte graphique, sans reconstruire la maquette (fluide). La sélection au doigt ignore la partie coupée.
+- **Murs transparents** : murs, cloisons, portes et fenêtres en transparence ; on touche ce qui est derrière.
+- **Masquage** : bouton « Masquer » dans la fiche d'un objet, « Tout réafficher (n) » dans le panneau. Réglage de l'affichage seulement : le plan n'est jamais modifié.
+- **Modification depuis la 3D** (fiche de l'objet touché), avec annuler / rétablir et enregistrement :
+  - gaine : type, pose, hauteur du parcours, diamètre ou largeur × hauteur, suppression ;
+  - symbole : hauteur de pose, suppression ; symbole au plafond ou au sol : **« Déplacer »** puis glisser au doigt ou au Pencil (un seul pas d'annulation par geste) ;
+  - mur : hauteur ; meuble : hauteur et hauteur de pose, suppression.
+- Téléphone : le panneau d'options s'efface pendant qu'une fiche est ouverte.
+- Fluidité : reconstruction de la maquette du grand plan de test en 25 à 30 ms (avec ou sans câbles) ; pendant un déplacement, au plus une reconstruction toutes les 70 ms.
+- Service Worker : cache `calque-v20`.
+- Nouveau fichier de tests `tests/vue3d.test.mjs` (3 tests). Tests : 77/77.
+
+## 2026-11-05 — Phase 5, étape 2 : lecture des fichiers IES et LDT
+- `js/photometrie.js` lit, **sans bibliothèque et hors ligne**, les fichiers **IES** (IESNA LM-63, photométrie de type C ; plans 0°, 0–90°, 0–180°, 90–270°, 0–360° ; TILT=NONE ou INCLUDE) et **LDT** (EULUMDAT, les cinq symétries). La répartition est complétée par symétrie sur 360°.
+  - **Flux du luminaire** : calculé en intégrant la répartition lue (lumière qui sort réellement du luminaire), « vérifiée », source = nom du fichier et fabricant. Le flux déclaré par le fichier (lampes × rendement) est affiché pour comparaison, avec une alerte au-delà de 5 % d'écart.
+  - **Puissance** : celle indiquée par le fichier (« vérifiée »), sinon « non indiquée » (rien n'est deviné).
+  - Fichier illisible, incomplet ou de type B / A : message clair, **rien n'est ajouté** au plan.
+  - Texte en UTF-8 ou Windows-1252 (fichiers européens), reconnu automatiquement.
+- Bouton **« Importer un fichier IES / LDT »** dans la fenêtre Éclairage (pour chaque luminaire étudié) et dans la section « Photométrie » d'un luminaire. Fiche du fichier : luminaire, fabricant, flux, puissance, efficacité (lm/W), **courbe photométrique** (C0–C180 et C90–C270).
+- Le concepteur utilise la répartition du fichier (orientation du luminaire comprise) à la place de l'hypothèse lambertienne.
+- Les fichiers sont enregistrés **dans le plan** (`photometries[]`) : disponibles hors ligne, envoyés avec le plan ; liste « Fichiers photométriques du plan » (retrait possible s'il n'est plus utilisé).
+- Un luminaire relié à un fichier garde une copie du flux et de la puissance (statut et source) : le tableau et le bilan connaissent sa puissance.
+- Tests : `tests/eclairage.test.mjs` passe à 6 tests (fichiers de synthèse `tests/synthese.mjs`, répartition au flux connu). Tests : 74/74.
+
+## 2026-11-05 — Phase 5, étape 1 : concepteur d'éclairage (méthode des lumens, estimation)
+- Nouveau module sans écran **`js/eclairage.js`** : méthode des lumens (E = N × Φ × U × MF / A), calcul point par point de la composante directe (éclairement minimal, uniformité Emin / Emoy), dispositions régulières jusqu'à 12 × 12, **trois propositions** distinctes (la plus économe, le moins de luminaires, la plus uniforme ; « autre disposition » à égalité).
+  - **Aucune valeur d'éclairement réglementaire** : l'éclairement visé est toujours saisi (avec sa source si on veut). Sans lui, ou sans flux du luminaire : « données manquantes », aucune proposition.
+  - Valeurs par défaut de Calque marquées « estimées » : plan utile 80 cm, facteur de maintenance 0,8. Facteur d'utilance : saisi (tableau du fabricant) ou, à défaut, calculé (part du flux qui arrive directement sur le plan utile, réflexions ignorées : estimation prudente).
+  - Répartition lumineuse supposée lambertienne (« estimée ») tant qu'aucun fichier photométrique n'est associé.
+- Nouveau module **`js/photometrie.js`** (sans écran) : intensité I(C, γ) d'une photométrie (interpolation), flux intégré, nettoyage. La lecture des fichiers IES / LDT arrive à l'étape 2.
+- Fenêtre **« Éclairage · pièce »** (`js/eclairageui.js`), ouverte depuis l'inspecteur d'une pièce (section « Éclairage ») : objectif, jusqu'à 3 luminaires comparés, 3 propositions avec petit plan de la disposition, formule chiffrée, puissance totale et W/m², bouton **« Implanter sur le plan »**.
+  - L'implantation pose des symboles normaux (déplaçables, supprimables, annulables) avec leur photométrie (`lum`) ; une nouvelle implantation remplace seulement les luminaires posés par l'étude. Circuit repris des autres luminaires de la pièce.
+  - Section **« Implantation actuelle »** : recalculée à chaque modification du plan (luminaires déplacés, ajoutés, supprimés) ; « objectif atteint / non atteint (estimation) », jamais « conforme ».
+- Inspecteur d'un luminaire : section **« Photométrie »** (flux et puissance avec leur fiabilité). La puissance du luminaire (`lum.p`) est reprise par le tableau et le bilan, avec son statut ; une puissance saisie sur le symbole reste prioritaire.
+- **Format des plans v7** : `photometries[]`, `etudes[]`, `elec[].lum` ; migration v6 → v7 (listes vides, rien de deviné, valeurs invalides retirées) et copie de sécurité avant mise à jour.
+- Service Worker : cache `calque-v19`, `js/eclairage.js`, `js/eclairageui.js`, `js/photometrie.js` ajoutés.
+- Nouveau fichier de tests `tests/eclairage.test.mjs` (4 tests, valeurs calculées à la main). Anciens tests de migration rendus indépendants du numéro de version courant. Tests : 72/72.
+
 ## 2026-11-05 — Suivi
 - Essais iPad de la phase 3 validés par l'utilisateur. Fusion de la demande n°3 (phase 4) demandée par l'utilisateur.
 

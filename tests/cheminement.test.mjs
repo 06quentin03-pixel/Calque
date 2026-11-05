@@ -68,10 +68,10 @@ test('migration v5 → v6 : rien de deviné, valeurs invalides retirées, copie 
     const b = S.migratePlan(JSON.parse(JSON.stringify(a.plan)));
     return { ver: S.PLAN_VERSION, has: Object.keys(S.MIGRATIONS).map(Number), a, b };
   }, planV5('x'));
-  assert.equal(m.ver, 6);
+  assert.ok(m.ver >= 6, 'format v6 ou plus récent');
   for (let v = 1; v < m.ver; v++) assert.ok(m.has.includes(v), `migration ${v} → ${v + 1}`);
   const q = m.a.plan;
-  assert.equal(m.a.from, 5); assert.equal(q.v, 6);
+  assert.equal(m.a.from, 5); assert.equal(q.v, m.ver);
   assert.deepEqual(q.ducts[0], { id: 'g1', lv: 'L0', sys: 'elec', dia: 20, a: 't', b: 'p1', cid: 'c1', pts: [{ x: 100, y: 100 }, { x: 500, y: 100 }] }, 'type et pose invalides retirés, aucun ajouté');
   assert.ok(!('kind' in q.ducts[1]), 'conduit de VMC : pas de type de gaine');
   assert.ok(!('to' in q.elec[2]), 'un symbole qui n’est pas un passage ne garde pas « to »');
@@ -82,7 +82,7 @@ test('migration v5 → v6 : rien de deviné, valeurs invalides retirées, copie 
   /* le plan ouvert est passé en v6, et la version v5 d'origine est gardée dans l'historique */
   await wait(page, 800);
   const vers = await idb(page, 'versions');
-  const v = vers.find((x) => x.pid === 'pC5' && /avant mise à jour du format \(v5 → v6\)/.test(x.why));
+  const v = vers.find((x) => x.pid === 'pC5' && /avant mise à jour du format \(v5 → v\d+\)/.test(x.why));
   assert.ok(v, 'copie de sécurité avant mise à jour du format');
   const vd = await idb(page, 'vdata', v.k);
   assert.equal(JSON.parse(vd.json).v, 5, 'la copie est le plan d’origine, en v5');
@@ -115,7 +115,7 @@ test('inspecteur : type, pose et longueurs d’une gaine ; passage entre étages
   let st = await storedPlan(page, 'pC6');
   const g = st.ducts.find((d) => d.id === 'g1');
   assert.equal(g.kind, 'goulotte'); assert.equal(g.pose, 'sol'); assert.equal(g.lw, 60); assert.equal(g.lh, 40); assert.ok(!('dia' in g));
-  assert.equal(st.v, 6);
+  assert.ok(st.v >= 6);
   /* la prochaine gaine reprend le dernier type et la dernière pose choisis */
   const S = await page.evaluate(() => JSON.parse(localStorage.getItem('calque.settings')));
   assert.equal(S.ductKind, 'goulotte'); assert.equal(S.ductPose, 'sol');

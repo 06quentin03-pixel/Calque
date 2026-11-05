@@ -1,6 +1,6 @@
 /* Calque — module « vue3d » : vue 3D : moteur WebGL 2 intégré.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, C, DEG, IDX, NF1, P, S, bboxOf, clamp, climbHeight, distToEdges, fmtArea, fmtLenU, inPoly, labelPoint,
+import { $, C, DEG, IDX, NF1, P, S, touch, bboxOf, clamp, climbHeight, distToEdges, fmtArea, fmtLenU, inPoly, labelPoint,
   levelAbove, levelBelow, levelOf, levelsSorted, nodeOf, saveSettings, ui, vadd, vdist, vlen, vmid, vmul, vnorm, vperp,
   vsub } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
@@ -8,12 +8,13 @@ import { itemToWorld, wallLength } from './mutations.js';
 import { H } from './historique.js';
 import { ELEC_BY, furnDef, isStair, stairInfo, stairModel } from './symboles.js';
 import { FONT_LABEL, FONT_UI, V, closetLeafHinges, closetPlane } from './rendu2d.js';
-import { LIGHTS, circById, circuitColor, circuitLabel, isDarkTheme, roomAt, roomName } from './electricite.js';
+import { LIGHTS, circById, circNumbers, circuitColor, circuitLabel, cleanLinks, isDarkTheme, roomAt, roomName } from './electricite.js';
 import { ductLen, ductPts, ductVisible, elecVisible } from './reseaux.js';
-import { hauteurParcours } from './cheminement.js';
-import { OPENING_NAMES, SCR, openingModels, refreshUI, requestRender, wallHeightOf } from './interaction.js';
+import { POSES, TYPES_CHEMIN, TRAVERSEE, cheminCircuit, circuitsDe, grapheGaines, hauteurParcours, jumelle, kindOf, nomChemin, tailleChemin } from './cheminement.js';
+import { openFiche } from './fiche.js';
+import { OPENING_NAMES, SCR, commit, openingModels, refreshUI, requestRender, wallHeightOf } from './interaction.js';
 import { goToRef, setView } from './tableau.js';
-import { ICON, btn, btns, fmtIn, h, ico, kv, openingSizeText, sec, segCtl, toast } from './interface.js';
+import { ICON, btn, btns, fmtIn, h, ico, kv, numField, openingSizeText, sec, segCtl, toast } from './interface.js';
 import { slug } from './stockage.js';
 import { openFileModal, parseColor } from './export.js';
 
@@ -425,8 +426,12 @@ const EL3 = {
 };
 
 /* ---------------- construction de la maquette ---------------- */
-const V3DEF = { mode: 'orbit', above: false, furn: true, elec: true, ducts: true, labels: true, shadows: true, walls: 'full', route: 'plafond', panel: true };
-function v3o() { if (!S.v3 || typeof S.v3 !== 'object') S.v3 = {}; for (const k in V3DEF) if (!(k in S.v3)) S.v3[k] = V3DEF[k]; return S.v3; }
+const V3DEF = { mode: 'orbit', above: false, furn: true, elec: true, ducts: true, labels: true, shadows: true, walls: 'full', route: 'plafond', panel: true,
+  cables: false, xray: false, cut: 'none', cutH: 120, cutX: 0.5, cutZ: 0.5, cutFlip: false, hid: {} };
+function v3o() { if (!S.v3 || typeof S.v3 !== 'object') S.v3 = {}; for (const k in V3DEF) if (!(k in S.v3)) S.v3[k] = k === 'hid' ? {} : V3DEF[k]; if (!S.v3.hid || typeof S.v3.hid !== 'object') S.v3.hid = {}; return S.v3; }
+/* objets masqués dans la vue 3D (réglage de l'affichage, par plan : le plan lui-même n'est jamais modifié) */
+function v3Hidden() { const o = v3o(), l = o.hid[P.id]; return new Set(Array.isArray(l) ? l : []); }
+function v3SetHidden(set) { const o = v3o(); if (set.size) o.hid[P.id] = [...set].slice(-500); else delete o.hid[P.id]; saveSettings(); }
 function stairFootprint(it) {
   if (it.type === 'esc_helice') { const R = Math.min(it.w, it.d) / 2; return circlePts({ x: it.x, y: it.y }, R, 20); }
   return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => itemToWorld(it, (a * it.w) / 2, (b * it.d) / 2));
@@ -439,11 +444,13 @@ function elecAccent(e, def) {
 
 function build3D() {
   const o = v3o(), visit = o.mode === 'visit';
-  const G = { s: new GB(), g: new GB(), picks: [null], labels: [], bb: { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, y0: Infinity, y1: -Infinity } };
+  const G = { s: new GB(), g: new GB(), w: new GB(), picks: [null], labels: [], bb: { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, y0: Infinity, y1: -Infinity } };
   const pick = (ref) => { G.picks.push(ref); return G.picks.length - 1; };
   const grow = (x, y, z) => { const b = G.bb; if (x < b.x0) b.x0 = x; if (x > b.x1) b.x1 = x; if (z < b.z0) b.z0 = z; if (z > b.z1) b.z1 = z; if (y < b.y0) b.y0 = y; if (y > b.y1) b.y1 = y; };
   const Ls = levelsSorted(), cur = levelOf(ui.lv) || Ls[0];
   const vis = Ls.filter((l) => visit || o.above || l.elev <= cur.elev + 0.01);
+  const hid = v3Hidden();
+  const GW = Object.assign(Object.create(G), { s: G.w }); // murs et baies : lot à part (transparence)
   let groundY = Infinity;
   for (const lv of vis) {
     const E = lv.elev, Hh = lv.h || 250, below = levelBelow(lv.id);
@@ -458,15 +465,17 @@ function build3D() {
     for (const op of P.openings) { if (!g.walls.has(op.wall)) continue; let a = opsBy.get(op.wall); if (!a) opsBy.set(op.wall, (a = [])); a.push(op); }
     const wTop = (wg) => { const hh = wg.w.h || Hh; return cut ? E + Math.min(hh, cut) : E + hh; };
     for (const wg of g.walls.values()) {
+      if (hid.has(wg.w.id)) continue;
       const cl = wg.w.kind === 'cloison';
-      wall3(G.s, wg, E - tb, wTop(wg), E, opsBy.get(wg.w.id) || [], cl ? K3.part : K3.wall, cl ? K3.partCap : K3.wallCap, pick({ t: 'wall', id: wg.w.id, lv: lv.id }));
+      wall3(G.w, wg, E - tb, wTop(wg), E, opsBy.get(wg.w.id) || [], cl ? K3.part : K3.wall, cl ? K3.partCap : K3.wallCap, pick({ t: 'wall', id: wg.w.id, lv: lv.id }));
     }
-    for (const hb of g.hubs) solid3(G.s, [hb.pts], E - tb, top, hb.mur ? K3.wall : K3.part, 0, { top: hb.mur ? K3.wallCap : K3.partCap });
+    for (const hb of g.hubs) solid3(G.w, [hb.pts], E - tb, top, hb.mur ? K3.wall : K3.part, 0, { top: hb.mur ? K3.wallCap : K3.partCap });
     // sols (dalle), trémies au-dessus des escaliers du niveau inférieur
     const tremies = below ? P.items.filter((it) => it.lv === below.id && isStair(it.type)).map(stairFootprint) : [];
     const ownStairs = P.items.filter((it) => it.lv === lv.id && isStair(it.type)).map(stairFootprint);
     const cutHoles = (r, list) => { const out = []; for (const fp of list) { const ix = cleanRing(clipConvex(r.poly, fp)); if (ix.length >= 3 && Math.abs(ringArea(ix)) > 200) out.push(shrinkRing(ix, 0.6)); } return out; };
     for (const r of g.rooms) {
+      if (r.label && hid.has(r.label.id)) continue;
       const fc = floorCol3(r);
       solid3(G.s, [r.poly, ...r.holes, ...cutHoles(r, tremies)], E - tb, E, fc, r.label ? pick({ t: 'room', id: r.label.id, lv: lv.id }) : 0, { top: fc, bot: K3.ceil, side: K3.slabSide });
       if (visit) solid3(G.s, [r.poly, ...r.holes, ...cutHoles(r, ownStairs)], E + Hh - 0.8, E + Hh, K3.ceil, 0, { edges: false });
@@ -480,17 +489,20 @@ function build3D() {
       }
     }
     // portes et fenêtres
-    for (const op of P.openings) { const wg = g.walls.get(op.wall); if (wg) opening3(G, wg, op, E, wTop(wg), pick({ t: 'opening', id: op.id, lv: lv.id })); }
+    for (const op of P.openings) { const wg = g.walls.get(op.wall); if (wg && !hid.has(op.id) && !hid.has(op.wall)) opening3(GW, wg, op, E, wTop(wg), pick({ t: 'opening', id: op.id, lv: lv.id })); }
     // escaliers et mobilier
     for (const it of P.items) {
-      if (it.lv !== lv.id) continue;
+      if (it.lv !== lv.id || hid.has(it.id)) continue;
       if (isStair(it.type)) { stair3(G, it, E, pick({ t: 'item', id: it.id, lv: lv.id })); continue; }
       if (!o.furn) continue;
       furn3(G, it, E, Hh, pick({ t: 'item', id: it.id, lv: lv.id }));
     }
-    if (o.elec) for (const e of P.elec) if (e.lv === lv.id && elecVisible(e)) elec3(G, e, E, Hh, pick({ t: 'elec', id: e.id, lv: lv.id }));
-    if (o.ducts) for (const d of P.ducts) if (d.lv === lv.id && ductVisible(d)) duct3(G, d, E, Hh, pick({ t: 'duct', id: d.id, lv: lv.id }), o);
+    if (o.elec) for (const e of P.elec) if (e.lv === lv.id && elecVisible(e) && !hid.has(e.id)) elec3(G, e, E, Hh, pick({ t: 'elec', id: e.id, lv: lv.id }));
+    if (o.ducts) for (const d of P.ducts) if (d.lv === lv.id && ductVisible(d) && !hid.has(d.id)) duct3(G, d, E, Hh, pick({ t: 'duct', id: d.id, lv: lv.id }), o);
   }
+  const visIds = new Set(vis.map((l) => l.id));
+  if (o.ducts) passages3(G, visIds, hid, pick, o);
+  if (o.ducts && o.cables) cables3(G, visIds, pick, o);
   // terrain
   if (isFinite(G.bb.x0)) {
     const b = G.bb, m = Math.max(400, Math.max(b.x1 - b.x0, b.z1 - b.z0) * 0.8);
@@ -690,34 +702,125 @@ function elec3(G, e, E, Lh, id) {
   } else box(-w / 2 - 0.5, -0.1, w / 2 + 0.5, 1, z0 - 0.5, z1 + 0.5, acc);
 }
 
+/* boîte horizontale le long d'un tronçon (goulotte, chemin de câbles) : empreinte rectangulaire extrudée en hauteur */
+function segBox3(gb, a, b, w, y0, y1, col, id, ext) {
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy); if (L < 0.01) return;
+  const ux = dx / L, uy = dy / L, nx = -uy * w / 2, ny = ux * w / 2, e = ext || 0;
+  const A = { x: a.x - ux * e, y: a.y - uy * e }, B = { x: b.x + ux * e, y: b.y + uy * e };
+  solid3(gb, [[{ x: A.x + nx, y: A.y + ny }, { x: B.x + nx, y: B.y + ny }, { x: B.x - nx, y: B.y - ny }, { x: A.x - nx, y: A.y - ny }]], y0, y1, col, id);
+}
+/* hauteur (altitude) du parcours d'un conduit dans la vue 3D : sa pose si elle est précisée, sinon le réglage de la vue */
+function ductY3(d, E, Lh, half, o) {
+  const zr = hauteurParcours(P, d);
+  return zr != null ? clamp(E + zr, E + half + 1, E + Lh - half - 1.5) : d.sys === 'vmc' || o.route !== 'sol' ? E + Lh - half - 1.5 : E + half + 1;
+}
+const K3GOUL = [240, 240, 236];
 function duct3(G, d, E, Lh, id, o) {
   const pts = ductPts(d); if (pts.length < 2) return;
+  const k = d.sys === 'elec' ? kindOf(d) : null, rect = k === 'goulotte' || k === 'cdc';
   const r = Math.max(0.8, (d.dia || (d.sys === 'vmc' ? 125 : 20)) / 20);
-  /* gaine dont la pose est précisée : à sa hauteur ; sinon, réglage « par le plafond / par le sol » de la vue 3D */
-  const zr = hauteurParcours(P, d);
-  const y = zr != null ? clamp(E + zr, E + r + 1, E + Lh - r - 1.5) : d.sys === 'vmc' || o.route !== 'sol' ? E + Lh - r - 1.5 : E + r + 1;
-  const col = d.sys === 'vmc' ? K3.vmc : (d.cid && hexRGB(circuitColor(d.cid, true) || '#7C63D2')) || K3.gaine;
+  /* goulotte et chemin de câbles : dimensions saisies (mm → cm) ; sans dimensions, dessin indicatif 60 × 40 mm */
+  const wR = rect ? (d.lw > 0 ? d.lw : 60) / 10 : 0, hR = rect ? (d.lh > 0 ? d.lh : 40) / 10 : 0;
+  const half = rect ? hR / 2 : r, side = rect ? wR / 2 : r;
+  const y = ductY3(d, E, Lh, half, o);
+  const gb = o.cables && d.sys === 'elec' ? G.g : G.s; // câbles affichés : gaines transparentes
+  const col = d.sys === 'vmc' ? K3.vmc : k === 'goulotte' ? K3GOUL : k === 'cdc' ? K3.steel : (d.cid && hexRGB(circuitColor(d.cid, true) || '#7C63D2')) || K3.gaine;
   const P3 = pts.map((p) => [p.x, y, p.y]);
   const drops = [];
   for (const [eid, idx] of [[d.a, 0], [d.b, P3.length - 1]]) {
     const e = eid && IDX.elec.get(eid); if (!e) continue; const def = ELEC_BY.get(e.type); if (!def) continue;
-    if (def.wall) { const f = itemToWorld(e, 0, r + 1); P3[idx] = [f.x, y, f.y]; drops.push([P3[idx], E + (e.h != null ? e.h : def.h || 110)]); }
+    if (e.type === TRAVERSEE || def.fullH) continue; // le passage et la GTL sont traversés : pas de descente
+    if (def.wall) { const f = itemToWorld(e, 0, side + 1); P3[idx] = [f.x, y, f.y]; drops.push([P3[idx], E + (e.h != null ? e.h : def.h || 110)]); }
     else if (def.floor) drops.push([P3[idx], E + 2]);
+    else if (d.pose === 'sol' || d.pose === 'hauteur') drops.push([P3[idx], E + Lh - 1]); // appareil au plafond, gaine plus bas : remontée
   }
-  for (let i = 1; i < P3.length; i++) tube3(G.s, P3[i - 1], P3[i], r, col, id);
-  for (let i = 1; i < P3.length - 1; i++) sphere3(G.s, P3[i], r, col, id, 10);
-  for (const [p, yd] of drops) { if (Math.abs(yd - y) < 1) continue; tube3(G.s, [p[0], yd, p[2]], p, r, col, id); sphere3(G.s, p, r, col, id, 10); }
+  if (rect) {
+    for (let i = 1; i < P3.length; i++) {
+      const a = { x: P3[i - 1][0], y: P3[i - 1][2] }, b = { x: P3[i][0], y: P3[i][2] };
+      if (k === 'goulotte') segBox3(gb, a, b, wR, y - half, y + half, col, id, wR / 2);
+      else { // chemin de câbles : fond et deux rebords (tôle de 4 mm)
+        segBox3(gb, a, b, wR, y - half, y - half + 0.4, col, id, wR / 2);
+        const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L * (wR / 2 - 0.2), ny = dx / L * (wR / 2 - 0.2);
+        for (const s2 of [1, -1]) segBox3(gb, { x: a.x + nx * s2, y: a.y + ny * s2 }, { x: b.x + nx * s2, y: b.y + ny * s2 }, 0.4, y - half, y + half, col, id, wR / 2);
+      }
+    }
+    // descentes : goulotte le long du mur ; depuis un chemin de câbles, une gaine
+    for (const [p, yd] of drops) {
+      if (Math.abs(yd - y) < 1) continue;
+      if (k === 'goulotte') solid3(gb, [circlePts({ x: p[0], y: p[2] }, Math.min(wR, hR) / 2, 4)], Math.min(yd, y), Math.max(yd, y), col, id);
+      else tube3(gb, [p[0], yd, p[2]], p, 1, K3.gaine, id);
+    }
+    return;
+  }
+  for (let i = 1; i < P3.length; i++) tube3(gb, P3[i - 1], P3[i], r, col, id);
+  for (let i = 1; i < P3.length - 1; i++) sphere3(gb, P3[i], r, col, id, 10);
+  for (const [p, yd] of drops) { if (Math.abs(yd - y) < 1) continue; tube3(gb, [p[0], yd, p[2]], p, r, col, id); sphere3(gb, p, r, col, id, 10); }
+}
+/* passages entre étages : conduit vertical entre les deux symboles jumeaux, à travers le plancher */
+function passages3(G, visIds, hid, pick, o) {
+  const done = new Set();
+  for (const e of P.elec) {
+    if (e.type !== TRAVERSEE || done.has(e.id) || hid.has(e.id)) continue;
+    const t = jumelle(P, e, IDX.elec); if (!t) continue;
+    done.add(e.id); done.add(t.id);
+    const La = levelOf(e.lv), Lb = levelOf(t.lv); if (!La || !Lb) continue;
+    const [lo, hi] = La.elev <= Lb.elev ? [[e, La], [t, Lb]] : [[t, Lb], [e, La]];
+    if (!visIds.has(lo[0].lv)) continue;
+    const yAt = (sym, L, def) => { const d = P.ducts.find((x) => x.sys === 'elec' && (x.a === sym.id || x.b === sym.id)); return d ? ductY3(d, L.elev, L.h || 250, 1, o) : def; };
+    const y0 = yAt(lo[0], lo[1], lo[1].elev + (lo[1].h || 250) - 2);
+    const y1 = visIds.has(hi[0].lv) ? yAt(hi[0], hi[1], hi[1].elev + 2) : hi[1].elev; // étage du dessus caché : jusqu'au plancher
+    if (y1 - y0 < 1) continue;
+    const id = pick({ t: 'elec', id: lo[0].id, lv: lo[0].lv });
+    const gb = o.cables ? G.g : G.s;
+    tube3(gb, [lo[0].x, y0, lo[0].y], [lo[0].x, y1, lo[0].y], 2.2, K3.gaine, id, 12);
+    sphere3(gb, [lo[0].x, y0, lo[0].y], 2.2, K3.gaine, id, 10); sphere3(gb, [lo[0].x, y1, lo[0].y], 2.2, K3.gaine, id, 10);
+  }
+}
+/* altitude d'un câble dans un conduit dessiné : au fond d'un chemin de câbles ou d'une goulotte, au centre d'une gaine */
+function ductCableY3(d, L, o) {
+  const k = kindOf(d), rect = k === 'goulotte' || k === 'cdc';
+  const half = rect ? (d.lh > 0 ? d.lh : 40) / 20 : Math.max(0.8, (d.dia || 20) / 20);
+  const y = ductY3(d, L.elev, L.h || 250, half, o);
+  return rect ? y - half + 0.9 : y;
+}
+/* câbles : chemin réel de chaque circuit dans le réseau des gaines (depuis le tableau), avec les verticales et les passages */
+function cables3(G, visIds, pick, o) {
+  const N = grapheGaines(P).nodes;
+  let k = 0;
+  for (const c of P.circuits) {
+    const ch = cheminCircuit(P, c.id); if (!ch.edges.length) continue;
+    const col = hexRGB(circuitColor(c.id, true) || '#7C63D2');
+    const off = { x: ((k % 5) - 2) * 0.9, z: ((Math.floor(k / 5) % 3) - 1) * 0.9 }; k++;
+    const id = pick({ t: 'circuit', id: c.id, lv: ui.lv });
+    const pos = (nid, other) => {
+      const n = N.get(nid); if (!n) return null;
+      const L = levelOf(n.lv); if (!L) return null;
+      let Y = n.Z;
+      const d = n.duct && IDX.ducts.get(n.duct);
+      if (d) Y = ductCableY3(d, L, o); // dans le conduit tel qu'il est dessiné
+      if (Y == null && other) { const m = N.get(other); if (m && m.Z != null && m.lv === n.lv) Y = m.Z; }
+      if (Y == null) Y = L.elev + (o.route !== 'sol' ? (L.h || 250) - 3 : 3);
+      return [n.x + off.x, Y, n.y + off.z, n.lv];
+    };
+    for (const ed of ch.edges) {
+      const a = pos(ed.a, ed.b), b = pos(ed.b, ed.a); if (!a || !b) continue;
+      if (!visIds.has(a[3]) && !visIds.has(b[3])) continue;
+      if (Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 0.5) continue;
+      tube3(G.s, a, b, 0.45, col, id, 6);
+    }
+  }
 }
 
 /* ---------------- rendu WebGL2 ---------------- */
 const VS_MAIN = `#version 300 es
 layout(location=0) in vec3 aPos; layout(location=1) in vec3 aNrm; layout(location=2) in vec4 aCol; layout(location=3) in vec4 aPid;
 uniform mat4 uVP; uniform mat4 uLVP;
-out vec3 vN; out vec4 vC; out vec4 vL; flat out vec4 vP;
-void main() { vN = aNrm; vC = aCol; vP = aPid; vL = uLVP * vec4(aPos, 1.0); gl_Position = uVP * vec4(aPos, 1.0); }`;
+out vec3 vN; out vec4 vC; out vec4 vL; flat out vec4 vP; out vec3 vW;
+void main() { vN = aNrm; vC = aCol; vP = aPid; vW = aPos; vL = uLVP * vec4(aPos, 1.0); gl_Position = uVP * vec4(aPos, 1.0); }`;
 const FS_MAIN = `#version 300 es
 precision highp float; precision highp sampler2DShadow;
-in vec3 vN; in vec4 vC; in vec4 vL; flat in vec4 vP;
+in vec3 vN; in vec4 vC; in vec4 vL; flat in vec4 vP; in vec3 vW;
+uniform vec4 uClip; uniform float uClipOn;
 uniform vec3 uLdir; uniform sampler2DShadow uSh; uniform float uShOn; uniform float uAlpha; uniform vec4 uOver; uniform vec4 uSel; uniform vec3 uAcc; uniform float uVisit;
 out vec4 o;
 float shadowAt() {
@@ -728,6 +831,7 @@ float shadowAt() {
   return s / 9.0;
 }
 void main() {
+  if (uClipOn > 0.5 && dot(uClip.xyz, vW) + uClip.w > 0.0) discard;
   if (uOver.a > 0.0) { o = uOver; return; }
   vec3 n = normalize(vN);
   float dif = max(dot(n, uLdir), 0.0);
@@ -740,11 +844,12 @@ void main() {
   o = vec4(col, uAlpha);
 }`;
 const VS_SH = `#version 300 es
-layout(location=0) in vec3 aPos; uniform mat4 uLVP; void main() { gl_Position = uLVP * vec4(aPos, 1.0); }`;
+layout(location=0) in vec3 aPos; uniform mat4 uLVP; out vec3 vW; void main() { vW = aPos; gl_Position = uLVP * vec4(aPos, 1.0); }`;
 const FS_SH = `#version 300 es
-precision mediump float; void main() { }`;
+precision highp float; in vec3 vW; uniform vec4 uClip; uniform float uClipOn; void main() { if (uClipOn > 0.5 && dot(uClip.xyz, vW) + uClip.w > 0.0) discard; }`;
 const FS_PICK = `#version 300 es
-precision highp float; flat in vec4 vP; out vec4 o; void main() { o = vP; }`;
+precision highp float; flat in vec4 vP; in vec3 vW; uniform vec4 uClip; uniform float uClipOn; out vec4 o;
+void main() { if (uClipOn > 0.5 && dot(uClip.xyz, vW) + uClip.w > 0.0) discard; o = vP; }`;
 
 const R3 = { gl: null, cv: null, ok: false, P: {}, B: {}, shTex: null, shFbo: null, shSize: 2048, shDirty: true, pk: null, w: 0, h: 0, dpr: 1 };
 function glProgram(gl, vs, fs) {
@@ -797,8 +902,8 @@ function r3Batch(gb) {
 }
 function r3Free(b) { if (!b) return; const gl = R3.gl; gl.deleteVertexArray(b.vt); gl.deleteVertexArray(b.ve); for (const x of b.bufs) gl.deleteBuffer(x); }
 function r3Upload(G) {
-  r3Free(R3.B.s); r3Free(R3.B.g);
-  R3.B = { s: r3Batch(G.s), g: r3Batch(G.g) };
+  r3Free(R3.B.s); r3Free(R3.B.g); r3Free(R3.B.w);
+  R3.B = { s: r3Batch(G.s), g: r3Batch(G.g), w: r3Batch(G.w) };
   R3.shDirty = true;
 }
 function r3Resize() {
@@ -814,16 +919,29 @@ function lightMatrix(bb) {
   const eye = [c[0] + LDIR[0] * R * 2, c[1] + LDIR[1] * R * 2, c[2] + LDIR[2] * R * 2];
   return m4mul(m4ortho(-R, R, -R, R, R * 0.2, R * 4), m4look(eye, c, [0, 1, 0]));
 }
+/* plan de coupe (réglage de la vue) : [nx, ny, nz, d] ; est retiré ce qui vérifie n·p + d > 0 */
+function clipPlane3() {
+  const o = v3o(), b = V3.G && V3.G.bbView;
+  if (o.mode === 'visit' || o.cut === 'none' || !b || !isFinite(b.x0)) return null;
+  if (o.cut === 'h') { const L = curLevel3(); return [0, 1, 0, -(L.elev + clamp(o.cutH, 10, 2000))]; }
+  const sg = o.cutFlip ? -1 : 1;
+  if (o.cut === 'x') { const X = b.x0 + (b.x1 - b.x0) * clamp(o.cutX, 0, 1); return [sg, 0, 0, -sg * X]; }
+  if (o.cut === 'z') { const Z = b.z0 + (b.z1 - b.z0) * clamp(o.cutZ, 0, 1); return [0, 0, sg, -sg * Z]; }
+  return null;
+}
+function setClip3(gl, prog) { const c = clipPlane3(); gl.uniform1f(prog.u.uClipOn, c ? 1 : 0); gl.uniform4f(prog.u.uClip, ...(c || [0, 0, 0, 0])); }
 function r3Draw(VP, opts, target) {
   const gl = R3.gl; if (!gl || !R3.B.s) return;
+  const xr = !!v3o().xray && v3o().mode !== 'visit', Wb = R3.B.w;
   const bg = isDarkTheme() ? [0.09, 0.1, 0.11] : [0.905, 0.918, 0.902];
   const LVP = lightMatrix(V3.bbShadow || V3.G.bb);
   gl.enable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
   if (opts.shadows && R3.shOk && R3.shDirty) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, R3.shFbo); gl.viewport(0, 0, R3.shSize, R3.shSize);
-    gl.clear(gl.DEPTH_BUFFER_BIT); gl.useProgram(R3.P.sh.p); gl.uniformMatrix4fv(R3.P.sh.u.uLVP, false, LVP);
+    gl.clear(gl.DEPTH_BUFFER_BIT); gl.useProgram(R3.P.sh.p); gl.uniformMatrix4fv(R3.P.sh.u.uLVP, false, LVP); setClip3(gl, R3.P.sh);
     gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(2, 3);
     gl.bindVertexArray(R3.B.s.vt); gl.drawElements(gl.TRIANGLES, R3.B.s.nt, gl.UNSIGNED_INT, 0);
+    if (!xr && Wb && Wb.nt) { gl.bindVertexArray(Wb.vt); gl.drawElements(gl.TRIANGLES, Wb.nt, gl.UNSIGNED_INT, 0); }
     gl.disable(gl.POLYGON_OFFSET_FILL);
     R3.shDirty = false;
   }
@@ -838,12 +956,17 @@ function r3Draw(VP, opts, target) {
   gl.uniform4f(M.u.uSel, (sel & 255) / 255, ((sel >> 8) & 255) / 255, ((sel >> 16) & 255) / 255, sel ? 1 : 0);
   const acc = hexRGB(C.accent || '#D24F1A'); gl.uniform3f(M.u.uAcc, acc[0] / 255, acc[1] / 255, acc[2] / 255);
   gl.uniform1f(M.u.uAlpha, 1); gl.uniform4f(M.u.uOver, 0, 0, 0, 0); gl.uniform1f(M.u.uVisit, v3o().mode === 'visit' ? 1 : 0);
+  setClip3(gl, M);
   gl.enable(gl.POLYGON_OFFSET_FILL); gl.polygonOffset(1, 1);
   gl.bindVertexArray(R3.B.s.vt); gl.drawElements(gl.TRIANGLES, R3.B.s.nt, gl.UNSIGNED_INT, 0);
+  if (!xr && Wb && Wb.nt) { gl.bindVertexArray(Wb.vt); gl.drawElements(gl.TRIANGLES, Wb.nt, gl.UNSIGNED_INT, 0); }
   gl.disable(gl.POLYGON_OFFSET_FILL);
   gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.depthMask(false);
-  if (R3.B.s.ne) { gl.uniform4f(M.u.uOver, 0.11, 0.13, 0.15, isDarkTheme() ? 0.45 : 0.3); gl.bindVertexArray(R3.B.s.ve); gl.drawElements(gl.LINES, R3.B.s.ne, gl.UNSIGNED_INT, 0); }
+  const ea = isDarkTheme() ? 0.45 : 0.3;
+  if (R3.B.s.ne) { gl.uniform4f(M.u.uOver, 0.11, 0.13, 0.15, ea); gl.bindVertexArray(R3.B.s.ve); gl.drawElements(gl.LINES, R3.B.s.ne, gl.UNSIGNED_INT, 0); }
+  if (Wb && Wb.ne) { gl.uniform4f(M.u.uOver, 0.11, 0.13, 0.15, xr ? ea * 0.5 : ea); gl.bindVertexArray(Wb.ve); gl.drawElements(gl.LINES, Wb.ne, gl.UNSIGNED_INT, 0); }
   if (R3.B.g.nt) { gl.uniform4f(M.u.uOver, 0, 0, 0, 0); gl.uniform1f(M.u.uAlpha, 0.32); gl.bindVertexArray(R3.B.g.vt); gl.drawElements(gl.TRIANGLES, R3.B.g.nt, gl.UNSIGNED_INT, 0); }
+  if (xr && Wb && Wb.nt) { gl.uniform4f(M.u.uOver, 0, 0, 0, 0); gl.uniform1f(M.u.uAlpha, 0.16); gl.bindVertexArray(Wb.vt); gl.drawElements(gl.TRIANGLES, Wb.nt, gl.UNSIGNED_INT, 0); }
   gl.depthMask(true); gl.disable(gl.BLEND); gl.bindVertexArray(null);
 }
 function r3Pick(cx, cy, VP, all) {
@@ -861,8 +984,9 @@ function r3Pick(cx, cy, VP, all) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, R3.pk.fb); gl.viewport(0, 0, W, H);
   if (!all) { gl.enable(gl.SCISSOR_TEST); gl.scissor(px, py, 1, 1); }
   gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.enable(gl.DEPTH_TEST); gl.useProgram(R3.P.pick.p); gl.uniformMatrix4fv(R3.P.pick.u.uVP, false, VP);
+  gl.enable(gl.DEPTH_TEST); gl.useProgram(R3.P.pick.p); gl.uniformMatrix4fv(R3.P.pick.u.uVP, false, VP); setClip3(gl, R3.P.pick);
   gl.bindVertexArray(R3.B.s.vt); gl.drawElements(gl.TRIANGLES, R3.B.s.nt, gl.UNSIGNED_INT, 0);
+  const Wb = R3.B.w; if (Wb && Wb.nt && !(v3o().xray && v3o().mode !== 'visit')) { gl.bindVertexArray(Wb.vt); gl.drawElements(gl.TRIANGLES, Wb.nt, gl.UNSIGNED_INT, 0); }
   if (all) {
     const one = new Uint8Array(4);
     const read = (x, y) => { gl.bindFramebuffer(gl.FRAMEBUFFER, R3.pk.fb); gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, one); return one[3] ? one[0] | (one[1] << 8) | (one[2] << 16) : 0; };
@@ -928,7 +1052,7 @@ function camTo(tgt, animate) {
 
 /* ---------------- état de la vue 3D ---------------- */
 const V3 = { G: null, key: '', sel: 0, raf: 0, anim: null, joy: null, keys: new Set(), lastT: 0, labelEls: [], inited: false, failed: false, needFit: true };
-function v3Key() { const o = v3o(); return [H.cur && H.cur.size, ui.lv, o.mode, o.above, o.furn, o.elec, o.ducts, o.labels, o.walls, o.route, S.layers.circ, JSON.stringify(S.filt), isDarkTheme()].join('|'); }
+function v3Key() { const o = v3o(); return [H.cur && H.cur.size, ui.lv, o.mode, o.above, o.furn, o.elec, o.ducts, o.labels, o.walls, o.route, o.cables, JSON.stringify(o.hid[P.id] || []), S.layers.circ, JSON.stringify(S.filt), isDarkTheme()].join('|'); }
 function v3Rebuild(force) {
   if (!R3.ok) return;
   const key = v3Key();
@@ -1042,7 +1166,7 @@ function v3RefInfo(ref) {
     const it = IDX.items.get(ref.id); if (!it) return null; const def = furnDef(it);
     if (isStair(it.type)) { const si = stairInfo(it); return { title: it.name || (def && def.n) || 'Escalier', rows: [['Marches', `${si.n} × ${NF1.format(si.h)} cm`], ['Hauteur à monter', fmtLenU(si.H)], ['Confort', si.label], ['Niveau', lvName]] }; }
     const hz = itemHeight3(it);
-    return { title: it.label || it.name || (def && def.n) || 'Objet', rows: [['Dimensions', `${fmtIn(it.w)} × ${fmtIn(it.d)} × ${fmtIn(hz.h)} cm`], ['Posé à', hz.z ? fmtLenU(hz.z) + ' du sol' : 'au sol'], ['Niveau', lvName]], note: 'Hauteurs modifiables dans le panneau de l’objet, sur le plan.' };
+    return { title: it.label || it.name || (def && def.n) || 'Objet', rows: [['Dimensions', `${fmtIn(it.w)} × ${fmtIn(it.d)} × ${fmtIn(hz.h)} cm`], ['Posé à', hz.z ? fmtLenU(hz.z) + ' du sol' : 'au sol'], ['Niveau', lvName]], note: null };
   }
   if (ref.t === 'opening') {
     const o = IDX.openings.get(ref.id); if (!o) return null;
@@ -1059,25 +1183,81 @@ function v3RefInfo(ref) {
   }
   if (ref.t === 'duct') {
     const d = IDX.ducts.get(ref.id); if (!d) return null;
-    return { title: d.sys === 'vmc' ? 'Conduit de VMC' : 'Gaine électrique', rows: [['Longueur', fmtLenU(ductLen(d))], ['Diamètre', `Ø${d.dia || '—'}`], ['Passage', d.sys === 'vmc' || v3o().route !== 'sol' ? 'au plafond' : 'au sol'], ['Niveau', lvName]] };
+    if (d.sys === 'vmc') return { title: 'Conduit de VMC', rows: [['Longueur', fmtLenU(ductLen(d))], ['Diamètre', `Ø${d.dia || '—'}`], ['Passage', 'au plafond'], ['Niveau', lvName]] };
+    const k = kindOf(d), rect = k === 'goulotte' || k === 'cdc', nums = circNumbers();
+    const cs = circuitsDe(d).map((cid) => circById(cid)).filter(Boolean);
+    return { title: nomChemin(d), rows: [['Longueur (horizontale)', fmtLenU(ductLen(d))],
+      ['Taille', tailleChemin(d) || (rect ? 'non indiquée (dessin indicatif 60 × 40 mm)' : '—')],
+      ['Pose', d.pose && POSES[d.pose] ? POSES[d.pose].n + (d.pose === 'hauteur' && d.z != null ? ` (${fmtLenU(d.z)})` : '') : `non précisée (affichée ${v3o().route !== 'sol' ? 'au plafond' : 'au sol'})`],
+      cs.length ? ['Circuits', cs.map((c) => `${nums.get(c.id) || '?'} · ${c.name}`).join(', ')] : null, ['Niveau', lvName]] };
+  }
+  if (ref.t === 'circuit') {
+    const c = circById(ref.id); if (!c) return null;
+    const ch = cheminCircuit(P, c.id);
+    return { title: `Câble · ${circNumbers().get(c.id) || '?'} ${c.name}`, rows: [['Points raccordés', `${ch.atteints} sur ${ch.points.length}`], ch.arbre != null ? ['Câble posé (sans réserve)', fmtLenU(ch.arbre)] : null, ch.Lmax != null ? ['Jusqu’au point le plus éloigné', fmtLenU(ch.Lmax)] : null, ch.inconnues ? ['Verticales non comptées', String(ch.inconnues)] : null],
+      note: 'Tracé déduit des gaines du plan, depuis le tableau. Longueurs estimées : voir l’onglet Cheminements.' };
   }
   return null;
 }
 function v3Select(id) {
+  if ((id || 0) !== V3.sel) V3.move = null;
   V3.sel = id || 0;
   const ref = V3.sel && V3.G ? V3.G.picks[V3.sel] : null;
   V3.selRef = ref ? { t: ref.t, id: ref.id } : null;
   const box = $('#v3info'); if (!box) return;
   const info = v3RefInfo(ref);
   if (!info) { box.hidden = true; v3Req(); return; }
+  const ae = document.activeElement, focusId = box.contains(ae) ? ae.id : null;
   box.replaceChildren(...[
     h('div', { class: 'v3-ih' }, h('b', null, info.title), h('button', { class: 'ib', type: 'button', 'aria-label': 'Fermer', html: ICON.x, onclick: () => v3Select(0) })),
-    kv(info.rows.filter(Boolean)),
-    info.note ? h('p', { class: 'note' }, info.note) : null,
-    btns(btn('Voir sur le plan', () => showOnPlan(ref), 'sm pri'), ref.t === 'item' || ref.t === 'elec' ? btn('Centrer', () => v3FocusRef(ref), 'sm', 'center') : null)].filter(Boolean));
+    h('div', { class: 'v3-ib' },
+      kv(info.rows.filter(Boolean)),
+      info.note ? h('p', { class: 'note' }, info.note) : null,
+      ...v3Edit(ref)),
+    btns(ref.t !== 'circuit' ? btn('Voir sur le plan', () => showOnPlan(ref), 'sm pri') : btn('Fiche de calcul', () => openFiche(ref.id), 'sm pri', 'info'),
+      ref.t === 'item' || ref.t === 'elec' ? btn('Centrer', () => v3FocusRef(ref), 'sm', 'center') : null,
+      ref.t !== 'circuit' ? btn('Masquer', () => v3Hide(ref), 'sm') : null)].filter(Boolean));
+  if (focusId) { const el = document.getElementById(focusId); if (el) el.focus(); }
   box.hidden = false;
   v3Req();
 }
+/* ---------------- modification depuis la 3D ----------------
+   Chaque changement passe par commit() : annuler, enregistrement, 2D et 3D mises à jour. */
+function v3Edit(ref) {
+  const out = [];
+  if (ref.t === 'elec') {
+    const e = IDX.elec.get(ref.id); if (!e) return out; const def = ELEC_BY.get(e.type) || {};
+    const fixe = e.type === TRAVERSEE || def.floor || def.fullH || (!def.wall && e.h == null);
+    if (!fixe) out.push(numField('Hauteur de pose (axe)', e.h != null ? e.h : def.h || 0, 'cm', (v) => { e.h = v; commit(); }, { id: 'v3-eh', min: 0, max: 600 }));
+    if (!def.wall) out.push(V3.move === e.id
+      ? h('div', { class: 'v3-move' }, h('span', { class: 'note' }, 'Faites glisser un doigt ou le Pencil sur la maquette pour déplacer le symbole.'), btn('Terminer', () => { V3.move = null; v3Select(V3.sel); }, 'sm pri'))
+      : btns(btn('Déplacer', () => { V3.move = e.id; v3Select(V3.sel); }, 'sm', 'swap')));
+    else out.push(h('p', { class: 'note' }, 'Appareil mural : déplacez-le le long du mur sur le plan.'));
+    out.push(btns(btn('Supprimer', () => { P.elec = P.elec.filter((x) => x.id !== e.id); touch(); cleanLinks(); V3.move = null; v3Select(0); commit(); }, 'sm danger', 'del')));
+  } else if (ref.t === 'duct') {
+    const d = IDX.ducts.get(ref.id); if (!d || d.sys !== 'elec') return out;
+    const k = kindOf(d);
+    out.push(h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((t) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(k === t), onclick: () => {
+      d.kind = t; if (TYPES_CHEMIN[t].forme === 'rect') delete d.dia; else { delete d.lw; delete d.lh; if (!d.dia) d.dia = 20; } commit(); } }, TYPES_CHEMIN[t].court))));
+    out.push(segCtl(Object.keys(POSES).map((v) => ({ v, n: POSES[v].court })), d.pose || null, (v) => { d.pose = v; if (v === 'hauteur' && d.z == null) d.z = 30; if (v !== 'hauteur') delete d.z; commit(); }));
+    if (d.pose === 'hauteur') out.push(numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; commit(); }, { id: 'v3-dz', min: 0, max: 600 }));
+    if (k && TYPES_CHEMIN[k].forme === 'rect') out.push(h('div', { class: 'row' }, numField('Largeur', d.lw, 'mm', (v) => { d.lw = v; commit(); }, { id: 'v3-dlw', min: 5, max: 1000 }), numField('Hauteur', d.lh, 'mm', (v) => { d.lh = v; commit(); }, { id: 'v3-dlh', min: 5, max: 500 })));
+    else if (k) out.push(h('div', { class: 'chips' }, TYPES_CHEMIN[k].dias.map((v) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.dia === v), onclick: () => { d.dia = v; commit(); } }, 'Ø' + v))));
+    out.push(btns(btn('Supprimer', () => { P.ducts = P.ducts.filter((x) => x.id !== d.id); touch(); v3Select(0); commit(); }, 'sm danger', 'del')));
+  } else if (ref.t === 'wall') {
+    const w = IDX.walls.get(ref.id); if (!w) return out;
+    out.push(numField('Hauteur du mur', wallHeightOf(w), 'cm', (v) => { const L = levelOf(w.lv); if (L && Math.abs(v - (L.h || 250)) < 0.01) delete w.h; else w.h = v; commit(); }, { id: 'v3-wh', min: 20, max: 1500 }));
+  } else if (ref.t === 'item') {
+    const it = IDX.items.get(ref.id); if (!it || isStair(it.type)) return out;
+    const hz = itemHeight3(it);
+    out.push(h('div', { class: 'row' }, numField('Hauteur', hz.h, 'cm', (v) => { it.ht = v; commit(); }, { id: 'v3-iht', min: 1, max: 600 }), numField('Posé à', hz.z, 'cm', (v) => { it.zb = v; commit(); }, { id: 'v3-izb', min: 0, max: 500 })));
+    out.push(btns(btn('Supprimer', () => { P.items = P.items.filter((x) => x.id !== it.id); touch(); v3Select(0); commit(); }, 'sm danger', 'del')));
+  }
+  return out;
+}
+/* masquage : réglage de la vue, le plan n'est pas modifié */
+function v3Hide(ref) { const s = v3Hidden(); s.add(ref.id); v3SetHidden(s); v3Select(0); render3Panel(); v3Rebuild(); v3Req(); }
+function v3ShowAll() { v3SetHidden(new Set()); render3Panel(); v3Rebuild(); v3Req(); }
 function refPoint(ref) {
   if (ref.t === 'elec') { const e = IDX.elec.get(ref.id); return e && { x: e.x, y: e.y }; }
   if (ref.t === 'item') { const it = IDX.items.get(ref.id); return it && { x: it.x, y: it.y }; }
@@ -1109,7 +1289,7 @@ function v3Down(e) {
   if (!R3.ok) return;
   R3.cv.setPointerCapture(e.pointerId);
   const p = v3Pos(e); PT3.set(e.pointerId, p);
-  if (PT3.size === 1) G3 = { kind: 'one', x0: p.x, y0: p.y, lx: p.x, ly: p.y, t0: performance.now(), moved: false, pan: e.button === 2 || e.button === 1 || e.shiftKey || e.ctrlKey || e.metaKey };
+  if (PT3.size === 1) G3 = { kind: V3.move && IDX.elec.get(V3.move) && v3o().mode !== 'visit' ? 'move' : 'one', x0: p.x, y0: p.y, lx: p.x, ly: p.y, t0: performance.now(), moved: false, pan: e.button === 2 || e.button === 1 || e.shiftKey || e.ctrlKey || e.metaKey };
   else if (PT3.size === 2) { const [a, b] = [...PT3.values()]; G3 = { kind: 'two', d: Math.hypot(a.x - b.x, a.y - b.y), m: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, moved: true }; }
   V3.anim = null;
 }
@@ -1117,6 +1297,16 @@ function v3Move(e) {
   if (!PT3.has(e.pointerId) || !G3) return;
   const p = v3Pos(e); PT3.set(e.pointerId, p);
   const visit = v3o().mode === 'visit';
+  if (G3.kind === 'move') {
+    if (!G3.moved && Math.hypot(p.x - G3.x0, p.y - G3.y0) > 4) G3.moved = true;
+    if (!G3.moved) return;
+    const e = IDX.elec.get(V3.move), L = e && levelOf(e.lv), def = e && ELEC_BY.get(e.type); if (!e || !L || !def) return;
+    const hit = rayAtY(camRay(p.x, p.y), def.floor ? L.elev : L.elev + (L.h || 250)); if (!hit) return;
+    e.x = Math.round(hit[0]); e.y = Math.round(hit[2]);
+    const now = performance.now(); // reconstruction limitée pendant le geste (fluidité)
+    if (!V3.moveT || now - V3.moveT > 70) { V3.moveT = now; v3Rebuild(true); }
+    v3Req(); return;
+  }
   if (G3.kind === 'one') {
     const dx = p.x - G3.lx, dy = p.y - G3.ly; G3.lx = p.x; G3.ly = p.y;
     if (!G3.moved && Math.hypot(p.x - G3.x0, p.y - G3.y0) > 6) G3.moved = true;
@@ -1136,6 +1326,7 @@ function v3Move(e) {
 function v3Up(e) {
   if (!PT3.has(e.pointerId)) return;
   PT3.delete(e.pointerId);
+  if (G3 && G3.kind === 'move') { const moved = G3.moved; G3 = null; if (moved) commit(); else if (e.type === 'pointerup') v3Tap(v3Pos(e)); return; }
   if (G3 && G3.kind === 'one' && !G3.moved && performance.now() - G3.t0 < 450 && e.type === 'pointerup') v3Tap(v3Pos(e));
   if (PT3.size === 1) { const p = [...PT3.values()][0]; G3 = { kind: 'one', x0: p.x, y0: p.y, lx: p.x, ly: p.y, t0: 0, moved: true }; }
   else if (!PT3.size) G3 = null;
@@ -1236,11 +1427,36 @@ function render3Panel() {
     h('div', { class: 'v3-ph' }, h('b', null, 'Vue 3D'), h('button', { class: 'ib', type: 'button', 'aria-label': 'Réduire', title: 'Réduire', html: ICON.x, onclick: () => set('panel', false) })),
     segCtl([{ v: 'orbit', n: 'Maquette' }, { v: 'visit', n: 'Visite' }], o.mode, (v) => set('mode', v)),
     h('p', { class: 'note' }, visit ? 'Glissez pour regarder autour, touchez le sol pour vous y rendre, ou utilisez le joystick.' : 'Un doigt : tourner. Deux doigts : zoomer et déplacer. Double-toucher : s’approcher. Toucher un objet : sa fiche.'),
-    sec('Afficher', h('div', { class: 'chips' }, chip('Mobilier', 'furn'), chip('Électricité', 'elec'), chip('Conduits', 'ducts'), chip('Noms des pièces', 'labels'), !visit ? chip('Ombres', 'shadows') : null, !visit && hasAbove ? chip('Étages au-dessus', 'above') : null)),
-    !visit ? sec('Murs', segCtl([{ v: 'full', n: 'Hauteur réelle' }, { v: 'low', n: 'Coupés à 1 m' }], o.walls, (v) => set('walls', v))) : null,
-    o.ducts ? sec('Gaines électriques', segCtl([{ v: 'plafond', n: 'Par le plafond' }, { v: 'sol', n: 'Par le sol' }], o.route, (v) => set('route', v))) : null,
+    sec('Afficher', h('div', { class: 'chips' }, chip('Mobilier', 'furn'), chip('Électricité', 'elec'), chip('Conduits', 'ducts'), o.ducts ? chip('Câbles', 'cables') : null, chip('Noms des pièces', 'labels'), !visit ? chip('Ombres', 'shadows') : null, !visit && hasAbove ? chip('Étages au-dessus', 'above') : null),
+      o.cables && o.ducts ? h('p', { class: 'note' }, 'Câbles déduits des gaines, depuis le tableau. Gaines transparentes : touchez un câble pour voir son circuit.') : null),
+    !visit ? sec('Murs', segCtl([{ v: 'full', n: 'Hauteur réelle' }, { v: 'low', n: 'Coupés à 1 m' }], o.walls, (v) => set('walls', v)),
+      h('div', { class: 'chips' }, h('button', { type: 'button', class: 'chip', id: 'v3-xray', 'aria-pressed': String(!!o.xray), onclick: () => { o.xray = !o.xray; saveSettings(); R3.shDirty = true; render3Panel(); v3Req(); } }, 'Murs transparents'))) : null,
+    !visit ? cutSection(o) : null,
+    o.ducts ? sec('Gaines sans pose précisée', segCtl([{ v: 'plafond', n: 'Par le plafond' }, { v: 'sol', n: 'Par le sol' }], o.route, (v) => set('route', v))) : null,
+    v3Hidden().size ? sec('Objets masqués', btns(btn(`Tout réafficher (${v3Hidden().size})`, v3ShowAll, 'sm'))) : null,
     btns(btn('Recentrer', () => { if (visit) v3VisitStart(); else fitCam3(true); }, 'sm', 'center'), !visit ? btn('Vue de dessus', () => camTo({ ph: 0.06 }, true), 'sm', 'house') : null, btn('Photo', photo3D, 'sm pri', 'img')),
   ].filter(Boolean));
+}
+
+/* coupe : horizontale (au-dessus d'une hauteur) ou verticale (le long de X ou de Y du plan) ; seul l'affichage change */
+function cutSection(o) {
+  const L = curLevel3(), Hh = L.h || 250;
+  const upd = () => { saveSettings(); R3.shDirty = true; v3Req(); };
+  const kids = [h('div', { class: 'chips' }, [{ v: 'none', n: 'Aucune' }, { v: 'h', n: 'Horizontale' }, { v: 'x', n: 'Verticale ↔' }, { v: 'z', n: 'Verticale ↕' }].map((c) =>
+    h('button', { type: 'button', class: 'chip', 'data-cut': c.v, 'aria-pressed': String(o.cut === c.v), onclick: () => { o.cut = c.v; upd(); render3Panel(); } }, c.n)))];
+  if (o.cut !== 'none') {
+    const key = o.cut === 'h' ? 'cutH' : o.cut === 'x' ? 'cutX' : 'cutZ';
+    const [mn, mx, st] = o.cut === 'h' ? [10, Hh + 40, 1] : [0, 1, 0.005];
+    const lab = h('span', { class: 'v3-cutv' });
+    const show = () => { lab.textContent = o.cut === 'h' ? `${fmtIn(o.cutH)} cm au-dessus du sol` : `${Math.round(o[key] * 100)} %`; };
+    const r = h('input', { type: 'range', id: 'v3-cut', min: String(mn), max: String(mx), step: String(st), value: String(clamp(o[key], mn, mx)), 'aria-label': 'Position de la coupe' });
+    r.addEventListener('input', () => { o[key] = Number(r.value); show(); R3.shDirty = true; v3Req(); });
+    r.addEventListener('change', upd);
+    show();
+    kids.push(h('div', { class: 'v3-cut' }, r, lab));
+    if (o.cut !== 'h') kids.push(btns(btn('Inverser le côté', () => { o.cutFlip = !o.cutFlip; upd(); }, 'sm', 'swap')));
+  }
+  return sec('Coupe', ...kids);
 }
 
 /* ---------------- entrée / sortie de l'onglet ---------------- */
@@ -1270,7 +1486,7 @@ function v3Refresh() {
 }
 function v3Key3(e) {
   const k = e.key.toLowerCase();
-  if (k === 'escape') { v3Select(0); return true; }
+  if (k === 'escape') { V3.move = null; v3Select(0); return true; }
   if (v3o().mode === 'visit' && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', 'z', 'q'].includes(k)) {
     if (e.type === 'keydown') V3.keys.add(k); else V3.keys.delete(k);
     e.preventDefault(); v3Req(); return true;
@@ -1284,5 +1500,5 @@ export { CAM, CAT3, EL3, F3, FS_MAIN, FS_PICK, FS_SH, G3, GB, K3, LDIR, PT3, R3,
   lastTap3, lastTapPos3, legs4, lightMatrix, m4inv, m4look, m4mul, m4ortho, m4persp, m4xv, mixRGB, opening3, photo3D,
   r3Batch, r3Draw, r3Free, r3Init, r3Pick, r3Resize, r3Upload, rayAtY, refPoint, render3Panel, ringArea, showOnPlan,
   shrinkRing, sofa, solid3, sphere3, stair3, stairFootprint, tap3, tube3, v3Down, v3FocusRef, v3Frame, v3JoyBind,
-  v3Key, v3Key3, v3Labels, v3Move, v3Occlusion, v3Pan, v3PlaceLabels, v3Pos, v3Rebuild, v3RefInfo, v3Refresh, v3Req,
+  v3Edit, v3Hidden, v3Hide, v3ShowAll, clipPlane3, cables3, passages3, segBox3, cutSection, ductY3, ductCableY3, v3Key, v3Key3, v3Labels, v3Move, v3Occlusion, v3Pan, v3PlaceLabels, v3Pos, v3Rebuild, v3RefInfo, v3Refresh, v3Req,
   v3Select, v3Show, v3Strafe, v3Tap, v3Up, v3VisitStart, v3Walk, v3Wheel, v3o, wall3 };
