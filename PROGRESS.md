@@ -100,7 +100,10 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Vérifié : ouverture sans erreur, plan 2D, maquette 3D, onglet Contrôle (plus de 400 contrôles), dossier PDF complet (9 chapitres).
 
 ## Tâche en cours
-- Aucune : phase 6 et nouveau plan d'exemple terminés, **fusionnés dans `main`** (demande n°5, fusion demandée par l'utilisateur). Essais iPad à faire (liste dans `NEXT_SESSION.md`).
+- Aucune : phase 6 et nouveau plan d'exemple terminés, **fusionnés dans `main`** (demande n°5, fusion demandée par l'utilisateur). Essais iPad **validés** le 5 novembre 2026. Prochaine session : phases 7 et 8.
+
+## Essais sur l'iPad (phase 6 et plan d'exemple)
+**Validés par l'utilisateur le 5 novembre 2026** (« on est tous bons pour les tests »).
 
 ## Essais sur l'iPad (phase 4)
 **Validés par l'utilisateur le 5 novembre 2026.**

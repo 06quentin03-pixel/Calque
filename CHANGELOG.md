@@ -1,5 +1,8 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Suivi
+- Demande n°5 (phase 6 + plan d'exemple) fusionnée dans `main` ; essais iPad de la phase 6 validés par l'utilisateur.
+
 ## 2026-11-05 — Nouveau plan d'exemple « maison et atelier »
 - Essais iPad de la phase 4 **validés** par l'utilisateur.
 - Le plan d'exemple (Menu › Ouvrir le plan d'exemple, et premier démarrage) devient **« Exemple : maison et atelier »** : la maison d'origine (inchangée) et un **atelier industriel de 40 × 20 m**. L'atelier comprend un hall de 625 m², une bande de locaux (local technique, vestiaires, sanitaires, bureau d'atelier) et une **mezzanine de bureaux** à l'étage (open space, salle de réunion).

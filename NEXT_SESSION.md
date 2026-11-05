@@ -50,7 +50,7 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
 
 ## À faire avant ou pendant la prochaine session
 1. **Demande de fusion n°5 (phase 6 + nouveau plan d'exemple)** : **fusionnée** dans `main` le 5 novembre 2026, à la demande de l'utilisateur.
-2. **Essais iPad de la phase 6** (par l'utilisateur), en paysage et en portrait, sur le plan d'exemple (Menu › Ouvrir le plan d'exemple) — seulement ce que les tests automatiques ne couvrent pas :
+2. **Essais iPad de la phase 6 : validés** par l'utilisateur le 5 novembre 2026. Liste effectuée, en paysage et en portrait, sur le plan d'exemple (Menu › Ouvrir le plan d'exemple) — seulement ce que les tests automatiques ne couvrent pas :
    1. L'appli installée se met à jour (bandeau « nouvelle version », ou fermer et rouvrir) ; vos plans sont toujours là.
    2. Ouvrir un de vos anciens plans, puis Menu › Historique des versions : une ligne « Copie de sécurité avant mise à jour du format (v7 → v8) » est visible.
    3. Menu › Ouvrir le plan d'exemple : « Exemple : maison et atelier » s'ouvre ; déplacer et zoomer au doigt et au Pencil sur tout le plan : c'est fluide ? L'atelier est lisible (chemins de câbles, goulotte, réglettes, machines) ?
@@ -63,7 +63,7 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
    10. Impression (si vous avez une imprimante AirPrint) : un plan imprimé à 100 % mesure juste à la règle (au 1:100, 1 cm = 1 m).
    11. Tableau électrique › onglet « Contrôle NF C 15-100 » : lecture en portrait, filtres, dépliage de « Règle, source et données » au doigt, bouton « Voir » qui montre l'objet sur le plan.
    12. Mode avion : refaire les points 3, 6 et 7 (préparation et enregistrement du PDF sans réseau).
-3. Essais iPad des phases 3, 4 et 5 : **validés** par l'utilisateur le 5 novembre 2026.
+3. Essais iPad des phases 3, 4, 5 et 6 : **validés** par l'utilisateur le 5 novembre 2026.
 4. **Extraits Legrand manquants** : **reportés à la toute fin (phase 8)**, décision de l'utilisateur du 4 novembre 2026
    (documents payants). Ne pas les redemander avant la phase 8. En attendant, ce qui n'est pas dans le guide « Points clés »
    (Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage
