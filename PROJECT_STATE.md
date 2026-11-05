@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 5 novembre 2026, phase 5 en cours (étapes 1 et 2 terminées).
+Mise à jour : 5 novembre 2026, fin de la phase 5.
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -17,8 +17,8 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 2 | Bibliothèque, références, composants, fond de plan | ✅ fusionnée, validée sur iPad (import des catalogues mis de côté) |
 | 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
 | 4 | Cheminements et métrés | ✅ terminée, **fusionnée dans `main` (demande n°3, à la demande de l'utilisateur)**, essais iPad à faire |
-| 5 | Éclairage et 3D avancée | 🟨 en cours : concepteur d'éclairage ✅, IES/LDT ✅, 3D avancée ⬜ |
-| 6 | Documents et moteur de règles | ⬜ |
+| 5 | Éclairage et 3D avancée | ✅ terminée (demande de fusion n°4), essais iPad à faire |
+| 6 | Documents et moteur de règles | ⬜ prochaine phase |
 | 7 | Chantier et variantes | ⬜ |
 | 8 | Validation finale | ⬜ |
 
@@ -32,9 +32,10 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Itinéraire et conflits** `js/itineraire.js` (sans écran) + `js/routeui.js` : zones interdites, proposition d'itinéraire, conflits (portes, fenêtres, murs, zones, VMC).
 - **Remplissage et matériel** `js/materiel.js` (sans écran) : remplissage des cheminements (« vérification nécessaire »), liste de matériel estimée.
 
-## Phase 5 (en cours)
+## Phase 5 (terminée)
 - **Concepteur d'éclairage** `js/eclairage.js` (sans écran) + `js/eclairageui.js` : inspecteur d'une pièce › « Concevoir l'éclairage ». Méthode des lumens + calcul point par point (composante directe), 3 propositions **estimées**, implantation en symboles ordinaires (modifiables), « implantation actuelle » recalculée. Aucun éclairement réglementaire : la valeur visée est saisie.
 - **Photométrie** `js/photometrie.js` (sans écran) : lecture des fichiers IES et LDT (flux intégré « vérifié », puissance du fichier), courbe photométrique ; fichiers enregistrés dans le plan.
+- **3D avancée** `js/vue3d.js` : goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits (option « Câbles »), coupes horizontale et verticales, murs transparents, masquage, modification depuis la fiche 3D (gaine, hauteur de pose, mur, meuble, suppression) et déplacement au doigt des symboles au plafond ou au sol.
 
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).
@@ -55,12 +56,14 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **74/74 réussis** (phase 5, étape 2).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`).
+- `node --test tests/*.test.mjs` : **77/77 réussis** (fin de phase 5).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests).
 - Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
 
 ## Points ouverts
-- Essais iPad de la phase 4 : à faire par l'utilisateur (liste dans `NEXT_SESSION.md`). Phase 3 validée sur iPad le 5 novembre 2026.
+- Essais iPad des phases 4 et 5 : à faire par l'utilisateur (liste dans `NEXT_SESSION.md`). Phase 3 validée sur iPad le 5 novembre 2026.
+- Éclairage : aucun fichier IES / LDT de fabricant n'a pu être essayé ici (tests avec des fichiers de synthèse) ; à essayer avec un vrai fichier sur l'iPad.
+- 3D : un appareil mural ne se déplace pas depuis la 3D (sur le plan seulement) ; la coupe n'a pas de face de remplissage (les murs coupés paraissent creux).
 - Exports PDF des métrés et de la liste de matériel : prévus avec le moteur documentaire (phase 6).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).

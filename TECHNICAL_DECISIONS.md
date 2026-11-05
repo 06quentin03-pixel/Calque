@@ -57,12 +57,18 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-05 (ph. 5) | IES : type C seulement ; LDT : intensités converties avec le flux du premier jeu de lampes | Cas des luminaires d'intérieur ; usage courant des logiciels d'éclairage |
 | 2026-11-05 (ph. 5) | Répartition enregistrée complétée sur 360° (au plus 200 000 valeurs), arrondie au centième de candela | Lecture simple et rapide ; taille raisonnable dans le plan |
 | 2026-11-05 (ph. 5) | Sélecteur de fichiers sans filtre d'extension, contrôle après lecture | Sur iPad, un filtre `.ies` peut griser les fichiers dans l'app Fichiers |
+| 2026-11-05 (ph. 5) | 3D : murs, cloisons et baies dans un lot à part (`G.w`) | Transparence et sélection « à travers » sans reconstruire la maquette |
+| 2026-11-05 (ph. 5) | Coupe = plan de découpe dans les shaders (rendu, ombres, sélection) | Curseur fluide sur iPad : aucune reconstruction pendant le réglage |
+| 2026-11-05 (ph. 5) | Câbles 3D = tronçons de `cheminCircuit` (même calcul que les longueurs) | Une seule source : ce qui est dessiné est ce qui est compté |
+| 2026-11-05 (ph. 5) | Objets masqués et coupe = réglages de la vue (`S.v3`, par plan), jamais dans le plan | Aucune donnée du plan n'est modifiée ni perdue par l'affichage |
+| 2026-11-05 (ph. 5) | Goulotte ou chemin de câbles sans dimensions : dessin indicatif 60 × 40 mm, signalé | Montrer le conduit sans inventer de donnée (rien n'est enregistré) |
+| 2026-11-05 (ph. 5) | Déplacement 3D : seulement les symboles au plafond ou au sol ; un seul `commit()` à la fin du geste, reconstruction limitée à une toutes les 70 ms | Un appareil mural se place le long du mur sur le plan ; un geste = une annulation |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v19`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v20`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 

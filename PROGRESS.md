@@ -1,6 +1,6 @@
 # PROGRESS — état exact du développement
 
-Dernière mise à jour : 5 novembre 2026 (phase 5 en cours).
+Dernière mise à jour : 5 novembre 2026 (phase 5 terminée, demande de fusion n°4 préparée).
 
 ## Branche
 - Nouvelle session par phase : consignes dans `NEXT_SESSION.md`, état dans `PROJECT_STATE.md`.
@@ -79,8 +79,14 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Captures vérifiées en 1180×820, 820×1180 et 390×844 (fiche du fichier, courbe, fichier refusé).
   - Non vérifiable ici : choisir un vrai fichier .ies / .ldt dans l'app Fichiers de l'iPad (aucun fichier de fabricant n'est inclus dans le dépôt).
 
+- ✅ Étape 3 : 3D avancée (`js/vue3d.js`) : goulottes et chemins de câbles à leurs dimensions, pose réelle, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D et déplacement au doigt. 3 tests dans `tests/vue3d.test.mjs`. Tests : **77/77 réussis**.
+  - Vérifié par le calcul : tronçons des câbles du plan d'essai (verticales, jonctions, passage de 250 à 270 cm), câble posé au fond du chemin de câbles.
+  - Fluidité : reconstruction du grand plan de test en 25 à 30 ms ; la coupe ne reconstruit rien.
+  - Captures vérifiées en 1180×820, 820×1180 et 390×844 (panneau, fiche modifiable, coupe, câbles, photo).
+  - Le test instable connu (`ipad.test.mjs`, rendu limité à la zone visible) a échoué une fois dans une suite complète, puis réussi seul deux fois et à la suite complète suivante.
+
 ## Tâche en cours
-- Phase 5, étape 3 : 3D (câbles et chemins de câbles, coupes, transparence, masquage, modification depuis la 3D).
+- Aucune : phase 5 terminée, demande de fusion n°4 à préparer ; essais iPad de la phase 5 à faire (liste dans `NEXT_SESSION.md`).
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**
@@ -95,4 +101,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Phase 5 : étape 2 (IES / LDT), puis étape 3 (3D : câbles et chemins de câbles, coupes, transparence, masquage, modification depuis la 3D).
+- Fusion de la phase 5 (par l'utilisateur), essais iPad des phases 4 et 5, puis phase 6 : documents et moteur de règles.

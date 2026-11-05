@@ -49,7 +49,7 @@ Mise à jour : phase 5 (5 novembre 2026).
 | `interface.js` | Inspecteur, panneaux, niveaux, fenêtres | non |
 | `stockage.js` | Enregistrement IndexedDB, versions, sauvegarde, import / export du fichier | non |
 | `export.js` | PDF intégré, image PNG, partage | non |
-| `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) | non |
+| `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) : gaines, goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D | non |
 | `demarrage.js` | Plan d'exemple, raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
 

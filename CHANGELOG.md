@@ -1,5 +1,22 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Phase 5, étape 3 : 3D avancée (fin de la phase 5)
+- **Chemins de câbles et goulottes** dessinés à leurs vraies dimensions (largeur × hauteur saisies) : goulotte en boîte rectangulaire, chemin de câbles en U ouvert (fond et rebords), gaines ICTA / IRL rondes à leur diamètre. Sans dimensions, dessin indicatif 60 × 40 mm, signalé dans la fiche.
+- **Pose réelle** : chaque conduit est à la hauteur de sa pose (sol, plafond, hauteur donnée) ; descentes et remontées jusqu'aux appareils ; le réglage « par le plafond / par le sol » ne s'applique plus qu'aux gaines sans pose précisée. La fiche 3D d'une gaine affiche sa vraie pose, son type, sa taille et ses circuits.
+- **Passages entre étages** : conduit vertical entre les deux symboles jumeaux, à travers le plancher.
+- **Câbles** (option « Câbles ») : chemin réel de chaque circuit depuis le tableau, déduit des gaines (même calcul que les longueurs de l'onglet Cheminements), verticales et passages compris, un câble coloré par circuit, posé au fond des chemins de câbles et goulottes. Les gaines deviennent transparentes ; toucher un câble ouvre la fiche du circuit (points raccordés, longueurs, bouton « Fiche de calcul »).
+- **Coupes** : horizontale (hauteur au-dessus du sol du niveau) ou verticale dans les deux sens, avec un curseur et « Inverser le côté » ; calculée par la carte graphique, sans reconstruire la maquette (fluide). La sélection au doigt ignore la partie coupée.
+- **Murs transparents** : murs, cloisons, portes et fenêtres en transparence ; on touche ce qui est derrière.
+- **Masquage** : bouton « Masquer » dans la fiche d'un objet, « Tout réafficher (n) » dans le panneau. Réglage de l'affichage seulement : le plan n'est jamais modifié.
+- **Modification depuis la 3D** (fiche de l'objet touché), avec annuler / rétablir et enregistrement :
+  - gaine : type, pose, hauteur du parcours, diamètre ou largeur × hauteur, suppression ;
+  - symbole : hauteur de pose, suppression ; symbole au plafond ou au sol : **« Déplacer »** puis glisser au doigt ou au Pencil (un seul pas d'annulation par geste) ;
+  - mur : hauteur ; meuble : hauteur et hauteur de pose, suppression.
+- Téléphone : le panneau d'options s'efface pendant qu'une fiche est ouverte.
+- Fluidité : reconstruction de la maquette du grand plan de test en 25 à 30 ms (avec ou sans câbles) ; pendant un déplacement, au plus une reconstruction toutes les 70 ms.
+- Service Worker : cache `calque-v20`.
+- Nouveau fichier de tests `tests/vue3d.test.mjs` (3 tests). Tests : 77/77.
+
 ## 2026-11-05 — Phase 5, étape 2 : lecture des fichiers IES et LDT
 - `js/photometrie.js` lit, **sans bibliothèque et hors ligne**, les fichiers **IES** (IESNA LM-63, photométrie de type C ; plans 0°, 0–90°, 0–180°, 90–270°, 0–360° ; TILT=NONE ou INCLUDE) et **LDT** (EULUMDAT, les cinq symétries). La répartition est complétée par symétrie sur 360°.
   - **Flux du luminaire** : calculé en intégrant la répartition lue (lumière qui sort réellement du luminaire), « vérifiée », source = nom du fichier et fabricant. Le flux déclaré par le fichier (lampes × rendement) est affiché pour comparaison, avec une alerte au-delà de 5 % d'écart.
