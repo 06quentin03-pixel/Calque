@@ -62,7 +62,7 @@ test('hors ligne : l’application redémarre sans réseau grâce au Service Wor
   await ctx.setOffline(true);
   await page.reload(); await page.waitForFunction(() => document.getElementById('projName').textContent.length > 0, null, { timeout: 15000 });
   await wait(page, 800);
-  assert.equal(await page.textContent('#projName'), 'Exemple de maison');
+  assert.equal(await page.textContent('#projName'), 'Exemple : maison et atelier');
   await page.click('.vtab[data-view="3d"]'); await wait(page, 800);
   assert.deepEqual(errors, []);
   await ctx.close();

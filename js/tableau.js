@@ -12,6 +12,7 @@ import { SCR, commit, finishChain, refreshUI, requestRender, resizeCanvas } from
 import { btn, btns, chipRow, closePops, elecThumb, h, kv, sec, segCtl, textField, toast, updateHint } from './interface.js';
 import { slug } from './stockage.js';
 import { openFileModal } from './export.js';
+import { pastille, rapportDuPlan, rapportView } from './reglesui.js';
 import { v3Show } from './vue3d.js';
 import { bilanView, ficheButton } from './fiche.js';
 import { metresView } from './metres.js';
@@ -435,12 +436,12 @@ function goToRef(ref) {
   if (p) requestAnimationFrame(() => { V.s = Math.max(V.s, 0.9); V.ox = SCR.w / 2 - p.x * V.s; V.oy = SCR.h / 2 - p.y * V.s; requestRender(); });
 }
 function renderEvMain() {
-  const checks = nfcChecks();
-  const nErr = checks.filter((c) => c.sev === 'err').length, nWarn = checks.filter((c) => c.sev === 'warn').length;
+  /* contrôles : moteur de règles (regles.js), trois statuts, source et édition de chaque règle */
+  const rap = rapportDuPlan(), pa = pastille(rap);
   const bar = $('#evBar');
-  const tab = (v, label, badge) => h('button', { type: 'button', 'aria-pressed': String(ui.evTab === v), onclick: () => { ui.evTab = v; renderEvMain(); } }, label, badge ? h('span', { class: 'ev-count' + (nErr ? ' err' : '') }, badge) : null);
+  const tab = (v, label, badge) => h('button', { type: 'button', 'aria-pressed': String(ui.evTab === v), onclick: () => { ui.evTab = v; renderEvMain(); } }, label, badge ? h('span', { class: 'ev-count' + (pa.cls ? ' ' + pa.cls : '') }, badge) : null);
   bar.replaceChildren(...[
-    h('div', { class: 'seg' }, tab('uni', 'Schéma unifilaire'), tab('panel', 'Coffret'), tab('check', 'Contrôle NF C 15-100', nErr ? String(nErr) : nWarn ? String(nWarn) : '✓'), tab('calc', 'Bilan'), tab('chem', 'Cheminements')),
+    h('div', { class: 'seg' }, tab('uni', 'Schéma unifilaire'), tab('panel', 'Coffret'), tab('check', 'Contrôle NF C 15-100', pa.t), tab('calc', 'Bilan'), tab('chem', 'Cheminements')),
     h('div', { class: 'spacer' }),
     ui.evTab !== 'check' && ui.evTab !== 'calc' && ui.evTab !== 'chem' ? h('div', { class: 'btns' },
       h('button', { class: 'ib', type: 'button', 'aria-label': 'Dézoomer', title: 'Dézoomer', html: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg>', onclick: () => { ui.evZoom = clamp(ui.evZoom / 1.2, 0.3, 3); renderEvMain(); } }),
@@ -449,7 +450,7 @@ function renderEvMain() {
       btn('Image', () => exportElec(ui.evTab, 'png'), 'sm', 'img'), btn('SVG', () => exportElec(ui.evTab, 'svg'), 'sm', 'down')) : null].filter(Boolean));
   const cv2 = $('#evCanvas');
   const sel = ui.evSel && ui.evSel.t === 'circuit' ? ui.evSel.id : null;
-  if (ui.evTab === 'check') { cv2.replaceChildren(checksView(checks)); return; }
+  if (ui.evTab === 'check') { const sc = cv2.scrollTop; cv2.replaceChildren(rapportView(rap, goToRef, () => renderEvMain())); cv2.scrollTop = sc; return; }
   if (ui.evTab === 'calc') { const sc = cv2.scrollTop; cv2.replaceChildren(bilanView()); cv2.scrollTop = sc; return; }
   if (ui.evTab === 'chem') { const sc = cv2.scrollTop; cv2.replaceChildren(metresView()); cv2.scrollTop = sc; return; }
   if (!P.circuits.length && !P.rcds.length) {

@@ -1,5 +1,44 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Nouveau plan d'exemple « maison et atelier »
+- Essais iPad de la phase 4 **validés** par l'utilisateur.
+- Le plan d'exemple (Menu › Ouvrir le plan d'exemple, et premier démarrage) devient **« Exemple : maison et atelier »** : la maison d'origine (inchangée) et un **atelier industriel de 40 × 20 m**. L'atelier comprend un hall de 625 m², une bande de locaux (local technique, vestiaires, sanitaires, bureau d'atelier) et une **mezzanine de bureaux** à l'étage (open space, salle de réunion).
+- Il montre une fonction de chaque phase :
+  - composants personnalisés (tour CN, fraiseuse, rayonnages, établis), articles de la bibliothèque technique, poteaux, escalier, porte sectionnelle, issue de secours ;
+  - installation triphasée 36 kVA avec parafoudre, ks et réserve de câble saisis ; tableau divisionnaire alimenté depuis le tableau de la maison ; prises triphasées, arrêts d'urgence, BAES, bornes de recharge, projecteurs, contrôle d'accès, caméra, Wi-Fi ; données de calcul sur plusieurs circuits (phases L1/L2/L3 et triphasé) ;
+  - 94 gaines : ICTA enterrée, chemins de câbles au plafond, goulotte à 1,10 m, IRL ; passage entre étages vers la mezzanine ; zone interdite (rayonnages) ; tout l'atelier est raccordé, donc ses longueurs, son remplissage et sa liste de matériel sont calculés ;
+  - 4 études d'éclairage (atelier, bureau, open space, séjour) avec des réglettes et des dalles LED ;
+  - cartouche du dossier PDF et indice A ; rapport de contrôle (plus de 400 contrôles).
+- Les valeurs saisies dans l'exemple sont **fictives** et marquées comme telles (« valeur d'exemple de Calque ») : aucune donnée de fabricant, aucune valeur réglementaire.
+- Nouveau module `js/exemple.js` (sorti de `demarrage.js`) ; nouveau test `tests/exemple.test.mjs`. Nouvelle règle du projet (CLAUDE.md) : chaque nouvelle fonctionnalité est ajoutée au plan d'exemple.
+- Service Worker : cache `calque-v23`. Tests : 90/90.
+
+## 2026-11-05 — Phase 6, étape 2 : moteur de règles versionnées (fin de la phase 6)
+- Nouveau **moteur de règles** `js/regles.js` (sans écran, testé avec Node) : catalogue de **51 règles versionnées** (identifiant, version, groupe, source, édition de la norme, origine, données utilisées). Version du jeu de règles : « Calque-règles 2026.11 (1) ».
+- Chaque résultat a l'un des **trois statuts** (conforme / non conforme / vérification nécessaire), avec le détail, l'objet concerné (circuit, différentiel, cheminement, symbole, pièce), les **données utilisées** (avec leur statut : vérifiée, saisie, estimée) et les **données manquantes** (dont les tableaux de la norme non fournis).
+- **Tous les contrôles existants sont repris** : ceux du moteur de calcul (fiche de chaque circuit, interrupteurs différentiels, remplissage des cheminements) et les 49 contrôles de l'ancien onglet « Contrôle NF C 15-100 » (même message, même objet).
+- Règle d'honnêteté : « conforme » n'est possible que pour une règle dont la source est vérifiée (extrait Legrand fourni, ou condition calculée comme IB ≤ In). Une règle de Calque dont la source n'est pas encore rattachée à un extrait est au mieux « vérification nécessaire » (« respecté d'après le contrôle de Calque, à confirmer ») ; un manquement reste « non conforme ». Les recommandations et points d'attention ne sont jamais « non conformes ».
+- **Jamais de conformité globale** si tout n'est pas vérifié : l'avis du rapport le dit clairement. La pastille de l'onglet n'affiche plus de coche verte (nombre de non-conformités, sinon nombre de vérifications, en orange).
+- Onglet **« Contrôle NF C 15-100 »** refait (`js/reglesui.js`) : trois compteurs, avis, filtre (Tous / Non conformes / À vérifier / Conformes), pour chaque contrôle le statut, le détail, « Règle, source et données » à déplier, bouton « Voir » ; catalogue des règles avec leur version.
+- **Dossier PDF** : nouveau chapitre **« Rapport de contrôle »** (version du moteur, synthèse, avis, chaque contrôle avec sa règle, sa source, son édition, ses données). La version des règles est notée dans le cartouche et à chaque indice de révision.
+- Service Worker : cache `calque-v22`.
+- Nouveau fichier de tests `tests/regles.test.mjs` (5 tests). Tests : 89/89.
+
+## 2026-11-05 — Phase 6, étape 1 : moteur documentaire (dossier PDF)
+- Nouveau **Menu › Dossier PDF** : un seul fichier PDF qui regroupe la page de garde (sommaire, tableau des révisions, explication des statuts), les plans techniques (un niveau par page, à une échelle normalisée, avec légende), le schéma unifilaire et le coffret (vectoriels), les nomenclatures (circuits, différentiels, appareils par niveau, références de la bibliothèque technique avec leur fiabilité), le bilan de puissance, les métrés (longueurs, remplissage, matériel) et les études d'éclairage.
+- **Cartouche sur chaque page** : projet, client et adresse, entreprise et auteur, n° d'affaire, titre de la page, échelle, **indice de révision**, date, page n / N.
+- **Indices de révision** A, B, C… : « Enregistrer l'indice A » avec son objet. L'indice est gardé dans le plan, listé sur la page de garde, et une version de l'historique est enregistrée à chaque indice. Sans indice, le dossier est marqué « non diffusé » (aucun indice inventé).
+- Ce qui est **estimé** (longueurs, matériel, éclairage, surfaces) est marqué « Estimée » ; une donnée **manquante** est écrite « Manquante » ; les chapitres des métrés et de l'éclairage commencent par un avertissement.
+- Choix des chapitres, papier des plans et des schémas (A4 ou A3).
+- Technique : le PDF est écrit sans bibliothèque et sans réseau. Le moteur d'écriture est sorti de `export.js` dans `js/pdf.js` (sans écran) ; `js/svgpdf.js` redessine les SVG du tableau en vectoriel ; `js/documents.js` (sans écran) fait la mise en page ; `js/dossierui.js` gère la fenêtre. `lignesCircuits` a été déplacé de `metres.js` vers `materiel.js` (sans écran).
+- **Format des plans v8** : champ `doc` (cartouche et révisions). Migration v7 → v8 avec copie de sécurité dans l'historique ; rien n'est deviné.
+- Service Worker : cache `calque-v21`, nouveaux fichiers dans `CORE`.
+- Nouveau fichier de tests `tests/documents.test.mjs` (7 tests). Tests : 84/84.
+
+## 2026-11-05 — Suivi
+- Demande n°4 (phase 5) fusionnée dans `main` à la demande de l'utilisateur.
+- Essais iPad de la phase 5 validés par l'utilisateur (« tout marche »).
+
 ## 2026-11-05 — Phase 5, étape 3 : 3D avancée (fin de la phase 5)
 - **Chemins de câbles et goulottes** dessinés à leurs vraies dimensions (largeur × hauteur saisies) : goulotte en boîte rectangulaire, chemin de câbles en U ouvert (fond et rebords), gaines ICTA / IRL rondes à leur diamètre. Sans dimensions, dessin indicatif 60 × 40 mm, signalé dans la fiche.
 - **Pose réelle** : chaque conduit est à la hauteur de sa pose (sol, plafond, hauteur donnée) ; descentes et remontées jusqu'aux appareils ; le réglage « par le plafond / par le sol » ne s'applique plus qu'aux gaines sans pose précisée. La fiche 3D d'une gaine affiche sa vraie pose, son type, sa taille et ses circuits.

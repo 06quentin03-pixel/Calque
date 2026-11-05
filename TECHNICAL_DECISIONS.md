@@ -63,12 +63,27 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-05 (ph. 5) | Objets masqués et coupe = réglages de la vue (`S.v3`, par plan), jamais dans le plan | Aucune donnée du plan n'est modifiée ni perdue par l'affichage |
 | 2026-11-05 (ph. 5) | Goulotte ou chemin de câbles sans dimensions : dessin indicatif 60 × 40 mm, signalé | Montrer le conduit sans inventer de donnée (rien n'est enregistré) |
 | 2026-11-05 (ph. 5) | Déplacement 3D : seulement les symboles au plafond ou au sol ; un seul `commit()` à la fin du geste, reconstruction limitée à une toutes les 70 ms | Un appareil mural se place le long du mur sur le plan ; un geste = une annulation |
+| 2026-11-05 (ph. 6) | Moteur d'écriture PDF sorti de `export.js` dans `js/pdf.js` (sans écran), réexporté par `export.js` | Le même moteur sert à l'export du plan et au dossier ; testable dans Node |
+| 2026-11-05 (ph. 6) | Pages de texte mesurées avec les largeurs Helvetica (`textWidth`, option `helv` de `PdfCtx`) | Même mise en page dans Node et sur l'iPad, quelle que soit la police de l'écran |
+| 2026-11-05 (ph. 6) | Schéma unifilaire et coffret : SVG de `tableau.js` relu et redessiné (`svgpdf.js`), pas d'image | Vectoriel, net à l'impression, sans bibliothèque ; un élément inconnu est compté, jamais inventé |
+| 2026-11-05 (ph. 6) | Cartouche et numéros de page écrits à la fin de la composition | Le nombre de pages et le sommaire sont connus seulement à la fin |
+| 2026-11-05 (ph. 6) | Format v8 : `doc` = cartouche + `revisions[]` (indice, date, objet, auteur) ; indice A, B… Z, AA ; une version de l'historique à chaque indice | Le dossier diffusé reste retrouvable ; sans indice, « non diffusé » |
+| 2026-11-05 (ph. 6) | Ce qui demande l'écran (dessin du plan, SVG, contour des pièces, références) est passé en options à `documents.js` | Le moteur documentaire reste sans écran ; sans ces options, le chapitre le dit au lieu d'inventer |
+
+| 2026-11-05 (ph. 6) | Moteur de règles `regles.js` sans écran ; les contrôles qui demandent la géométrie (nfcChecks) lui sont transmis par l'écran avec l'identifiant de leur règle (`rid`) | Rien n'est réécrit ni perdu ; le moteur reste testable dans Node |
+| 2026-11-05 (ph. 6) | Versions : `v` par règle + `REGLES_VERSION` du jeu de règles, notée dans le rapport, le cartouche et chaque indice de révision | On sait avec quelles règles un dossier a été établi |
+| 2026-11-05 (ph. 6) | « Conforme » seulement pour une règle à source vérifiée (extrait Legrand fourni, ou condition calculée IB ≤ In déjà validée en phase 3) ; règle de Calque respectée → « vérification nécessaire » (« à confirmer ») ; manquement → « non conforme » | Pas d'affirmation de conformité sans source ; un problème détecté reste signalé |
+| 2026-11-05 (ph. 6) | Recommandations (parafoudre, GTL, DDA, RJ45) et points d'attention (VMC, symbole sans circuit…) : jamais « non conformes » | Ce ne sont pas des exigences vérifiées |
+| 2026-11-05 (ph. 6) | Contrôles Legrand du moteur de calcul et anciens contrôles de Calque gardés côte à côte (lien `voir` entre eux) | Leur logique diffère légèrement (ex. type A ou F) : aucune fusion qui changerait un résultat |
+| 2026-11-05 (ph. 6) | Pastille de l'onglet : plus de coche verte sans conformité globale | Une coche ferait croire à une installation conforme |
+
+| 2026-11-05 (ph. 6) | Plan d'exemple dans `js/exemple.js`, enrichi à chaque phase ; ses valeurs sont « saisies » avec l'origine « valeur d'exemple de Calque (fictive) » | Essais immédiats sur l'iPad sans fausse donnée ; `tests/exemple.test.mjs` sert de liste de contrôle |
 
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v20`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v23`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 
@@ -77,4 +92,6 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 `calcul` + `electricite` + `interface` ← `fiche` ← (`tableau`, `interface`)
 `noyau` + `mutations` + `symboles` ← `cheminement` ← (`reseaux`, `vue3d`, `stockage`, `calcul`)
 `cheminement` ← `itineraire` ← `materiel` ← (`metres`, `reseaux`) ; `routeui` (écran) utilise `itineraire` et `cheminement`
+`calcul` + `normes` + `materiel` ← `regles` ← `reglesui` (écran, avec `electricite`) ← (`tableau`, `dossierui`)
+`pdf` + `svgpdf` + `calcul` + `materiel` + `eclairage` + `regles` ← `documents` ← `dossierui` (écran, avec `export`, `tableau`) ; `stockage` (migration v8) utilise `documents`
 `noyau` + `photometrie` ← `eclairage` ← `eclairageui` (écran, avec `fiche`) ← `interface` ; `stockage` (migration v7) utilise `eclairage` et `photometrie`

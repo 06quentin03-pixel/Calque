@@ -2,26 +2,16 @@
    Longueurs de chaque circuit (à vol d'oiseau, le long des gaines, à commander avec la réserve).
    Les calculs sont dans cheminement.js (sans écran). Module JavaScript natif (aucune compilation). */
 import { P } from './noyau.js';
-import { aCommander, cheminCircuit, reserveDe } from './cheminement.js';
+import { reserveDe } from './cheminement.js';
 import { LIB_STATUT, fmt } from './calcul.js';
 import { circNumbers, circuitColor } from './electricite.js';
 import { btn, h } from './interface.js';
 import { conflitsPlan } from './itineraire.js';
 import { goToRef } from './tableau.js';
 import { badgeDonnee, champDonnee, openFiche, pillStatut } from './fiche.js';
-import { listeMateriel, remplissageGaines } from './materiel.js';
+import { lignesCircuits, listeMateriel, remplissageGaines } from './materiel.js';
 
 const m = (cm, d = 1) => (cm == null ? '—' : fmt(cm / 100, d) + ' m');
-
-/* longueurs de tous les circuits */
-function lignesCircuits(plan) {
-  const res = reserveDe(plan);
-  return (plan.circuits || []).map((c) => {
-    const ch = cheminCircuit(plan, c.id);
-    const L = c.calc && c.calc.len;
-    return { c, ch, cmd: ch.arbre != null ? aCommander(ch.arbre, res) : null, Lfiche: L || (ch.complet && ch.Lmax > 0 ? { v: Math.round(ch.Lmax) / 100, st: 'estimee' } : null) };
-  });
-}
 
 function longueursSection(lignes) {
   const nums = circNumbers();

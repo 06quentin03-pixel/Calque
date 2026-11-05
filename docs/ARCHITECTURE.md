@@ -1,6 +1,6 @@
 # Architecture de Calque
 
-Mise à jour : phase 5 (5 novembre 2026).
+Mise à jour : phase 6 (5 novembre 2026).
 
 ## Principe
 
@@ -33,6 +33,8 @@ Mise à jour : phase 5 (5 novembre 2026).
 | `elecdonnees.js` | Données électriques sans écran sorties de `electricite.js` : classement des symboles, types de circuits (`CK`), valeurs du contrôle (`SEC_MAX`…), puissance des symboles avec statut | oui |
 | `normes.js` | Tableaux NF C 15-100 (extraits Legrand, source, édition, page, statut « manquante » ou « vérifiée » ; 2 recopiés), constantes estimées, règles citées | oui |
 | `calcul.js` | Moteur de calcul : intensités mono/tri, P/Q/S, cos φ, chute de tension, contrôles à 3 statuts (section/calibre, points, type et calibre des différentiels…), fiche d'un circuit, bilan de puissance, équilibrage des phases | oui |
+| `regles.js` | Moteur de règles versionnées : catalogue (identifiant, version, source, édition, origine, données), trois statuts, données utilisées et manquantes, rapport d'un plan (reprend les contrôles de `calcul.js`, `materiel.js` et de `nfcChecks`), jamais de conformité globale non vérifiée | oui |
+| `reglesui.js` | Onglet « Contrôle NF C 15-100 » : rapport du plan, filtre, détail des règles, catalogue | non |
 | `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
@@ -42,19 +44,24 @@ Mise à jour : phase 5 (5 novembre 2026).
 | `eclairageui.js` | Fenêtre « Éclairage · pièce », section « Éclairage » de l'inspecteur d'une pièce, section « Photométrie » d'un luminaire, implantation | non |
 | `metres.js` | Onglet « Cheminements » du Tableau électrique : longueurs par circuit, réserve, conflits, remplissage, matériel | non |
 | `fiche.js` | Fiche de calcul d'un circuit (fenêtre ouverte depuis l'inspecteur du plan et le tableau), saisie des données de calcul avec leur statut | non |
-| `electricite.js` | Circuits, génération du tableau, contrôle NF C 15-100 (réexporte `elecdonnees.js`) | non |
+| `electricite.js` | Circuits, génération du tableau, contrôles du plan `nfcChecks` (chacun avec l'identifiant `rid` de sa règle dans `regles.js`) (réexporte `elecdonnees.js`) | non |
 | `reseaux.js` | Filtres d'affichage, conduits VMC et gaines, cotes modifiables | non |
 | `interaction.js` | Vue, sélection, outils de dessin, aimantation, Apple Pencil | non |
 | `tableau.js` | Onglet « Tableau électrique » : unifilaire, coffret | non |
 | `interface.js` | Inspecteur, panneaux, niveaux, fenêtres | non |
 | `stockage.js` | Enregistrement IndexedDB, versions, sauvegarde, import / export du fichier | non |
-| `export.js` | PDF intégré, image PNG, partage | non |
+| `pdf.js` | Écriture d'un PDF sans bibliothèque : contexte canvas factice `PdfCtx`, polices Helvetica (WinAnsi), `buildPdf`, largeur d'un texte `textWidth` | oui |
+| `svgpdf.js` | Relecture d'un SVG de Calque (schéma unifilaire, coffret) et dessin vectoriel sur un contexte canvas ou `PdfCtx` | oui |
+| `documents.js` | Moteur documentaire : dossier PDF (page de garde, plans, schéma unifilaire, coffret, nomenclatures, bilan, métrés, éclairage, rapport de contrôle), cartouche et indice de révision, mentions « Estimée » / « Manquante », nettoyage de `doc` (migration v8) | oui |
+| `dossierui.js` | Fenêtre « Dossier PDF » : chapitres, papier, cartouche, indices de révision, préparation et envoi du fichier | non |
+| `export.js` | Export du plan : PDF à l'échelle, image PNG, partage ; plan d'un niveau dans une zone de page (`dessinerPlanZone`, pour le dossier) | non |
 | `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) : gaines, goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D | non |
-| `demarrage.js` | Plan d'exemple, raccourcis clavier, démarrage | non |
+| `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
+| `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
 
 « Sans écran » : le module se charge dans Node sans navigateur, ce qui permet de le tester avec `node --test`.
-Les futurs moteurs (calculs électriques, règles NF C 15-100) seront écrits ainsi, en JavaScript pur.
+Les moteurs de calcul électrique (`calcul.js`), de règles (`regles.js`) et de documents (`documents.js`) sont écrits ainsi, en JavaScript pur.
 
 ### Règles pour modifier le code
 
@@ -91,7 +98,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 7) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 8) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -112,6 +119,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `comps[]` | Copies des composants personnalisés utilisés par le plan (v3) : `id`, `kind` (`furn`/`elec`), `n`, `base` (modèle), `rang`, `w`, `d` ou `h`, `mark`, `tech` |
 | `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
+| `doc` | Dossier PDF (v8) : `client`, `adresse`, `entreprise`, `auteur`, `affaire` (textes facultatifs du cartouche), `revisions[]` (`i` indice A, B…, `date` en ms, `objet`, `par`, `regles` version du moteur de règles) ; l'indice courant est la dernière révision |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.
