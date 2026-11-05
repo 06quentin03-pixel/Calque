@@ -60,7 +60,7 @@ Dépend de : 3.
 - ✅ Taux de remplissage des conduits (« vérification nécessaire » : règle non couverte par l'extrait Legrand, reportée en phase 8), liste de matériel estimée (`js/materiel.js`).
 - Validation : 9 tests dans `tests/cheminement.test.mjs` ; 68/68 au total.
 
-## Phase 5 — Éclairage et 3D avancée ✅ (fusionnée dans `main` ; essais iPad à faire)
+## Phase 5 — Éclairage et 3D avancée ✅ (fusionnée dans `main`, validée sur iPad)
 Dépend de : 2, 4.
 - ✅ Concepteur d'éclairage par la méthode des lumens, **présenté comme une estimation** : 3 propositions, implantation modifiable (`js/eclairage.js`, `js/eclairageui.js`, format v7, 4 tests dans `tests/eclairage.test.mjs`).
 - ✅ Lecture des fichiers IES/LDT, pour le flux et la puissance (`js/photometrie.js`, sans bibliothèque, hors ligne ; 2 tests).

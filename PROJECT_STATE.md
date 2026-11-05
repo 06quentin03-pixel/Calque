@@ -17,7 +17,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 2 | Bibliothèque, références, composants, fond de plan | ✅ fusionnée, validée sur iPad (import des catalogues mis de côté) |
 | 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
 | 4 | Cheminements et métrés | ✅ terminée, **fusionnée dans `main` (demande n°3, à la demande de l'utilisateur)**, essais iPad à faire |
-| 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, essais iPad à faire |
+| 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, **validée sur iPad** (5 novembre 2026) |
 | 6 | Documents et moteur de règles | ⬜ prochaine phase |
 | 7 | Chantier et variantes | ⬜ |
 | 8 | Validation finale | ⬜ |
@@ -61,8 +61,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
 
 ## Points ouverts
-- Essais iPad des phases 4 et 5 : à faire par l'utilisateur (liste dans `NEXT_SESSION.md`). Phase 3 validée sur iPad le 5 novembre 2026.
-- Éclairage : aucun fichier IES / LDT de fabricant n'a pu être essayé ici (tests avec des fichiers de synthèse) ; à essayer avec un vrai fichier sur l'iPad.
+- Essais iPad de la phase 5 : **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »), y compris un vrai fichier IES / LDT de fabricant. Essais iPad de la phase 4 : à faire (liste dans `NEXT_SESSION.md`). Phase 3 validée sur iPad le 5 novembre 2026.
 - 3D : un appareil mural ne se déplace pas depuis la 3D (sur le plan seulement) ; la coupe n'a pas de face de remplissage (les murs coupés paraissent creux).
 - Exports PDF des métrés et de la liste de matériel : prévus avec le moteur documentaire (phase 6).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).

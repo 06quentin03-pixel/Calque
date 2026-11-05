@@ -2,6 +2,7 @@
 
 ## 2026-11-05 — Suivi
 - Demande n°4 (phase 5) fusionnée dans `main` à la demande de l'utilisateur.
+- Essais iPad de la phase 5 validés par l'utilisateur (« tout marche »).
 
 ## 2026-11-05 — Phase 5, étape 3 : 3D avancée (fin de la phase 5)
 - **Chemins de câbles et goulottes** dessinés à leurs vraies dimensions (largeur × hauteur saisies) : goulotte en boîte rectangulaire, chemin de câbles en U ouvert (fond et rebords), gaines ICTA / IRL rondes à leur diamètre. Sans dimensions, dessin indicatif 60 × 40 mm, signalé dans la fiche.

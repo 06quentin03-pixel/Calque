@@ -86,7 +86,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Le test instable connu (`ipad.test.mjs`, rendu limité à la zone visible) a échoué une fois dans une suite complète, puis réussi seul deux fois et à la suite complète suivante.
 
 ## Tâche en cours
-- Aucune : phase 5 terminée et **fusionnée dans `main`** (demande n°4, fusion demandée explicitement par l'utilisateur le 5 novembre 2026). Essais iPad de la phase 5 à faire (liste dans `NEXT_SESSION.md`).
+- Aucune : phase 5 terminée et **fusionnée dans `main`** (demande n°4, fusion demandée explicitement par l'utilisateur le 5 novembre 2026). Essais iPad de la phase 5 **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »).
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**
