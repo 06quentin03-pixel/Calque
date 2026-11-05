@@ -47,7 +47,7 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
 ---
 
 ## À faire avant ou pendant la prochaine session
-1. **Demande de fusion n°4 (phase 5)** : préparée le 5 novembre 2026, à fusionner par l'utilisateur quand il le décide.
+1. **Demande de fusion n°4 (phase 5)** : **fusionnée** dans `main` le 5 novembre 2026, à la demande de l'utilisateur.
 2. **Essais iPad de la phase 5** (par l'utilisateur), en paysage et en portrait — seulement ce que les tests automatiques ne couvrent pas :
    1. L'appli installée se met à jour (bandeau « nouvelle version », ou fermer et rouvrir) ; les plans existants sont là.
    2. Ouvrir un ancien plan, puis Menu › Historique des versions : une ligne « Copie de sécurité avant mise à jour du format (v6 → v7) » est visible et se restaure.

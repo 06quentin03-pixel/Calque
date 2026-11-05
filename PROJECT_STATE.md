@@ -17,7 +17,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 2 | Bibliothèque, références, composants, fond de plan | ✅ fusionnée, validée sur iPad (import des catalogues mis de côté) |
 | 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
 | 4 | Cheminements et métrés | ✅ terminée, **fusionnée dans `main` (demande n°3, à la demande de l'utilisateur)**, essais iPad à faire |
-| 5 | Éclairage et 3D avancée | ✅ terminée (demande de fusion n°4), essais iPad à faire |
+| 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, essais iPad à faire |
 | 6 | Documents et moteur de règles | ⬜ prochaine phase |
 | 7 | Chantier et variantes | ⬜ |
 | 8 | Validation finale | ⬜ |
