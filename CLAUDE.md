@@ -29,6 +29,9 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
    - Pour le reste, décider de façon autonome.
 10. Langue : français, pour l'interface, les commentaires et les échanges. L'utilisateur débute sur GitHub : lui donner des explications simples et concrètes, adaptées à l'iPad.
 11. Ne jamais demander de mot de passe, de jeton ou de clé.
+12. **Plan d'exemple** : chaque nouvelle fonctionnalité est **toujours ajoutée au plan d'exemple** (`js/exemple.js`, Menu › Ouvrir le plan d'exemple), pour que l'utilisateur l'essaie tout de suite sur l'iPad.
+   - Compléter aussi `tests/exemple.test.mjs`, qui vérifie que chaque fonction y figure.
+   - Les valeurs du plan d'exemple sont des valeurs d'exemple marquées « saisie », avec leur origine : jamais présentées comme des données de fabricant ou des valeurs réglementaires.
 
 ## Architecture actuelle (détail et modèle de données : `docs/ARCHITECTURE.md`)
 
@@ -73,6 +76,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Tests : `node --test tests/*.test.mjs` (Playwright + Chromium, serveur intégré au test). Outils communs et plan de test de grande taille : `tests/outils.mjs`.
 - Tailles d'écran à vérifier : 1180×820 (iPad paysage), 820×1180 (iPad portrait), 390×844 (téléphone).
 - Ne jamais laisser de fichiers de test (captures, etc.) dans le dépôt : utiliser le dossier temporaire de la session.
+- Plan d'exemple : `tests/exemple.test.mjs` vérifie qu'il contient chaque fonction (à compléter à chaque phase).
 
 ## Fin de chaque étape
 

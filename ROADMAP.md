@@ -52,7 +52,7 @@ Dépend de : 1b (le moteur de calcul peut démarrer plus tôt, car il est indép
 - ✅ Tableaux issus de l'extrait Legrand « Points clés » (révision 23 août 2024) : sections/calibres par circuit, chauffage, différentiels.
 - ⏸ Tableaux absents de cet extrait (Iz, modes de pose, facteurs de correction, chutes de tension maxi, simultanéité) : **reportés en phase 8** (documents payants). Les contrôles concernés restent « vérification nécessaire » d'ici là.
 
-## Phase 4 — Cheminements et métrés ✅ (fusionnée dans `main` ; essais iPad à faire)
+## Phase 4 — Cheminements et métrés ✅ (fusionnée dans `main`, validée sur iPad)
 Dépend de : 3.
 - ✅ Cheminements (ICTA, IRL, goulottes, chemins de câbles), avec les verticales et les passages entre étages (`js/cheminement.js`, format v6, 3 tests dans `tests/cheminement.test.mjs`).
 - ✅ Longueurs géométriques, longueurs de cheminement et longueurs à commander, avec réserve ; la longueur L de la fiche de calcul vient du plan (« estimée »), remplaçable par une saisie. Onglet « Cheminements » (`js/metres.js`).
@@ -67,11 +67,12 @@ Dépend de : 2, 4.
 - ✅ 3D : câbles et chemins de câbles (dimensions, pose, verticales, passages entre étages), coupes, transparence, masquage, modification depuis la 3D (`js/vue3d.js`, 3 tests dans `tests/vue3d.test.mjs`).
 - Validation : 77/77 tests.
 
-## Phase 6 — Documents et réglementation ✅ (à fusionner ; essais iPad à faire)
+## Phase 6 — Documents et réglementation ✅ (fusionnée dans `main` ; essais iPad à faire)
 Dépend de : 3, 4.
 - ✅ Moteur documentaire : plans techniques, schéma unifilaire, coffret, nomenclatures, bilan, métrés et matériel, études d'éclairage, dossier complet en PDF avec cartouche et indice de révision (`js/pdf.js`, `js/svgpdf.js`, `js/documents.js`, `js/dossierui.js`, format v8, 7 tests dans `tests/documents.test.mjs`).
 - ✅ Moteur de règles versionnées : édition, source, trois statuts, données utilisées et manquantes ; il reprend tous les contrôles existants (`js/regles.js`, `js/reglesui.js`, rapport dans le dossier PDF, 5 tests dans `tests/regles.test.mjs`).
-- Validation : 89/89 tests.
+- ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`), qui montre une fonction de chaque phase.
+- Validation : 90/90 tests.
 
 ## Phase 7 — Chantier et variantes
 Dépend de : 1a (stockage IndexedDB indispensable pour les photos).

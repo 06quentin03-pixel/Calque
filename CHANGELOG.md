@@ -1,5 +1,18 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-05 — Nouveau plan d'exemple « maison et atelier »
+- Essais iPad de la phase 4 **validés** par l'utilisateur.
+- Le plan d'exemple (Menu › Ouvrir le plan d'exemple, et premier démarrage) devient **« Exemple : maison et atelier »** : la maison d'origine (inchangée) et un **atelier industriel de 40 × 20 m**. L'atelier comprend un hall de 625 m², une bande de locaux (local technique, vestiaires, sanitaires, bureau d'atelier) et une **mezzanine de bureaux** à l'étage (open space, salle de réunion).
+- Il montre une fonction de chaque phase :
+  - composants personnalisés (tour CN, fraiseuse, rayonnages, établis), articles de la bibliothèque technique, poteaux, escalier, porte sectionnelle, issue de secours ;
+  - installation triphasée 36 kVA avec parafoudre, ks et réserve de câble saisis ; tableau divisionnaire alimenté depuis le tableau de la maison ; prises triphasées, arrêts d'urgence, BAES, bornes de recharge, projecteurs, contrôle d'accès, caméra, Wi-Fi ; données de calcul sur plusieurs circuits (phases L1/L2/L3 et triphasé) ;
+  - 94 gaines : ICTA enterrée, chemins de câbles au plafond, goulotte à 1,10 m, IRL ; passage entre étages vers la mezzanine ; zone interdite (rayonnages) ; tout l'atelier est raccordé, donc ses longueurs, son remplissage et sa liste de matériel sont calculés ;
+  - 4 études d'éclairage (atelier, bureau, open space, séjour) avec des réglettes et des dalles LED ;
+  - cartouche du dossier PDF et indice A ; rapport de contrôle (plus de 400 contrôles).
+- Les valeurs saisies dans l'exemple sont **fictives** et marquées comme telles (« valeur d'exemple de Calque ») : aucune donnée de fabricant, aucune valeur réglementaire.
+- Nouveau module `js/exemple.js` (sorti de `demarrage.js`) ; nouveau test `tests/exemple.test.mjs`. Nouvelle règle du projet (CLAUDE.md) : chaque nouvelle fonctionnalité est ajoutée au plan d'exemple.
+- Service Worker : cache `calque-v23`. Tests : 90/90.
+
 ## 2026-11-05 — Phase 6, étape 2 : moteur de règles versionnées (fin de la phase 6)
 - Nouveau **moteur de règles** `js/regles.js` (sans écran, testé avec Node) : catalogue de **51 règles versionnées** (identifiant, version, groupe, source, édition de la norme, origine, données utilisées). Version du jeu de règles : « Calque-règles 2026.11 (1) ».
 - Chaque résultat a l'un des **trois statuts** (conforme / non conforme / vérification nécessaire), avec le détail, l'objet concerné (circuit, différentiel, cheminement, symbole, pièce), les **données utilisées** (avec leur statut : vérifiée, saisie, estimée) et les **données manquantes** (dont les tableaux de la norme non fournis).

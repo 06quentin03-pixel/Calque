@@ -16,9 +16,9 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 1c | Performances et Apple Pencil | ✅ fusionnée, validée sur iPad |
 | 2 | Bibliothèque, références, composants, fond de plan | ✅ fusionnée, validée sur iPad (import des catalogues mis de côté) |
 | 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
-| 4 | Cheminements et métrés | ✅ terminée, **fusionnée dans `main` (demande n°3, à la demande de l'utilisateur)**, essais iPad à faire |
+| 4 | Cheminements et métrés | ✅ terminée, fusionnée dans `main` (demande n°3), **validée sur iPad** (5 novembre 2026) |
 | 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, **validée sur iPad** (5 novembre 2026) |
-| 6 | Documents et moteur de règles | ✅ terminée, demande de fusion n°5 à faire fusionner par l'utilisateur, essais iPad à faire |
+| 6 | Documents et moteur de règles | ✅ terminée, **fusionnée dans `main` (demande n°5, avec le nouveau plan d'exemple, à la demande de l'utilisateur)**, essais iPad à faire |
 | 7 | Chantier et variantes | ⬜ |
 | 8 | Validation finale | ⬜ |
 
@@ -36,6 +36,9 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Concepteur d'éclairage** `js/eclairage.js` (sans écran) + `js/eclairageui.js` : inspecteur d'une pièce › « Concevoir l'éclairage ». Méthode des lumens + calcul point par point (composante directe), 3 propositions **estimées**, implantation en symboles ordinaires (modifiables), « implantation actuelle » recalculée. Aucun éclairement réglementaire : la valeur visée est saisie.
 - **Photométrie** `js/photometrie.js` (sans écran) : lecture des fichiers IES et LDT (flux intégré « vérifié », puissance du fichier), courbe photométrique ; fichiers enregistrés dans le plan.
 - **3D avancée** `js/vue3d.js` : goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits (option « Câbles »), coupes horizontale et verticales, murs transparents, masquage, modification depuis la fiche 3D (gaine, hauteur de pose, mur, meuble, suppression) et déplacement au doigt des symboles au plafond ou au sol.
+
+## Plan d'exemple
+- « Exemple : maison et atelier » (`js/exemple.js`) : maison + atelier industriel 40 × 20 m avec mezzanine ; une fonction de chaque phase. **Règle : chaque nouvelle fonctionnalité y est ajoutée** (CLAUDE.md, test `tests/exemple.test.mjs`).
 
 ## Phase 6 (terminée)
 - **Moteur documentaire** (étape 1, terminée) : Menu › **Dossier PDF**. Un seul PDF avec un cartouche (projet, client, indice, date, page n / N) sur chaque page : page de garde (sommaire, révisions, lecture des statuts), plans techniques à l'échelle, schéma unifilaire et coffret vectoriels, nomenclatures, bilan, métrés et matériel, études d'éclairage. Valeurs estimées marquées « Estimée », valeurs manquantes « Manquante ». Indices de révision A, B, C… gardés dans le plan (format **v8**, champ `doc`).
@@ -63,12 +66,12 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **89/89 réussis** (fin de phase 6).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests).
+- `node --test tests/*.test.mjs` : **90/90 réussis** (fin de phase 6, avec le nouveau plan d'exemple).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test).
 - Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
 
 ## Points ouverts
-- Essais iPad de la phase 5 : **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »), y compris un vrai fichier IES / LDT de fabricant. Essais iPad de la phase 4 : à faire (liste dans `NEXT_SESSION.md`). Phase 3 validée sur iPad le 5 novembre 2026.
+- Essais iPad de la phase 5 : **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »), y compris un vrai fichier IES / LDT de fabricant. Essais iPad de la phase 4 : **validés** le 5 novembre 2026. Phase 3 validée sur iPad le 5 novembre 2026.
 - 3D : un appareil mural ne se déplace pas depuis la 3D (sur le plan seulement) ; la coupe n'a pas de face de remplissage (les murs coupés paraissent creux).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).

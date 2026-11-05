@@ -77,11 +77,13 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-05 (ph. 6) | Contrôles Legrand du moteur de calcul et anciens contrôles de Calque gardés côte à côte (lien `voir` entre eux) | Leur logique diffère légèrement (ex. type A ou F) : aucune fusion qui changerait un résultat |
 | 2026-11-05 (ph. 6) | Pastille de l'onglet : plus de coche verte sans conformité globale | Une coche ferait croire à une installation conforme |
 
+| 2026-11-05 (ph. 6) | Plan d'exemple dans `js/exemple.js`, enrichi à chaque phase ; ses valeurs sont « saisies » avec l'origine « valeur d'exemple de Calque (fictive) » | Essais immédiats sur l'iPad sans fausse donnée ; `tests/exemple.test.mjs` sert de liste de contrôle |
+
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v22`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v23`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 

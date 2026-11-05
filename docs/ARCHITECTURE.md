@@ -56,7 +56,8 @@ Mise à jour : phase 6 (5 novembre 2026).
 | `dossierui.js` | Fenêtre « Dossier PDF » : chapitres, papier, cartouche, indices de révision, préparation et envoi du fichier | non |
 | `export.js` | Export du plan : PDF à l'échelle, image PNG, partage ; plan d'un niveau dans une zone de page (`dessinerPlanZone`, pour le dossier) | non |
 | `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) : gaines, goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D | non |
-| `demarrage.js` | Plan d'exemple, raccourcis clavier, démarrage | non |
+| `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
+| `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
 
 « Sans écran » : le module se charge dans Node sans navigateur, ce qui permet de le tester avec `node --test`.

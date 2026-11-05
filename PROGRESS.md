@@ -95,8 +95,15 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Vérifié dans Node : même nombre de contrôles et mêmes statuts que le moteur de calcul ; aucune règle de Calque « conforme » ; jamais de conformité globale ; chaque contrôle de l'ancien `nfcChecks` porte une règle du catalogue (49 appels).
   - Vérifié dans Chromium (plan d'exemple) : chaque contrôle de l'ancien onglet est repris avec le même message ; les non-conformités restent « non conformes » ; affichage en 1180×820, 820×1180 et 390×844 sans défilement horizontal ; rapport dans le dossier PDF (28 pages pour le plan d'exemple).
 
+## Plan d'exemple (après la phase 6)
+- ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`) : une fonction de chaque phase ; tout l'atelier est raccordé par les gaines. Test `tests/exemple.test.mjs`. Tests : **90/90 réussis**.
+  - Vérifié : ouverture sans erreur, plan 2D, maquette 3D, onglet Contrôle (plus de 400 contrôles), dossier PDF complet (9 chapitres).
+
 ## Tâche en cours
-- Aucune : phase 6 terminée. Demande de fusion n°5 préparée ; essais iPad à faire (liste dans `NEXT_SESSION.md`).
+- Aucune : phase 6 et nouveau plan d'exemple terminés, **fusionnés dans `main`** (demande n°5, fusion demandée par l'utilisateur). Essais iPad à faire (liste dans `NEXT_SESSION.md`).
+
+## Essais sur l'iPad (phase 4)
+**Validés par l'utilisateur le 5 novembre 2026.**
 
 ## Essais sur l'iPad (phase 3)
 **Validés par l'utilisateur le 5 novembre 2026.**
