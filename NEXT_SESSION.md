@@ -13,9 +13,8 @@ sauf si je te demande explicitement de fusionner la demande de fusion).
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Vérifie que la branche contient tout main (la demande n°4, phase 5, doit avoir été fusionnée).
-   Si elle est en retard, remets-la au niveau de main avant de commencer. Si la demande n°4 n'est pas
-   fusionnée, dis-le-moi avant de commencer.
+2. Vérifie que la branche contient tout main (la demande n°4, phase 5, a été fusionnée le 5 novembre 2026).
+   Si elle est en retard, remets-la au niveau de main avant de commencer.
 3. Lance node --test tests/*.test.mjs : tout doit réussir (77/77 à la fin de la phase 5).
 4. Vérifie l'état réel du code (js/export.js : PDF intégré ; js/tableau.js : schéma unifilaire ;
    js/metres.js et js/materiel.js : métrés et matériel ; js/calcul.js, js/fiche.js et js/normes.js :
