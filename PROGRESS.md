@@ -109,7 +109,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
   - Vérifié dans Chromium (plan d'exemple) : comparaison des 3 variantes (éclairement de l'atelier : haut de gamme > standard > économique), affichage depuis la fenêtre, annuler, texte des variantes réutilisé par l'annuler, suppression avec copie dans l'historique, chapitre du dossier PDF ; fenêtre en 1180×820 et 390×844 sans défilement horizontal.
 
 ## Tâche en cours
-- Aucune : phase 6 et nouveau plan d'exemple terminés, **fusionnés dans `main`** (demande n°5, fusion demandée par l'utilisateur). Essais iPad **validés** le 5 novembre 2026. Prochaine session : phases 7 et 8.
+- Aucune : phase 7 terminée (chantier et variantes). **Demande de fusion n°6 à fusionner par l'utilisateur**, puis essais iPad (liste dans `NEXT_SESSION.md`). Prochaine session : phase 8.
 
 ## Essais sur l'iPad (phase 6 et plan d'exemple)
 **Validés par l'utilisateur le 5 novembre 2026** (« on est tous bons pour les tests »).
@@ -130,4 +130,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Fusion de la phase 6 (par l'utilisateur), essais iPad de la phase 6 (et de la phase 4), puis phase 7 : chantier et variantes.
+- Fusion de la phase 7 (demande n°6, par l'utilisateur), essais iPad de la phase 7, puis phase 8 : validation finale (extraits Legrand à demander).
