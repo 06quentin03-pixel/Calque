@@ -136,7 +136,7 @@ function renderInspector() {
   const o = selObj();
   let parts;
   try {
-    if (!ui.sel || !o) parts = inspLevel();
+    if (!ui.sel || !o) parts = (EXT.inspVide && EXT.inspVide()) || inspLevel();
     else parts = { wall: inspWall, node: inspNode, opening: inspOpening, item: inspItem, elec: inspElec, room: inspRoom, dim: inspDim, text: inspText, duct: inspDuct, ...EXT.insp }[ui.sel.t](o);
   } catch (err) { console.error(err); parts = inspLevel(); }
   box.replaceChildren(...parts.filter(Boolean));
@@ -583,6 +583,7 @@ function deleteSel() {
   if (s.t === 'wall') deleteWall(s.id);
   else if (s.t === 'node') deleteNode(s.id);
   else if (s.t === 'room') { toast('Une pièce est définie par ses murs : supprimez un mur pour la retirer.'); return; }
+  else if (EXT.del[s.t]) { if (EXT.del[s.t](s.id) === false) return; }
   else {
     const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts', zone: 'zones' }[s.t];
     P[key] = P[key].filter((o) => o.id !== s.id); touch();

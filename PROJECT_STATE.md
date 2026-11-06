@@ -19,7 +19,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 4 | Cheminements et métrés | ✅ terminée, fusionnée dans `main` (demande n°3), **validée sur iPad** (5 novembre 2026) |
 | 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, **validée sur iPad** (5 novembre 2026) |
 | 6 | Documents et moteur de règles | ✅ terminée, **fusionnée dans `main` (demande n°5, avec le nouveau plan d'exemple, à la demande de l'utilisateur)**, **validée sur iPad** (5 novembre 2026) |
-| 7 | Chantier et variantes | ⬜ |
+| 7 | Chantier et variantes | 🟨 étape 1 (mode chantier) terminée |
 | 8 | Validation finale | ⬜ |
 
 ## Ce qui marche aujourd'hui (phases 3 et 4)
@@ -46,6 +46,10 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Moteur de règles versionnées** (étape 2, terminée) : `js/regles.js` (sans écran) + onglet `js/reglesui.js`. 51 règles versionnées (« Calque-règles 2026.11 (1) »), chacune avec sa source, l'édition de la norme et son origine (extrait Legrand, règle générale, contrôle de Calque à rattacher, recommandation, point d'attention). Trois statuts, données utilisées et manquantes. Tous les contrôles existants sont repris (fiche de calcul, différentiels, remplissage, 49 contrôles de `nfcChecks`).
   - Une règle de Calque dont la source n'est pas rattachée à un extrait Legrand n'est jamais « conforme » : respectée → « vérification nécessaire (à confirmer) ».
   - Rapport aussi dans le dossier PDF (chapitre « Rapport de contrôle »).
+
+## Phase 7 (en cours)
+- **Mode chantier** (étape 1, terminée) : onglet « Chantier ». Cases « posé » (appareils, circuits), annotations au Pencil, réserves (statut de suivi, dates, échéance), photos localisées (IndexedDB `calque-photos`, hors du plan, dans la sauvegarde complète), historique ; chapitre « Suivi de chantier » du dossier PDF. Format **v9** (`chantier`).
+  - Modules : `js/chantier.js` (sans écran), `js/chantierui.js`, `js/photos.js`.
 
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).

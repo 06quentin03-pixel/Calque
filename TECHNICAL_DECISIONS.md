@@ -79,11 +79,19 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 
 | 2026-11-05 (ph. 6) | Plan d'exemple dans `js/exemple.js`, enrichi à chaque phase ; ses valeurs sont « saisies » avec l'origine « valeur d'exemple de Calque (fictive) » | Essais immédiats sur l'iPad sans fausse donnée ; `tests/exemple.test.mjs` sert de liste de contrôle |
 
+| 2026-11-06 (ph. 7) | Photos dans une base IndexedDB à part (`calque-photos`), le plan ne garde que position et légende | La base des plans n'est pas mise à niveau (une ancienne version l'ouvre toujours) ; plan léger ; l'annuler ne recopie pas les images |
+| 2026-11-06 (ph. 7) | Une image n'est jamais effacée automatiquement ; « Libérer l'espace » ne supprime que celles qu'aucun plan ni aucune version n'utilise | Un plan copié, une version ou une annulation peuvent encore la désigner : jamais de perte |
+| 2026-11-06 (ph. 7) | Image réduite à 2048 px (JPEG 0,82) + miniature 480 px ; miniature intégrée au PDF (DCTDecode) | Taille raisonnable sur l'iPad, PDF sans bibliothèque |
+| 2026-11-06 (ph. 7) | Mode chantier = vue du même plan `P` ; affichage simplifié temporaire (`LAYERS_CH`), jamais enregistré dans les réglages | Une seule copie des données ; on retrouve le mode Plan tel qu'il était |
+| 2026-11-06 (ph. 7) | Points d'extension `EXT.top/hit/obj/del/inspVide/selectDown/view` | Le chantier s'ajoute sans réécrire le rendu, la sélection ni l'inspecteur |
+| 2026-11-06 (ph. 7) | Statut d'une réserve = statut de suivi (ouverte / en cours / levée), jamais de conformité | Règle de l'utilisateur : pas de conformité affirmée sans vérification |
+| 2026-11-06 (ph. 7) | Outils du chantier « au doigt » (`doigt: true`) même en mode Apple Pencil, sauf Annoter | Toucher un appareil pour le cocher doit marcher au doigt sur le chantier |
+
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v23`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v24`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 

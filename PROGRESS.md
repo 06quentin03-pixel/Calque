@@ -99,6 +99,13 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`) : une fonction de chaque phase ; tout l'atelier est raccordé par les gaines. Test `tests/exemple.test.mjs`. Tests : **90/90 réussis**.
   - Vérifié : ouverture sans erreur, plan 2D, maquette 3D, onglet Contrôle (plus de 400 contrôles), dossier PDF complet (9 chapitres).
 
+## Phase 7 — chantier et variantes (en cours)
+- ✅ Étape 1 : mode chantier (`js/chantier.js` sans écran, `js/chantierui.js`, `js/photos.js`). Format v9. 6 tests dans `tests/chantier.test.mjs`. Tests : **96/96 réussis**.
+  - Vérifié dans Node : nettoyage (rien de deviné), avancement, réserves (numéros, statuts, dates de levée), historique, simplification des traits.
+  - Vérifié dans Chromium : onglet Chantier en 1180×820, 820×1180 et 390×844 (sans défilement horizontal, boutons de 44 px) ; « posé » au doigt ; réserve ; annotation au stylet (événements « pen ») ; photo enregistrée dans IndexedDB (JPEG réduit + miniature), absente du plan et de l'annuler ; annuler/rétablir ; sauvegarde complète avec la photo, réimportée sur un autre « appareil » ; dossier PDF avec la photo intégrée.
+  - Pages du chapitre « Suivi de chantier » contrôlées à l'œil (images converties).
+- ⬜ Étape 2 : variantes.
+
 ## Tâche en cours
 - Aucune : phase 6 et nouveau plan d'exemple terminés, **fusionnés dans `main`** (demande n°5, fusion demandée par l'utilisateur). Essais iPad **validés** le 5 novembre 2026. Prochaine session : phases 7 et 8.
 

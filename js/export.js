@@ -12,6 +12,8 @@ import { LIGHT, addVersion, getDownloads, listProjects, loadProject, lsSet, migr
   openProjects, saveBlobLocal, saveNow, scheduleSave, slug, writePlanLocal } from './stockage.js';
 import { photo3D } from './vue3d.js';
 import { exportUserLib, importUserLib } from './mabiblio.js';
+import { exporterPhotos, importerPhotos } from './photos.js';
+import { photosDuPlan } from './chantier.js';
 import { BASECACHE, COLCACHE, HELV, MC, PdfCtx, PdfPath, WINANSI, baselineOffset, buildPdf, deflateBytes, helvWidth, mkPath,
   parseColor, parseFont, pdfMeasure, pdfStr, pdfText16, pn, pn3, pn4, winAnsiBytes } from './pdf.js';
 
@@ -273,7 +275,7 @@ function dessinerPlanZone(c, zone, L, opts) {
     setRC({ ctx: c, w: c.W, h: c.H, dpr: 1, s: k, ox: plan.x + plan.w / 2 - ((bb.x0 + bb.x1) / 2) * k, oy: plan.y + plan.h / 2 - ((bb.y0 + bb.y1) / 2) * k, px: 0.62 / k, C: LIGHT, ts: 0.62 });
     withExportLayers(o, () => {
       c.save(); setScreen(); c.beginPath(); c.rect(plan.x, plan.y, plan.w, plan.h); c.clip();
-      drawScene(L.id, { export: true, furn: o.furn, dims: o.dims });
+      drawScene(L.id, { export: true, furn: o.furn, dims: o.dims, chantier: !!o.chantier });
       c.restore();
     });
     setScreen();
@@ -454,10 +456,12 @@ function deliverFile(title, data, name, note) {
       }, 'pri', 'up') : null,
       btn('Enregistrer', async () => { if (await saveFile(file)) { closeModal(); toast('Fichier enregistré.'); } else copyBox(); }, share ? '' : 'pri', 'down')));
 }
-function exportJSON() {
-  const data = JSON.stringify(Object.assign({ format: 'calque-plan', version: 1 }, P));
+async function exportJSON() {
+  /* photos du chantier jointes (images enregistrées sur l'appareil, hors du plan) : champ ignoré par les anciennes versions */
+  const ids = photosDuPlan(P), photos = ids.length ? await exporterPhotos(ids) : [];
+  const data = JSON.stringify(Object.assign({ format: 'calque-plan', version: 1 }, P, photos.length ? { photosJointes: photos } : {}));
   deliverFile('Envoyer le plan', data, `${slug(P.name)}.calque.json`,
-    'Ce fichier contient tout le plan (murs, mobilier, électricité, tableau). Il se rouvre dans Calque sur n’importe quel appareil : menu … > Importer un fichier.');
+    'Ce fichier contient tout le plan (murs, mobilier, électricité, tableau' + (photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : '') + '). Il se rouvre dans Calque sur n’importe quel appareil : menu … > Importer un fichier.');
 }
 /* sauvegarde complète : tous les plans de l'appareil dans un seul fichier */
 async function exportAll() {
@@ -471,9 +475,11 @@ async function exportAll() {
   if (!plans.length) { toast('Aucun plan enregistré à sauvegarder.'); return; }
   const d = new Date(), pad = (n) => String(n).padStart(2, '0');
   /* « biblio » : références fabricant et composants personnalisés de l'appareil (ajouté en phase 2 ; ignoré par les anciennes versions) */
-  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib() });
+  /* « photos » (phase 7) : toutes les images du chantier enregistrées sur l'appareil (ignoré par les anciennes versions) */
+  const photos = await exporterPhotos();
+  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib(), photos });
   deliverFile('Sauvegarder tous mes plans', data, `calque-sauvegarde-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.calque.json`,
-    `${plans.length} plan${plans.length > 1 ? 's' : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`);
+    `${plans.length} plan${plans.length > 1 ? 's' : ''}${photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`);
 }
 const isPlanObj = (o) => o && typeof o === 'object' && Array.isArray(o.walls) && Array.isArray(o.nodes);
 /* import d'une sauvegarde complète : n'écrase jamais un plan existant */
@@ -502,6 +508,9 @@ async function importBackup(o) {
   if (lib && lib.refs.kept) parts.push(`${lib.refs.kept} référence${lib.refs.kept > 1 ? 's' : ''} différente${lib.refs.kept > 1 ? 's' : ''} ignorée${lib.refs.kept > 1 ? 's' : ''} (la vôtre est gardée)`);
   if (lib && lib.comps.added + lib.comps.copies) { const n = lib.comps.added + lib.comps.copies; parts.push(`${n} composant${n > 1 ? 's' : ''} personnalisé${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''}`); }
   if (lib && !lib.ok) parts.push('bibliothèque non enregistrée (stockage indisponible)');
+  const ph = Array.isArray(o.photos) && o.photos.length ? await importerPhotos(o.photos) : null;
+  if (ph && ph.added) parts.push(`${ph.added} photo${ph.added > 1 ? 's' : ''} ajoutée${ph.added > 1 ? 's' : ''}`);
+  if (ph && !ph.ok) parts.push('certaines photos n’ont pas pu être enregistrées');
   if (added) parts.push(`${added} plan${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`);
   if (copies) parts.push(`${copies} en copie (un plan du même nom existait déjà et n’a pas été modifié)`);
   if (same) parts.push(`${same} déjà à jour`);
@@ -516,7 +525,9 @@ $('#fileIn').addEventListener('change', async (e) => {
   try {
     if (o && o.format === 'calque-backup' && Array.isArray(o.plans)) { await importBackup(o); return; }
     if (!isPlanObj(o)) throw new Error('format');
+    const jointes = o.photosJointes; delete o.photosJointes;
     delete o.format; delete o.version; delete o.id;
+    if (Array.isArray(jointes) && jointes.length) { const r = await importerPhotos(jointes); if (!r.ok) toast('Certaines photos n’ont pas pu être enregistrées.'); }
     await saveNow();
     openPlan(o, uid('p'));
     scheduleSave();

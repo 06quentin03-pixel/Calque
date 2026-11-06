@@ -1,5 +1,17 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-06 — Phase 7, étape 1 : mode chantier
+- Nouvel onglet **« Chantier »** (à côté de Plan, 3D, Tableau électrique) : plan simplifié (sans mobilier, grille, cotes ni surfaces ; les réglages du mode Plan ne sont pas modifiés) et barre d'outils du chantier : Consulter, Posé, Annoter, Réserve, Photo, Suivi, retour au Plan.
+- **Cases « posé »** par appareil (pastille verte cochée sur le plan) et par circuit (câble tiré et raccordé), avec leur date ; avancement global, par niveau et par circuit.
+- **Annotations au Pencil** (4 couleurs, 3 épaisseurs, gomme) : le stylet écrit, le doigt déplace le plan ; traits simplifiés pour rester légers.
+- **Réserves** numérotées : titre, description, statut de suivi (ouverte, en cours, levée — jamais un statut de conformité), dates de création, de modification et de levée, échéance facultative (dépassée signalée), appareil concerné, photos liées.
+- **Photos localisées** sur le plan, prises avec l'appareil photo ou choisies dans Photos ; ou simple emplacement « photo à prendre ». Les images restent sur l'iPad, dans une base IndexedDB à part (`calque-photos`) : jamais dans le plan, jamais dans l'annuler/rétablir, rien n'est envoyé en ligne. Elles sont ajoutées à la **sauvegarde complète** et au fichier du plan, et réimportées sans rien écraser. « Libérer l'espace » efface seulement les images qu'aucun plan ni aucune version n'utilise.
+- **Historique du chantier** (2000 derniers événements).
+- **Dossier PDF** : nouveau chapitre « Suivi de chantier » (avancement, réserves, plans annotés par niveau, photos, historique). Le moteur PDF sait maintenant intégrer des images JPEG.
+- **Format des plans v9** (`chantier`) : migration v8 → v9 avec copie de sécurité ; rien n'est deviné.
+- Plan d'exemple : appareils et circuits posés, 4 réserves (les trois statuts, une échéance dépassée), 2 « photos à prendre » (aucune photo inventée), 2 annotations, historique.
+- Service Worker : cache `calque-v24`. Nouveau fichier de tests `tests/chantier.test.mjs` (6 tests). Tests : 96/96.
+
 ## 2026-11-05 — Suivi
 - Demande n°5 (phase 6 + plan d'exemple) fusionnée dans `main` ; essais iPad de la phase 6 validés par l'utilisateur.
 

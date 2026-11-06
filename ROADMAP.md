@@ -74,9 +74,9 @@ Dépend de : 3, 4.
 - ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`), qui montre une fonction de chaque phase.
 - Validation : 90/90 tests.
 
-## Phase 7 — Chantier et variantes
+## Phase 7 — Chantier et variantes 🟨
 Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
-- ⬜ Mode chantier : plan simplifié, annotations au Pencil, photos localisées, cases « posé », réserves, historique.
+- ✅ Mode chantier : onglet « Chantier » (plan simplifié), annotations au Pencil, photos localisées (IndexedDB, base à part, hors du plan et de l'annuler), cases « posé » par appareil et par circuit, réserves (statut, dates, échéance), historique ; chapitre « Suivi de chantier » du dossier PDF (photos comprises) ; photos dans la sauvegarde complète (`js/chantier.js`, `js/chantierui.js`, `js/photos.js`, format v9, 6 tests dans `tests/chantier.test.mjs`).
 - ⬜ Variantes : économique, standard, haut de gamme…, avec comparaison et choix de la version principale.
 
 ## Phase 8 — Validation finale

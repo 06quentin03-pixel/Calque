@@ -222,7 +222,17 @@ class PdfCtx {
   fillRect(x, y, w, h) { this._withTemp(() => { this.rect(x, y, w, h); this.fill(); }); }
   strokeRect(x, y, w, h) { this._withTemp(() => { this.rect(x, y, w, h); this.stroke(); }); }
   clearRect() { }
-  drawImage() { }
+  /* image JPEG seulement : { jpeg: Uint8Array (octets du fichier JPEG), w, h } ; tout autre image est ignorée (comme avant) */
+  drawImage(img, x, y, w, h) {
+    if (!img || !(img.jpeg instanceof Uint8Array) || !(img.w > 0) || !(img.h > 0)) return;
+    if (w == null) { w = img.w; h = img.h; }
+    if (!this.images) this.images = new Map();
+    let nm = this.images.get(img); if (!nm) { nm = 'Im' + (this.images.size + 1); this.images.set(img, nm); }
+    this._alpha('ca', this.globalAlpha);
+    const m = this.m, A = [w, 0, 0, -h, x, y + h];
+    const M = [m[0] * A[0] + m[2] * A[1], m[1] * A[0] + m[3] * A[1], m[0] * A[2] + m[2] * A[3], m[1] * A[2] + m[3] * A[3], m[0] * A[4] + m[2] * A[5] + m[4], m[1] * A[4] + m[3] * A[5] + m[5]];
+    this.out.push(`q ${M.map(pn4).join(' ')} cm /${nm} Do Q`);
+  }
   setLineDash(a) { this.dash = Array.isArray(a) ? a.filter((v) => isFinite(v) && v >= 0) : []; if (this.dash.length % 2) this.dash = this.dash.concat(this.dash); }
   getLineDash() { return this.dash.slice(); }
   measureText(s) { const mc = pdfMeasure(this.helv); mc.font = this.font; return mc.measureText(s); }
@@ -264,14 +274,21 @@ async function buildPdf(pages, title, opts) {
   const F2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
   const d = new Date(), z2 = (v) => String(v).padStart(2, '0');
   const INFO = add(`<< /Title ${pdfText16(title || 'Plan')} /Creator (Calque) /Producer (Calque) /CreationDate (D:${d.getFullYear()}${z2(d.getMonth() + 1)}${z2(d.getDate())}${z2(d.getHours())}${z2(d.getMinutes())}${z2(d.getSeconds())}) >>`);
-  const kids = [];
+  const kids = [], imgObjs = new Map();
   for (const pg of pages) {
     const raw = enc.encode(pg.ctx.out.join('\n'));
     const z = compress ? await deflateBytes(raw) : null;
     const cid = add({ dict: z ? '/Filter /FlateDecode' : '', data: z || raw });
     let gs = '';
     for (const [key, nm] of pg.ctx.gsAlpha) gs += `/${nm} << /Type /ExtGState /${key.slice(0, 2)} ${key.slice(2)} >> `;
-    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pn(pg.W)} ${pn(pg.H)}] /Resources << /Font << /F1 ${F1} 0 R /F2 ${F2} 0 R >>${gs ? ' /ExtGState << ' + gs + '>>' : ''} >> /Contents ${cid} 0 R >>`));
+    /* images JPEG (photos du chantier) : un objet par image, partagé entre les pages */
+    let xo = '';
+    if (pg.ctx.images) for (const [img, nm] of pg.ctx.images) {
+      let id = imgObjs.get(img);
+      if (!id) { id = add({ dict: `/Type /XObject /Subtype /Image /Width ${Math.round(img.w)} /Height ${Math.round(img.h)} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode`, data: img.jpeg }); imgObjs.set(img, id); }
+      xo += `/${nm} ${id} 0 R `;
+    }
+    kids.push(add(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pn(pg.W)} ${pn(pg.H)}] /Resources << /Font << /F1 ${F1} 0 R /F2 ${F2} 0 R >>${gs ? ' /ExtGState << ' + gs + '>>' : ''}${xo ? ' /XObject << ' + xo + '>>' : ''} >> /Contents ${cid} 0 R >>`));
   }
   objs[0] = '<< /Type /Catalog /Pages 2 0 R >>';
   objs[1] = `<< /Type /Pages /Kids [${kids.map((k) => k + ' 0 R').join(' ')}] /Count ${kids.length} >>`;

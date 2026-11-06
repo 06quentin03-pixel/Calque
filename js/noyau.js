@@ -130,7 +130,9 @@ function loadSettings() {
   if (!S.filt || typeof S.filt !== 'object' || !Array.isArray(S.filt.off)) S.filt = { off: [], circ: null };
   if (S.ductSys !== 'vmc' && S.ductSys !== 'elec') S.ductSys = 'vmc';
 }
-function saveSettings() { try { localStorage.setItem('calque.settings', JSON.stringify(S)); } catch (e) { } }
+/* mode chantier : affichage simplifié temporaire ; les réglages enregistrés restent ceux du mode plan */
+const LAYERS_CH = { saved: null };
+function saveSettings() { try { const o = LAYERS_CH.saved ? Object.assign({}, S, { layers: LAYERS_CH.saved }) : S; localStorage.setItem('calque.settings', JSON.stringify(o)); } catch (e) { } }
 
 /* ---------- modèle ---------- */
 let P = null;          // plan courant
@@ -138,7 +140,7 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 8;
+const PLAN_VERSION = 9;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
@@ -146,6 +148,7 @@ function blankPlan(name) {
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
     circuits: [], rcds: [], links: [], ducts: [], zones: [], etudes: [], photometries: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
     doc: { revisions: [] },
+    chantier: { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] },
   };
 }
 function normalizePlan(p) {
@@ -156,6 +159,9 @@ function normalizePlan(p) {
   o.ducts = o.ducts.filter((d) => d && Array.isArray(d.pts) && d.pts.length >= 2);
   if (!o.install || typeof o.install !== 'object') o.install = { kva: 9, parafoudre: false, row: 13 };
   if (!o.doc || typeof o.doc !== 'object' || Array.isArray(o.doc) || !Array.isArray(o.doc.revisions)) o.doc = { revisions: [] };
+  if (!o.chantier || typeof o.chantier !== 'object' || Array.isArray(o.chantier)) o.chantier = { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] };
+  { const c = o.chantier; if (!c.poses || typeof c.poses !== 'object') c.poses = {}; for (const k of ['app', 'circ']) if (!c.poses[k] || typeof c.poses[k] !== 'object') c.poses[k] = {};
+    for (const k of ['reserves', 'photos', 'notes', 'journal']) if (!Array.isArray(c[k])) c[k] = []; }
   if (!o.levels.length) o.levels = blankPlan().levels;
   return o;
 }
@@ -189,13 +195,17 @@ const C = {};
 /* points d'extension : un module ajoute un outil, un bandeau d'aide ou un dessin sans modifier les moteurs.
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
-const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {} }; // insp : inspecteur d'un type d'objet ajouté par un module
+const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {},
+  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [] };
+/* top[] (c, lv, opts) : dessiné au-dessus du plan ; hit[] (p, tol) → { t, id } avant les objets du plan ;
+   obj[t](id) : objet sélectionné d'un type ajouté ; del[t](id) : suppression ; inspVide() : inspecteur sans sélection ;
+   selectDown(wp, sp) : remplace l'outil Sélection s'il renvoie un geste ; view[] (v) : appelé au changement de vue */ // insp : inspecteur d'un type d'objet ajouté par un module
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setP(v) { P = v; }
 
-export { $, $$, C, DEG, EXT, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
+export { $, $$, C, DEG, EXT, LAYERS_CH, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
   fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,
   ui, uid, vadd, vang, vcrs, vdir, vdist, vdot, vlen, vmid, vmul, vnorm, vperp, vsub };
