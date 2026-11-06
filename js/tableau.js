@@ -1,6 +1,6 @@
 /* Calque — module « tableau » : onglet « Tableau électrique » : schéma unifilaire, coffret.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, IDX, NF0, NF1, P, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul } from './noyau.js';
+import { $, $$, EXT, IDX, NF0, NF1, P, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { ELEC_BY } from './symboles.js';
 import { FONT_UI, V } from './rendu2d.js';
@@ -237,11 +237,13 @@ function panelSVG(col, selId) {
 function setView(v) {
   ui.view = v;
   try { localStorage.setItem('calque.view', v); } catch (e) { }
-  $('#main').hidden = v !== 'plan';
+  const planLike = v === 'plan' || v === 'chantier';
+  for (const f of EXT.view) f(v);
+  $('#main').hidden = !planLike;
   $('#elecView').hidden = v !== 'elec';
   $('#view3d').hidden = v !== '3d';
   $('#levels').hidden = v === 'elec';
-  $('#btnView').hidden = v !== 'plan';
+  $('#btnView').hidden = !planLike;
   $('#btnFilter').hidden = v === 'elec';
   $('#btnExport').hidden = v === 'elec';
   closeDimEdit(); updateFilterUI();

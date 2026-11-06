@@ -15,6 +15,8 @@ import { makeElecFromDef, makeItemFromDef, newOpening } from './interaction.js';
 import { copyWalls } from './interface.js';
 import { articlesFor } from './technique.js';
 import { REGLES_VERSION } from './regles.js';
+import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
+import { dupliquer, initialiser } from './variantes.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -294,8 +296,65 @@ function samplePlan() {
   /* dossier PDF (phase 6) : cartouche et un premier indice */
   P.doc = { client: 'Client fictif (exemple)', adresse: '1 rue de l’Exemple, 00000 Calque-sur-Plan', entreprise: 'Entreprise fictive', auteur: 'Calque', affaire: 'EX-2026-001',
     revisions: [{ i: 'A', date: Date.UTC(2026, 10, 5, 9), objet: 'Première diffusion du plan d’exemple', par: 'Calque', regles: REGLES_VERSION }] };
+  /* suivi de chantier (phase 7) : valeurs d'exemple (cases « posé », réserves, annotations, photos à prendre).
+     Aucune photo n'est inventée : seulement des emplacements « photo à prendre ». */
+  chantierExemple();
+  variantesExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
+}
+/* variantes (phase 7) : « Standard » (principale, affichée), « Économique » et « Haut de gamme ».
+   Valeurs d'exemple de Calque (fictives) : aucune n'est une donnée de fabricant. */
+function variantesExemple() {
+  initialiser(P, { nom: 'Standard', gamme: 'std', at: Date.UTC(2026, 10, 2, 9) });
+  const eco = dupliquer(P, { nom: 'Économique', gamme: 'eco', at: Date.UTC(2026, 10, 2, 10) });
+  const haut = dupliquer(P, { nom: 'Haut de gamme', gamme: 'haut', at: Date.UTC(2026, 10, 2, 11) });
+  // économique : sans climatisation, caméra ni prises multimédia de la mezzanine ; réglettes moins puissantes ; sans parafoudre
+  const D = eco.data, retire = new Set(D.elec.filter((e) => ['clim', 'camera', 'tv', 'hdmi'].includes(e.type)).map((e) => e.id));
+  D.elec = D.elec.filter((e) => !retire.has(e.id));
+  D.links = D.links.filter((l) => !retire.has(l.a) && !retire.has(l.b));
+  for (const g of D.ducts) { if (retire.has(g.a)) g.a = null; if (retire.has(g.b)) g.b = null; }
+  D.circuits = D.circuits.filter((c) => D.elec.some((e) => e.cid === c.id));
+  D.install.parafoudre = false;
+  for (const e of D.elec) if (e.type === 'reglette' && e.lum) e.lum = { flux: d(4800, EX), p: d(36, EX) };
+  eco.note = 'Exemple : version au plus juste';
+  // haut de gamme : réglettes plus puissantes (valeurs d'exemple)
+  for (const e of haut.data.elec) if (e.type === 'reglette' && e.lum) e.lum = { flux: d(7500, EX), p: d(52, EX) };
+  haut.note = 'Exemple : éclairage renforcé de l’atelier';
+  P.variantes = JSON.parse(JSON.stringify(P.variantes));
+}
+function chantierExemple() {
+  const J = (j, h) => Date.UTC(2026, 10, j, h || 9);
+  const ch = chantierDe(P);
+  const local = P.rooms.find((r) => r.name === 'Local technique'), atelier = P.rooms.find((r) => r.name === 'Atelier');
+  // maison : tout posé ; atelier : la bande de locaux posée, le hall en cours
+  let k = 0;
+  for (const e of P.elec) {
+    if (e.lv === 'L0' && (e.x < 1100 || (e.x < 2000 && e.y < 1000))) ch.poses.app[e.id] = J(3 + (k++ % 3), 8 + (k % 8));
+  }
+  for (const c of P.circuits) {
+    const els = P.elec.filter((e) => e.cid === c.id);
+    if (els.length && els.every((e) => ch.poses.app[e.id])) ch.poses.circ[c.id] = J(5, 16);
+  }
+  noter(P, 'note', 'Début du chantier (exemple fictif de Calque)', J(3, 7));
+  noter(P, 'pose', `Maison et locaux techniques : ${Object.keys(ch.poses.app).length} appareils posés (exemple)`, J(5, 17));
+  const tri = P.elec.find((e) => e.type === 'pc_tri'), baes = P.elec.find((e) => e.type === 'baes' && e.x > 2000), borne = P.elec.find((e) => e.type === 'borne_ve');
+  const r1 = nouvelleReserve(P, { lv: 'L0', x: tri.x + 30, y: tri.y + 30 }, { at: J(5, 10), ref: { t: 'elec', id: tri.id }, titre: 'Exemple : prise triphasée à refixer', detail: 'Valeur d’exemple de Calque : boîtier mal fixé sur le poteau.' });
+  r1.echeance = J(12, 12);
+  const r2 = nouvelleReserve(P, { lv: 'L0', x: baes.x - 40, y: baes.y + 30 }, { at: J(5, 11), ref: { t: 'elec', id: baes.id }, titre: 'Exemple : BAES à remplacer', detail: 'Valeur d’exemple de Calque : appareil reçu abîmé.' });
+  changerStatut(P, r2, 'en_cours', J(6, 9));
+  const r3 = nouvelleReserve(P, { lv: 'L0', x: (local ? local.x : 1600) + 60, y: (local ? local.y : 220) + 40 }, { at: J(4, 14), titre: 'Exemple : repérage des câbles du tableau divisionnaire', detail: 'Valeur d’exemple de Calque.' });
+  changerStatut(P, r3, 'levee', J(6, 15));
+  if (borne) nouvelleReserve(P, { lv: 'L0', x: borne.x + 30, y: borne.y - 30 }, { at: J(6, 16), ref: { t: 'elec', id: borne.id }, titre: 'Exemple : attendre le passage du câble enterré' }).echeance = J(4, 12); // échéance dépassée (exemple)
+  // photos à prendre (aucune image inventée)
+  ch.photos.push({ id: uid('ph'), lv: 'L0', x: tri.x - 40, y: tri.y + 50, legende: 'Exemple : photo à prendre de la prise triphasée', aFaire: true, reserve: r1.id });
+  ch.photos.push({ id: uid('ph'), lv: 'L0', x: (atelier ? atelier.x : 3600) - 300, y: (atelier ? atelier.y : 1100) + 200, legende: 'Exemple : photo à prendre du chemin de câbles avant fermeture', aFaire: true });
+  noter(P, 'photo', 'Deux photos à prendre ajoutées (exemple)', J(6, 17));
+  // annotations au Pencil (exemple) : un entourage et une flèche près de la réserve n° 1
+  const cx = tri.x, cy = tri.y, pts = [];
+  for (let i = 0; i <= 24; i++) { const a = (i / 24) * Math.PI * 2; pts.push(Math.round((cx + 70 * Math.cos(a)) * 10) / 10, Math.round((cy + 55 * Math.sin(a)) * 10) / 10); }
+  ch.notes.push({ id: uid('an'), lv: 'L0', pts, col: '#D0342C', ep: 5, at: J(5, 10) });
+  ch.notes.push({ id: uid('an'), lv: 'L0', pts: [cx + 260, cy + 200, cx + 90, cy + 60, cx + 120, cy + 100, cx + 90, cy + 60, cx + 135, cy + 62], col: '#1F5FD1', ep: 5, at: J(5, 10) });
 }
 
 export { NOM_EXEMPLE, samplePlan };

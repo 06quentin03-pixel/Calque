@@ -1,6 +1,6 @@
 # Architecture de Calque
 
-Mise à jour : phase 6 (5 novembre 2026).
+Mise à jour : phase 7 (6 novembre 2026).
 
 ## Principe
 
@@ -56,6 +56,11 @@ Mise à jour : phase 6 (5 novembre 2026).
 | `dossierui.js` | Fenêtre « Dossier PDF » : chapitres, papier, cartouche, indices de révision, préparation et envoi du fichier | non |
 | `export.js` | Export du plan : PDF à l'échelle, image PNG, partage ; plan d'un niveau dans une zone de page (`dessinerPlanZone`, pour le dossier) | non |
 | `vue3d.js` | Maquette 3D (WebGL 2 écrit à la main) : gaines, goulottes et chemins de câbles à leurs dimensions et à leur pose, passages entre étages, câbles des circuits, coupes, murs transparents, masquage, modification depuis la fiche 3D | non |
+| `chantier.js` | Suivi de chantier : cases « posé », avancement, réserves (numéros, statuts, dates), historique, simplification des traits, nettoyage (migration v9) | oui |
+| `chantierui.js` | Onglet « Chantier » : plan simplifié, outils Posé / Annoter / Réserve / Photo, panneau « Suivi de chantier », inspecteurs des réserves, photos et annotations | non |
+| `photos.js` | Images des photos du chantier dans IndexedDB (base `calque-photos`) : réduction JPEG, miniatures, sauvegarde en base64, images inutilisées | non |
+| `variantes.js` | Variantes : partie électrique propre à chaque variante, création, copie, affichage, version principale, suppression protégée, nettoyage (migration v10), comparaison (appareils, puissance, éclairage, matériel, contrôles) | oui |
+| `variantesui.js` | Fenêtre « Variantes », puce de la variante affichée, comparaison à l'écran | non |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
@@ -74,7 +79,7 @@ Les moteurs de calcul électrique (`calcul.js`), de règles (`regles.js`) et de 
 4. **Rendu 2D** : tout changement du plan appelle `requestRender()` sans argument. `requestRender(true)` est réservé aux changements de la seule couche du dessus (curseur, aperçu).
 5. **Format des plans** : toute évolution ajoute une fonction `MIGRATIONS[n]` (dans `stockage.js`), incrémente `PLAN_VERSION` et ajoute un test.
 
-7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus), `EXT.insp` (inspecteur d'un type d'objet, ex. `zone`).
+7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus), `EXT.insp` (inspecteur d'un type d'objet, ex. `zone`) ; depuis la phase 7 : `EXT.top` (dessin au-dessus du plan), `EXT.hit` (sélection), `EXT.obj` et `EXT.del` (objet d'un type ajouté, suppression), `EXT.inspVide` (panneau sans sélection), `EXT.selectDown` (outil Sélection remplacé), `EXT.view` (changement de vue). Un outil `doigt: true` agit aussi au doigt en mode Apple Pencil.
 6. **Domaine de bibliothèque ajouté par un module** : `LIB_EXTRA` (dans `bibliotheque.js`, pour être disponible dès le chargement).
 
 ## Événements (`evenements.js`)
@@ -98,7 +103,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 8) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 10) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -120,6 +125,8 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `fonds[]` | Fonds de plan (v4), un par niveau : `id`, `lv`, `img` (clé dans `fondImg`), `name`, `wpx`, `hpx` (pixels), `s` (cm par pixel), `cx`, `cy` (centre), `rot`, `op` (opacité), `visible`, `cal` (échelle réglée), `pdfK`, `pdfE` (PDF) |
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
 | `doc` | Dossier PDF (v8) : `client`, `adresse`, `entreprise`, `auteur`, `affaire` (textes facultatifs du cartouche), `revisions[]` (`i` indice A, B…, `date` en ms, `objet`, `par`, `regles` version du moteur de règles) ; l'indice courant est la dernière révision |
+| `chantier` | Suivi de chantier (v9) : `poses` (`app` : { id du symbole: date }, `circ` : { id du circuit: date }), `reserves[]` (`id`, `n`, `lv`, `x`, `y`, `titre`, `detail`, `statut` `ouverte`/`en_cours`/`levee`, `cree`, `maj`, `leve`, `echeance`, `ref` { t: `elec`, id }), `photos[]` (`id`, `lv`, `x`, `y`, `at`, `legende`, `aFaire`, `reserve`, `w`, `h` ; l'image est dans IndexedDB `calque-photos`, magasin `photos`, clé `id`), `notes[]` (annotations : `id`, `lv`, `pts` à plat en cm, `col`, `ep` en cm, `at`), `journal[]` (`at`, `k`, `txt`) |
+| `variantes` | Variantes (v10, facultatif) : `active` (variante dans le plan), `principale`, `liste[]` (`id`, `nom`, `gamme` `eco`/`std`/`haut`/`autre`, `note`, `cree`, `maj`, `data` : `elec`, `circuits`, `rcds`, `links`, `ducts`, `etudes`, `install` des variantes non affichées ; `vide` si une variante a perdu ses données) |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.

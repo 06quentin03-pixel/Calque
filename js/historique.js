@@ -10,6 +10,9 @@ import { P } from './noyau.js';
    une étape ne coûte que les blocs qu'elle a modifiés. Limites : 150 étapes et environ 30 millions de caractères. */
 const H = { u: [], r: [], cur: null };
 const H_STEPS = 150, H_CHARS = 30e6, H_BLOCK = 64;
+/* variantes (phase 7) : objet jamais modifié sur place (variantes.js en crée un nouveau à chaque opération) ;
+   son texte est donc gardé d'une étape à l'autre au lieu d'être refait à chaque modification du plan */
+const TXT_VARIANTES = new WeakMap();
 function snapshot() { return JSON.stringify(P); }
 function packPlan(p, prev) {
   const reuse = new Map();
@@ -22,7 +25,10 @@ function packPlan(p, prev) {
       const n = Math.ceil(v.length / H_BLOCK); pk.keys.push([k, n]);
       for (let i = 0; i < n; i++) add(JSON.stringify(v.slice(i * H_BLOCK, (i + 1) * H_BLOCK)));
     } else {
-      const str = JSON.stringify(v); if (str === undefined) continue; // même règle que JSON.stringify(P)
+      let str;
+      if (k === 'variantes' && v && typeof v === 'object') { str = TXT_VARIANTES.get(v); if (str === undefined) { str = JSON.stringify(v); TXT_VARIANTES.set(v, str); } }
+      else str = JSON.stringify(v);
+      if (str === undefined) continue; // même règle que JSON.stringify(P)
       pk.keys.push([k, -1]); add(str);
     }
   }

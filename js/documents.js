@@ -20,6 +20,7 @@ import { ELEC_BY } from './symboles.js';
 import { lignesCircuits, listeMateriel, remplissageGaines } from './materiel.js';
 import { implantationActuelle, propositions, TYPES_ECL } from './eclairage.js';
 import { REGLES_VERSION } from './regles.js';
+import { STATUT_BY, avancement, resumeReserves } from './chantier.js';
 
 /* ---------------- réglages de mise en page ---------------- */
 const FORMATS = { A4: [595.28, 841.89], A3: [841.89, 1190.55] };
@@ -39,6 +40,8 @@ const CHAPITRES = [
   { id: 'metres', n: 'Métrés et matériel' },
   { id: 'eclairage', n: 'Études d’éclairage' },
   { id: 'controles', n: 'Rapport de contrôle' },
+  { id: 'chantier', n: 'Suivi de chantier (avancement, réserves, photos)' },
+  { id: 'variantes', n: 'Comparaison des variantes' },
 ];
 const CHAP_BY = new Map(CHAPITRES.map((c) => [c.id, c]));
 
@@ -227,7 +230,7 @@ class Redacteur {
       if (l3) this._t(cut(l3, 7, false, c1 - fx - 16), fx + 8, cy + 45, 7, false, COL.ink2);
       // bloc document
       this._t(cut(pg.titre, 10.5, true, c3 - c1 - 16), c1 + 8, cy + 18, 10.5, true);
-      this._t(cut(['Dossier électrique', info.affaire ? 'Affaire ' + info.affaire : '', pg.echelle].filter(Boolean).join(' · '), 7.5, false, c3 - c1 - 16), c1 + 8, cy + 30, 7.5, false, COL.ink2);
+      this._t(cut(['Dossier électrique', info.affaire ? 'Affaire ' + info.affaire : '', info.variante ? 'Variante ' + info.variante : '', pg.echelle].filter(Boolean).join(' · '), 7.5, false, c3 - c1 - 16), c1 + 8, cy + 30, 7.5, false, COL.ink2);
       this._t(cut(`Règles : ${info.regles} · Statuts des données : vérifiée, saisie, estimée`, 6.3, false, c3 - c1 - 16), c1 + 8, cy + 44, 6.3, false, COL.ink3);
       // bloc révision
       const rows = [['Indice', info.indice ? info.indice.i : '— (non diffusé)'], ['Date', info.indice ? fmtJourCourt(info.indice.date) : fmtJourCourt(info.date)], ['Page', `${i + 1} / ${N}`]];
@@ -266,6 +269,7 @@ function chapGarde(R, plan, o) {
   const sous = [info.client, info.adresse].filter(Boolean).join(' · ');
   if (sous) { R._t(sous, R.pg.corps.x, R.y, 11, false, COL.ink2); R.y += 16; }
   R._t(`Indice ${info.indice ? info.indice.i + ' du ' + fmtJour(info.indice.date) : '— : dossier non diffusé (aucun indice enregistré)'}`, R.pg.corps.x, R.y, 10, true); R.y += 14;
+  if (info.variante) { R._t('Variante : ' + info.variante, R.pg.corps.x, R.y, 9.5, true, COL.accent); R.y += 14; }
   R._t(`Édité le ${fmtJour(info.date)}${info.auteur ? ' par ' + info.auteur : ''}${info.entreprise ? ' (' + info.entreprise + ')' : ''}`, R.pg.corps.x, R.y, 8.5, false, COL.ink2); R.y += 30;
   R.titre('Sommaire', 2);
   R.sommaire = { pg: R.pg, y: R.y + 9 };
@@ -483,11 +487,106 @@ function chapControles(R, plan, o) {
   }
 }
 
+/* suivi de chantier (phase 7) : avancement, réserves, photos, plans annotés, historique.
+   Tout vient des cases et des saisies de l'utilisateur sur le chantier : statut de suivi, jamais de conformité. */
+function chapChantier(R, plan, o) {
+  R.page('chantier');
+  const ch = plan.chantier || {}, nums = reperes(plan), names = lvName(plan), now = o.date || Date.now();
+  const av = avancement(plan, { reperes: nums }), rs = resumeReserves(plan, now);
+  const pc = (x) => (x == null ? '—' : x + ' %');
+  R.titre('Suivi de chantier');
+  R.encadre('Avancement et réserves saisis sur le chantier dans Calque (cases « posé », réserves, photos). Le statut d’une réserve (ouverte, en cours, levée) est un statut de suivi, pas un statut de conformité. Ce chapitre ne remplace ni le procès-verbal de réception ni l’attestation de conformité.');
+  R.titre('Avancement', 2);
+  R.tableau([{ t: 'Élément', w: 2.4 }, { t: 'Posés', w: 1, al: 'r' }, { t: 'Total', w: 1, al: 'r' }, { t: 'Avancement', w: 1, al: 'r' }], [
+    [{ t: 'Appareils (symboles du plan)', b: true }, String(av.app.poses), String(av.app.n), pc(av.app.pct)],
+    [{ t: 'Circuits (câble tiré et raccordé)', b: true }, String(av.circ.poses), String(av.circ.n), pc(av.circ.pct)],
+    ...av.niveaux.map((n) => ['Appareils · ' + n.nom, String(n.poses), String(n.n), pc(n.pct)]),
+  ]);
+  if (av.parCircuit.length) R.tableau([{ t: 'Repère', w: 0.6 }, { t: 'Circuit', w: 2.4 }, { t: 'Appareils posés', w: 1.1, al: 'r' }, { t: 'Circuit posé', w: 1.3 }],
+    av.parCircuit.slice().sort((a, b) => (+String(nums.get(a.id) || 'C0').slice(1)) - (+String(nums.get(b.id) || 'C0').slice(1)))
+      .map((c) => [{ t: nums.get(c.id) || '', b: true }, c.nom, c.n ? `${c.poses} / ${c.n}` : '—', c.circuitPose ? { t: 'posé le ' + fmtJourCourt(c.circuitPose), c: COL.ok } : { t: 'non', c: COL.ink3 }]));
+  R.titre('Réserves', 2);
+  const lr = (ch.reserves || []).slice().sort((a, b) => a.n - b.n);
+  R.texte(`${rs.total} réserve${rs.total > 1 ? 's' : ''} : ${rs.ouverte} ouverte${rs.ouverte > 1 ? 's' : ''}, ${rs.en_cours} en cours, ${rs.levee} levée${rs.levee > 1 ? 's' : ''}${rs.enRetard ? `, dont ${rs.enRetard} dont l’échéance est dépassée` : ''}.`, { bold: true });
+  const byId = new Map((plan.elec || []).map((e) => [e.id, e]));
+  if (lr.length) R.tableau([{ t: 'N°', w: 0.45 }, { t: 'Niveau', w: 0.9 }, { t: 'Réserve', w: 3 }, { t: 'Statut', w: 0.8 }, { t: 'Créée', w: 0.8 }, { t: 'Levée', w: 0.8 }, { t: 'Échéance', w: 0.8 }],
+    lr.map((r) => {
+      const st = STATUT_BY.get(r.statut) || { n: r.statut, c: COL.ink }, e = r.ref && r.ref.t === 'elec' ? byId.get(r.ref.id) : null;
+      const app = e ? ((ELEC_BY.get(e.type) || {}).n || e.type) + (e.cid && nums.get(e.cid) ? ' (' + nums.get(e.cid) + ')' : '') : '';
+      const nph = (ch.photos || []).filter((f) => f.reserve === r.id).length;
+      return [{ t: String(r.n), b: true }, names.get(r.lv) || '', { t: (r.titre || 'Sans titre') + (r.detail ? '\n' + r.detail : '') + (app ? '\nAppareil : ' + app : '') + (nph ? `\n${nph} photo${nph > 1 ? 's' : ''}` : '') },
+        { t: st.n, c: st.c, b: true }, r.cree ? fmtJourCourt(r.cree) : '—', r.leve ? fmtJourCourt(r.leve) : '—',
+        r.echeance ? { t: fmtJourCourt(r.echeance) + (r.statut !== 'levee' && r.echeance < now ? ' (dépassée)' : ''), c: r.statut !== 'levee' && r.echeance < now ? COL.bad : COL.ink } : '—'];
+    }), { size: 7.4 });
+  else R.texte('Aucune réserve.', { color: COL.ink2 });
+  /* plans annotés : niveaux qui portent des réserves, des photos ou des annotations */
+  const lvUtiles = (plan.levels || []).filter((L) => ['reserves', 'photos', 'notes'].some((k) => (ch[k] || []).some((x) => x.lv === L.id)));
+  if (o.dessinerPlanChantier) for (const L of lvUtiles) {
+    const pg = R.page('chantier', { titre: `Plan de chantier · ${L.name}`, format: o.formatPlans || 'A4', paysage: true, helv: false });
+    const r = o.dessinerPlanChantier(pg.ctx, { x: pg.corps.x - 6, y: pg.corps.y - 8, w: pg.corps.w + 12, h: pg.corps.h + 16 }, L);
+    if (r) pg.echelle = r.echelle || null;
+  }
+  /* photos */
+  const photos = ch.photos || [];
+  if (photos.length) {
+    R.page('chantier', { titre: 'Photos du chantier' });
+    R.titre('Photos', 2);
+    const cols = 3, gap = 10, W = R.pg.corps.w, cw = (W - gap * (cols - 1)) / cols, ih = cw * 0.75, cellH = ih + 30;
+    let col = 0;
+    for (const f of photos) {
+      if (col === 0) R.place(cellH);
+      const x = R.pg.corps.x + col * (cw + gap), y = R.y, c = R.c;
+      const img = o.photos && o.photos.get(f.id);
+      c.fillStyle = COL.fond; c.fillRect(x, y, cw, ih);
+      if (img) { const k = Math.min(cw / img.w, ih / img.h), w = img.w * k, hh = img.h * k; c.drawImage(img, x + (cw - w) / 2, y + (ih - hh) / 2, w, hh); }
+      else R._t(f.aFaire ? 'Photo à prendre' : 'Image absente de cet appareil', x + cw / 2, y + ih / 2, 8, true, f.aFaire ? COL.est : COL.ink3, 'center');
+      const rr = f.reserve && (ch.reserves || []).find((r) => r.id === f.reserve);
+      const l1 = [names.get(f.lv), f.at ? fmtJourCourt(f.at) : '', rr ? 'Réserve n° ' + rr.n : ''].filter(Boolean).join(' · ');
+      R._t(couper(f.legende || 'Sans légende', 7.5, true, cw)[0], x, y + ih + 10, 7.5, true);
+      R._t(couper(l1, 6.8, false, cw)[0] || '', x, y + ih + 20, 6.8, false, COL.ink2);
+      col++; if (col === cols) { col = 0; R.y += cellH; }
+    }
+    if (col) R.y += cellH;
+  }
+  /* historique */
+  const jr = ch.journal || [];
+  R.titre('Historique du chantier', 2);
+  if (!jr.length) R.texte('Aucun événement enregistré.', { color: COL.ink2 });
+  else {
+    const l = jr.slice().sort((a, b) => a.at - b.at).slice(-300).reverse();
+    if (jr.length > l.length) R.texte(`${l.length} derniers événements sur ${jr.length}.`, { size: 8, color: COL.ink2 });
+    R.tableau([{ t: 'Date', w: 1 }, { t: 'Événement', w: 5 }], l.map((j) => [new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(j.at)), j.txt]), { size: 7.2 });
+  }
+}
+
+/* comparaison des variantes (phase 7) : tableau calculé par variantes.js, fourni par l'appelant */
+function chapVariantes(R, plan, o) {
+  R.page('variantes');
+  R.titre('Comparaison des variantes');
+  const c = o.comparaison;
+  if (!c || c.cols.length < 2) { R.texte('Ce projet n’a pas plusieurs variantes (Menu › Variantes).', { color: COL.ink2 }); return; }
+  R.encadre('Chaque variante est une autre version de l’électricité du même bâtiment. Quantités de matériel et éclairements : estimations de Calque (à vérifier avant commande). Contrôles : nombre de contrôles du moteur de règles par statut ; aucune variante n’est déclarée conforme globalement tant que tout n’est pas vérifié.');
+  R.texte('Variantes : ' + c.cols.map((k) => k.nom + (k.principale ? ' (version principale)' : '') + (k.active ? ' — variante de ce dossier' : '')).join(' ; ') + '.', { bold: true });
+  const fmtV = (x) => (x == null ? { t: '', manquante: true } : fmt(x, Number.isInteger(x) ? 0 : 1));
+  const ST = { estimee: 'estimee', saisie: 'saisie' };
+  for (const g of [...new Set(c.lignes.map((l) => l.groupe))]) {
+    R.titre(g, 2);
+    R.tableau([{ t: 'Élément', w: 3 }, ...c.cols.map((k) => ({ t: k.nom + (k.principale ? ' ★' : ''), w: 1.1, al: 'r' }))],
+      c.lignes.filter((l) => l.groupe === g).map((l) => [{ t: l.nom, b: l.vals.some((x) => x !== l.vals[0]) }, ...l.vals.map((x) => { const v = fmtV(x); return ST[l.st] && x != null ? { t: v, st: ST[l.st] } : v; })]), { size: 7.4 });
+  }
+}
+
 /* ---------------- assemblage ---------------- */
+/* variante affichée (phase 7) : « Économique (variante non principale) » ; null sans variantes */
+function varianteDe(plan) {
+  const v = plan.variantes; if (!v || !Array.isArray(v.liste)) return null;
+  const e = v.liste.find((x) => x.id === v.active); if (!e) return null;
+  return e.nom + (v.active === v.principale ? ' (version principale)' : ' (variante non principale)');
+}
 function infoDossier(plan, o) {
   const d = nettoyerDoc(plan.doc);
   return { projet: plan.name || 'Plan', client: d.client, adresse: d.adresse, auteur: d.auteur, entreprise: d.entreprise, affaire: d.affaire,
-    indice: indiceCourant(d), date: o.date || Date.now(), regles: o.rapport ? o.rapport.version : REGLES_VERSION };
+    indice: indiceCourant(d), date: o.date || Date.now(), regles: o.rapport ? o.rapport.version : REGLES_VERSION, variante: varianteDe(plan) };
 }
 /* compose le dossier : renvoie les pages (PdfCtx) et la table des chapitres */
 function composerDossier(plan, opts) {
@@ -503,6 +602,8 @@ function composerDossier(plan, opts) {
   if (choix.has('metres')) chapMetres(R, plan, o);
   if (choix.has('eclairage')) chapEclairage(R, plan, o);
   if (choix.has('controles')) chapControles(R, plan, o);
+  if (choix.has('chantier')) chapChantier(R, plan, o);
+  if (choix.has('variantes')) chapVariantes(R, plan, o);
   if (!R.pages.length) R.page('garde', { titre: 'Dossier vide' });
   R.finir();
   return { pages: R.pages, chapitres: [...R.premieres.entries()].map(([id, p]) => ({ id, n: (CHAP_BY.get(id) || {}).n, page: p })), info: R.info };

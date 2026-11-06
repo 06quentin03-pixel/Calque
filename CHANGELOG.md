@@ -1,5 +1,32 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-06 — Phase 7, étape 2 : variantes (fin de la phase 7)
+- Nouveau **Menu › Variantes** : la version actuelle devient « Standard » (principale), puis « Nouvelle variante » en crée d'autres (économique, standard, haut de gamme, autre), copies de la variante affichée.
+- Une variante est une autre version de l'**électricité du même bâtiment** : symboles, circuits, différentiels, liaisons, gaines, études d'éclairage et installation lui sont propres ; murs, pièces, mobilier, photométries et suivi de chantier sont communs. Le plan, la 3D, le tableau et le dossier montrent la variante affichée.
+- **Afficher** une variante, la **renommer**, changer sa gamme, la **dupliquer**, la **choisir comme version principale** (★).
+- **Jamais de variante perdue** : la variante affichée et la principale ne peuvent pas être supprimées ; avant toute suppression, une copie du plan est gardée dans l'historique des versions ; annuler/rétablir revient aussi en arrière sur les variantes.
+- **Comparaison** : appareils (et ceux qui diffèrent), circuits, différentiels, puissance installée et appelée, points d'éclairage, puissance des luminaires connus, éclairement moyen estimé de chaque étude, matériel estimé, nombre de contrôles du moteur de règles par statut (jamais de conformité globale affirmée). Les lignes qui diffèrent sont surlignées.
+- Puce « ★ Standard » en haut à gauche du plan (iPad) : variante affichée, ouvre la fenêtre.
+- **Dossier PDF** : nouveau chapitre « Comparaison des variantes » ; la variante (principale ou non) est écrite sur la page de garde et dans le cartouche.
+- **Format des plans v10** (`variantes`) : migration v9 → v10 avec copie de sécurité ; une variante n'est jamais jetée par le nettoyage. L'annuler/rétablir réutilise le texte des variantes d'une étape à l'autre (pas de recopie).
+- Plan d'exemple : variantes « Standard » (principale), « Économique » (sans climatisation, caméra ni multimédia, réglettes moins puissantes, sans parafoudre) et « Haut de gamme » (réglettes plus puissantes), valeurs d'exemple fictives.
+- Service Worker : cache `calque-v25`. Nouveau fichier de tests `tests/variantes.test.mjs` (4 tests). Tests : 100/100.
+
+## 2026-11-06 — Phase 7, étape 1 : mode chantier
+- Nouvel onglet **« Chantier »** (à côté de Plan, 3D, Tableau électrique) : plan simplifié (sans mobilier, grille, cotes ni surfaces ; les réglages du mode Plan ne sont pas modifiés) et barre d'outils du chantier : Consulter, Posé, Annoter, Réserve, Photo, Suivi, retour au Plan.
+- **Cases « posé »** par appareil (pastille verte cochée sur le plan) et par circuit (câble tiré et raccordé), avec leur date ; avancement global, par niveau et par circuit.
+- **Annotations au Pencil** (4 couleurs, 3 épaisseurs, gomme) : le stylet écrit, le doigt déplace le plan ; traits simplifiés pour rester légers.
+- **Réserves** numérotées : titre, description, statut de suivi (ouverte, en cours, levée — jamais un statut de conformité), dates de création, de modification et de levée, échéance facultative (dépassée signalée), appareil concerné, photos liées.
+- **Photos localisées** sur le plan, prises avec l'appareil photo ou choisies dans Photos ; ou simple emplacement « photo à prendre ». Les images restent sur l'iPad, dans une base IndexedDB à part (`calque-photos`) : jamais dans le plan, jamais dans l'annuler/rétablir, rien n'est envoyé en ligne. Elles sont ajoutées à la **sauvegarde complète** et au fichier du plan, et réimportées sans rien écraser. « Libérer l'espace » efface seulement les images qu'aucun plan ni aucune version n'utilise.
+- **Historique du chantier** (2000 derniers événements).
+- **Dossier PDF** : nouveau chapitre « Suivi de chantier » (avancement, réserves, plans annotés par niveau, photos, historique). Le moteur PDF sait maintenant intégrer des images JPEG.
+- **Format des plans v9** (`chantier`) : migration v8 → v9 avec copie de sécurité ; rien n'est deviné.
+- Plan d'exemple : appareils et circuits posés, 4 réserves (les trois statuts, une échéance dépassée), 2 « photos à prendre » (aucune photo inventée), 2 annotations, historique.
+- Service Worker : cache `calque-v24`. Nouveau fichier de tests `tests/chantier.test.mjs` (6 tests). Tests : 96/96.
+
+## 2026-11-05 — Suivi
+- Demande n°5 (phase 6 + plan d'exemple) fusionnée dans `main` ; essais iPad de la phase 6 validés par l'utilisateur.
+
 ## 2026-11-05 — Nouveau plan d'exemple « maison et atelier »
 - Essais iPad de la phase 4 **validés** par l'utilisateur.
 - Le plan d'exemple (Menu › Ouvrir le plan d'exemple, et premier démarrage) devient **« Exemple : maison et atelier »** : la maison d'origine (inchangée) et un **atelier industriel de 40 × 20 m**. L'atelier comprend un hall de 625 m², une bande de locaux (local technique, vestiaires, sanitaires, bureau d'atelier) et une **mezzanine de bureaux** à l'étage (open space, salle de réunion).

@@ -67,17 +67,18 @@ Dépend de : 2, 4.
 - ✅ 3D : câbles et chemins de câbles (dimensions, pose, verticales, passages entre étages), coupes, transparence, masquage, modification depuis la 3D (`js/vue3d.js`, 3 tests dans `tests/vue3d.test.mjs`).
 - Validation : 77/77 tests.
 
-## Phase 6 — Documents et réglementation ✅ (fusionnée dans `main` ; essais iPad à faire)
+## Phase 6 — Documents et réglementation ✅ (fusionnée dans `main`, validée sur iPad)
 Dépend de : 3, 4.
 - ✅ Moteur documentaire : plans techniques, schéma unifilaire, coffret, nomenclatures, bilan, métrés et matériel, études d'éclairage, dossier complet en PDF avec cartouche et indice de révision (`js/pdf.js`, `js/svgpdf.js`, `js/documents.js`, `js/dossierui.js`, format v8, 7 tests dans `tests/documents.test.mjs`).
 - ✅ Moteur de règles versionnées : édition, source, trois statuts, données utilisées et manquantes ; il reprend tous les contrôles existants (`js/regles.js`, `js/reglesui.js`, rapport dans le dossier PDF, 5 tests dans `tests/regles.test.mjs`).
 - ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`), qui montre une fonction de chaque phase.
 - Validation : 90/90 tests.
 
-## Phase 7 — Chantier et variantes
+## Phase 7 — Chantier et variantes ✅ (à fusionner et à vérifier sur iPad)
 Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
-- ⬜ Mode chantier : plan simplifié, annotations au Pencil, photos localisées, cases « posé », réserves, historique.
-- ⬜ Variantes : économique, standard, haut de gamme…, avec comparaison et choix de la version principale.
+- ✅ Mode chantier : onglet « Chantier » (plan simplifié), annotations au Pencil, photos localisées (IndexedDB, base à part, hors du plan et de l'annuler), cases « posé » par appareil et par circuit, réserves (statut, dates, échéance), historique ; chapitre « Suivi de chantier » du dossier PDF (photos comprises) ; photos dans la sauvegarde complète (`js/chantier.js`, `js/chantierui.js`, `js/photos.js`, format v9, 6 tests dans `tests/chantier.test.mjs`).
+- ✅ Variantes : économique, standard, haut de gamme…, dans le plan (partie électrique propre à chaque variante, bâtiment commun), comparaison (appareils, puissance, éclairage, matériel, contrôles du moteur de règles), version principale, jamais de variante perdue ; chapitre « Comparaison des variantes » du dossier PDF (`js/variantes.js`, `js/variantesui.js`, format v10, 4 tests dans `tests/variantes.test.mjs`).
+- Validation : 100/100 tests.
 
 ## Phase 8 — Validation finale
 - ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.

@@ -99,8 +99,20 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`) : une fonction de chaque phase ; tout l'atelier est raccordé par les gaines. Test `tests/exemple.test.mjs`. Tests : **90/90 réussis**.
   - Vérifié : ouverture sans erreur, plan 2D, maquette 3D, onglet Contrôle (plus de 400 contrôles), dossier PDF complet (9 chapitres).
 
+## Phase 7 — chantier et variantes (terminée, à fusionner et à vérifier sur iPad)
+- ✅ Étape 1 : mode chantier (`js/chantier.js` sans écran, `js/chantierui.js`, `js/photos.js`). Format v9. 6 tests dans `tests/chantier.test.mjs`. Tests : **96/96 réussis**.
+  - Vérifié dans Node : nettoyage (rien de deviné), avancement, réserves (numéros, statuts, dates de levée), historique, simplification des traits.
+  - Vérifié dans Chromium : onglet Chantier en 1180×820, 820×1180 et 390×844 (sans défilement horizontal, boutons de 44 px) ; « posé » au doigt ; réserve ; annotation au stylet (événements « pen ») ; photo enregistrée dans IndexedDB (JPEG réduit + miniature), absente du plan et de l'annuler ; annuler/rétablir ; sauvegarde complète avec la photo, réimportée sur un autre « appareil » ; dossier PDF avec la photo intégrée.
+  - Pages du chapitre « Suivi de chantier » contrôlées à l'œil (images converties).
+- ✅ Étape 2 : variantes (`js/variantes.js` sans écran, `js/variantesui.js`). Format v10. 4 tests dans `tests/variantes.test.mjs`. Tests : **100/100 réussis**.
+  - Vérifié dans Node : création, copie indépendante, affichage (la variante quittée garde ses données), refus de supprimer l'affichée et la principale, nettoyage sans perte.
+  - Vérifié dans Chromium (plan d'exemple) : comparaison des 3 variantes (éclairement de l'atelier : haut de gamme > standard > économique), affichage depuis la fenêtre, annuler, texte des variantes réutilisé par l'annuler, suppression avec copie dans l'historique, chapitre du dossier PDF ; fenêtre en 1180×820 et 390×844 sans défilement horizontal.
+
 ## Tâche en cours
-- Aucune : phase 6 et nouveau plan d'exemple terminés, **fusionnés dans `main`** (demande n°5, fusion demandée par l'utilisateur). Essais iPad à faire (liste dans `NEXT_SESSION.md`).
+- Aucune : phase 7 terminée (chantier et variantes). **Demande de fusion n°6 à fusionner par l'utilisateur**, puis essais iPad (liste dans `NEXT_SESSION.md`). Prochaine session : phase 8.
+
+## Essais sur l'iPad (phase 6 et plan d'exemple)
+**Validés par l'utilisateur le 5 novembre 2026** (« on est tous bons pour les tests »).
 
 ## Essais sur l'iPad (phase 4)
 **Validés par l'utilisateur le 5 novembre 2026.**
@@ -118,4 +130,4 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Un fond de plan alourdit le plan (environ 1 à 3 Mo pour un plan scanné) et chaque copie de l'historique des versions.
 
 ## Prochaine action prévue
-- Fusion de la phase 6 (par l'utilisateur), essais iPad de la phase 6 (et de la phase 4), puis phase 7 : chantier et variantes.
+- Fusion de la phase 7 (demande n°6, par l'utilisateur), essais iPad de la phase 7, puis phase 8 : validation finale (extraits Legrand à demander).

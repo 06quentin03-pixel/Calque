@@ -15,6 +15,9 @@ import { articleView } from './technique.js';
 import { UL } from './mabiblio.js';
 import { rapportDuPlan } from './reglesui.js';
 import { REGLES_VERSION } from './regles.js';
+import { jpegMiniature } from './photos.js';
+import { variantesDe } from './variantes.js';
+import { comparaison } from './variantesui.js';
 import { CHAMPS_DOC, CHAPITRES, dossierPDF, indiceCourant, indiceSuivant, nettoyerDoc } from './documents.js';
 
 const LIB_CHAMP = { client: 'Client / maître d’ouvrage', adresse: 'Adresse du chantier', entreprise: 'Entreprise', auteur: 'Établi par', affaire: 'N° d’affaire' };
@@ -43,6 +46,7 @@ function optionsDossier(d) {
     chapitres: d.chap, formatPlans: d.fmt, formatSchemas: d.fmtSch,
     niveaux: levelsSorted().map((l) => l.id),
     dessinerPlan: (c, zone, L) => dessinerPlanZone(c, zone, L),
+    dessinerPlanChantier: (c, zone, L) => dessinerPlanZone(c, zone, L, { chantier: true, furn: false }),
     svgUnifilaire: has ? uniSVG(PRINT_COL, null).svg : null,
     svgCoffret: has ? panelSVG(PRINT_COL, null).svg : null,
     pieceDe: (lbl) => { const r = roomOfLabel(lbl); return r ? { poly: r.poly, holes: r.holes || [], area: r.area } : null; },
@@ -51,6 +55,14 @@ function optionsDossier(d) {
   };
 }
 
+/* miniatures JPEG des photos du chantier (enregistrées sur l'appareil) */
+async function photosPourDossier() {
+  const m = new Map();
+  for (const f of (P.chantier && P.chantier.photos) || []) { if (f.aFaire) continue; const j = await jpegMiniature(f.id); if (j) m.set(f.id, j); }
+  return m;
+}
+/* dossier avec le chapitre « Suivi de chantier » (depuis le mode chantier) */
+function openDossierChantier() { const d = reglages(); if (!d.chap.includes('chantier')) { d.chap = CHAP_UI.map((c) => c.id).filter((x) => x === 'chantier' || d.chap.includes(x)); saveSettings(); } openDossier(); }
 function openDossier() {
   DS.file = null;
   openModal('Dossier PDF');
@@ -113,7 +125,10 @@ async function preparer() {
   const g = ++DS.gen; DS.busy = true; DS.file = null; majActions();
   try {
     await new Promise((r) => setTimeout(r, 30));
-    const res = await dossierPDF(P, optionsDossier(d));
+    const o = optionsDossier(d);
+    if (d.chap.includes('chantier')) o.photos = await photosPourDossier();
+    if (d.chap.includes('variantes') && variantesDe(P) && variantesDe(P).liste.length > 1) o.comparaison = comparaison();
+    const res = await dossierPDF(P, o);
     if (g !== DS.gen) return;
     const ind = res.info.indice ? '-ind' + res.info.indice.i : '';
     DS.file = new File([res.blob], `${slug(P.name)}-dossier${ind}.pdf`, { type: 'application/pdf' });
@@ -122,4 +137,4 @@ async function preparer() {
   finally { if (g === DS.gen) { DS.busy = false; majActions(); } }
 }
 
-export { DS, openDossier, optionsDossier, preparer, renderDossier };
+export { DS, openDossier, openDossierChantier, photosPourDossier, optionsDossier, preparer, renderDossier };

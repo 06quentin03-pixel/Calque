@@ -56,7 +56,7 @@ window.addEventListener('blur', () => { keys.space = false; keys.shift = false; 
 
 /* ---------------- démarrage ---------------- */
 function bindUI() {
-  for (const b of $$('.tool')) b.addEventListener('click', () => setTool(b.dataset.tool));
+  for (const b of $$('.tool[data-tool]')) b.addEventListener('click', () => setTool(b.dataset.tool));
   $('#btnUndo').addEventListener('click', undo);
   $('#btnRedo').addEventListener('click', redo);
   $('#btnFilter').addEventListener('click', (e) => openFilterPop(e.currentTarget));
@@ -97,7 +97,7 @@ async function boot() {
   }
   if (!ok) openPlan(samplePlan(), uid('p'), { example: true });
   resizeCanvas();
-  { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d') setView(vw); }
+  { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d' || vw === 'chantier') setView(vw); }
   getDownloads();
   const cloud = await Store.init();
   if (!cloud) { if (!ui.isExample) setSave('local'); return; }

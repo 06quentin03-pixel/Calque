@@ -13,6 +13,8 @@ import { nettoyerGaine, nettoyerZone } from './cheminement.js';
 import { nettoyerEtude, nettoyerLum } from './eclairage.js';
 import { nettoyerPhotometrie } from './photometrie.js';
 import { nettoyerDoc } from './documents.js';
+import { nettoyerChantier } from './chantier.js';
+import { nettoyerVariantes } from './variantes.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -105,6 +107,20 @@ const MIGRATIONS = {
     p.doc = nettoyerDoc(p.doc);
     return p;
   },
+  /* v8 → v9 (phase 7) : suivi de chantier (`chantier`) : cases « posé » des appareils et des circuits, réserves,
+     positions et légendes des photos (les images restent dans IndexedDB, base « calque-photos », hors du plan),
+     annotations au Pencil, historique du chantier. Les plans v8 n'en ont pas : chantier vide, rien n'est deviné. */
+  8(p) {
+    p.chantier = nettoyerChantier(p.chantier);
+    return p;
+  },
+  /* v9 → v10 (phase 7) : variantes (`variantes` : variante affichée, principale, et partie électrique des autres).
+     Les plans v9 n'en ont pas : champ absent ; une variante n'est jamais jetée (voir nettoyerVariantes). */
+  9(p) {
+    const v = nettoyerVariantes(p.variantes);
+    if (v) p.variantes = v; else delete p.variantes;
+    return p;
+  },
 };
 /* donnée de calcul enregistrée : { v (nombre), st ('verifiee' exige src, 'saisie', 'estimee'), src } */
 function cleanDonnee(d, ok) {
@@ -145,6 +161,8 @@ function planProblems(p) {
   n((p.circuits || []).some((c) => c.rcd && !rcds.has(c.rcd)), 'circuit relié à un différentiel manquant');
   n((p.fonds || []).some((f) => !(p.fondImg || {})[f.img]), 'fond de plan sans image');
   n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts', 'zones', 'etudes'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
+  const ch = p.chantier || {};
+  n(['reserves', 'photos', 'notes'].some((k) => (ch[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément du chantier sur un niveau manquant');
   return out;
 }
 

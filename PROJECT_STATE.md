@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 5 novembre 2026, fin de la phase 6.
+Mise à jour : 6 novembre 2026, fin de la phase 7.
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -18,15 +18,15 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 3 | Moteur de calcul, fiche de calcul, bilan, équilibrage, tableaux Legrand | ✅ fusionnée dans `main` (demande n°2), **validée sur iPad** (5 novembre 2026) |
 | 4 | Cheminements et métrés | ✅ terminée, fusionnée dans `main` (demande n°3), **validée sur iPad** (5 novembre 2026) |
 | 5 | Éclairage et 3D avancée | ✅ terminée, **fusionnée dans `main` (demande n°4, à la demande de l'utilisateur, 5 novembre 2026)**, **validée sur iPad** (5 novembre 2026) |
-| 6 | Documents et moteur de règles | ✅ terminée, **fusionnée dans `main` (demande n°5, avec le nouveau plan d'exemple, à la demande de l'utilisateur)**, essais iPad à faire |
-| 7 | Chantier et variantes | ⬜ |
+| 6 | Documents et moteur de règles | ✅ terminée, **fusionnée dans `main` (demande n°5, avec le nouveau plan d'exemple, à la demande de l'utilisateur)**, **validée sur iPad** (5 novembre 2026) |
+| 7 | Chantier et variantes | ✅ terminée (demande de fusion n°6 à fusionner, essais iPad à faire) |
 | 8 | Validation finale | ⬜ |
 
 ## Ce qui marche aujourd'hui (phases 3 et 4)
 - **Moteur de calcul** `js/calcul.js` (sans écran, testé avec Node) : intensité mono/tri, P/Q/S, cos φ, chute de tension, IB ≤ In, section/calibre, nombre de points, type de différentiel, calibre des différentiels (règle de l'amont / de l'aval), bilan de puissance, équilibrage des phases.
 - **Fiche de calcul** d'un circuit (`js/fiche.js`), ouverte depuis l'inspecteur d'un symbole et depuis le tableau.
 - **Onglet « Bilan »** du tableau : puissances, coefficient ks, circuits, équilibrage, interrupteurs différentiels, état des tableaux Legrand.
-- **Format des plans v8** (phase 6 : cartouche et indices de révision du dossier, `doc` ; v7 en phase 5 : photométries, études d'éclairage, photométrie d'un luminaire ; v6 en phase 4 : type, pose et circuits des gaines, passages entre étages, zones interdites, réserve de câble).
+- **Format des plans v10** (phase 7 : `variantes` en v10, `chantier` en v9) ; v8 (phase 6 : cartouche et indices de révision du dossier, `doc` ; v7 en phase 5 : photométries, études d'éclairage, photométrie d'un luminaire ; v6 en phase 4 : type, pose et circuits des gaines, passages entre étages, zones interdites, réserve de câble).
 - **Cheminements** `js/cheminement.js` (sans écran) : gaine ICTA, tube IRL, goulotte, chemin de câbles ; pose sol / plafond / hauteur ; verticales ; passages entre étages ; longueurs par circuit (vol d'oiseau, cheminement, à commander avec réserve). Onglet « Cheminements » du tableau (`js/metres.js`).
 - **Longueur L de la fiche** : mesurée sur le plan (« estimée ») tant qu'aucune longueur n'est saisie.
 - **Itinéraire et conflits** `js/itineraire.js` (sans écran) + `js/routeui.js` : zones interdites, proposition d'itinéraire, conflits (portes, fenêtres, murs, zones, VMC).
@@ -47,6 +47,12 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
   - Une règle de Calque dont la source n'est pas rattachée à un extrait Legrand n'est jamais « conforme » : respectée → « vérification nécessaire (à confirmer) ».
   - Rapport aussi dans le dossier PDF (chapitre « Rapport de contrôle »).
 
+## Phase 7 (terminée)
+- **Mode chantier** (étape 1, terminée) : onglet « Chantier ». Cases « posé » (appareils, circuits), annotations au Pencil, réserves (statut de suivi, dates, échéance), photos localisées (IndexedDB `calque-photos`, hors du plan, dans la sauvegarde complète), historique ; chapitre « Suivi de chantier » du dossier PDF. Format **v9** (`chantier`).
+  - Modules : `js/chantier.js` (sans écran), `js/chantierui.js`, `js/photos.js`.
+- **Variantes** (étape 2, terminée) : Menu › Variantes. Partie électrique propre à chaque variante, bâtiment commun ; afficher, dupliquer, renommer, version principale, suppression protégée (copie dans l'historique) ; comparaison (appareils, puissance, éclairage, matériel, contrôles) ; chapitre du dossier PDF. Format **v10** (`variantes`).
+  - Modules : `js/variantes.js` (sans écran), `js/variantesui.js`.
+
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).
 | Tableau | État |
@@ -66,8 +72,8 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **90/90 réussis** (fin de phase 6, avec le nouveau plan d'exemple).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test).
+- `node --test tests/*.test.mjs` : **100/100 réussis** (fin de phase 7).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests).
 - Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
 
 ## Points ouverts

@@ -138,6 +138,7 @@ function handlesOf(sel) {
 }
 function hitTest(p, tolPx) {
   const tol = tolPx / V.s, lv = ui.lv, g = geo(lv), K = K_screen();
+  for (const f of EXT.hit) { const r = f(p, tol); if (r) return r; } // objets ajoutés par un module (chantier…)
   for (const h of handlesOf(ui.sel)) if (vdist(h.p, p) <= tol * (h.kind === 'dmid' ? 1 : 1.3) + 3 / V.s) return { t: 'handle', kind: h.kind, id: h.id, text: h.text, idx: h.idx };
   if (S.layers.elec) for (let i = P.elec.length - 1; i >= 0; i--) {
     const e = P.elec[i]; if (e.lv !== lv || !elecVisible(e)) continue;
@@ -314,6 +315,7 @@ function select(h) {
 }
 function selObj(sel) {
   sel = sel || ui.sel; if (!sel) return null;
+  if (EXT.obj[sel.t]) return EXT.obj[sel.t](sel.id) || null;
   const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts, zone: IDX.zones };
   return map[sel.t] ? map[sel.t].get(sel.id) || null : null;
 }
@@ -414,7 +416,7 @@ cv.addEventListener('pointerdown', (e) => {
   ignoreUntilUp = false;
   if (e.pointerType === 'mouse') cv.focus({ preventScroll: true });
   // mode Apple Pencil : avec un outil de dessin, un doigt déplace le plan au lieu de dessiner
-  if (e.pointerType === 'touch' && pencilMode() && ui.tool !== 'select') { drag = panDrag(sp, null); return; }
+  if (e.pointerType === 'touch' && pencilMode() && ui.tool !== 'select' && !(EXT.tools[ui.tool] && EXT.tools[ui.tool].doigt)) { drag = panDrag(sp, null); return; }
   const wp = screenToWorld(sp.x, sp.y);
   const T = TOOLS[ui.tool] || EXT.tools[ui.tool] || TOOLS.select;
   downState = { sel: ui.sel, insp: ui.inspOpen };
@@ -613,6 +615,7 @@ function handleDrag(h, wp0, sp0) {
 const TOOLS = {};
 TOOLS.select = {
   down(wp, sp) {
+    if (EXT.selectDown) { const g = EXT.selectDown(wp, sp); if (g !== undefined) return g; } // mode chantier : consultation seule
     const h = hitTest(wp, hitTol());
     if (S.layers.dims && (!h || !['handle', 'elec', 'text', 'duct', 'opening'].includes(h.t))) {
       const dh = dimHitAt(sp);

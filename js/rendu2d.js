@@ -114,6 +114,7 @@ function drawSceneIn(lv, opts) {
   if (S.layers.elec) drawDuctLabels(lv, opts);
   drawTexts(lv);
   if (!opts.export || opts.dims !== false) drawDimLabels(lv);
+  if (EXT.top.length) { for (const f of EXT.top) { setWorld(); c.save(); try { f(c, lv, opts); } finally { c.restore(); } } setScreen(); }
 }
 
 const itemInView = (it) => !VIEW || inView(it.x, it.y, 0.5 * Math.hypot(it.w || 0, it.d || 0) + 10);
