@@ -16,6 +16,7 @@ import { copyWalls } from './interface.js';
 import { articlesFor } from './technique.js';
 import { REGLES_VERSION } from './regles.js';
 import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
+import { dupliquer, initialiser } from './variantes.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -298,8 +299,29 @@ function samplePlan() {
   /* suivi de chantier (phase 7) : valeurs d'exemple (cases « posé », réserves, annotations, photos à prendre).
      Aucune photo n'est inventée : seulement des emplacements « photo à prendre ». */
   chantierExemple();
+  variantesExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
+}
+/* variantes (phase 7) : « Standard » (principale, affichée), « Économique » et « Haut de gamme ».
+   Valeurs d'exemple de Calque (fictives) : aucune n'est une donnée de fabricant. */
+function variantesExemple() {
+  initialiser(P, { nom: 'Standard', gamme: 'std', at: Date.UTC(2026, 10, 2, 9) });
+  const eco = dupliquer(P, { nom: 'Économique', gamme: 'eco', at: Date.UTC(2026, 10, 2, 10) });
+  const haut = dupliquer(P, { nom: 'Haut de gamme', gamme: 'haut', at: Date.UTC(2026, 10, 2, 11) });
+  // économique : sans climatisation, caméra ni prises multimédia de la mezzanine ; réglettes moins puissantes ; sans parafoudre
+  const D = eco.data, retire = new Set(D.elec.filter((e) => ['clim', 'camera', 'tv', 'hdmi'].includes(e.type)).map((e) => e.id));
+  D.elec = D.elec.filter((e) => !retire.has(e.id));
+  D.links = D.links.filter((l) => !retire.has(l.a) && !retire.has(l.b));
+  for (const g of D.ducts) { if (retire.has(g.a)) g.a = null; if (retire.has(g.b)) g.b = null; }
+  D.circuits = D.circuits.filter((c) => D.elec.some((e) => e.cid === c.id));
+  D.install.parafoudre = false;
+  for (const e of D.elec) if (e.type === 'reglette' && e.lum) e.lum = { flux: d(4800, EX), p: d(36, EX) };
+  eco.note = 'Exemple : version au plus juste';
+  // haut de gamme : réglettes plus puissantes (valeurs d'exemple)
+  for (const e of haut.data.elec) if (e.type === 'reglette' && e.lum) e.lum = { flux: d(7500, EX), p: d(52, EX) };
+  haut.note = 'Exemple : éclairage renforcé de l’atelier';
+  P.variantes = JSON.parse(JSON.stringify(P.variantes));
 }
 function chantierExemple() {
   const J = (j, h) => Date.UTC(2026, 10, j, h || 9);

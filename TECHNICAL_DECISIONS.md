@@ -87,11 +87,17 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 | 2026-11-06 (ph. 7) | Statut d'une réserve = statut de suivi (ouverte / en cours / levée), jamais de conformité | Règle de l'utilisateur : pas de conformité affirmée sans vérification |
 | 2026-11-06 (ph. 7) | Outils du chantier « au doigt » (`doigt: true`) même en mode Apple Pencil, sauf Annoter | Toucher un appareil pour le cocher doit marcher au doigt sur le chantier |
 
+| 2026-11-06 (ph. 7) | Variantes dans le plan (`variantes`) : seule la partie électrique (`CLES_VARIANTE`) est propre à chaque variante ; la variante affichée est le plan lui-même | Le plan d'exemple et le fichier du plan gardent toutes les variantes ; un changement de mur vaut pour toutes ; pas de seconde copie du bâtiment |
+| 2026-11-06 (ph. 7) | Opérations sur les variantes = nouvel objet à chaque fois ; l'annuler garde son texte (`WeakMap`) | Pas de recopie de centaines de Ko à chaque modification du plan |
+| 2026-11-06 (ph. 7) | Suppression refusée pour la variante affichée et la principale ; copie dans l'historique avant toute suppression ; nettoyage qui ne jette jamais une variante | « Sans jamais perdre une variante » |
+| 2026-11-06 (ph. 7) | Contrôles d'une autre variante : le plan courant est remplacé le temps du calcul (synchrone), puis remis | `nfcChecks` lit le plan courant ; aucun moteur réécrit |
+| 2026-11-06 (ph. 7) | Le suivi de chantier est commun aux variantes (cases « posé » par identifiant de symbole) | Le chantier suit le bâtiment ; changer de variante ne perd aucune case |
+
 ## Conventions de code
 - Unités du plan : centimètres, Y vers le bas. Calcul : W, var, VA, V, A, m, mm².
 - Interface et commentaires en français.
 - Tout changement du plan appelle `commit()` (annuler, enregistrement, événement `EV.PLAN_CHANGE`).
-- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v24`).
+- Nouveau fichier dans `js/` : l'ajouter à `CORE` dans `sw.js` et changer le nom du cache (actuellement `calque-v25`).
 - Boutons de 44 px minimum dans les nouvelles fenêtres (doigt et Pencil).
 - Tests dans `tests/*.test.mjs` ; captures et fichiers temporaires hors du dépôt.
 
@@ -101,5 +107,6 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 `noyau` + `mutations` + `symboles` ← `cheminement` ← (`reseaux`, `vue3d`, `stockage`, `calcul`)
 `cheminement` ← `itineraire` ← `materiel` ← (`metres`, `reseaux`) ; `routeui` (écran) utilise `itineraire` et `cheminement`
 `calcul` + `normes` + `materiel` ← `regles` ← `reglesui` (écran, avec `electricite`) ← (`tableau`, `dossierui`)
-`pdf` + `svgpdf` + `calcul` + `materiel` + `eclairage` + `regles` ← `documents` ← `dossierui` (écran, avec `export`, `tableau`) ; `stockage` (migration v8) utilise `documents`
+`calcul` + `materiel` + `eclairage` + `symboles` ← `variantes` ← `variantesui` (écran, avec `reglesui`) ; `chantier` ← `chantierui` (écran, avec `photos`)
+`pdf` + `svgpdf` + `calcul` + `materiel` + `eclairage` + `regles` + `chantier` ← `documents` ← `dossierui` (écran, avec `export`, `tableau`) ; `stockage` (migration v8) utilise `documents`
 `noyau` + `photometrie` ← `eclairage` ← `eclairageui` (écran, avec `fiche`) ← `interface` ; `stockage` (migration v7) utilise `eclairage` et `photometrie`

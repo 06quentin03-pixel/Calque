@@ -41,6 +41,7 @@ const CHAPITRES = [
   { id: 'eclairage', n: 'Études d’éclairage' },
   { id: 'controles', n: 'Rapport de contrôle' },
   { id: 'chantier', n: 'Suivi de chantier (avancement, réserves, photos)' },
+  { id: 'variantes', n: 'Comparaison des variantes' },
 ];
 const CHAP_BY = new Map(CHAPITRES.map((c) => [c.id, c]));
 
@@ -229,7 +230,7 @@ class Redacteur {
       if (l3) this._t(cut(l3, 7, false, c1 - fx - 16), fx + 8, cy + 45, 7, false, COL.ink2);
       // bloc document
       this._t(cut(pg.titre, 10.5, true, c3 - c1 - 16), c1 + 8, cy + 18, 10.5, true);
-      this._t(cut(['Dossier électrique', info.affaire ? 'Affaire ' + info.affaire : '', pg.echelle].filter(Boolean).join(' · '), 7.5, false, c3 - c1 - 16), c1 + 8, cy + 30, 7.5, false, COL.ink2);
+      this._t(cut(['Dossier électrique', info.affaire ? 'Affaire ' + info.affaire : '', info.variante ? 'Variante ' + info.variante : '', pg.echelle].filter(Boolean).join(' · '), 7.5, false, c3 - c1 - 16), c1 + 8, cy + 30, 7.5, false, COL.ink2);
       this._t(cut(`Règles : ${info.regles} · Statuts des données : vérifiée, saisie, estimée`, 6.3, false, c3 - c1 - 16), c1 + 8, cy + 44, 6.3, false, COL.ink3);
       // bloc révision
       const rows = [['Indice', info.indice ? info.indice.i : '— (non diffusé)'], ['Date', info.indice ? fmtJourCourt(info.indice.date) : fmtJourCourt(info.date)], ['Page', `${i + 1} / ${N}`]];
@@ -268,6 +269,7 @@ function chapGarde(R, plan, o) {
   const sous = [info.client, info.adresse].filter(Boolean).join(' · ');
   if (sous) { R._t(sous, R.pg.corps.x, R.y, 11, false, COL.ink2); R.y += 16; }
   R._t(`Indice ${info.indice ? info.indice.i + ' du ' + fmtJour(info.indice.date) : '— : dossier non diffusé (aucun indice enregistré)'}`, R.pg.corps.x, R.y, 10, true); R.y += 14;
+  if (info.variante) { R._t('Variante : ' + info.variante, R.pg.corps.x, R.y, 9.5, true, COL.accent); R.y += 14; }
   R._t(`Édité le ${fmtJour(info.date)}${info.auteur ? ' par ' + info.auteur : ''}${info.entreprise ? ' (' + info.entreprise + ')' : ''}`, R.pg.corps.x, R.y, 8.5, false, COL.ink2); R.y += 30;
   R.titre('Sommaire', 2);
   R.sommaire = { pg: R.pg, y: R.y + 9 };
@@ -557,11 +559,34 @@ function chapChantier(R, plan, o) {
   }
 }
 
+/* comparaison des variantes (phase 7) : tableau calculé par variantes.js, fourni par l'appelant */
+function chapVariantes(R, plan, o) {
+  R.page('variantes');
+  R.titre('Comparaison des variantes');
+  const c = o.comparaison;
+  if (!c || c.cols.length < 2) { R.texte('Ce projet n’a pas plusieurs variantes (Menu › Variantes).', { color: COL.ink2 }); return; }
+  R.encadre('Chaque variante est une autre version de l’électricité du même bâtiment. Quantités de matériel et éclairements : estimations de Calque (à vérifier avant commande). Contrôles : nombre de contrôles du moteur de règles par statut ; aucune variante n’est déclarée conforme globalement tant que tout n’est pas vérifié.');
+  R.texte('Variantes : ' + c.cols.map((k) => k.nom + (k.principale ? ' (version principale)' : '') + (k.active ? ' — variante de ce dossier' : '')).join(' ; ') + '.', { bold: true });
+  const fmtV = (x) => (x == null ? { t: '', manquante: true } : fmt(x, Number.isInteger(x) ? 0 : 1));
+  const ST = { estimee: 'estimee', saisie: 'saisie' };
+  for (const g of [...new Set(c.lignes.map((l) => l.groupe))]) {
+    R.titre(g, 2);
+    R.tableau([{ t: 'Élément', w: 3 }, ...c.cols.map((k) => ({ t: k.nom + (k.principale ? ' ★' : ''), w: 1.1, al: 'r' }))],
+      c.lignes.filter((l) => l.groupe === g).map((l) => [{ t: l.nom, b: l.vals.some((x) => x !== l.vals[0]) }, ...l.vals.map((x) => { const v = fmtV(x); return ST[l.st] && x != null ? { t: v, st: ST[l.st] } : v; })]), { size: 7.4 });
+  }
+}
+
 /* ---------------- assemblage ---------------- */
+/* variante affichée (phase 7) : « Économique (variante non principale) » ; null sans variantes */
+function varianteDe(plan) {
+  const v = plan.variantes; if (!v || !Array.isArray(v.liste)) return null;
+  const e = v.liste.find((x) => x.id === v.active); if (!e) return null;
+  return e.nom + (v.active === v.principale ? ' (version principale)' : ' (variante non principale)');
+}
 function infoDossier(plan, o) {
   const d = nettoyerDoc(plan.doc);
   return { projet: plan.name || 'Plan', client: d.client, adresse: d.adresse, auteur: d.auteur, entreprise: d.entreprise, affaire: d.affaire,
-    indice: indiceCourant(d), date: o.date || Date.now(), regles: o.rapport ? o.rapport.version : REGLES_VERSION };
+    indice: indiceCourant(d), date: o.date || Date.now(), regles: o.rapport ? o.rapport.version : REGLES_VERSION, variante: varianteDe(plan) };
 }
 /* compose le dossier : renvoie les pages (PdfCtx) et la table des chapitres */
 function composerDossier(plan, opts) {
@@ -578,6 +603,7 @@ function composerDossier(plan, opts) {
   if (choix.has('eclairage')) chapEclairage(R, plan, o);
   if (choix.has('controles')) chapControles(R, plan, o);
   if (choix.has('chantier')) chapChantier(R, plan, o);
+  if (choix.has('variantes')) chapVariantes(R, plan, o);
   if (!R.pages.length) R.page('garde', { titre: 'Dossier vide' });
   R.finir();
   return { pages: R.pages, chapitres: [...R.premieres.entries()].map(([id, p]) => ({ id, n: (CHAP_BY.get(id) || {}).n, page: p })), info: R.info };

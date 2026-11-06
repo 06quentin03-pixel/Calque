@@ -14,6 +14,7 @@ import { nettoyerEtude, nettoyerLum } from './eclairage.js';
 import { nettoyerPhotometrie } from './photometrie.js';
 import { nettoyerDoc } from './documents.js';
 import { nettoyerChantier } from './chantier.js';
+import { nettoyerVariantes } from './variantes.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -111,6 +112,13 @@ const MIGRATIONS = {
      annotations au Pencil, historique du chantier. Les plans v8 n'en ont pas : chantier vide, rien n'est deviné. */
   8(p) {
     p.chantier = nettoyerChantier(p.chantier);
+    return p;
+  },
+  /* v9 → v10 (phase 7) : variantes (`variantes` : variante affichée, principale, et partie électrique des autres).
+     Les plans v9 n'en ont pas : champ absent ; une variante n'est jamais jetée (voir nettoyerVariantes). */
+  9(p) {
+    const v = nettoyerVariantes(p.variantes);
+    if (v) p.variantes = v; else delete p.variantes;
     return p;
   },
 };

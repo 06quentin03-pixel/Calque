@@ -74,10 +74,11 @@ Dépend de : 3, 4.
 - ✅ Nouveau plan d'exemple « maison et atelier » (`js/exemple.js`), qui montre une fonction de chaque phase.
 - Validation : 90/90 tests.
 
-## Phase 7 — Chantier et variantes 🟨
+## Phase 7 — Chantier et variantes ✅ (à fusionner et à vérifier sur iPad)
 Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 - ✅ Mode chantier : onglet « Chantier » (plan simplifié), annotations au Pencil, photos localisées (IndexedDB, base à part, hors du plan et de l'annuler), cases « posé » par appareil et par circuit, réserves (statut, dates, échéance), historique ; chapitre « Suivi de chantier » du dossier PDF (photos comprises) ; photos dans la sauvegarde complète (`js/chantier.js`, `js/chantierui.js`, `js/photos.js`, format v9, 6 tests dans `tests/chantier.test.mjs`).
-- ⬜ Variantes : économique, standard, haut de gamme…, avec comparaison et choix de la version principale.
+- ✅ Variantes : économique, standard, haut de gamme…, dans le plan (partie électrique propre à chaque variante, bâtiment commun), comparaison (appareils, puissance, éclairage, matériel, contrôles du moteur de règles), version principale, jamais de variante perdue ; chapitre « Comparaison des variantes » du dossier PDF (`js/variantes.js`, `js/variantesui.js`, format v10, 4 tests dans `tests/variantes.test.mjs`).
+- Validation : 100/100 tests.
 
 ## Phase 8 — Validation finale
 - ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.

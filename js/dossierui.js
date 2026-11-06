@@ -16,6 +16,8 @@ import { UL } from './mabiblio.js';
 import { rapportDuPlan } from './reglesui.js';
 import { REGLES_VERSION } from './regles.js';
 import { jpegMiniature } from './photos.js';
+import { variantesDe } from './variantes.js';
+import { comparaison } from './variantesui.js';
 import { CHAMPS_DOC, CHAPITRES, dossierPDF, indiceCourant, indiceSuivant, nettoyerDoc } from './documents.js';
 
 const LIB_CHAMP = { client: 'Client / maître d’ouvrage', adresse: 'Adresse du chantier', entreprise: 'Entreprise', auteur: 'Établi par', affaire: 'N° d’affaire' };
@@ -125,6 +127,7 @@ async function preparer() {
     await new Promise((r) => setTimeout(r, 30));
     const o = optionsDossier(d);
     if (d.chap.includes('chantier')) o.photos = await photosPourDossier();
+    if (d.chap.includes('variantes') && variantesDe(P) && variantesDe(P).liste.length > 1) o.comparaison = comparaison();
     const res = await dossierPDF(P, o);
     if (g !== DS.gen) return;
     const ind = res.info.indice ? '-ind' + res.info.indice.i : '';

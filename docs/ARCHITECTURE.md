@@ -59,6 +59,8 @@ Mise à jour : phase 7 (6 novembre 2026).
 | `chantier.js` | Suivi de chantier : cases « posé », avancement, réserves (numéros, statuts, dates), historique, simplification des traits, nettoyage (migration v9) | oui |
 | `chantierui.js` | Onglet « Chantier » : plan simplifié, outils Posé / Annoter / Réserve / Photo, panneau « Suivi de chantier », inspecteurs des réserves, photos et annotations | non |
 | `photos.js` | Images des photos du chantier dans IndexedDB (base `calque-photos`) : réduction JPEG, miniatures, sauvegarde en base64, images inutilisées | non |
+| `variantes.js` | Variantes : partie électrique propre à chaque variante, création, copie, affichage, version principale, suppression protégée, nettoyage (migration v10), comparaison (appareils, puissance, éclairage, matériel, contrôles) | oui |
+| `variantesui.js` | Fenêtre « Variantes », puce de la variante affichée, comparaison à l'écran | non |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
@@ -101,7 +103,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 9) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 10) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -124,6 +126,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `fondImg{}` | Images des fonds (v4), en `data:image/jpeg` |
 | `doc` | Dossier PDF (v8) : `client`, `adresse`, `entreprise`, `auteur`, `affaire` (textes facultatifs du cartouche), `revisions[]` (`i` indice A, B…, `date` en ms, `objet`, `par`, `regles` version du moteur de règles) ; l'indice courant est la dernière révision |
 | `chantier` | Suivi de chantier (v9) : `poses` (`app` : { id du symbole: date }, `circ` : { id du circuit: date }), `reserves[]` (`id`, `n`, `lv`, `x`, `y`, `titre`, `detail`, `statut` `ouverte`/`en_cours`/`levee`, `cree`, `maj`, `leve`, `echeance`, `ref` { t: `elec`, id }), `photos[]` (`id`, `lv`, `x`, `y`, `at`, `legende`, `aFaire`, `reserve`, `w`, `h` ; l'image est dans IndexedDB `calque-photos`, magasin `photos`, clé `id`), `notes[]` (annotations : `id`, `lv`, `pts` à plat en cm, `col`, `ep` en cm, `at`), `journal[]` (`at`, `k`, `txt`) |
+| `variantes` | Variantes (v10, facultatif) : `active` (variante dans le plan), `principale`, `liste[]` (`id`, `nom`, `gamme` `eco`/`std`/`haut`/`autre`, `note`, `cree`, `maj`, `data` : `elec`, `circuits`, `rcds`, `links`, `ducts`, `etudes`, `install` des variantes non affichées ; `vide` si une variante a perdu ses données) |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.

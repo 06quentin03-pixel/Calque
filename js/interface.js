@@ -19,6 +19,7 @@ import { setView } from './tableau.js';
 import { newPlan, openProjects, openSample, openVersions } from './stockage.js';
 import { exportAll, exportJSON, openExport } from './export.js';
 import { openDossier } from './dossierui.js';
+import { openVariantes } from './variantesui.js';
 import { f3Def, itemHeight3 } from './vue3d.js';
 import { compSection, materielSection, openTechLib } from './biblioui.js';
 import { ficheButton } from './fiche.js';
@@ -904,6 +905,7 @@ function renderMenuPop() {
     h('hr'),
     menuItem('img', 'Exporter en image ou en PDF', openExport),
     menuItem('book', 'Dossier PDF (plans, tableau, métrés, éclairage…)', openDossier),
+    menuItem('dup', 'Variantes (économique, standard, haut de gamme…)', openVariantes),
     menuItem('up', 'Envoyer le fichier du plan', exportJSON),
     menuItem('down', 'Importer un fichier (plan ou sauvegarde)', () => $('#fileIn').click()),
     h('hr'),

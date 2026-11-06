@@ -539,6 +539,21 @@ button.ev-chk:hover { background: var(--panel-2); }
 .ch-det summary { min-height: 44px; display: flex; align-items: center; font-weight: 600; font-size: 13px; cursor: pointer; }
 .ch-jr { margin: 0; padding-left: 22px; font-size: 12.5px; display: flex; flex-direction: column; gap: 4px; }
 .ch-jr small { color: var(--ink-3); }
+/* ---- variantes (phase 7) ---- */
+.var-li { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--rule); border-radius: 10px; margin-bottom: 8px; }
+.var-li[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.var-li .btn { min-height: 44px; }
+.var-tags { display: flex; gap: 6px; flex-wrap: wrap; min-height: 4px; }
+.var-tag { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: var(--panel-2); border: 1px solid var(--rule); }
+.var-tag.pri { background: #FFF2CC; border-color: #B86E00; color: #6B4400; }
+.var-tag.bad { color: #C2362B; border-color: #C2362B; }
+.var-cmp { overflow-x: auto; margin-top: 0; max-width: none; }
+.var-cmp tr.grp td { font-weight: 700; background: var(--panel-2); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.var-cmp tr.diff td { background: rgba(210,79,26,.07); }
+.var-cmp td.n, .var-cmp th.n { text-align: right; white-space: nowrap; }
+.var-puce { position: absolute; left: 10px; top: 10px; z-index: 2; box-shadow: var(--shadow); max-width: 220px; height: 36px; padding: 0 10px; border: 1px solid var(--accent); border-radius: 17px; background: var(--accent-soft); font-size: 12.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+@media (max-width: 760px) { .var-puce { display: none; } } /* téléphone : variantes dans le menu */
+.stage:has(.hint:not([hidden])) .var-puce { top: 58px; }
 .insp textarea.txt { font: inherit; font-size: 14px; height: auto; padding: 8px; resize: vertical; }
 @media (max-width: 560px) { .vtabs button { padding: 0 6px; font-size: 11.5px; } }
 .app.chantier .hint .btn, .app.chantier .hint .seg button { min-height: 40px; }

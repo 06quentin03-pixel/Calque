@@ -1,5 +1,17 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-06 — Phase 7, étape 2 : variantes (fin de la phase 7)
+- Nouveau **Menu › Variantes** : la version actuelle devient « Standard » (principale), puis « Nouvelle variante » en crée d'autres (économique, standard, haut de gamme, autre), copies de la variante affichée.
+- Une variante est une autre version de l'**électricité du même bâtiment** : symboles, circuits, différentiels, liaisons, gaines, études d'éclairage et installation lui sont propres ; murs, pièces, mobilier, photométries et suivi de chantier sont communs. Le plan, la 3D, le tableau et le dossier montrent la variante affichée.
+- **Afficher** une variante, la **renommer**, changer sa gamme, la **dupliquer**, la **choisir comme version principale** (★).
+- **Jamais de variante perdue** : la variante affichée et la principale ne peuvent pas être supprimées ; avant toute suppression, une copie du plan est gardée dans l'historique des versions ; annuler/rétablir revient aussi en arrière sur les variantes.
+- **Comparaison** : appareils (et ceux qui diffèrent), circuits, différentiels, puissance installée et appelée, points d'éclairage, puissance des luminaires connus, éclairement moyen estimé de chaque étude, matériel estimé, nombre de contrôles du moteur de règles par statut (jamais de conformité globale affirmée). Les lignes qui diffèrent sont surlignées.
+- Puce « ★ Standard » en haut à gauche du plan (iPad) : variante affichée, ouvre la fenêtre.
+- **Dossier PDF** : nouveau chapitre « Comparaison des variantes » ; la variante (principale ou non) est écrite sur la page de garde et dans le cartouche.
+- **Format des plans v10** (`variantes`) : migration v9 → v10 avec copie de sécurité ; une variante n'est jamais jetée par le nettoyage. L'annuler/rétablir réutilise le texte des variantes d'une étape à l'autre (pas de recopie).
+- Plan d'exemple : variantes « Standard » (principale), « Économique » (sans climatisation, caméra ni multimédia, réglettes moins puissantes, sans parafoudre) et « Haut de gamme » (réglettes plus puissantes), valeurs d'exemple fictives.
+- Service Worker : cache `calque-v25`. Nouveau fichier de tests `tests/variantes.test.mjs` (4 tests). Tests : 100/100.
+
 ## 2026-11-06 — Phase 7, étape 1 : mode chantier
 - Nouvel onglet **« Chantier »** (à côté de Plan, 3D, Tableau électrique) : plan simplifié (sans mobilier, grille, cotes ni surfaces ; les réglages du mode Plan ne sont pas modifiés) et barre d'outils du chantier : Consulter, Posé, Annoter, Réserve, Photo, Suivi, retour au Plan.
 - **Cases « posé »** par appareil (pastille verte cochée sur le plan) et par circuit (câble tiré et raccordé), avec leur date ; avancement global, par niveau et par circuit.

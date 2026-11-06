@@ -30,10 +30,11 @@ test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atel
       doc: P.doc, non, pages: dos.pages, chap: dos.chapitres.length,
       rap: { total: rap.synthese.total, global: rap.global, cq: rap.resultats.filter((x) => x.id.startsWith('cq_')).length },
       ch: P.chantier, chap7: dos.chapitres.some((c) => c.id === 'chantier'),
+      va: P.variantes && { n: P.variantes.liste.length, gammes: P.variantes.liste.map((e) => e.gamme), principale: P.variantes.principale === P.variantes.active, data: P.variantes.liste.filter((e) => e.data).length }, chapVar: dos.chapitres.some((c) => c.id === 'variantes'),
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 9);
+  assert.equal(r.v, 10);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -53,7 +54,7 @@ test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atel
   assert.ok(r.etudes >= 3 && r.lum >= 20);
   // documents et règles (phase 6) : cartouche, indice A, dossier complet, rapport
   assert.equal(r.doc.revisions[0].i, 'A'); assert.ok(r.doc.client && r.doc.affaire);
-  assert.equal(r.chap, 10); assert.ok(r.pages >= 25, `${r.pages} pages`);
+  assert.equal(r.chap, 11); assert.ok(r.pages >= 25, `${r.pages} pages`);
   assert.ok(r.rap.total > 300 && r.rap.cq > 50); assert.notEqual(r.rap.global, 'conforme');
   // chantier (phase 7) : cases « posé » (appareils et circuits), réserves aux trois statuts avec échéance, photos à prendre
   // (aucune photo inventée), annotations, historique ; chapitre « Suivi de chantier » du dossier
@@ -62,6 +63,8 @@ test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atel
   assert.ok(r.ch.reserves.some((x) => x.echeance) && r.ch.reserves.every((x) => /^Exemple/.test(x.titre)));
   assert.ok(r.ch.photos.length >= 2 && r.ch.photos.every((f) => f.aFaire), 'photos à prendre seulement');
   assert.ok(r.ch.notes.length >= 2 && r.ch.journal.length >= 5); assert.ok(r.chap7);
+  // variantes (phase 7) : standard (principale, affichée), économique, haut de gamme ; chapitre de comparaison
+  assert.equal(r.va.n, 3); assert.deepEqual(r.va.gammes, ['std', 'eco', 'haut']); assert.ok(r.va.principale); assert.equal(r.va.data, 2); assert.ok(r.chapVar);
   assert.deepEqual(errors, []);
   await ctx.close();
 });
