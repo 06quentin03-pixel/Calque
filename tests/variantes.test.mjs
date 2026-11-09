@@ -59,8 +59,8 @@ test('migration v9 → v10 : sans variantes, rien d’ajouté ; copie de sécuri
     await new Promise((res) => setTimeout(res, 300));
     return { v: N.P.v, has: 'variantes' in N.P, why: (await St.versionsOf(N.P.id)).map((x) => x.why) };
   });
-  assert.equal(r.v, 10); assert.equal(r.has, false);
-  assert.ok(r.why.some((w) => /v9 → v10/.test(w)));
+  assert.equal(r.v, 11); assert.equal(r.has, false);
+  assert.ok(r.why.some((w) => /v9 → v11/.test(w)));
   assert.deepEqual(errors, []);
   await ctx.close();
 });

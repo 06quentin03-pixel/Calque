@@ -85,6 +85,13 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 - ⬜ Tableaux NF C 15-100 manquants (extraits Legrand payants, à fournir par l'utilisateur) : courants admissibles Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage des conduits (emplacement `remplissage_conduits` prêt dans `js/normes.js`). Les recopier dans `js/normes.js` (avec tests), puis activer In ≤ Iz, la limite de chute de tension et le remplissage.
 - ⬜ Rattacher les règles « de Calque » (`cq_…` dans `js/regles.js`) aux pages des extraits Legrand fournis, pour qu'elles puissent devenir « conformes » (changer leur version `v` et `REGLES_VERSION`).
 
+## Mission « développement autonome » (9 – 17 novembre 2026) 🟨
+Travail continu, sans validation par phase (demande de l'utilisateur du 9 novembre 2026). Branche `claude/ecstatic-sagan-juah82`.
+- ✅ Export DXF (AutoCAD R12) par calques (`js/dxf.js`, 3 tests).
+- ✅ Quantitatif complet (global, par pièce, par circuit), chiffrage (prix et temps saisis), export CSV, chapitre du dossier PDF, format v11 (`js/quantitatif.js`, `js/quantitatifui.js`, 5 tests).
+- ✅ Disjoncteur d'abonné correct en triphasé.
+- ⬜ Suite envisagée, par ordre de valeur : import DXF en fond de plan, sélection multiple et copie, import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-09 — Mission « développement autonome » : export DXF, quantitatif et chiffrage, disjoncteur d'abonné triphasé
+- **Export DXF (AutoCAD)** : bouton Exporter › « DXF (AutoCAD) ». Le plan est écrit en vraie grandeur (unité au choix : mm, cm, m), rangé par calques (`PIECES`, `ESCALIERS`, `MOBILIER`, `MURS`, `OUVERTURES`, `ELEC_CHEMINEMENTS`, `ELEC_LIAISONS`, `ELEC_APPAREILS`, `COTES`, `TEXTES`, `CHANTIER`). Format R12, relu par AutoCAD, DraftSight, LibreCAD, QCAD, ArchiCAD, Revit. Le dessin est celui du moteur 2D (même contenu que le PNG et le PDF) ; un ou plusieurs niveaux côte à côte. Nouveau module sans écran `js/dxf.js`. Vérifié avec un lecteur DXF indépendant (ezdxf : 0 erreur).
+- **Onglet « Quantitatif »** (Tableau électrique) : appareillage compté sur le plan, protections lues dans le tableau (disjoncteurs, différentiels, DDA, parafoudre), cheminements, conducteurs, boîtes et percements (estimés) ; vues **Global**, **Par pièce** et **Par circuit**.
+- **Chiffrage** : prix unitaire HT et temps de pose saisis par ligne, taux horaire et TVA saisis ; totaux fournitures, main-d'œuvre, HT, TTC. Aucun prix n'est fourni ni deviné : une ligne sans prix est « non chiffrée » et le total est « partiel ». Les prix saisis sont gardés dans le plan et mémorisés sur l'appareil (« mes prix ») ; dans un autre plan ils ne sont repris qu'à la demande (bouton « Reprendre mes prix »).
+- **Export tableur (CSV)** du quantitatif chiffré, avec les quantités par pièce et par circuit (Numbers, Excel, LibreOffice).
+- **Dossier PDF** : nouveau chapitre « Quantitatif et chiffrage ».
+- **Format des plans v11** (`chiffrage`) : migration v10 → v11 avec copie de sécurité ; rien n'est deviné.
+- **Correction** : le disjoncteur d'abonné est maintenant le bon en triphasé (10/30 A ou 30/60 A tétrapolaire, réglage par phase) ; puissances souscrites proposées selon le réseau (monophasé 3 à 18 kVA, triphasé 6 à 36 kVA). Le réglage reste une valeur « estimée », à vérifier sur le contrat.
+- Plan d'exemple : prix et temps de pose fictifs (marqués « saisie », origine « valeur d'exemple fictive »), total partiel.
+- Service Worker : cache `calque-v27`. Nouveaux tests : `tests/dxf.test.mjs` (3), `tests/quantitatif.test.mjs` (5). Tests : 108/108.
+
 ## 2026-11-06 — Phase 7, étape 2 : variantes (fin de la phase 7)
 - Nouveau **Menu › Variantes** : la version actuelle devient « Standard » (principale), puis « Nouvelle variante » en crée d'autres (économique, standard, haut de gamme, autre), copies de la variante affichée.
 - Une variante est une autre version de l'**électricité du même bâtiment** : symboles, circuits, différentiels, liaisons, gaines, études d'éclairage et installation lui sont propres ; murs, pièces, mobilier, photométries et suivi de chantier sont communs. Le plan, la 3D, le tableau et le dossier montrent la variante affichée.

@@ -131,3 +131,10 @@ Contrôles complémentaires (scripts, hors dépôt) :
 
 ## Prochaine action prévue
 - Fusion de la phase 7 (demande n°6, par l'utilisateur), essais iPad de la phase 7, puis phase 8 : validation finale (extraits Legrand à demander).
+
+## 9 novembre 2026 — Mission « développement autonome »
+- Départ : `main` après la fusion n°6, 100/100 tests. Branche de travail `claude/ecstatic-sagan-juah82`.
+- Export DXF : `js/dxf.js`, calques dans `drawSceneIn`, fenêtre d'export ; vérifié avec ezdxf (0 erreur) et un rendu image.
+- Disjoncteur d'abonné triphasé corrigé (`agcpOf(kva, reseau)`), paliers proposés selon le réseau.
+- Quantitatif et chiffrage : `js/quantitatif.js`, `js/quantitatifui.js`, format v11, « mes prix », CSV, chapitre PDF, plan d'exemple.
+- Tests : 108/108 (deux tests d'image de `ipad.test.mjs` parfois instables dans la suite complète, réussis seuls).

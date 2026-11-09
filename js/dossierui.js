@@ -4,7 +4,7 @@
    gère le cartouche et les indices de révision (P.doc, format v8), puis livre le fichier (partager, enregistrer).
    Module JavaScript natif (aucune compilation). */
 import { $, P, S, levelsSorted, saveSettings } from './noyau.js';
-import { roomOfLabel } from './geometrie.js';
+import { geo, roomOfLabel } from './geometrie.js';
 import { snapshot } from './historique.js';
 import { commit } from './interaction.js';
 import { btn, btns, h, openModal, sec, segCtl, toast } from './interface.js';
@@ -51,6 +51,7 @@ function optionsDossier(d) {
     svgCoffret: has ? panelSVG(PRINT_COL, null).svg : null,
     pieceDe: (lbl) => { const r = roomOfLabel(lbl); return r ? { poly: r.poly, holes: r.holes || [], area: r.area } : null; },
     rapport: d.chap.includes('controles') ? rapportDuPlan() : null,
+    pieces: Object.fromEntries(P.levels.map((L) => [L.id, geo(L.id).rooms.map((r) => ({ nom: r.label ? r.label.name : '', poly: r.poly, holes: r.holes }))])),
     referenceDe: (e) => { if (!e.art) return null; const v = articleView(e.art, UL.refs); return v && v.ref ? { ref: v.ref, fab: v.fab, fiab: v.fiab } : null; },
   };
 }

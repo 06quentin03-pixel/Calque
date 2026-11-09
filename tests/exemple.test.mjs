@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { fresh, boot, wait } from './outils.mjs';
 
-test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atelier est entièrement raccordé', async () => {
+test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quantitatif), l’atelier est entièrement raccordé', async () => {
   const { ctx, page, errors } = await fresh();
   await boot(page);
   const r = await page.evaluate(async () => {
@@ -29,12 +29,15 @@ test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atel
       etudes: P.etudes.filter((e) => e.E && e.lums.length).length, lum: P.elec.filter((e) => e.lum).length,
       doc: P.doc, non, pages: dos.pages, chap: dos.chapitres.length,
       rap: { total: rap.synthese.total, global: rap.global, cq: rap.resultats.filter((x) => x.id.startsWith('cq_')).length },
+      chiff: P.chiffrage, qt: await (async () => { const Q = await import('./js/quantitatif.js'), QU = await import('./js/quantitatifui.js'); const q = QU.quantitatifDuPlan(), c = Q.chiffrer(q, P.chiffrage); return { n: q.lignes.length, cats: [...new Set(q.lignes.map((l) => l.cat))], pieces: q.parPiece.map((g) => g.piece), circ: q.parCircuit.length, chiffrees: c.chiffrees, complet: c.complet, ht: c.totalHT, ttc: c.totalTTC, mo: c.mainOeuvre }; })(),
+      dxf: (await import('./js/export.js')).composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).bilan,
+      chapQt: dos.chapitres.some((c) => c.id === 'quantitatif'),
       ch: P.chantier, chap7: dos.chapitres.some((c) => c.id === 'chantier'),
       va: P.variantes && { n: P.variantes.liste.length, gammes: P.variantes.liste.map((e) => e.gamme), principale: P.variantes.principale === P.variantes.active, data: P.variantes.liste.filter((e) => e.data).length }, chapVar: dos.chapitres.some((c) => c.id === 'variantes'),
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 10);
+  assert.equal(r.v, 11);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -54,7 +57,7 @@ test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atel
   assert.ok(r.etudes >= 3 && r.lum >= 20);
   // documents et règles (phase 6) : cartouche, indice A, dossier complet, rapport
   assert.equal(r.doc.revisions[0].i, 'A'); assert.ok(r.doc.client && r.doc.affaire);
-  assert.equal(r.chap, 11); assert.ok(r.pages >= 25, `${r.pages} pages`);
+  assert.equal(r.chap, 12); assert.ok(r.pages >= 25, `${r.pages} pages`);
   assert.ok(r.rap.total > 300 && r.rap.cq > 50); assert.notEqual(r.rap.global, 'conforme');
   // chantier (phase 7) : cases « posé » (appareils et circuits), réserves aux trois statuts avec échéance, photos à prendre
   // (aucune photo inventée), annotations, historique ; chapitre « Suivi de chantier » du dossier
@@ -65,6 +68,14 @@ test('plan d’exemple : toutes les fonctions des phases 1 à 7 y sont, l’atel
   assert.ok(r.ch.notes.length >= 2 && r.ch.journal.length >= 5); assert.ok(r.chap7);
   // variantes (phase 7) : standard (principale, affichée), économique, haut de gamme ; chapitre de comparaison
   assert.equal(r.va.n, 3); assert.deepEqual(r.va.gammes, ['std', 'eco', 'haut']); assert.ok(r.va.principale); assert.equal(r.va.data, 2); assert.ok(r.chapVar);
+  // export DXF : chaque calque du fichier est rempli par le plan d'exemple
+  for (const n of ['PIECES', 'ESCALIERS', 'MOBILIER', 'MURS', 'OUVERTURES', 'ELEC_CHEMINEMENTS', 'ELEC_LIAISONS', 'ELEC_APPAREILS', 'COTES', 'TEXTES']) assert.ok(r.dxf.calques[n] > 0, 'DXF ' + n);
+  // quantitatif et chiffrage : toutes les catégories, par pièce et par circuit ; prix d'exemple fictifs « saisie » avec origine,
+  // total partiel (des lignes restent non chiffrées) ; disjoncteur d'abonné triphasé
+  for (const c of ['Appareillage', 'Protections', 'Cheminements', 'Conducteurs', 'Boîtes']) assert.ok(r.qt.cats.includes(c), c);
+  assert.ok(r.qt.pieces.includes('Atelier') && r.qt.pieces.includes('Séjour') && r.qt.circ === r.circuits);
+  assert.ok(Object.values(r.chiff.prix).every((x) => x.st === 'saisie' && /fictive/.test(x.src)));
+  assert.ok(r.qt.chiffrees === Object.keys(r.chiff.prix).length && r.qt.chiffrees >= 10 && r.qt.complet === false && r.qt.ht > 0 && r.qt.ttc > r.qt.ht && r.qt.mo > 0); assert.ok(r.chapQt);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

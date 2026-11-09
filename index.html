@@ -501,6 +501,18 @@ button.ev-chk:hover { background: var(--panel-2); }
 .bilan .fi-lab { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
 .bilan .fi-manq { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; }
 .bilan .bi-table { overflow-x: auto; max-width: none; margin-top: 0; }
+.quant .qt-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.quant .qt-in { width: 92px; height: 36px; padding: 0 8px; text-align: right; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); color: var(--ink); font: inherit; font-family: var(--f-num); font-size: 15px; }
+.quant .qt-in:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.quant .qt-cat th { text-align: left; padding-top: 14px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); background: none; }
+.quant .qt-table td { vertical-align: middle; }
+.quant .qt-tot { min-width: 96px; font-family: var(--f-num); }
+.quant .qt-groupes { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; align-items: start; }
+.quant .qt-groupe { border: 1px solid var(--rule); border-radius: 12px; padding: 12px 14px; background: var(--panel); margin: 0; }
+.quant .qt-groupe h3 { margin: 0 0 6px; display: flex; flex-direction: column; gap: 2px; }
+.quant .qt-groupe h3 small { font-weight: 400; color: var(--ink-2); font-size: 12px; }
+.quant .qt-param { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.quant .qt-param label { min-width: 130px; }
 .bilan .bi-table td.n { white-space: nowrap; }
 .bilan .bi-table .badge { height: 20px; font-size: 11px; padding: 0 6px; }
 .bilan .bi-eq { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }

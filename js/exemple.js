@@ -300,6 +300,7 @@ function samplePlan() {
      Aucune photo n'est inventée : seulement des emplacements « photo à prendre ». */
   chantierExemple();
   variantesExemple();
+  chiffrageExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
 }
@@ -355,6 +356,19 @@ function chantierExemple() {
   for (let i = 0; i <= 24; i++) { const a = (i / 24) * Math.PI * 2; pts.push(Math.round((cx + 70 * Math.cos(a)) * 10) / 10, Math.round((cy + 55 * Math.sin(a)) * 10) / 10); }
   ch.notes.push({ id: uid('an'), lv: 'L0', pts, col: '#D0342C', ep: 5, at: J(5, 10) });
   ch.notes.push({ id: uid('an'), lv: 'L0', pts: [cx + 260, cy + 200, cx + 90, cy + 60, cx + 120, cy + 100, cx + 90, cy + 60, cx + 135, cy + 62], col: '#1F5FD1', ep: 5, at: J(5, 10) });
+}
+
+/* chiffrage (quantitatif) : quelques prix unitaires et temps de pose FICTIFS, marqués « saisie » avec leur origine,
+   pour montrer un total « partiel » : les autres lignes restent « non chiffrées ». Aucun prix de fabricant. */
+function chiffrageExemple() {
+  const src = 'Valeur d’exemple fictive de Calque (pas un prix réel)';
+  const prix = { 'art:pc-2pt-16': 8, 'app:pc2': 14, 'app:int_s': 7, 'app:pl': 5, 'art:pc-3pnt-20': 28, 'app:reglette': 35, 'disj:16:mono': 9, 'disj:20:mono': 9, 'disj:20:tri': 45, 'parafoudre': 90,
+    'mat:Cheminements|Gaine ICTA Ø20': 0.6, 'mat:Conducteurs|Fil ou câble 2,5 mm²': 0.45 };
+  const temps = { 'art:pc-2pt-16': 20, 'app:pc2': 25, 'app:int_s': 20, 'app:pl': 15, 'art:pc-3pnt-20': 40, 'app:reglette': 30 };
+  const c = { prix: {}, temps: {}, tauxH: { v: 45, st: 'saisie', src }, tva: { v: 20, st: 'saisie', src } };
+  for (const [k, v] of Object.entries(prix)) c.prix[k] = { v, st: 'saisie', src };
+  for (const [k, v] of Object.entries(temps)) c.temps[k] = { v, st: 'saisie', src };
+  P.chiffrage = c;
 }
 
 export { NOM_EXEMPLE, samplePlan };
