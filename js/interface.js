@@ -903,7 +903,7 @@ function renderMenuPop() {
     menuItem('book', 'Bibliothèque technique', openTechLib),
     menuItem('img', 'Importer un fond de plan (image ou PDF)', pickFond),
     h('hr'),
-    menuItem('img', 'Exporter en image ou en PDF', openExport),
+    menuItem('img', 'Exporter en image, PDF ou DXF', openExport),
     menuItem('book', 'Dossier PDF (plans, tableau, métrés, éclairage…)', openDossier),
     menuItem('dup', 'Variantes (économique, standard, haut de gamme…)', openVariantes),
     menuItem('up', 'Envoyer le fichier du plan', exportJSON),

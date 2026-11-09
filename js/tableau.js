@@ -4,7 +4,7 @@ import { $, $$, EXT, IDX, NF0, NF1, P, bboxOf, clamp, fmtArea, isNum, labelPoint
 import { geo, roomOfLabel } from './geometrie.js';
 import { ELEC_BY } from './symboles.js';
 import { FONT_UI, V } from './rendu2d.js';
-import { CALS, CK, KIND_ORDER, SECS, SEC_MAX, agcpLabel, agcpOf, circById, circMembers, circNumbers, circStats,
+import { CALS, CK, KIND_ORDER, KVA_PALIERS, SECS, SEC_MAX, agcpLabel, agcpOf, circById, circMembers, circNumbers, circStats,
   circuitColor, defaultInstall, fmtCount, generateFromPlan, nfcChecks, orderCircuits, panelLayout, rcdById,
   rcdCircuits, rcdLoad, rcdNumbers } from './electricite.js';
 import { closeDimEdit, ductPts, ductVisible, elecVisible, resetFilters, updateFilterUI } from './reseaux.js';
@@ -88,7 +88,7 @@ function uniSVG(col, selId) {
   s.push(symBreaker(sx, 140, 196, col.ink));
   s.push(`<ellipse cx="${sx}" cy="187" rx="9" ry="4" style="fill:none;stroke:${col.ink};stroke-width:1.3"/>`);
   s.push(sText(sx + 20, 154, 'AGCP (disjoncteur de branchement)', col.ink, 12.5, { w: 700 }));
-  s.push(sText(sx + 20, 170, agcpLabel(inst.kva) + ' · 500 mA type S', col.ink2, 12));
+  s.push(sText(sx + 20, 170, agcpLabel(inst.kva, inst.reseau) + ' · 500 mA type S', col.ink2, 12));
   s.push(sText(sx + 20, 186, 'Puissance souscrite ' + inst.kva + ' kVA', col.ink2, 12));
   s.push(sLine(sx, 196, sx, busY, col.ink));
   s.push(sLine(sx, busY, gx - gGap + 8, busY, col.ink, 3));
@@ -114,7 +114,7 @@ function uniSVG(col, selId) {
     s.push(sLine(g.cx, busY, g.cx, idY, gc));
     if (r) {
       s.push(symRcd(g.cx, idY, idY + 52, col.ink));
-      const l = rcdLoad(r.id), bad = rcdCircuits(r.id).length > 8 || (r.cal < l && r.cal < agcpOf(inst.kva)[1]);
+      const l = rcdLoad(r.id), bad = rcdCircuits(r.id).length > 8 || (r.cal < l && r.cal < agcpOf(inst.kva, inst.reseau)[1]);
       const lc = bad ? col.err : col.ink;
       s.push(`<g data-rid="${r.id}" style="cursor:pointer">`);
       s.push(sText(g.cx + 14, idY + 14, rn.get(r.id) + (r.own ? ' · IRVE' : ''), lc, 13, { w: 700 }));
@@ -280,14 +280,14 @@ function renderEvSide() {
   // installation
   const instOpen = ui.evSel && ui.evSel.t === 'install';
   kids.push(h('button', { type: 'button', class: 'ev-row ev-inst', 'data-key': 'install:0', 'aria-expanded': String(!!instOpen), onclick: () => evSelect({ t: 'install', id: 0 }) },
-    h('span', { class: 'ev-badge' }, 'AGCP'), h('span', { class: 'ev-main' }, h('b', null, 'Arrivée et installation'), h('small', null, `${inst.kva} kVA · ${agcpLabel(inst.kva)} · ${fmtArea(totalSurface())}`))));
+    h('span', { class: 'ev-badge' }, 'AGCP'), h('span', { class: 'ev-main' }, h('b', null, 'Arrivée et installation'), h('small', null, `${inst.kva} kVA · ${agcpLabel(inst.kva, inst.reseau)} · ${fmtArea(totalSurface())}`))));
   if (instOpen) kids.push(h('div', { class: 'ev-edit' },
-    sec('Puissance souscrite', segCtl([3, 6, 9, 12].map((v) => ({ v, n: v + ' kVA' })), inst.kva, (v) => { inst.kva = v; commit(); }),
-      h('p', { class: 'note' }, `Disjoncteur de branchement ${agcpLabel(inst.kva)}, différentiel 500 mA type S, fourni par le distributeur.`)),
+    sec('Puissance souscrite', segCtl([...new Set([...KVA_PALIERS[inst.reseau === 'tri' ? 'tri' : 'mono'], inst.kva])].sort((a, b) => a - b).map((v) => ({ v, n: v + ' kVA' })), inst.kva, (v) => { inst.kva = v; commit(); }),
+      h('p', { class: 'note' }, `Disjoncteur de branchement ${agcpLabel(inst.kva, inst.reseau)}, différentiel 500 mA type S, fourni par le distributeur. Réglage usuel pour cette puissance (estimé) : à vérifier sur le contrat.`)),
     sec('Parafoudre', segCtl([{ v: false, n: 'Sans' }, { v: true, n: 'Avec parafoudre' }], !!inst.parafoudre, (v) => { inst.parafoudre = v; commit(); }),
       h('p', { class: 'note' }, 'Obligatoire si le bâtiment a un paratonnerre et dans certaines zones exposées à la foudre. Recommandé dans les autres cas.')),
     sec('Réseau', segCtl([{ v: 'mono', n: 'Monophasé 230 V' }, { v: 'tri', n: 'Triphasé 400 V' }], inst.reseau || null, (v) => { inst.reseau = v; commit(); }),
-      h('p', { class: 'note' }, inst.reseau ? (inst.reseau === 'tri' ? 'Calculs en triphasé : choisissez la phase de chaque circuit dans sa fiche de calcul. Le disjoncteur de branchement affiché reste celui du monophasé : à vérifier.' : 'Calculs en monophasé 230 V.') : 'Non précisé : les calculs retiennent le monophasé (valeur estimée).')),
+      h('p', { class: 'note' }, inst.reseau ? (inst.reseau === 'tri' ? 'Calculs en triphasé : choisissez la phase de chaque circuit dans sa fiche de calcul.' : 'Calculs en monophasé 230 V.') : 'Non précisé : les calculs retiennent le monophasé (valeur estimée).')),
     sec('Coffret', segCtl([{ v: 13, n: '13 modules par rangée' }, { v: 18, n: '18 modules' }], inst.row || 13, (v) => { inst.row = v; commit(); })),
     kv([['Surface des pièces', fmtArea(totalSurface())], ['Liaisons commandes', String(P.links.length)]])));
   kids.push(h('div', { class: 'btns ev-actions' },
@@ -307,7 +307,7 @@ function renderEvSide() {
     const box2 = h('div', { class: 'ev-group' });
     if (g.r) {
       const r = g.r, l = rcdLoad(r.id), cnt = g.cs.length;
-      const bad = cnt > 8 || (r.cal < l && r.cal < agcpOf(inst.kva)[1]);
+      const bad = cnt > 8 || (r.cal < l && r.cal < agcpOf(inst.kva, inst.reseau)[1]);
       const open = ui.evSel && ui.evSel.t === 'rcd' && ui.evSel.id === r.id;
       box2.append(h('button', { type: 'button', class: 'ev-row ev-rcd' + (bad ? ' bad' : ''), 'data-key': 'rcd:' + r.id, 'aria-expanded': String(!!open), onclick: () => evSelect({ t: 'rcd', id: r.id }) },
         h('span', { class: 'ev-badge' + (r.type !== 'AC' ? ' a' : '') }, rn.get(r.id)),
@@ -361,7 +361,7 @@ function moveIn(arr, item, dir, same) {
   arr.splice(idx, 1); arr.splice(j, 0, item); return true;
 }
 function rcdEditor(r) {
-  const l = rcdLoad(r.id), agcp = agcpOf((P.install || defaultInstall()).kva)[1];
+  const l = rcdLoad(r.id), agcp = agcpOf((P.install || defaultInstall()).kva, (P.install || {}).reseau)[1];
   const cs = rcdCircuits(r.id);
   return h('div', { class: 'ev-edit' },
     sec('Type', segCtl([{ v: 'AC', n: 'Type AC' }, { v: 'A', n: 'Type A' }, { v: 'F', n: 'Type F' }], r.type, (v) => { r.type = v; commit(); }),

@@ -63,9 +63,13 @@ function drawScene(lv, opts) {
 }
 function drawSceneIn(lv, opts) {
   const c = RC.ctx, Cc = RC.C;
+  /* export DXF : le contexte range ce qui suit dans un calque du fichier (sans effet à l'écran, en PNG et en PDF) */
+  const lay = c.calque ? (n) => c.calque(n) : () => { };
+  lay(null);
   setScreen();
   c.fillStyle = Cc.paper; c.fillRect(0, 0, RC.w, RC.h);
   setWorld();
+  lay('PIECES');
   const g = geo(lv);
   const K = K_();
   const below = levelBelow(lv);
@@ -79,22 +83,30 @@ function drawSceneIn(lv, opts) {
   }
   if (S.layers.grid && !opts.export) drawGrid();
   setWorld();
+  lay('DIVERS');
   for (const f of EXT.under) { c.save(); try { f(c, lv, opts); } finally { c.restore(); } }
   if (below && S.layers.ghost && !opts.export) drawGhost(below.id);
   // trémies des escaliers du niveau inférieur
+  lay('ESCALIERS');
   if (below) for (const it of P.items) if (it.lv === below.id && isStair(it.type) && itemInView(it)) drawItem(c, it, K, 'upper');
   // mobilier
   if (opts.export ? opts.furn !== false : S.layers.furn) {
     for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
+    lay('MOBILIER');
     for (const it of P.items) if (it.lv === lv && !isStair(it.type) && itemInView(it)) drawItem(c, it, K);
   } else {
     for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
   }
+  lay('MURS');
   drawWalls(g);
+  lay('OUVERTURES');
   drawOpenings(g);
   if (S.layers.elec) {
+    lay('ELEC_CHEMINEMENTS');
     drawDucts(lv, opts);
+    lay('ELEC_LIAISONS');
     if (S.layers.links !== false) drawLinks(lv, opts);
+    lay('ELEC_APPAREILS');
     for (const e of P.elec) {
       if (e.lv !== lv || !elecVisible(e)) continue;
       if (VIEW && !inView(e.x, e.y, elecSize(K) * 1.6)) continue;
@@ -105,15 +117,21 @@ function drawSceneIn(lv, opts) {
       if (e.mark) drawElecMark(c, e, K2);
     }
   }
+  lay('COTES');
   if (!opts.export || opts.dims !== false) drawDims(lv);
   setScreen();
   const occ = roomLabelRects(g);
   if (RC === SCR) setDIMHIT([]);
   if (S.layers.dims) drawWallDims(g, occ);
+  lay('PIECES');
   drawRoomLabels(g);
+  lay('ELEC_CHEMINEMENTS');
   if (S.layers.elec) drawDuctLabels(lv, opts);
+  lay('TEXTES');
   drawTexts(lv);
+  lay('COTES');
   if (!opts.export || opts.dims !== false) drawDimLabels(lv);
+  lay('CHANTIER');
   if (EXT.top.length) { for (const f of EXT.top) { setWorld(); c.save(); try { f(c, lv, opts); } finally { c.restore(); } } setScreen(); }
 }
 

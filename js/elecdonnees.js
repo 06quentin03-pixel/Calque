@@ -95,8 +95,23 @@ function defaultKindFor(t) {
 
 /* ---------------- installation et protections ---------------- */
 function defaultInstall() { return { kva: 9, parafoudre: false, row: 13 }; }
-function agcpOf(kva) { return { 3: [15, 15], 6: [15, 30], 9: [15, 45], 12: [30, 60] }[kva] || [15, 45]; }
-function agcpLabel(kva) { const [lo, set] = agcpOf(kva); return lo === 15 ? `15/45 A réglé à ${set} A` : `30/60 A réglé à ${set} A`; }
+/* Disjoncteur de branchement (AGCP) : plage du disjoncteur et réglage usuels pour chaque puissance souscrite
+   (paliers du tarif réglementé jusqu'à 36 kVA). Valeurs de Calque, « estimées » : à vérifier sur le contrat.
+   Monophasé : I = S / 230 V ; triphasé : réglage par phase, I = S / (3 × 230 V).
+   Renvoie [calibre bas, réglage, calibre haut]. Palier inconnu : réglage calculé, sans plage (lo = hi = 0). */
+const AGCP_MONO = { 3: [15, 15, 45], 6: [15, 30, 45], 9: [15, 45, 45], 12: [30, 60, 60], 15: [60, 75, 90], 18: [60, 90, 90] };
+const AGCP_TRI = { 6: [10, 10, 30], 9: [10, 15, 30], 12: [10, 20, 30], 15: [10, 25, 30], 18: [10, 30, 30], 24: [30, 40, 60], 30: [30, 50, 60], 36: [30, 60, 60] };
+const KVA_PALIERS = { mono: [3, 6, 9, 12, 15, 18], tri: [6, 9, 12, 15, 18, 24, 30, 36] };
+function agcpOf(kva, reseau) {
+  const tri = reseau === 'tri', t = (tri ? AGCP_TRI : AGCP_MONO)[kva];
+  if (t) return t;
+  const i = (+kva > 0 ? +kva : 9) * 1000 / (tri ? 690 : 230);
+  return [0, Math.ceil(i / 5 - 1e-9) * 5, 0];
+}
+function agcpLabel(kva, reseau) {
+  const [lo, set, hi] = agcpOf(kva, reseau), ph = reseau === 'tri' ? ' par phase' : '';
+  return lo ? `${lo}/${hi} A${reseau === 'tri' ? ' tétrapolaire' : ''} réglé à ${set} A${ph}` : `réglé à ${set} A${ph} (palier non standard)`;
+}
 function circLoad(c) { const k = CK[c.kind] || CK.autre; return (k.full ? 1 : 0.5) * (c.cal || 0); }
 
 /* ---------------- puissance des symboles ---------------- */
@@ -119,4 +134,4 @@ function puissanceSymbole(e) {
 
 export { ACCEPT, ACCESS, ALARM, AUTONOMOUS, CALS, CK, CMDS, CMDS_FREE_H, COMM_OUTLETS, DEDIC, HEAT_MAX, KIND_ORDER,
   LIGHTS, LIGHT_ACC, LINK_TARGETS, NO_CIRCUIT, POWER_DEFAULT, SECS, SEC_MAX, SOCKETS, SPEC, SPOTLIKE, accepts, agcpLabel,
-  agcpOf, circLoad, defaultInstall, defaultKindFor, elecPower, isSpecOutlet, puissanceSymbole };
+  KVA_PALIERS, agcpOf, circLoad, defaultInstall, defaultKindFor, elecPower, isSpecOutlet, puissanceSymbole };

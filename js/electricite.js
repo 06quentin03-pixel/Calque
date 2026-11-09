@@ -9,7 +9,7 @@ import { vmcChecks } from './reseaux.js';
 import { interiorSide } from './interaction.js';
 import { ACCEPT, ACCESS, ALARM, AUTONOMOUS, CALS, CK, CMDS, CMDS_FREE_H, COMM_OUTLETS, DEDIC, HEAT_MAX, KIND_ORDER,
   LIGHTS, LIGHT_ACC, LINK_TARGETS, NO_CIRCUIT, SECS, SEC_MAX, SOCKETS, SPEC, SPOTLIKE, accepts, agcpLabel, agcpOf, circLoad,
-  defaultInstall, defaultKindFor, elecPower, isSpecOutlet } from './elecdonnees.js';
+  KVA_PALIERS, defaultInstall, defaultKindFor, elecPower, isSpecOutlet } from './elecdonnees.js';
 
 /* ============================================================
    CALQUE — électricité : circuits, tableau, conformité
@@ -282,7 +282,7 @@ function assignRcds() {
   }
   // type AC : le reste, réparti pour rester à 40 A quand c'est possible
   // deux façons d'être conforme : calibre ≥ réglage de l'AGCP (63 A), ou calibre ≥ somme pondérée (40 A)
-  const agcp = agcpOf((P.install || defaultInstall()).kva)[1];
+  const agcp = agcpOf((P.install || defaultInstall()).kva, (P.install || {}).reseau)[1];
   let nAC = Math.max(others.length ? 1 : 0, Math.ceil(others.length / 8), Math.ceil(load(others) / 40));
   const n63 = Math.max(others.length ? 1 : 0, Math.ceil(others.length / 8));
   if (agcp <= 63 && n63 < nAC) nAC = n63;
@@ -381,7 +381,7 @@ function nfcChecks() {
     const ref = { t: 'rcd', id: r.id };
     if (cs.length > 8) addR('cq_dd_8', 'err', G1, `${nm} protège ${cs.length} circuits : 8 au maximum.`, ref);
     if (!cs.length) addR('cq_dd_vide', 'warn', G1, `${nm} ne protège aucun circuit.`, ref);
-    const agcp = agcpOf(inst.kva)[1];
+    const agcp = agcpOf(inst.kva, inst.reseau)[1];
     if (r.cal < l && r.cal < agcp) addR('cq_dd_calibre', 'err', G1, `${nm} ${r.cal} A : la somme des protections en aval vaut ${NF1.format(l)} A et l'AGCP est réglé à ${agcp} A. Passez à ${l <= 63 ? '63 A' : 'deux différentiels'}.`, ref, 'Calibre ≥ réglage de l’AGCP, ou ≥ chauffage + chauffe-eau + IRVE + 50 % des autres circuits.');
     else if (cs.length) addR('cq_dd_calibre', 'ok', G1, `${nm} ${r.cal} A type ${r.type} : charge calculée ${NF1.format(l)} A, ${cs.length} circuit${cs.length > 1 ? 's' : ''}.`, ref);
     if (r.own && cs.some((c) => c.kind !== 'irve')) addR('cq_irve_dd', 'err', G1, `${nm} est réservé à la borne de recharge : il ne doit protéger aucun autre circuit.`, ref);
@@ -525,7 +525,7 @@ function nfcChecks() {
 }
 
 export { ACCEPT, ACCESS, ALARM, AUTONOMOUS, CALS, CIRC_COLORS, CIRC_COLORS_DK, CK, CMDS, CMDS_FREE_H, COMM_OUTLETS,
-  DEDIC, HEAT_MAX, KIND_ORDER, LIGHTS, LIGHT_ACC, LINK_TARGETS, NO_CIRCUIT, SECS, SEC_MAX, SOCKETS, SPEC, SPOTLIKE,
+  DEDIC, HEAT_MAX, KIND_ORDER, KVA_PALIERS, LIGHTS, LIGHT_ACC, LINK_TARGETS, NO_CIRCUIT, SECS, SEC_MAX, SOCKETS, SPEC, SPOTLIKE,
   accepts, agcpLabel, agcpOf, assignRcds, circById, circLoad, circMembers, circNumbers, circStats, circuitColor,
   circuitLabel, cleanLinks, defaultInstall, defaultKindFor, elecPower, fmtCount, generateFromPlan, isDarkTheme,
   isSpecOutlet, linkAnchor, namesOf, nearItem, nfcChecks, orderCircuits, packUnits, panelLayout, rcdById, rcdCircuits,

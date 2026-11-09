@@ -12,6 +12,7 @@ import { LIGHT, addVersion, getDownloads, listProjects, loadProject, lsSet, migr
   openProjects, saveBlobLocal, saveNow, scheduleSave, slug, writePlanLocal } from './stockage.js';
 import { photo3D } from './vue3d.js';
 import { exportUserLib, importUserLib } from './mabiblio.js';
+import { DXF_UNITES, DxfCtx, buildDxf, dxfBilan, dxfOctets } from './dxf.js';
 import { exporterPhotos, importerPhotos } from './photos.js';
 import { photosDuPlan } from './chantier.js';
 import { BASECACHE, COLCACHE, HELV, MC, PdfCtx, PdfPath, WINANSI, baselineOffset, buildPdf, deflateBytes, helvWidth, mkPath,
@@ -25,7 +26,7 @@ import { BASECACHE, COLCACHE, HELV, MC, PdfCtx, PdfPath, WINANSI, baselineOffset
    ============================================================ */
 
 /* ---------------- export : réglages et contenu ---------------- */
-const EXP_DEF = { fmt: 'png', lv: '', dims: true, names: true, areas: true, furn: true, elec: true, legend: true, title: true, bg: 'white', q: 'std', paper: 'A4', orient: 'auto', scale: 'auto' };
+const EXP_DEF = { unit: 'cm', fmt: 'png', lv: '', dims: true, names: true, areas: true, furn: true, elec: true, legend: true, title: true, bg: 'white', q: 'std', paper: 'A4', orient: 'auto', scale: 'auto' };
 function expOpts() {
   if (!S.exp || typeof S.exp !== 'object') S.exp = {};
   for (const k in EXP_DEF) if (!(k in S.exp)) S.exp[k] = EXP_DEF[k];
@@ -298,6 +299,33 @@ async function composePDF(o) {
   return buildPdf(pages, P.name || 'Plan');
 }
 
+/* ---------------- DXF (AutoCAD) ---------------- */
+/* Le plan est redessiné par le moteur 2D dans un contexte qui enregistre les traits : 1 unité du dessin = 1 cm du plan.
+   Plusieurs niveaux : posés côte à côte, de gauche à droite, avec leur nom. Renvoie { texte, bilan, lvs } ou null. */
+function composeDXF(o) {
+  const lvs = expLevels(o); if (!lvs.length) return null;
+  const c = new DxfCtx(), prevRC = RC, ecart = 300;
+  try {
+    withExportLayers(o, () => {
+      let x = 0;
+      lvs.forEach((L) => {
+        const bb = contentBBox(L.id);
+        c.dx = lvs.length > 1 ? x - bb.x0 : 0; c.dy = 0;
+        setRC({ ctx: c, w: 1, h: 1, dpr: 1, s: 1, ox: 0, oy: 0, px: 1, C: LIGHT, ts: 1.15 });
+        drawScene(L.id, { export: true, furn: o.furn, dims: o.dims });
+        if (lvs.length > 1) {
+          c.calque('TEXTES'); c.setTransform(1, 0, 0, 1, 0, 0);
+          c.fillStyle = LIGHT.ink; c.font = `700 40px ${FONT_UI}`; c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+          c.fillText(L.name, bb.x0, bb.y0 - 90);
+          x += bb.x1 - bb.x0 + ecart;
+        }
+      });
+    });
+  } finally { setRC(prevRC); }
+  const unite = DXF_UNITES[o.unit] ? o.unit : 'cm';
+  return { texte: buildDxf(c.ent, { unite }), bilan: dxfBilan(c.ent), lvs, unite };
+}
+
 /* ---------------- livrer un fichier : copier, partager, enregistrer ---------------- */
 const CAN_SHARE_FILES = (() => { try { return !!(navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.png', { type: 'image/png' })] })); } catch (e) { return false; } })();
 async function saveFile(file) {
@@ -366,21 +394,23 @@ function renderExport() {
     : null;
   const lay = o.fmt === 'pdf' ? pdfLayout(o) : null;
   let note;
-  if (o.fmt === 'png') note = 'Collez l’image directement dans PowerPoint, Keynote ou Google Slides. « Partager » l’envoie aussi vers Photos, Fichiers ou AirDrop.';
+  if (o.fmt === 'dxf') note = `Fichier pour AutoCAD, DraftSight, LibreCAD, ArchiCAD, Revit… Le dessin est en vraie grandeur : 1 unité = 1 ${({ mm: 'millimètre', cm: 'centimètre', m: 'mètre' })[o.unit] || 'centimètre'}. Les murs, ouvertures, appareils, cheminements, cotes et textes sont rangés dans des calques séparés. L’aperçu ci-dessus montre le contenu exporté.`;
+  else if (o.fmt === 'png') note = 'Collez l’image directement dans PowerPoint, Keynote ou Google Slides. « Partager » l’envoie aussi vers Photos, Fichiers ou AirDrop.';
   else if (lay && !lay.fits) note = h('span', { style: 'color:var(--bad)' }, `Au 1:${lay.N}, le plan dépasse du ${o.paper} : choisissez un format plus grand ou une échelle plus petite.`);
   else if (lay && lay.fitted) note = 'Le plan est trop grand pour une échelle normalisée sur ce format : il est réduit pour tenir sur la page (ne pas mesurer à la règle).';
   else if (lay) note = `Échelle 1:${lay.N} : imprimez à 100 % (taille réelle), 1 cm sur le papier = ${fmtReal(lay.N)} en vrai.${o.lv === 'all' && lay.lvs.length > 1 ? ' Les niveaux ont le même cadrage : ils se superposent page à page.' : ''}`;
   const prevBox = $('#expPrev') || h('div', { class: 'exp-prev', id: 'expPrev' }, h('canvas', { id: 'expCv' }));
   prevBox.classList.toggle('chk', o.fmt === 'png' && o.bg === 'transparent');
   body.replaceChildren(...[
-    segCtl([{ v: 'png', n: 'Image PNG' }, { v: 'pdf', n: 'PDF à l’échelle' }], o.fmt, (v) => set('fmt', v)),
+    segCtl([{ v: 'png', n: 'Image PNG' }, { v: 'pdf', n: 'PDF à l’échelle' }, { v: 'dxf', n: 'DXF (AutoCAD)' }], o.fmt, (v) => set('fmt', v)),
     prevBox,
     lvChips ? sec('Niveau', h('div', { class: 'chips' }, lvChips)) : null,
     sec('Contenu', h('div', { class: 'chips' },
       expChip('Cotes', o.dims, tog('dims')), expChip('Noms des pièces', o.names, tog('names')), expChip('Surfaces', o.areas, tog('areas')),
       expChip('Mobilier', o.furn, tog('furn')), expChip('Électricité', o.elec, tog('elec')),
-      o.elec ? expChip('Légende', o.legend, tog('legend')) : null, expChip(o.fmt === 'pdf' ? 'Cartouche' : 'Titre et échelle', o.title, tog('title')))),
-    o.fmt === 'png'
+      o.elec && o.fmt !== 'dxf' ? expChip('Légende', o.legend, tog('legend')) : null, o.fmt === 'dxf' ? null : expChip(o.fmt === 'pdf' ? 'Cartouche' : 'Titre et échelle', o.title, tog('title')))),
+    o.fmt === 'dxf' ? sec('Unité du dessin', segCtl([{ v: 'mm', n: 'Millimètres' }, { v: 'cm', n: 'Centimètres' }, { v: 'm', n: 'Mètres' }], DXF_UNITES[o.unit] ? o.unit : 'cm', (v) => set('unit', v)))
+    : o.fmt === 'png'
       ? h('div', { class: 'row' },
         sec('Fond', segCtl([{ v: 'white', n: 'Blanc' }, { v: 'transparent', n: 'Transparent' }], o.bg, (v) => set('bg', v))),
         sec('Qualité', segCtl([{ v: 'std', n: 'Standard' }, { v: 'hd', n: 'Haute' }], o.q, (v) => set('q', v))))
@@ -389,6 +419,7 @@ function renderExport() {
         sec('Orientation', segCtl([{ v: 'auto', n: 'Auto' }, { v: 'portrait', n: 'Portrait' }, { v: 'landscape', n: 'Paysage' }], o.orient, (v) => set('orient', v)))),
       sec('Échelle', segCtl([{ v: 'auto', n: lay && o.scale === 'auto' ? (lay.fitted ? 'Ajustée' : `Auto (1:${lay.N})`) : 'Auto' }, { v: '50', n: '1:50' }, { v: '100', n: '1:100' }, { v: '200', n: '1:200' }], String(o.scale), (v) => set('scale', v)))],
     h('p', { class: 'note' }, note),
+    o.fmt === 'dxf' ? h('p', { class: 'note', id: 'expDxfInfo' }, '') : null,
     h('div', { class: 'btns exp-btns' }, fileActions(() => EXS.file, o.fmt === 'png', () => EXS.blob || EXS.blobP)),
   ].flat().filter(Boolean));
   scheduleExport();
@@ -404,7 +435,23 @@ async function runExport(g) {
   const base = `${slug(P.name)}-${o.lv === 'all' ? 'niveaux' : slug((levelOf(o.lv) || {}).name)}`;
   const box = cv2.parentElement, bw = Math.max(200, box.clientWidth - 2), bh = 280;
   try {
-    if (o.fmt === 'png') {
+    if (o.fmt === 'dxf') {
+      /* aperçu : la même composition que l'image, sans titre ni légende */
+      const out = composePNG(Object.assign({}, o, { title: false, legend: false, bg: 'white', q: 'std' }), 1200); if (!out) return;
+      const ar = out.cvs.width / out.cvs.height, w = Math.min(bw, bh * ar), hgt = w / ar, dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv2.width = Math.round(w * dpr); cv2.height = Math.round(hgt * dpr); cv2.style.width = w + 'px'; cv2.style.height = hgt + 'px';
+      const pc = cv2.getContext('2d'); pc.imageSmoothingQuality = 'high'; pc.drawImage(out.cvs, 0, 0, cv2.width, cv2.height);
+      out.cvs.width = out.cvs.height = 0;
+      await new Promise((r) => setTimeout(r, 0));
+      if (g !== EXS.gen) return;
+      const d = composeDXF(o); if (!d) return;
+      /* type accepté par le menu de partage de l'iPad : « application/dxf » n'y est pas toujours connu */
+      let typ = 'application/dxf';
+      for (const t of ['application/dxf', 'image/vnd.dxf', 'text/plain']) { try { if (navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.dxf', { type: t })] })) { typ = t; break; } } catch (e) { } }
+      EXS.file = new File([dxfOctets(d.texte)], base + '.dxf', { type: typ });
+      const info = $('#expDxfInfo');
+      if (info) info.textContent = `${NFc.format(d.bilan.total)} objets (${NFc.format(d.bilan.traits)} traits, ${NFc.format(d.bilan.cercles)} cercles, ${NFc.format(d.bilan.textes)} textes) dans ${Object.keys(d.bilan.calques).length} calques · ${NF1.format(d.texte.length / 1024)} Ko`;
+    } else if (o.fmt === 'png') {
       let res; EXS.blobP = new Promise((r) => (res = r));
       const out = composePNG(o); if (!out) return;
       const ar = out.cvs.width / out.cvs.height, w = Math.min(bw, bh * ar), hgt = w / ar, dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -535,6 +582,7 @@ $('#fileIn').addEventListener('change', async (e) => {
   } catch (err) { toast('Ce fichier n’est pas un plan Calque valide.'); }
 });
 
+export { composeDXF };
 export { BASECACHE, CAN_SHARE_FILES, COLCACHE, EXP_DEF, EXS, HELV, MC, PAPERS, PT_CM, PdfCtx, PdfPath, SCALES, WINANSI,
   afterShare, baselineOffset, buildPdf, composePDF, composePNG, copyImageBlob, deflateBytes, deliverFile,
   dessinerPlanZone, drawLegendRow, drawPdfPage, drawScaleBar, expChip, expLevels, expOpts, exportAll, exportJSON, fileActions, fmtDate,
