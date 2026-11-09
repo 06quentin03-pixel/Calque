@@ -1025,7 +1025,7 @@ function openHelp() {
       li('Toucher un objet', 'Sa fiche (hauteur de pose, circuit…) et « Voir sur le plan »'), li('Mode Visite', 'Glisser pour regarder, toucher le sol pour s’y rendre, joystick ou flèches pour marcher')),
     h('h3', { style: 'margin:6px 0 0;font-size:13px' }, 'Au clavier'),
     h('dl', { class: 'kv', style: 'grid-template-columns:auto 1fr' },
-      li('V M P O F B C T', 'Sélection, Mur, Pièce, pOrte, Fenêtre, ouverture liBre, Cote, Texte'), li('L G', 'Liaison, Conduit (VMC ou gaine)'), li('Entrée', 'Terminer le conduit en cours'), li('R', 'Pivoter de 90°'), li('Ctrl D', 'Dupliquer'),
+      li('Outil Groupe', 'Rectangle de sélection ; flèches : déplacer ; Suppr : supprimer ; Échap : désélectionner'), li('V M P O F B C T', 'Sélection, Mur, Pièce, pOrte, Fenêtre, ouverture liBre, Cote, Texte'), li('L G', 'Liaison, Conduit (VMC ou gaine)'), li('Entrée', 'Terminer le conduit en cours'), li('R', 'Pivoter de 90°'), li('Ctrl D', 'Dupliquer'),
       li('Suppr', 'Supprimer'), li('Flèches', 'Déplacer de 1 cm (Maj : 10 cm)'), li('Ctrl Z / Ctrl Y', 'Annuler / Rétablir'), li('Échap', 'Terminer l’outil'),
       li('Espace + glisser', 'Déplacer la vue'), li('Molette', 'Zoomer')),
     h('p', { class: 'note' }, 'Les murs se dessinent dans l’axe. Les surfaces affichées sont des surfaces au sol, murs et cloisons déduits.'));

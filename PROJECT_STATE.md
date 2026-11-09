@@ -57,6 +57,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 ## Mission « développement autonome » (depuis le 9 novembre 2026)
 - **Export DXF** `js/dxf.js` (sans écran) : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre le dessin du moteur 2D, calques posés par `drawSceneIn` (`c.calque(nom)`), fichier R12 en Windows-1252. Écran : fenêtre d'export (`export.js`, `composeDXF`).
 - **Quantitatif et chiffrage** `js/quantitatif.js` (sans écran) + `js/quantitatifui.js` (onglet « Quantitatif ») : lignes à clé stable (`app:<type>`, `art:<article>`, `comp:<composant>`, `disj:<calibre>:<mono|tri>`, `dd:<type>:<calibre>:<réseau>`, `dda`, `parafoudre`, `mat:<catégorie>|<désignation>`), par pièce et par circuit, prix et temps saisis (`plan.chiffrage`, format **v11**), « mes prix » sur l'appareil (`UL.prix`, `mabiblio.js`), CSV, chapitre du dossier PDF.
+- **Sélection multiple** `js/multi.js` : outil `multi` (« Groupe », `EXT.tools`), sélection dans `ui.multi` (références `{ t, id }`), panneau du groupe par `EXT.inspVide` (chaîné avec celui du chantier), clavier par `toucheGroupe` (`demarrage.js`).
 - **Disjoncteur d'abonné** : `agcpOf(kva, reseau)` et `KVA_PALIERS` dans `elecdonnees.js` (valeurs usuelles, « estimées »).
 
 ## Tableaux NF C 15-100 (`js/normes.js`)
@@ -78,9 +79,9 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **108/108 réussis** (9 novembre 2026).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests).
-- Tests instables connus (`ipad.test.mjs`, comparaison d'images sensible à la charge de la machine) : « rendu limité à la zone visible… » et « l'image mémorisée du plan donne le même résultat… » : un échec intermittent observé une fois chacun dans la suite complète, réussis 3 fois sur 3 lancés seuls.
+- `node --test tests/*.test.mjs` : **111/111 réussis** (9 novembre 2026).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests).
+- Test parfois instable dans la suite complète : `ipad.test.mjs` « l'image mémorisée du plan donne le même résultat… » (image 0, 71 points d'écart sur l'aperçu d'un mur). Vu 3 fois sur 6 suites complètes le 9 novembre 2026, jamais lancé seul ni sous charge ; cause probable : la police d'écriture (chargée par internet) arrive ou non à temps dans l'une des deux pages comparées. Non lié aux modifications de la mission (même résultat avant). À fiabiliser : attendre `document.fonts.ready` dans `boot` des tests.
 
 ## Points ouverts
 - Essais iPad de la phase 5 : **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »), y compris un vrai fichier IES / LDT de fabricant. Essais iPad de la phase 4 : **validés** le 5 novembre 2026. Phase 3 validée sur iPad le 5 novembre 2026.

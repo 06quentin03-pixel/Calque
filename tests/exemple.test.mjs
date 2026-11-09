@@ -31,6 +31,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
       rap: { total: rap.synthese.total, global: rap.global, cq: rap.resultats.filter((x) => x.id.startsWith('cq_')).length },
       chiff: P.chiffrage, qt: await (async () => { const Q = await import('./js/quantitatif.js'), QU = await import('./js/quantitatifui.js'); const q = QU.quantitatifDuPlan(), c = Q.chiffrer(q, P.chiffrage); return { n: q.lignes.length, cats: [...new Set(q.lignes.map((l) => l.cat))], pieces: q.parPiece.map((g) => g.piece), circ: q.parCircuit.length, chiffrees: c.chiffrees, complet: c.complet, ht: c.totalHT, ttc: c.totalTTC, mo: c.mainOeuvre }; })(),
       dxf: (await import('./js/export.js')).composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).bilan,
+      groupe: (await import('./js/multi.js')).dansRect({ a: { x: -1e6, y: -1e6 }, b: { x: 1e6, y: 1e6 } }).reduce((m, r) => { m[r.t] = (m[r.t] || 0) + 1; return m; }, {}),
       chapQt: dos.chapitres.some((c) => c.id === 'quantitatif'),
       ch: P.chantier, chap7: dos.chapitres.some((c) => c.id === 'chantier'),
       va: P.variantes && { n: P.variantes.liste.length, gammes: P.variantes.liste.map((e) => e.gamme), principale: P.variantes.principale === P.variantes.active, data: P.variantes.liste.filter((e) => e.data).length }, chapVar: dos.chapitres.some((c) => c.id === 'variantes'),
@@ -68,6 +69,8 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.ch.notes.length >= 2 && r.ch.journal.length >= 5); assert.ok(r.chap7);
   // variantes (phase 7) : standard (principale, affichée), économique, haut de gamme ; chapitre de comparaison
   assert.equal(r.va.n, 3); assert.deepEqual(r.va.gammes, ['std', 'eco', 'haut']); assert.ok(r.va.principale); assert.equal(r.va.data, 2); assert.ok(r.chapVar);
+  // outil « Groupe » : tous les types d'objets sélectionnables sont présents sur le niveau affiché
+  for (const t of ['elec', 'item', 'duct', 'wall']) assert.ok(r.groupe[t] > 3, 'groupe ' + t);
   // export DXF : chaque calque du fichier est rempli par le plan d'exemple
   for (const n of ['PIECES', 'ESCALIERS', 'MOBILIER', 'MURS', 'OUVERTURES', 'ELEC_CHEMINEMENTS', 'ELEC_LIAISONS', 'ELEC_APPAREILS', 'COTES', 'TEXTES']) assert.ok(r.dxf.calques[n] > 0, 'DXF ' + n);
   // quantitatif et chiffrage : toutes les catégories, par pièce et par circuit ; prix d'exemple fictifs « saisie » avec origine,

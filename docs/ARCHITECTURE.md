@@ -64,6 +64,7 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `dxf.js` | Export DXF R12 : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre traits, cercles et textes par calque, `buildDxf` (unités mm/cm/m, Y vers le haut, Windows-1252) | oui |
 | `quantitatif.js` | Quantitatif (appareillage, protections, matériel ; par pièce, par circuit), chiffrage (prix et temps saisis, total partiel), CSV, nettoyage de `chiffrage` (migration v11) | oui |
 | `quantitatifui.js` | Onglet « Quantitatif » du Tableau électrique : saisie des prix sans reconstruire le tableau (`quantPatch`), « mes prix », export CSV | non |
+| `multi.js` | Sélection multiple (outil « Groupe ») : rectangle, déplacement, rotation, copie (même niveau ou autre niveau), suppression, hauteur et circuit des appareils | non |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |

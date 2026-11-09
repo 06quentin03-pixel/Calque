@@ -415,7 +415,7 @@ function panneau() {
         btns(btn('Dossier PDF du chantier', openDossierChantier, 'sm', 'book'))),
     )];
 }
-EXT.inspVide = panneau;
+{ const avant = EXT.inspVide; EXT.inspVide = () => panneau() || (avant ? avant() : null); } // chaîné : d'autres modules (multi.js) ajoutent aussi leur panneau
 
 /* images qu'aucun plan ni aucune version n'utilise */
 async function libererEspace() {

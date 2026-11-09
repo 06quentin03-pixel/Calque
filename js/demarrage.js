@@ -10,6 +10,7 @@ import { generateFromPlan } from './electricite.js';
 import { closeDimEdit, finishDuct, openFilterPop } from './reseaux.js';
 import { SCR, finishChain, fitView, keys, makeElecFromDef, makeItemFromDef, newOpening, redo, requestRender,
   resizeCanvas, select, undo, zoomAt } from './interaction.js';
+import { toucheGroupe } from './multi.js';
 import { renderEvMain, setView } from './tableau.js';
 import { loadUserLib } from './mabiblio.js';
 import { ICON, closeModal, closePops, copyWalls, deleteSel, duplicateSel, h, nudgeSel, renderInspector, renderMenuPop,
@@ -35,6 +36,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
   if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+  if (toucheGroupe(e, k)) return;
   if (mod && k === 'd') { e.preventDefault(); duplicateSel(); return; }
   if (mod) return;
   if (k === ' ') { keys.space = true; e.preventDefault(); return; }
