@@ -439,6 +439,18 @@ function finishDuct() {
   updateHint();
   return d;
 }
+/* gaine électrique créée par le raccordement automatique : mêmes règles que finishDuct (type et pose choisis en
+   dernier par l'utilisateur, diamètre selon le circuit) ; sans enregistrer l'étape (l'appelant fait un seul commit) */
+function creerGaineElec(g) {
+  const d = { id: uid('k'), lv: g.lv, sys: 'elec', pts: g.pts.map((p) => ({ x: p.x, y: p.y })), a: g.a || null, b: g.b || null };
+  if (g.cid) d.cid = g.cid;
+  if (S.ductKind && TYPES_CHEMIN[S.ductKind]) d.kind = S.ductKind;
+  if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (d.pose === 'hauteur' && isNum(S.ductZ)) d.z = S.ductZ; else if (d.pose === 'hauteur') delete d.pose; }
+  d.dia = autoDuctDia(d);
+  if (d.kind && TYPES_CHEMIN[d.kind].forme === 'rect') { delete d.dia; if (isNum(S.ductLw) && isNum(S.ductLh)) { d.lw = S.ductLw; d.lh = S.ductLh; } }
+  P.ducts.push(d); IDX.ducts.set(d.id, d);
+  return d;
+}
 function drawDuctDraft() {
   const c = ctx, px = 1 / V.s, dr = ui.duct;
   if (dr) {
@@ -816,6 +828,7 @@ function openDimEdit(dh) {
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setDIMHIT(v) { DIMHIT = v; }
 
+export { creerGaineElec };
 export { DIMHIT, DUCT_DIAS, FAMS, KITCHEN_Q, PRESETS, VENT_DUCT_ONLY, VENT_GROUPS, VMC_MODE_NOTE, afterFilter,
   applyPreset, autoDuctDia, boucheDebit, boucheDia, closeDimEdit, dimHitAt, drawDuctDraft, drawDuctLabels, drawDucts,
   ductAnchor, ductAt, ductCanAttach, ductColor, ductEndName, ductFlow, ductHandleDrag, ductHandles, ductHintMsg,

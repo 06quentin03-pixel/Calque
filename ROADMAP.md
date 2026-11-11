@@ -92,6 +92,7 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Disjoncteur d'abonné correct en triphasé.
 - ✅ Sélection multiple (outil « Groupe ») : déplacer, tourner, dupliquer, copier vers un autre niveau, supprimer, hauteur et circuit (`js/multi.js`, 3 tests).
 - ✅ Import d'un plan DXF en fond de plan à l'échelle exacte (`js/dxfimport.js`, 3 tests).
+- ✅ Raccordement automatique des circuits par des gaines proposées (`raccorderCircuit`, 3 tests).
 - ⬜ Suite envisagée, par ordre de valeur : murs créés depuis les traits du DXF, import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)

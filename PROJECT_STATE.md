@@ -59,6 +59,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Quantitatif et chiffrage** `js/quantitatif.js` (sans écran) + `js/quantitatifui.js` (onglet « Quantitatif ») : lignes à clé stable (`app:<type>`, `art:<article>`, `comp:<composant>`, `disj:<calibre>:<mono|tri>`, `dd:<type>:<calibre>:<réseau>`, `dda`, `parafoudre`, `mat:<catégorie>|<désignation>`), par pièce et par circuit, prix et temps saisis (`plan.chiffrage`, format **v11**), « mes prix » sur l'appareil (`UL.prix`, `mabiblio.js`), CSV, chapitre du dossier PDF.
 - **Sélection multiple** `js/multi.js` : outil `multi` (« Groupe », `EXT.tools`), sélection dans `ui.multi` (références `{ t, id }`), panneau du groupe par `EXT.inspVide` (chaîné avec celui du chantier), clavier par `toucheGroupe` (`demarrage.js`).
 - **Import DXF** `js/dxfimport.js` (sans écran : `lireDxf`, `empriseDxf`, `uniteProbable`, `dessinerDxf`) ; écran dans `fond.js` (`importDxf`) : le DXF est dessiné en image JPEG (4096 px au plus) et devient un fond de plan ordinaire avec `s` exact et `cal: true` (aucun changement de format).
+- **Raccordement automatique** : `raccorderCircuit(plan, cid, opts)` dans `itineraire.js` (sans écran, ne modifie pas le plan) ; écran : `raccorderAuto` (`routeui.js`), `creerGaineElec` (`reseaux.js`), boutons dans `metres.js` et l'inspecteur.
 - **Disjoncteur d'abonné** : `agcpOf(kva, reseau)` et `KVA_PALIERS` dans `elecdonnees.js` (valeurs usuelles, « estimées »).
 
 ## Tableaux NF C 15-100 (`js/normes.js`)
@@ -80,8 +81,8 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **114/114 réussis** (9 novembre 2026).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests).
+- `node --test tests/*.test.mjs` : **117/117 réussis** (9 novembre 2026).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests).
 - Test parfois instable dans la suite complète : `ipad.test.mjs` « l'image mémorisée du plan donne le même résultat… » (image 0, 71 points d'écart sur l'aperçu d'un mur). Vu 3 fois sur 6 suites complètes le 9 novembre 2026, jamais lancé seul ni sous charge ; cause probable : la police d'écriture (chargée par internet) arrive ou non à temps dans l'une des deux pages comparées. Non lié aux modifications de la mission (même résultat avant). À fiabiliser : attendre `document.fonts.ready` dans `boot` des tests.
 
 ## Points ouverts
@@ -89,6 +90,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - 3D : un appareil mural ne se déplace pas depuis la 3D (sur le plan seulement) ; la coupe n'a pas de face de remplissage (les murs coupés paraissent creux).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).
+- Raccordement automatique : les gaines proposées peuvent longer un mur par l'extérieur ou se superposer entre circuits (une gaine par circuit) : à corriger à la main si besoin ; pas de regroupement automatique dans une goulotte ou un chemin de câbles existant.
 - Import DXF : essayé avec des fichiers écrits par ezdxf (R12 et R2010) et par Calque, pas encore avec un vrai plan d'architecte (AutoCAD, ArchiCAD, Revit) : à essayer avec un fichier réel. DXF binaire et DWG non lus.
 - Export DXF : non essayé dans AutoCAD lui-même (vérifié avec la bibliothèque ezdxf et un rendu) ; à ouvrir une fois dans le logiciel du destinataire.
 
