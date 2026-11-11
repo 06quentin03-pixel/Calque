@@ -149,6 +149,7 @@ function buildDxf(ents, opts) {
   if (!isFinite(x0)) { x0 = y0 = 0; x1 = y1 = 1; }
   const o = [];
   const g = (code, val) => { o.push(String(code), String(val)); };
+  g(999, 'CALQUE unite=' + (DXF_UNITES[(opts && opts.unite)] ? opts.unite : 'cm')); // commentaire : relu par l'import DXF de Calque
   g(0, 'SECTION'); g(2, 'HEADER');
   g(9, '$ACADVER'); g(1, 'AC1009');
   g(9, '$DWGCODEPAGE'); g(3, 'ANSI_1252');

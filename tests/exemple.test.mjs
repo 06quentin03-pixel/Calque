@@ -32,6 +32,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
       chiff: P.chiffrage, qt: await (async () => { const Q = await import('./js/quantitatif.js'), QU = await import('./js/quantitatifui.js'); const q = QU.quantitatifDuPlan(), c = Q.chiffrer(q, P.chiffrage); return { n: q.lignes.length, cats: [...new Set(q.lignes.map((l) => l.cat))], pieces: q.parPiece.map((g) => g.piece), circ: q.parCircuit.length, chiffrees: c.chiffrees, complet: c.complet, ht: c.totalHT, ttc: c.totalTTC, mo: c.mainOeuvre }; })(),
       dxf: (await import('./js/export.js')).composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).bilan,
       groupe: (await import('./js/multi.js')).dansRect({ a: { x: -1e6, y: -1e6 }, b: { x: 1e6, y: 1e6 } }).reduce((m, r) => { m[r.t] = (m[r.t] || 0) + 1; return m; }, {}),
+      relu: await (async () => { const E = await import('./js/export.js'), I = await import('./js/dxfimport.js'); const R = I.lireDxf(E.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).texte); const em = I.empriseDxf(R, null); return { unite: R.unite, traits: R.traits.length, textes: R.textes.length, larg: em.x1 - em.x0 }; })(),
       chapQt: dos.chapitres.some((c) => c.id === 'quantitatif'),
       ch: P.chantier, chap7: dos.chapitres.some((c) => c.id === 'chantier'),
       va: P.variantes && { n: P.variantes.liste.length, gammes: P.variantes.liste.map((e) => e.gamme), principale: P.variantes.principale === P.variantes.active, data: P.variantes.liste.filter((e) => e.data).length }, chapVar: dos.chapitres.some((c) => c.id === 'variantes'),
@@ -73,6 +74,8 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   for (const t of ['elec', 'item', 'duct', 'wall']) assert.ok(r.groupe[t] > 3, 'groupe ' + t);
   // export DXF : chaque calque du fichier est rempli par le plan d'exemple
   for (const n of ['PIECES', 'ESCALIERS', 'MOBILIER', 'MURS', 'OUVERTURES', 'ELEC_CHEMINEMENTS', 'ELEC_LIAISONS', 'ELEC_APPAREILS', 'COTES', 'TEXTES']) assert.ok(r.dxf.calques[n] > 0, 'DXF ' + n);
+  // import DXF : le fichier exporté du plan d'exemple se relit (unité centimètres, même emprise à quelques cm près)
+  assert.equal(r.relu.unite, 5); assert.ok(r.relu.traits > 1000 && r.relu.textes > 100 && r.relu.larg > 7000 && r.relu.larg < 8500, JSON.stringify(r.relu));
   // quantitatif et chiffrage : toutes les catégories, par pièce et par circuit ; prix d'exemple fictifs « saisie » avec origine,
   // total partiel (des lignes restent non chiffrées) ; disjoncteur d'abonné triphasé
   for (const c of ['Appareillage', 'Protections', 'Cheminements', 'Conducteurs', 'Boîtes']) assert.ok(r.qt.cats.includes(c), c);

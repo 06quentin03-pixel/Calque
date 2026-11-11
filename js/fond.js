@@ -6,6 +6,7 @@ import { DEG, EXT, P, ui, uid } from './noyau.js';
 import { V } from './rendu2d.js';
 import { commit, cv, requestRender } from './interaction.js';
 import { btn, btns, closeModal, confirmBtn, h, openModal, renderInspector, sec, setTool, toast, updateHint } from './interface.js';
+import { UNITES, decoderDxf, dessinerDxf, empriseDxf, estDwg, lireDxf, uniteProbable } from './dxfimport.js';
 import { calibrate, fitScale, fondSize, parseLength, pdfScale, renderSize, rotate90 } from './fondcalc.js';
 
 const MAX_SIDE = 4096;          // côté le plus long de l'image gardée (pixels) : lisible, et supportable par l'iPad
@@ -85,7 +86,7 @@ const ERR = {
 let fileIn = null;
 function pickFond() {
   if (!fileIn) {
-    fileIn = h('input', { type: 'file', accept: 'image/*,application/pdf,.pdf', hidden: true, id: 'fondIn' });
+    fileIn = h('input', { type: 'file', accept: 'image/*,application/pdf,.pdf,.dxf,.dwg', hidden: true, id: 'fondIn' });
     fileIn.addEventListener('change', async () => {
       const f = fileIn.files && fileIn.files[0]; fileIn.value = '';
       if (f) await importFond(f);
@@ -94,7 +95,74 @@ function pickFond() {
   }
   fileIn.click();
 }
+/* ---- plan d'architecte en DXF : dessiné en image, à l'échelle exacte du fichier ---- */
+const DXF = { R: null, nom: '', u: 5, uFichier: 0, calques: null };
+function dxfImage(maxSide) {
+  const R = DXF.R, em = empriseDxf(R, DXF.calques); if (!em) return null;
+  const marge = 0.02 * Math.max(em.x1 - em.x0, em.y1 - em.y0) || 1;
+  const z = { x0: em.x0 - marge, y0: em.y0 - marge, x1: em.x1 + marge, y1: em.y1 + marge };
+  const W = z.x1 - z.x0, H = z.y1 - z.y0, k = maxSide / Math.max(W, H);
+  const cvs = document.createElement('canvas'); cvs.width = Math.max(1, Math.round(W * k)); cvs.height = Math.max(1, Math.round(H * k));
+  const c = cvs.getContext('2d'); c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, cvs.width, cvs.height);
+  dessinerDxf(c, R, z, cvs.width, cvs.height, { calques: DXF.calques, trait: maxSide > 2000 ? 2 : 1 });
+  return { cvs, em, W, H, k };
+}
+function dxfModal() {
+  const R = DXF.R, noms = [...R.calques.entries()].filter(([, c]) => c.n > 0).sort((a, b) => b[1].n - a[1].n);
+  const em = empriseDxf(R, DXF.calques), cm = UNITES[DXF.u].cm;
+  const m = (v) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(v * cm / 100) + ' m';
+  const prev = h('div', { class: 'exp-prev', id: 'dxfPrev' });
+  const im = em ? dxfImage(900) : null; if (im) prev.append(im.cvs);
+  const ign = Object.entries(R.ignores).map(([k, v]) => `${v} ${k}`).join(', ');
+  const redo = () => { openModal('Importer un plan DXF', ...dxfModal()); document.getElementById('modal').classList.add('wide'); };
+  return [
+    h('p', null, h('b', null, DXF.nom), ` · ${R.traits.length} traits, ${R.textes.length} textes, ${noms.length} calques`),
+    prev,
+    sec('Unité du dessin', h('div', { class: 'seg', role: 'group' }, [4, 5, 6].map((u) => h('button', { type: 'button', 'aria-pressed': String(DXF.u === u), onclick: () => { DXF.u = u; redo(); } }, UNITES[u].n[0].toUpperCase() + UNITES[u].n.slice(1)))),
+      h('p', { class: 'note', id: 'dxfTaille' }, em ? `Avec cette unité, le dessin mesure ${m(em.x1 - em.x0)} sur ${m(em.y1 - em.y0)}. ${DXF.uFichier === DXF.u ? 'Unité indiquée par le fichier.' : DXF.uFichier ? `Attention : le fichier indique des ${UNITES[DXF.uFichier].n} ; unité changée par vous, à vérifier.` : 'Le fichier n’indique pas son unité : choisie d’après la taille du dessin, à vérifier (mesurez une pièce connue après l’import).'}${em.isoles ? ' Des objets isolés très éloignés du dessin ont été écartés.' : ''}` : 'Aucun trait dans les calques choisis.')),
+    sec('Calques à garder', h('div', { class: 'chips', id: 'dxfCalques' }, noms.slice(0, 60).map(([n, c]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(DXF.calques.has(n)), title: `${c.n} objets`, onclick: () => { if (DXF.calques.has(n)) DXF.calques.delete(n); else DXF.calques.add(n); redo(); } }, n || '(sans nom)'))),
+      h('p', { class: 'note' }, 'Touchez un calque pour le retirer du fond (mobilier, cotes, hachures…) : le plan sera plus lisible pour redessiner par-dessus.')),
+    ign || R.tronque ? h('p', { class: 'note' }, `${ign ? 'Objets non repris : ' + ign + '. ' : ''}${R.tronque ? 'Dessin très lourd : seule une partie a été lue.' : ''}`) : null,
+    btns(btn('Importer comme fond de plan', dxfValider, 'pri'), btn('Annuler', closeModal)),
+  ];
+}
+function dxfValider() {
+  const im = dxfImage(MAX_SIDE); if (!im) { toast('Aucun trait dans les calques choisis.'); return; }
+  let src = im.cvs.toDataURL('image/jpeg', 0.86);
+  if (src.length > MAX_CHARS) src = im.cvs.toDataURL('image/jpeg', 0.6);
+  if (src.length > MAX_CHARS) { toast('Dessin trop lourd : retirez des calques.'); return; }
+  const cm = UNITES[DXF.u].cm, old = fondOf(ui.lv);
+  const center = { x: (cv.clientWidth / 2 - V.ox) / V.s, y: (cv.clientHeight / 2 - V.oy) / V.s };
+  const key = uid('img'); P.fondImg[key] = src;
+  /* échelle exacte : 1 pixel = (unité du fichier en cm) / (pixels par unité) */
+  const f = { id: uid('f'), lv: ui.lv, img: key, name: DXF.nom.slice(0, 120), wpx: im.cvs.width, hpx: im.cvs.height, s: cm / im.k, cx: Math.round(center.x), cy: Math.round(center.y), rot: 0, op: 0.6, visible: true, cal: true };
+  if (old) { P.fonds.splice(P.fonds.indexOf(old), 1); if (!P.fonds.some((x) => x.img === old.img)) delete P.fondImg[old.img]; }
+  P.fonds.push(f); im.cvs.width = im.cvs.height = 0; DXF.R = null;
+  commit(); closeModal();
+  /* cadrer la vue sur le fond */
+  const z = fondSize(f), k = Math.min(cv.clientWidth / (z.w * 1.15), cv.clientHeight / (z.h * 1.15));
+  V.s = Math.max(0.04, Math.min(14, k)); V.ox = cv.clientWidth / 2 - f.cx * V.s; V.oy = cv.clientHeight / 2 - f.cy * V.s;
+  requestRender(); renderInspector();
+  toast(`Fond importé à l’échelle (${DXF.uFichier === DXF.u ? 'unité du fichier' : 'unité choisie'} : ${UNITES[DXF.u].n}). Redessinez les murs par-dessus.`);
+}
+async function importDxf(file) {
+  let buf; try { buf = new Uint8Array(await file.arrayBuffer()); } catch (e) { buf = null; }
+  const dwg = /\.dwg$/i.test(file.name) || (buf && estDwg(buf));
+  if (!buf || dwg) {
+    openModal('Import impossible', h('p', null, dwg ? 'Le format DWG (AutoCAD) est un format fermé que Calque ne peut pas lire. Demandez à l’architecte un fichier DXF, ou ouvrez le DWG dans son logiciel et choisissez « Enregistrer sous › DXF ». Un PDF ou une image du plan conviennent aussi.' : 'Fichier illisible.'), btns(btn('Fermer', closeModal)));
+    return false;
+  }
+  let R; try { R = lireDxf(decoderDxf(buf)); } catch (e) { console.error(e); R = null; }
+  if (!R || !R.traits.length) { openModal('Import impossible', h('p', null, 'Aucun dessin lisible dans ce fichier DXF (fichier vide, binaire, ou qui ne contient que des objets 3D).'), btns(btn('Fermer', closeModal))); return false; }
+  DXF.R = R; DXF.nom = file.name;
+  DXF.calques = new Set([...R.calques.entries()].filter(([, c]) => c.n > 0 && !c.masque).map(([n]) => n));
+  if (!DXF.calques.size) DXF.calques = new Set([...R.calques.keys()]);
+  const u = uniteProbable(R, empriseDxf(R, DXF.calques)); DXF.u = u.u === 1 || u.u === 2 ? 5 : u.u; DXF.uFichier = u.sure ? u.u : 0;
+  openModal('Importer un plan DXF', ...dxfModal()); document.getElementById('modal').classList.add('wide');
+  return true;
+}
 async function importFond(file) {
+  if (/\.(dxf|dwg)$/i.test(file.name)) return importDxf(file);
   toast('Lecture du fichier…');
   let r;
   try { r = await readFond(file); } catch (e) { openModal('Import impossible', h('p', null, ERR[e.message] || ERR.image), btns(btn('Fermer', closeModal))); return false; }
@@ -206,7 +274,7 @@ const lab = (b, t) => { b.setAttribute('aria-label', t); b.title = t; return b; 
 /* ---- section « Fond de plan » de l'inspecteur du niveau ---- */
 function fondSection() {
   const f = fondOf(ui.lv);
-  if (!f) return sec('Fond de plan', h('p', { class: 'note' }, 'Importez un plan existant (photo, image ou PDF) pour le redessiner par-dessus.'),
+  if (!f) return sec('Fond de plan', h('p', { class: 'note' }, 'Importez un plan existant (photo, image, PDF ou DXF d’architecte) pour le redessiner par-dessus.'),
     btns(btn('Importer un fond de plan', pickFond, '', 'img')));
   const z = fondSize(f);
   const op = h('input', { type: 'range', min: '10', max: '100', step: '5', value: String(Math.round((f.op ?? 0.5) * 100)), id: 'f-fondop', 'aria-label': 'Opacité du fond', class: 'range' });
@@ -227,4 +295,4 @@ function fondSection() {
     h('p', { class: 'note' }, 'Le fond aide à dessiner : il n’apparaît pas dans les exports PDF et image.'));
 }
 
-export { fondOf, fondSection, importFond, pickFond, startCal };
+export { fondOf, fondSection, importDxf, importFond, pickFond, startCal };

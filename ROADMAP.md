@@ -91,7 +91,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Quantitatif complet (global, par pièce, par circuit), chiffrage (prix et temps saisis), export CSV, chapitre du dossier PDF, format v11 (`js/quantitatif.js`, `js/quantitatifui.js`, 5 tests).
 - ✅ Disjoncteur d'abonné correct en triphasé.
 - ✅ Sélection multiple (outil « Groupe ») : déplacer, tourner, dupliquer, copier vers un autre niveau, supprimer, hauteur et circuit (`js/multi.js`, 3 tests).
-- ⬜ Suite envisagée, par ordre de valeur : import DXF en fond de plan, import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+- ✅ Import d'un plan DXF en fond de plan à l'échelle exacte (`js/dxfimport.js`, 3 tests).
+- ⬜ Suite envisagée, par ordre de valeur : murs créés depuis les traits du DXF, import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

@@ -901,7 +901,7 @@ function renderMenuPop() {
     menuItem('pen', 'Renommer le plan', renamePlan),
     h('hr'),
     menuItem('book', 'Bibliothèque technique', openTechLib),
-    menuItem('img', 'Importer un fond de plan (image ou PDF)', pickFond),
+    menuItem('img', 'Importer un fond de plan (image, PDF ou DXF)', pickFond),
     h('hr'),
     menuItem('img', 'Exporter en image, PDF ou DXF', openExport),
     menuItem('book', 'Dossier PDF (plans, tableau, métrés, éclairage…)', openDossier),
