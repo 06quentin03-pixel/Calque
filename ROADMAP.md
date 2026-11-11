@@ -93,7 +93,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Sélection multiple (outil « Groupe ») : déplacer, tourner, dupliquer, copier vers un autre niveau, supprimer, hauteur et circuit (`js/multi.js`, 3 tests).
 - ✅ Import d'un plan DXF en fond de plan à l'échelle exacte (`js/dxfimport.js`, 3 tests).
 - ✅ Raccordement automatique des circuits par des gaines proposées (`raccorderCircuit`, 3 tests).
-- ⬜ Suite envisagée, par ordre de valeur : murs créés depuis les traits du DXF, import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+- ✅ Reconnaissance des murs, portes, fenêtres et noms de pièces d'un plan DXF (`js/dxfmurs.js`, 3 tests).
+- ⬜ Suite envisagée, par ordre de valeur : import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

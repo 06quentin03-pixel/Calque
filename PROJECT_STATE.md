@@ -59,6 +59,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Quantitatif et chiffrage** `js/quantitatif.js` (sans écran) + `js/quantitatifui.js` (onglet « Quantitatif ») : lignes à clé stable (`app:<type>`, `art:<article>`, `comp:<composant>`, `disj:<calibre>:<mono|tri>`, `dd:<type>:<calibre>:<réseau>`, `dda`, `parafoudre`, `mat:<catégorie>|<désignation>`), par pièce et par circuit, prix et temps saisis (`plan.chiffrage`, format **v11**), « mes prix » sur l'appareil (`UL.prix`, `mabiblio.js`), CSV, chapitre du dossier PDF.
 - **Sélection multiple** `js/multi.js` : outil `multi` (« Groupe », `EXT.tools`), sélection dans `ui.multi` (références `{ t, id }`), panneau du groupe par `EXT.inspVide` (chaîné avec celui du chantier), clavier par `toucheGroupe` (`demarrage.js`).
 - **Import DXF** `js/dxfimport.js` (sans écran : `lireDxf`, `empriseDxf`, `uniteProbable`, `dessinerDxf`) ; écran dans `fond.js` (`importDxf`) : le DXF est dessiné en image JPEG (4096 px au plus) et devient un fond de plan ordinaire avec `s` exact et `cal: true` (aucun changement de format).
+- **Reconnaissance des murs** `js/dxfmurs.js` (sans écran : `reconnaitreMurs(segments, arcs)`, `segmentsDuDxf`) ; écran : `dxfMurs` dans `fond.js` (murs par `addWall`, ouvertures par `newOpening`, noms des pièces d'après les textes du DXF).
 - **Raccordement automatique** : `raccorderCircuit(plan, cid, opts)` dans `itineraire.js` (sans écran, ne modifie pas le plan) ; écran : `raccorderAuto` (`routeui.js`), `creerGaineElec` (`reseaux.js`), boutons dans `metres.js` et l'inspecteur.
 - **Disjoncteur d'abonné** : `agcpOf(kva, reseau)` et `KVA_PALIERS` dans `elecdonnees.js` (valeurs usuelles, « estimées »).
 
@@ -81,8 +82,8 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **117/117 réussis** (9 novembre 2026).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests).
+- `node --test tests/*.test.mjs` : **120/120 réussis** (9 novembre 2026).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests), `dxfmurs` (3 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
 ## Points ouverts
@@ -91,6 +92,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).
 - Raccordement automatique : les gaines proposées peuvent longer un mur par l'extérieur ou se superposer entre circuits (une gaine par circuit) : à corriger à la main si besoin ; pas de regroupement automatique dans une goulotte ou un chemin de câbles existant.
+- Reconnaissance des murs : validée sur des plans de synthèse (droits, tournés, avec du « bruit ») ; sur un vrai plan d'architecte le résultat dépendra du dessin (murs en hachures pleines, murs courbes, poteaux : non reconnus) : à essayer avec un fichier réel et à ajuster.
 - Import DXF : essayé avec des fichiers écrits par ezdxf (R12 et R2010) et par Calque, pas encore avec un vrai plan d'architecte (AutoCAD, ArchiCAD, Revit) : à essayer avec un fichier réel. DXF binaire et DWG non lus.
 - Export DXF : non essayé dans AutoCAD lui-même (vérifié avec la bibliothèque ezdxf et un rendu) ; à ouvrir une fois dans le logiciel du destinataire.
 

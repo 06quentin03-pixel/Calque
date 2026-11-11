@@ -2,9 +2,12 @@
    pour le recopier. Mise à l'échelle par deux points (ou par l'échelle d'impression du PDF), transparence,
    déplacement, rotation. Le fond n'est jamais exporté (PDF/PNG) : il ne sert qu'à dessiner.
    Module JavaScript natif (aucune compilation). */
-import { DEG, EXT, P, ui, uid } from './noyau.js';
+import { DEG, EXT, P, inPoly, projSeg, touch, ui, uid } from './noyau.js';
+import { geo, syncRooms } from './geometrie.js';
+import { addWall, clampOpening } from './mutations.js';
+import { reconnaitreMurs, segmentsDuDxf } from './dxfmurs.js';
 import { V } from './rendu2d.js';
-import { commit, cv, requestRender } from './interaction.js';
+import { commit, cv, newOpening, requestRender } from './interaction.js';
 import { btn, btns, closeModal, confirmBtn, h, openModal, renderInspector, sec, setTool, toast, updateHint } from './interface.js';
 import { UNITES, decoderDxf, dessinerDxf, empriseDxf, estDwg, lireDxf, uniteProbable } from './dxfimport.js';
 import { calibrate, fitScale, fondSize, parseLength, pdfScale, renderSize, rotate90 } from './fondcalc.js';
@@ -96,7 +99,34 @@ function pickFond() {
   fileIn.click();
 }
 /* ---- plan d'architecte en DXF : dessiné en image, à l'échelle exacte du fichier ---- */
-const DXF = { R: null, nom: '', u: 5, uFichier: 0, calques: null };
+const DXF = { R: null, nom: '', u: 5, uFichier: 0, calques: null, murs: false };
+/* murs et ouvertures proposés d'après les traits doubles du DXF, posés sur le niveau affiché (sans enregistrer l'étape) */
+function dxfMurs(R, calques, placer, cm) {
+  const { segments, arcs } = segmentsDuDxf(R, calques, placer, cm);
+  const r = reconnaitreMurs(segments, arcs);
+  let nm = 0, no = 0;
+  for (const m of r.murs) nm += addWall(ui.lv, m.a, m.b, { th: m.th, kind: m.kind }).length;
+  touch();
+  for (const o of r.ouvertures) {
+    let best = null;
+    for (const wg of geo(ui.lv).walls.values()) { const pr = projSeg(o, wg.A, wg.B); if (pr.t > 0 && pr.t < 1 && pr.d < 3 && (!best || pr.d < best.d)) best = { wg, d: pr.d, t: pr.t * wg.L }; }
+    if (!best || best.wg.L < o.w + 2) continue;
+    const op = newOpening(o.kind, best.wg, best.t, 1); op.w = o.w; clampOpening(op); no++;
+  }
+  touch();
+  /* noms des pièces : le texte du dessin écrit dans la pièce (le plus grand, hors surfaces et cotes) */
+  let noms = 0;
+  if (nm) {
+    syncRooms();
+    const textes = R.textes.filter((t) => (!calques || calques.has(t.l)) && /[A-Za-zÀ-ÿ]{3}/.test(t.s) && !/^[\d\s.,]+\s*(m²|m2|cm|mm|m)?$/i.test(t.s)).map((t) => Object.assign(placer(t.x, t.y), { s: t.s.replace(/\s+/g, ' ').trim().slice(0, 40), h: t.h }));
+    for (const room of geo(ui.lv).rooms) {
+      if (!room.label || !/^Pièce \d+$/.test(room.label.name)) continue;
+      const dans = textes.filter((t) => inPoly(t, room.poly) && !(room.holes || []).some((hh) => inPoly(t, hh))).sort((a, b) => b.h - a.h);
+      if (dans.length) { room.label.name = dans[0].s; noms++; }
+    }
+  }
+  return { noms, murs: nm, ouvertures: no, portes: r.ouvertures.filter((x) => x.kind === 'door').length, fenetres: r.ouvertures.filter((x) => x.kind === 'window').length };
+}
 function dxfImage(maxSide) {
   const R = DXF.R, em = empriseDxf(R, DXF.calques); if (!em) return null;
   const marge = 0.02 * Math.max(em.x1 - em.x0, em.y1 - em.y0) || 1;
@@ -122,6 +152,8 @@ function dxfModal() {
       h('p', { class: 'note', id: 'dxfTaille' }, em ? `Avec cette unité, le dessin mesure ${m(em.x1 - em.x0)} sur ${m(em.y1 - em.y0)}. ${DXF.uFichier === DXF.u ? 'Unité indiquée par le fichier.' : DXF.uFichier ? `Attention : le fichier indique des ${UNITES[DXF.uFichier].n} ; unité changée par vous, à vérifier.` : 'Le fichier n’indique pas son unité : choisie d’après la taille du dessin, à vérifier (mesurez une pièce connue après l’import).'}${em.isoles ? ' Des objets isolés très éloignés du dessin ont été écartés.' : ''}` : 'Aucun trait dans les calques choisis.')),
     sec('Calques à garder', h('div', { class: 'chips', id: 'dxfCalques' }, noms.slice(0, 60).map(([n, c]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(DXF.calques.has(n)), title: `${c.n} objets`, onclick: () => { if (DXF.calques.has(n)) DXF.calques.delete(n); else DXF.calques.add(n); redo(); } }, n || '(sans nom)'))),
       h('p', { class: 'note' }, 'Touchez un calque pour le retirer du fond (mobilier, cotes, hachures…) : le plan sera plus lisible pour redessiner par-dessus.')),
+    sec('Murs', h('div', { class: 'chips' }, h('button', { type: 'button', class: 'chip', id: 'dxfMursChip', 'aria-pressed': String(DXF.murs), onclick: () => { DXF.murs = !DXF.murs; redo(); } }, 'Créer aussi les murs (proposition)')),
+      h('p', { class: 'note' }, DXF.murs ? 'Calque cherchera les murs dessinés par deux traits parallèles (4 à 50 cm d’écart) dans les calques gardés, avec leur épaisseur, et proposera les portes (arc de débattement) et les fenêtres. Meilleur résultat en ne gardant que le calque des murs et celui des menuiseries. Les pièces prennent le nom écrit dans le dessin si le calque des textes est gardé. C’est une proposition à vérifier et à corriger ; « Annuler » retire tout.' : 'Sans cette option, le dessin sert seulement de fond pour redessiner par-dessus.')),
     ign || R.tronque ? h('p', { class: 'note' }, `${ign ? 'Objets non repris : ' + ign + '. ' : ''}${R.tronque ? 'Dessin très lourd : seule une partie a été lue.' : ''}`) : null,
     btns(btn('Importer comme fond de plan', dxfValider, 'pri'), btn('Annuler', closeModal)),
   ];
@@ -137,13 +169,20 @@ function dxfValider() {
   /* échelle exacte : 1 pixel = (unité du fichier en cm) / (pixels par unité) */
   const f = { id: uid('f'), lv: ui.lv, img: key, name: DXF.nom.slice(0, 120), wpx: im.cvs.width, hpx: im.cvs.height, s: cm / im.k, cx: Math.round(center.x), cy: Math.round(center.y), rot: 0, op: 0.6, visible: true, cal: true };
   if (old) { P.fonds.splice(P.fonds.indexOf(old), 1); if (!P.fonds.some((x) => x.img === old.img)) delete P.fondImg[old.img]; }
-  P.fonds.push(f); im.cvs.width = im.cvs.height = 0; DXF.R = null;
+  P.fonds.push(f); im.cvs.width = im.cvs.height = 0;
+  let murs = null;
+  if (DXF.murs) {
+    const Xc = (im.em.x0 + im.em.x1) / 2, Yc = (im.em.y0 + im.em.y1) / 2;
+    try { murs = dxfMurs(DXF.R, DXF.calques, (X, Y) => ({ x: f.cx + (X - Xc) * cm, y: f.cy - (Y - Yc) * cm }), cm); } catch (e) { console.error(e); murs = null; toast('Reconnaissance des murs impossible sur ce dessin.'); }
+    if (murs && murs.murs) f.op = 0.35;
+  }
+  DXF.R = null;
   commit(); closeModal();
   /* cadrer la vue sur le fond */
   const z = fondSize(f), k = Math.min(cv.clientWidth / (z.w * 1.15), cv.clientHeight / (z.h * 1.15));
   V.s = Math.max(0.04, Math.min(14, k)); V.ox = cv.clientWidth / 2 - f.cx * V.s; V.oy = cv.clientHeight / 2 - f.cy * V.s;
   requestRender(); renderInspector();
-  toast(`Fond importé à l’échelle (${DXF.uFichier === DXF.u ? 'unité du fichier' : 'unité choisie'} : ${UNITES[DXF.u].n}). Redessinez les murs par-dessus.`);
+  toast(murs && murs.murs ? `${murs.murs} murs et ${murs.ouvertures} ouvertures proposés d’après le dessin (${murs.portes} portes, ${murs.fenetres} fenêtres reconnues${murs.noms ? `, ${murs.noms} pièce${murs.noms > 1 ? 's nommées' : ' nommée'} d’après les textes` : ''}) : à vérifier sur le fond. « Annuler » retire tout.` : `${murs ? 'Aucun mur reconnu (pas de traits doubles dans les calques gardés). ' : ''}Fond importé à l’échelle (${DXF.uFichier === DXF.u ? 'unité du fichier' : 'unité choisie'} : ${UNITES[DXF.u].n}). Redessinez les murs par-dessus.`);
 }
 async function importDxf(file) {
   let buf; try { buf = new Uint8Array(await file.arrayBuffer()); } catch (e) { buf = null; }

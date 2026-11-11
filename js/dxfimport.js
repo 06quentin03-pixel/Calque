@@ -107,13 +107,17 @@ function lireDxf(texte) {
     else for (; i < p.length && !(p[i] === 0 && p[i + 1].trim() === 'ENDSEC'); i += 2);
   }
   const calque = (n) => { let c = R.calques.get(n); if (!c) R.calques.set(n, (c = { n: 0, masque: false })); return c; };
-  const trait = (l, pts, f, m) => {
+  const trait = (l, pts, f, m, plus) => {
     if (pts.length < 4 || R.tronque) return;
     if (R.points + pts.length / 2 > MAX_POINTS) { R.tronque = true; return; }
     const q = new Array(pts.length);
     for (let k = 0; k < pts.length; k += 2) { q[k] = m[0] * pts[k] + m[2] * pts[k + 1] + m[4]; q[k + 1] = m[1] * pts[k] + m[3] * pts[k + 1] + m[5]; }
     for (const v of q) if (!Number.isFinite(v)) return;
-    R.traits.push({ l, p: q, f: !!f }); R.points += q.length / 2; calque(l).n++;
+    const tr = { l, p: q, f: !!f };
+    /* arc de cercle : centre et rayon gardés (débattement d'une porte) ; autres courbes signalées */
+    if (plus && plus.arc) tr.arc = { x: m[0] * plus.arc[0] + m[2] * plus.arc[1] + m[4], y: m[1] * plus.arc[0] + m[3] * plus.arc[1] + m[5], r: plus.arc[2] * Math.hypot(m[0], m[1]) };
+    else if (plus && plus.courbe) tr.courbe = true;
+    R.traits.push(tr); R.points += q.length / 2; calque(l).n++;
   };
   const mul = (m, a) => [m[0] * a[0] + m[2] * a[1], m[1] * a[0] + m[3] * a[1], m[0] * a[2] + m[2] * a[3], m[1] * a[2] + m[3] * a[3], m[0] * a[4] + m[2] * a[5] + m[4], m[1] * a[4] + m[3] * a[5] + m[5]];
   function poser(list, m, calqueParent, prof) {
@@ -140,17 +144,17 @@ function lireDxf(texte) {
         for (let k = 1; k < vs.length; k++) renflement(o, X[k - 1], Y[k - 1], X[k], Y[k], B[k - 1]);
         if (fl & 1) renflement(o, X[vs.length - 1], Y[vs.length - 1], X[0], Y[0], B[vs.length - 1]);
         trait(l, o, false, mm);
-      } else if (t === 'CIRCLE') { const r = num(e, 40, 0); if (r > 0) trait(l, arcPts(num(e, 10, 0), num(e, 20, 0), r, r, 0, 0, Math.PI * 2), true, mm); }
-      else if (t === 'ARC') { const r = num(e, 40, 0); if (r > 0) trait(l, arcPts(num(e, 10, 0), num(e, 20, 0), r, r, 0, num(e, 50, 0) * D2R, num(e, 51, 360) * D2R), false, mm); }
+      } else if (t === 'CIRCLE') { const r = num(e, 40, 0); if (r > 0) trait(l, arcPts(num(e, 10, 0), num(e, 20, 0), r, r, 0, 0, Math.PI * 2), true, mm, { courbe: true }); }
+      else if (t === 'ARC') { const r = num(e, 40, 0); if (r > 0) trait(l, arcPts(num(e, 10, 0), num(e, 20, 0), r, r, 0, num(e, 50, 0) * D2R, num(e, 51, 360) * D2R), false, mm, { arc: [num(e, 10, 0), num(e, 20, 0), r] }); }
       else if (t === 'ELLIPSE') {
         const ax = num(e, 11, 0), ay = num(e, 21, 0), a = Math.hypot(ax, ay), k = num(e, 40, 1); if (!(a > 0)) continue;
-        trait(l, arcPts(num(e, 10, 0), num(e, 20, 0), a, a * k, Math.atan2(ay, ax), num(e, 41, 0), num(e, 42, Math.PI * 2)), false, mm);
+        trait(l, arcPts(num(e, 10, 0), num(e, 20, 0), a, a * k, Math.atan2(ay, ax), num(e, 41, 0), num(e, 42, Math.PI * 2)), false, mm, { courbe: true });
       } else if (t === 'SPLINE') {
         let X = tous(e, 11), Y = tous(e, 21); if (X.length < 2) { X = tous(e, 10); Y = tous(e, 20); }
         const n = Math.min(X.length, Y.length); if (n < 2) continue;
         const o = []; for (let k = 0; k < n; k++) o.push(X[k], Y[k]);
         if (num(e, 70, 0) & 1) o.push(X[0], Y[0]);
-        trait(l, o, false, m);
+        trait(l, o, false, m, { courbe: true });
       } else if (t === 'SOLID' || t === '3DFACE' || t === 'TRACE') {
         const o = [num(e, 10, 0), num(e, 20, 0), num(e, 11, 0), num(e, 21, 0), num(e, 13, num(e, 12, 0)), num(e, 23, num(e, 22, 0)), num(e, 12, 0), num(e, 22, 0), num(e, 10, 0), num(e, 20, 0)];
         trait(l, o, false, m);
