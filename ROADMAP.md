@@ -94,7 +94,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Import d'un plan DXF en fond de plan à l'échelle exacte (`js/dxfimport.js`, 3 tests).
 - ✅ Raccordement automatique des circuits par des gaines proposées (`raccorderCircuit`, 3 tests).
 - ✅ Reconnaissance des murs, portes, fenêtres et noms de pièces d'un plan DXF (`js/dxfmurs.js`, 3 tests).
-- ⬜ Suite envisagée, par ordre de valeur : import IFC (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+- ✅ Import d'une maquette IFC 2x3 / 4 dans un nouveau plan (`js/ifcimport.js`, `js/ifcui.js`, 5 tests).
+- ⬜ Suite envisagée, par ordre de valeur : assistant d'avancement du projet (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

@@ -64,6 +64,8 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `dxf.js` | Export DXF R12 : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre traits, cercles et textes par calque, `buildDxf` (unités mm/cm/m, Y vers le haut, Windows-1252) | oui |
 | `dxfimport.js` | Lecture d'un DXF (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, ELLIPSE, SPLINE, INSERT, TEXT, MTEXT), blocs développés, emprise sans les objets isolés, unité, dessin dans un canvas | oui |
 | `dxfmurs.js` | Reconnaissance des murs dans les traits d'un plan : paires de traits parallèles → axe et épaisseur, angles fermés, ouvertures (porte, fenêtre, passage) | oui |
+| `ifcimport.js` | Lecture d'une maquette IFC 2x3 / 4 (texte STEP) : unité, niveaux, murs (axe, épaisseur, hauteur), ouvertures, locaux | oui |
+| `ifcui.js` | Import IFC : résumé de la maquette, création d'un nouveau plan | non |
 | `quantitatif.js` | Quantitatif (appareillage, protections, matériel ; par pièce, par circuit), chiffrage (prix et temps saisis, total partiel), CSV, nettoyage de `chiffrage` (migration v11) | oui |
 | `quantitatifui.js` | Onglet « Quantitatif » du Tableau électrique : saisie des prix sans reconstruire le tableau (`quantPatch`), « mes prix », export CSV | non |
 | `multi.js` | Sélection multiple (outil « Groupe ») : rectangle, déplacement, rotation, copie (même niveau ou autre niveau), suppression, hauteur et circuit des appareils | non |

@@ -902,6 +902,7 @@ function renderMenuPop() {
     h('hr'),
     menuItem('book', 'Bibliothèque technique', openTechLib),
     menuItem('img', 'Importer un fond de plan (image, PDF ou DXF)', pickFond),
+    menuItem('house', 'Importer une maquette IFC (BIM)', () => import('./ifcui.js').then((m) => m.pickIfc())),
     h('hr'),
     menuItem('img', 'Exporter en image, PDF ou DXF', openExport),
     menuItem('book', 'Dossier PDF (plans, tableau, métrés, éclairage…)', openDossier),
