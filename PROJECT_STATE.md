@@ -83,7 +83,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 ## Tests
 - `node --test tests/*.test.mjs` : **117/117 réussis** (9 novembre 2026).
 - Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests).
-- Test parfois instable dans la suite complète : `ipad.test.mjs` « l'image mémorisée du plan donne le même résultat… » (image 0, 71 points d'écart sur l'aperçu d'un mur). Vu 3 fois sur 6 suites complètes le 9 novembre 2026, jamais lancé seul ni sous charge ; cause probable : la police d'écriture (chargée par internet) arrive ou non à temps dans l'une des deux pages comparées. Non lié aux modifications de la mission (même résultat avant). À fiabiliser : attendre `document.fonts.ready` dans `boot` des tests.
+- Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
 ## Points ouverts
 - Essais iPad de la phase 5 : **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »), y compris un vrai fichier IES / LDT de fabricant. Essais iPad de la phase 4 : **validés** le 5 novembre 2026. Phase 3 validée sur iPad le 5 novembre 2026.
