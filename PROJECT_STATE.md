@@ -84,8 +84,8 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **127/127 réussis** (9 novembre 2026).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests), `dxfmurs` (3 tests), `ifc` (5 tests), `assistant` (2 tests).
+- `node --test tests/*.test.mjs` : **129/129 réussis** (9 novembre 2026).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (5 tests), `dxfmurs` (3 tests), `ifc` (5 tests), `assistant` (2 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
 ## Points ouverts
@@ -93,7 +93,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - 3D : un appareil mural ne se déplace pas depuis la 3D (sur le plan seulement) ; la coupe n'a pas de face de remplissage (les murs coupés paraissent creux).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).
-- Raccordement automatique : les gaines proposées peuvent longer un mur par l'extérieur ou se superposer entre circuits (une gaine par circuit) : à corriger à la main si besoin ; pas de regroupement automatique dans une goulotte ou un chemin de câbles existant.
+- Raccordement automatique : les gaines proposées peuvent longer un mur par l'extérieur ou se superposer entre circuits (une gaine par circuit) : à corriger à la main si besoin. Un cheminement commun existant (sans circuit attitré) est utilisé ; les gaines proposées ne sont pas regroupées entre elles.
 - Reconnaissance des murs : validée sur des plans de synthèse (droits, tournés, avec du « bruit ») ; sur un vrai plan d'architecte le résultat dépendra du dessin (murs en hachures pleines, murs courbes, poteaux : non reconnus) : à essayer avec un fichier réel et à ajuster.
 - Import IFC : validé sur des maquettes écrites par IfcOpenShell (IFC 4 en mm, IFC 2x3 en m), pas encore sur un export réel de Revit ou d'ArchiCAD : à essayer avec un fichier réel. Murs courbes ou en facettes non repris (comptés).
 - Import DXF : essayé avec des fichiers écrits par ezdxf (R12 et R2010) et par Calque, pas encore avec un vrai plan d'architecte (AutoCAD, ArchiCAD, Revit) : à essayer avec un fichier réel. DXF binaire et DWG non lus.

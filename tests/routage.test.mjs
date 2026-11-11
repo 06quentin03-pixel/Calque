@@ -77,3 +77,28 @@ test('onglet Cheminements : « Raccorder les circuits incomplets » crée les ga
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('raccordement automatique : un chemin de câbles commun déjà relié au tableau sert de départ (piquage au plus près)', () => {
+  const p = plan(true); p.zones = [];
+  /* chemin de câbles sans circuit attitré, du tableau le long du mur du haut (y = 60) */
+  p.ducts.push({ id: 'cdc', lv: 'L0', sys: 'elec', kind: 'cdc', lw: 200, lh: 60, a: 'T', b: null, pts: [{ x: 50, y: 200 }, { x: 50, y: 60 }, { x: 560, y: 60 }] });
+  const r = raccorderCircuit(p, 'c2', {}); // le point lumineux x1 (300, 50) est à 10 cm du chemin de câbles
+  assert.equal(r.gaines.length, 1); assert.equal(r.gaines[0].a, null); assert.equal(r.gaines[0].b, 'x1');
+  assert.deepEqual(r.gaines[0].pts[0], { x: 300, y: 60 }); assert.ok(r.gaines[0].len < 15, 'piquage court : ' + r.gaines[0].len);
+  p.ducts.push(Object.assign({}, r.gaines[0], { id: 'g1', dia: 20 }));
+  assert.equal(cheminCircuit(p, 'c2').complet, true, 'le circuit rejoint le tableau par le chemin de câbles');
+  /* les prises du circuit c1 : p3 (550, 350) est plus près de p2 que du chemin de câbles → de proche en proche */
+  const r1 = raccorderCircuit(p, 'c1', {});
+  assert.deepEqual(r1.echecs.map((e) => e.id).sort(), ['q1', 'q2']); assert.equal(r1.gaines.length, 3);
+});
+
+test('graphe des gaines : un bout libre qui touche le sommet d’une gaine d’un autre circuit ET le milieu d’un chemin de câbles est relié aux deux', () => {
+  const p = plan(true); p.zones = [];
+  p.ducts.push({ id: 'cdc', lv: 'L0', sys: 'elec', kind: 'cdc', a: 'T', b: null, pts: [{ x: 50, y: 200 }, { x: 50, y: 60 }, { x: 560, y: 60 }] });
+  /* gaine d'un autre circuit (c1) dont un sommet est exactement au point de piquage (300, 60) */
+  p.ducts.push({ id: 'autre', lv: 'L0', sys: 'elec', cid: 'c1', a: null, b: 'p2', pts: [{ x: 300, y: 60 }, { x: 450, y: 200 }] });
+  /* piquage du point lumineux x1 (circuit c2) au même endroit */
+  p.ducts.push({ id: 'piq', lv: 'L0', sys: 'elec', cid: 'c2', a: null, b: 'x1', pts: [{ x: 300, y: 60 }, { x: 300, y: 50 }] });
+  assert.equal(cheminCircuit(p, 'c2').complet, true, 'c2 rejoint le tableau par le chemin de câbles, malgré la gaine de c1 au même point');
+  assert.ok(cheminCircuit(p, 'c1').points.find((x) => x.id === 'p2').dist > 0, 'c1 aussi');
+});

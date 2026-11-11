@@ -181,14 +181,16 @@ function grapheGaines(plan) {
     for (const u of lst) {
       if (!u.end || (u.k === 0 ? u.d.a : u.d.b)) continue;
       const vz = (w) => (u.Z == null || w == null ? { v: 0, inc: 1 } : { v: Math.abs(u.Z - w), inc: 0 });
-      let joint = false;
+      /* un bout libre peut toucher plusieurs gaines (le sommet de l'une, le milieu d'une autre) : toutes sont reliées,
+         car elles ne servent pas forcément aux mêmes circuits */
+      const jointes = new Set();
       for (const w of lst) {
         if (w.d === u.d || dist(u.p, w.p) > TOL_JONCTION) continue;
-        const z = vz(w.Z); edge(u.id, w.id, dist(u.p, w.p), z.v, { kind: 'jonction', inc: z.inc }); joint = true;
+        const z = vz(w.Z); edge(u.id, w.id, dist(u.p, w.p), z.v, { kind: 'jonction', inc: z.inc }); jointes.add(w.d);
       }
-      if (joint) continue;
       for (const d of ducts) {
-        if (d === u.d || d.lv !== u.d.lv) continue;
+        if (d === u.d || d.lv !== u.d.lv || jointes.has(d)) continue;
+        let joint = false;
         const pts = pointsGaine(plan, d, E);
         for (let k = 1; k < pts.length; k++) {
           const A = pts[k - 1], B = pts[k], L2 = (B.x - A.x) ** 2 + (B.y - A.y) ** 2; if (!L2) continue;
@@ -203,7 +205,6 @@ function grapheGaines(plan) {
           const z = vz(Zd); edge(u.id, sid, dist(u.p, q), z.v, { kind: 'jonction', inc: z.inc });
           joint = true; break;
         }
-        if (joint) break;
       }
     }
   }

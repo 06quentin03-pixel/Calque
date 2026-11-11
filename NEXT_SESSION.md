@@ -14,12 +14,11 @@ c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (127/127 le 11 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (129/129 le 11 novembre 2026).
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.
-Suite envisagée (voir ROADMAP.md, section « Mission ») : regroupement des gaines
-proposées dans les goulottes et chemins de câbles existants ; accrochage aux traits d'un fond DXF ; tableaux
+Suite envisagée (voir ROADMAP.md, section « Mission ») : accrochage aux traits d'un fond DXF ; tableaux
 NF C 15-100 manquants quand je fournirai les extraits Legrand (ne rien inventer d'ici là).
 
 Contraintes : celles de CLAUDE.md (données vérifiée/saisie/estimée, trois statuts, jamais de conformité globale si
