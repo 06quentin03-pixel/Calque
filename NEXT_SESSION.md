@@ -14,11 +14,11 @@ c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (125/125 le 11 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (127/127 le 11 novembre 2026).
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.
-Suite envisagée (voir ROADMAP.md, section « Mission ») : assistant d'avancement du projet ; regroupement des gaines
+Suite envisagée (voir ROADMAP.md, section « Mission ») : regroupement des gaines
 proposées dans les goulottes et chemins de câbles existants ; accrochage aux traits d'un fond DXF ; tableaux
 NF C 15-100 manquants quand je fournirai les extraits Legrand (ne rien inventer d'ici là).
 
@@ -56,7 +56,8 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage et en port
    vos plans : durée, lisibilité des gaines proposées, puis Annuler.
 7. **Disjoncteur d'abonné en triphasé** : Tableau › Arrivée et installation : 36 kVA triphasé affiche « 30/60 A
    tétrapolaire réglé à 60 A par phase » (valeur estimée : à comparer avec votre contrat).
-8. Mise à jour de l'appli installée (bandeau « nouvelle version ») ; un ancien plan s'ouvre, Menu › Historique des
+8. **Assistant** (Menu › Assistant : où en est mon projet ?) : lisible en portrait, chaque bouton mène à la bonne page.
+9. Mise à jour de l'appli installée (bandeau « nouvelle version ») ; un ancien plan s'ouvre, Menu › Historique des
    versions montre « Copie de sécurité avant mise à jour du format (v10 → v11) ».
 
 ## Toujours en attente de vous

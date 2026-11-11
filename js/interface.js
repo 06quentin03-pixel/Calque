@@ -900,6 +900,7 @@ function renderMenuPop() {
     menuItem('plus', 'Nouveau plan', newPlan),
     menuItem('pen', 'Renommer le plan', renamePlan),
     h('hr'),
+    menuItem('help', 'Assistant : où en est mon projet ?', () => import('./assistantui.js').then((m) => m.openAssistant())),
     menuItem('book', 'Bibliothèque technique', openTechLib),
     menuItem('img', 'Importer un fond de plan (image, PDF ou DXF)', pickFond),
     menuItem('house', 'Importer une maquette IFC (BIM)', () => import('./ifcui.js').then((m) => m.pickIfc())),

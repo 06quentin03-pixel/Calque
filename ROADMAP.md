@@ -95,7 +95,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Raccordement automatique des circuits par des gaines proposées (`raccorderCircuit`, 3 tests).
 - ✅ Reconnaissance des murs, portes, fenêtres et noms de pièces d'un plan DXF (`js/dxfmurs.js`, 3 tests).
 - ✅ Import d'une maquette IFC 2x3 / 4 dans un nouveau plan (`js/ifcimport.js`, `js/ifcui.js`, 5 tests).
-- ⬜ Suite envisagée, par ordre de valeur : assistant d'avancement du projet (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+- ✅ Assistant « Où en est mon projet ? » (`js/assistant.js`, `js/assistantui.js`, 2 tests).
+- ⬜ Suite envisagée, par ordre de valeur : regroupement des gaines proposées dans les goulottes et chemins de câbles existants ; accrochage aux traits d'un fond DXF (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

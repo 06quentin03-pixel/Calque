@@ -61,6 +61,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Import DXF** `js/dxfimport.js` (sans écran : `lireDxf`, `empriseDxf`, `uniteProbable`, `dessinerDxf`) ; écran dans `fond.js` (`importDxf`) : le DXF est dessiné en image JPEG (4096 px au plus) et devient un fond de plan ordinaire avec `s` exact et `cal: true` (aucun changement de format).
 - **Reconnaissance des murs** `js/dxfmurs.js` (sans écran : `reconnaitreMurs(segments, arcs)`, `segmentsDuDxf`) ; écran : `dxfMurs` dans `fond.js` (murs par `addWall`, ouvertures par `newOpening`, noms des pièces d'après les textes du DXF).
 - **Import IFC** `js/ifcimport.js` (sans écran : lecteur STEP à la demande, repères `IfcLocalPlacement`, volumes `IfcExtrudedAreaSolid` y compris sous `IfcBooleanClippingResult` et `IfcMappedItem`, `lireIfc` → niveaux, murs, ouvertures, locaux en cm) ; écran `js/ifcui.js` (chargé à la demande depuis le menu) : nouveau plan par `openPlan` puis `addWall` / `newOpening`. Fichiers de référence écrits par IfcOpenShell : `tests/maison-ifc4.ifc`, `tests/maison-ifc2x3.ifc`.
+- **Assistant** `js/assistant.js` (sans écran : `avancement(plan, ctx)`) + `js/assistantui.js` (fenêtre, chargée à la demande depuis le menu).
 - **Raccordement automatique** : `raccorderCircuit(plan, cid, opts)` dans `itineraire.js` (sans écran, ne modifie pas le plan) ; écran : `raccorderAuto` (`routeui.js`), `creerGaineElec` (`reseaux.js`), boutons dans `metres.js` et l'inspecteur.
 - **Disjoncteur d'abonné** : `agcpOf(kva, reseau)` et `KVA_PALIERS` dans `elecdonnees.js` (valeurs usuelles, « estimées »).
 
@@ -83,8 +84,8 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **125/125 réussis** (9 novembre 2026).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests), `dxfmurs` (3 tests), `ifc` (5 tests).
+- `node --test tests/*.test.mjs` : **127/127 réussis** (9 novembre 2026).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (3 tests), `dxfmurs` (3 tests), `ifc` (5 tests), `assistant` (2 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
 ## Points ouverts

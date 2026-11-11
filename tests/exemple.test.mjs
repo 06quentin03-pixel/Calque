@@ -34,6 +34,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
       groupe: (await import('./js/multi.js')).dansRect({ a: { x: -1e6, y: -1e6 }, b: { x: 1e6, y: 1e6 } }).reduce((m, r) => { m[r.t] = (m[r.t] || 0) + 1; return m; }, {}),
       relu: await (async () => { const E = await import('./js/export.js'), I = await import('./js/dxfimport.js'); const R = I.lireDxf(E.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).texte); const em = I.empriseDxf(R, null); return { unite: R.unite, traits: R.traits.length, textes: R.textes.length, larg: em.x1 - em.x0 }; })(),
       auto: await (async () => { const It = await import('./js/itineraire.js'); const q = JSON.parse(JSON.stringify(P)); q.ducts = q.ducts.filter((d) => d.sys !== 'elec'); const c = q.circuits.find((x) => q.elec.filter((e) => e.cid === x.id && e.lv === 'L0').length >= 4); const r = It.raccorderCircuit(q, c.id, {}); return { gaines: r.gaines.length, echecs: r.echecs.length, points: q.elec.filter((e) => e.cid === c.id).length }; })(),
+      assistant: await (async () => { const a = (await import('./js/assistantui.js')).avancementDuPlan(); return { n: a.etapes.length, faites: a.faites, suivante: a.suivante, etats: Object.fromEntries(a.etapes.map((e) => [e.id, e.etat])) }; })(),
       chapQt: dos.chapitres.some((c) => c.id === 'quantitatif'),
       ch: P.chantier, chap7: dos.chapitres.some((c) => c.id === 'chantier'),
       va: P.variantes && { n: P.variantes.liste.length, gammes: P.variantes.liste.map((e) => e.gamme), principale: P.variantes.principale === P.variantes.active, data: P.variantes.liste.filter((e) => e.data).length }, chapVar: dos.chapitres.some((c) => c.id === 'variantes'),
@@ -77,6 +78,8 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   for (const n of ['PIECES', 'ESCALIERS', 'MOBILIER', 'MURS', 'OUVERTURES', 'ELEC_CHEMINEMENTS', 'ELEC_LIAISONS', 'ELEC_APPAREILS', 'COTES', 'TEXTES']) assert.ok(r.dxf.calques[n] > 0, 'DXF ' + n);
   // raccordement automatique : sur une copie de l'exemple sans ses gaines, un circuit est entièrement raccordé par des gaines proposées
   assert.ok(r.auto.gaines >= r.auto.points && r.auto.echecs === 0, JSON.stringify(r.auto));
+  // assistant : le plan d'exemple montre des étapes faites, à faire et à surveiller (réserves ouvertes, chiffrage partiel)
+  assert.ok(r.assistant.n >= 9 && r.assistant.faites >= 4 && r.assistant.suivante); assert.equal(r.assistant.etats.chiffrage, 'afaire'); assert.equal(r.assistant.etats.chantier, 'attention');
   // import DXF : le fichier exporté du plan d'exemple se relit (unité centimètres, même emprise à quelques cm près)
   assert.equal(r.relu.unite, 5); assert.ok(r.relu.traits > 1000 && r.relu.textes > 100 && r.relu.larg > 7000 && r.relu.larg < 8500, JSON.stringify(r.relu));
   // quantitatif et chiffrage : toutes les catégories, par pièce et par circuit ; prix d'exemple fictifs « saisie » avec origine,

@@ -61,6 +61,8 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `photos.js` | Images des photos du chantier dans IndexedDB (base `calque-photos`) : réduction JPEG, miniatures, sauvegarde en base64, images inutilisées | non |
 | `variantes.js` | Variantes : partie électrique propre à chaque variante, création, copie, affichage, version principale, suppression protégée, nettoyage (migration v10), comparaison (appareils, puissance, éclairage, matériel, contrôles) | oui |
 | `variantesui.js` | Fenêtre « Variantes », puce de la variante affichée, comparaison à l'écran | non |
+| `assistant.js` | Étapes du projet déduites du plan (fait, à faire, à surveiller), sans jamais annoncer de conformité | oui |
+| `assistantui.js` | Fenêtre « Où en est mon projet ? », boutons vers la bonne page | non |
 | `dxf.js` | Export DXF R12 : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre traits, cercles et textes par calque, `buildDxf` (unités mm/cm/m, Y vers le haut, Windows-1252) | oui |
 | `dxfimport.js` | Lecture d'un DXF (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, ELLIPSE, SPLINE, INSERT, TEXT, MTEXT), blocs développés, emprise sans les objets isolés, unité, dessin dans un canvas | oui |
 | `dxfmurs.js` | Reconnaissance des murs dans les traits d'un plan : paires de traits parallèles → axe et épaisseur, angles fermés, ouvertures (porte, fenêtre, passage) | oui |
