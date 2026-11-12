@@ -68,6 +68,7 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `sauvegarde.js` | Décision du rappel de sauvegarde complète (7 jours, report de 3 jours) | oui |
 | `rappelui.js` | Date de la dernière sauvegarde complète, bandeau de rappel, libellé du menu | non |
 | `affectation.js` | Relier les appareils sans circuit aux circuits existants (capacités, pièce, niveau), créer les circuits manquants, sans modifier l'existant | oui |
+| `mesure.js` | Outil « Mesurer » : tronçons, total, surface, transformation en cotes | non |
 | `dxf.js` | Export DXF R12 : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre traits, cercles et textes par calque, `buildDxf` (unités mm/cm/m, Y vers le haut, Windows-1252) | oui |
 | `dxfimport.js` | Lecture d'un DXF (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, ELLIPSE, SPLINE, INSERT, TEXT, MTEXT), blocs développés, emprise sans les objets isolés, unité, dessin dans un canvas | oui |
 | `dxfmurs.js` | Reconnaissance des murs dans les traits d'un plan : paires de traits parallèles → axe et épaisseur, angles fermés, ouvertures (porte, fenêtre, passage) | oui |
