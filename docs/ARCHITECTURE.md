@@ -65,6 +65,8 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `assistantui.js` | Fenêtre « Où en est mon projet ? », boutons vers la bonne page | non |
 | `equipement.js` | Besoins d'une pièce (seule définition, partagée avec le contrôle), équipement manquant, positions le long des murs | oui |
 | `equipementui.js` | Sections « Équipement minimal » des inspecteurs de la pièce et du niveau | non |
+| `sauvegarde.js` | Décision du rappel de sauvegarde complète (7 jours, report de 3 jours) | oui |
+| `rappelui.js` | Date de la dernière sauvegarde complète, bandeau de rappel, libellé du menu | non |
 | `dxf.js` | Export DXF R12 : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre traits, cercles et textes par calque, `buildDxf` (unités mm/cm/m, Y vers le haut, Windows-1252) | oui |
 | `dxfimport.js` | Lecture d'un DXF (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, ELLIPSE, SPLINE, INSERT, TEXT, MTEXT), blocs développés, emprise sans les objets isolés, unité, dessin dans un canvas | oui |
 | `dxfmurs.js` | Reconnaissance des murs dans les traits d'un plan : paires de traits parallèles → axe et épaisseur, angles fermés, ouvertures (porte, fenêtre, passage) | oui |
@@ -152,6 +154,8 @@ Elles sont recalculées par `touch()` après chaque modification.
 Enregistrées sur l'appareil dans IndexedDB (magasin `meta`, clé `biblio`) et dans `localStorage` (`calque.biblio`, secours) :
 `{ refs: { [idArticle]: { ref, fab, fiab, source, note, at } }, comps: [composants], prix: { [clé de ligne]: { pu, tps, at } }, savedAt }`.
 Elles sont ajoutées à la sauvegarde complète (champ `biblio`) ; l'import ne remplace jamais une donnée existante.
+
+Date de la dernière sauvegarde complète (rappel) : IndexedDB `meta`, clé `sauvegarde` (`{ derniere, report }` en ms) et `localStorage` `calque.sauvegarde` ; la plus récente fait foi.
 Fiabilité : `verifiee` (source obligatoire), `saisie`, `estimee`.
 
 ## Hors ligne et mises à jour

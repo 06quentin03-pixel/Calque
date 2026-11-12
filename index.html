@@ -232,6 +232,9 @@ button.li:hover { background: var(--panel-2); }
 .upd { position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--rule); box-shadow: var(--shadow); font-size: 13px; font-weight: 600; max-width: calc(100vw - 32px); }
 .upd button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--rule); background: var(--panel-2); font-weight: 600; }
 .upd button.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+.upd.sauv { top: auto; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 32px); }
+.upd.sauv span { flex: 1 1 260px; }
+@media (max-width: 600px) { .upd.sauv { left: 16px; right: 16px; transform: none; max-width: none; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); justify-content: flex-start; } .upd.sauv span { flex-basis: 100%; } }
 
 /* ---- tailles d'écran ---- */
 @media (max-width: 1099px) {

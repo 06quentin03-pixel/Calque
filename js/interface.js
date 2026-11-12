@@ -18,6 +18,7 @@ import { CLOSET_MODELS, DOOR_MODELS, GAP_MODELS, WIN_MODELS, commit, cv, lockedW
 import { setView } from './tableau.js';
 import { newPlan, openProjects, openSample, openVersions } from './stockage.js';
 import { exportAll, exportJSON, openExport } from './export.js';
+import { libelleMenu } from './rappelui.js';
 import { openDossier } from './dossierui.js';
 import { openVariantes } from './variantesui.js';
 import { f3Def, itemHeight3 } from './vue3d.js';
@@ -915,7 +916,7 @@ function renderMenuPop() {
     menuItem('down', 'Importer un fichier (plan ou sauvegarde)', () => $('#fileIn').click()),
     h('hr'),
     menuItem('clock', 'Historique des versions', openVersions),
-    menuItem('folder', 'Sauvegarder tous mes plans', exportAll),
+    menuItem('folder', libelleMenu(), exportAll),
     h('hr'),
     menuItem('house', 'Ouvrir le plan d’exemple', openSample),
     menuItem('help', 'Gestes et raccourcis', openHelp),

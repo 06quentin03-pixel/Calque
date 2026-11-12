@@ -1,5 +1,10 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-12 — Suite de la mission (après la fusion n°7)
+- **Rappel de la sauvegarde complète** : Calque note la date de la dernière « Sauvegarder tous mes plans » réussie (fichier enregistré ou envoyé). Si des plans ont changé depuis plus de 7 jours, ou n'ont jamais été sauvegardés, un bandeau discret propose « Sauvegarder maintenant » ou « Plus tard » (reporté de 3 jours), quelques secondes après l'ouverture, seulement dans la vue Plan (il ne recouvre ni la 3D ni le tableau) ; il disparaît seul après 45 secondes. Le menu indique la date (« jamais faite », « faite hier », « il y a 9 jours »). Sur iPad, c'est la seule protection contre un effacement des données de Safari ou la perte de l'appareil. Modules `js/sauvegarde.js` (sans écran) et `js/rappelui.js`.
+- Équipement minimal : l'inspecteur du niveau reste rapide sur les gros plans (289 → 23 ms sur 100 logements).
+- Service Worker : cache `calque-v34`. Nouveau fichier de tests `tests/sauvegarde.test.mjs` (3). Tests : 136/136.
+
 ## 2026-11-09 — Mission « développement autonome » : export DXF, quantitatif et chiffrage, disjoncteur d'abonné triphasé
 - **Export DXF (AutoCAD)** : bouton Exporter › « DXF (AutoCAD) ». Le plan est écrit en vraie grandeur (unité au choix : mm, cm, m), rangé par calques (`PIECES`, `ESCALIERS`, `MOBILIER`, `MURS`, `OUVERTURES`, `ELEC_CHEMINEMENTS`, `ELEC_LIAISONS`, `ELEC_APPAREILS`, `COTES`, `TEXTES`, `CHANTIER`). Format R12, relu par AutoCAD, DraftSight, LibreCAD, QCAD, ArchiCAD, Revit. Le dessin est celui du moteur 2D (même contenu que le PNG et le PDF) ; un ou plusieurs niveaux côte à côte. Nouveau module sans écran `js/dxf.js`. Vérifié avec un lecteur DXF indépendant (ezdxf : 0 erreur).
 - **Onglet « Quantitatif »** (Tableau électrique) : appareillage compté sur le plan, protections lues dans le tableau (disjoncteurs, différentiels, DDA, parafoudre), cheminements, conducteurs, boîtes et percements (estimés) ; vues **Global**, **Par pièce** et **Par circuit**.

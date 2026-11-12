@@ -12,6 +12,7 @@ import { LIGHT, addVersion, getDownloads, listProjects, loadProject, lsSet, migr
   openProjects, saveBlobLocal, saveNow, scheduleSave, slug, writePlanLocal } from './stockage.js';
 import { photo3D } from './vue3d.js';
 import { exportUserLib, importUserLib } from './mabiblio.js';
+import { sauvegardeFaite } from './rappelui.js';
 import { DXF_UNITES, DxfCtx, buildDxf, dxfBilan, dxfOctets } from './dxf.js';
 import { exporterPhotos, importerPhotos } from './photos.js';
 import { photosDuPlan } from './chantier.js';
@@ -486,7 +487,7 @@ function shareableFile(data, name) {
   }
   return { file: new File([data], name, { type: 'application/json' }), share: false };
 }
-function deliverFile(title, data, name, note) {
+function deliverFile(title, data, name, note, fait) {
   const { file, share } = shareableFile(data, name);
   const copyBox = () => {
     const ta = h('textarea', { class: 'txt', style: 'height:160px;padding:8px;font-family:var(--f-num);font-size:12px', readonly: true }, data);
@@ -498,10 +499,10 @@ function deliverFile(title, data, name, note) {
     h('p', { class: 'note' }, note),
     btns(
       share ? btn('Envoyer…', async () => {
-        try { await navigator.share({ files: [file], title: name }); closeModal(); toast('Fichier envoyé.'); }
+        try { await navigator.share({ files: [file], title: name }); closeModal(); toast('Fichier envoyé.'); if (fait) fait(); }
         catch (e) { if (!(e && e.name === 'AbortError')) toast('Partage impossible : utilisez « Enregistrer ».'); }
       }, 'pri', 'up') : null,
-      btn('Enregistrer', async () => { if (await saveFile(file)) { closeModal(); toast('Fichier enregistré.'); } else copyBox(); }, share ? '' : 'pri', 'down')));
+      btn('Enregistrer', async () => { if (await saveFile(file)) { closeModal(); toast('Fichier enregistré.'); if (fait) fait(); } else copyBox(); }, share ? '' : 'pri', 'down')));
 }
 async function exportJSON() {
   /* photos du chantier jointes (images enregistrées sur l'appareil, hors du plan) : champ ignoré par les anciennes versions */
@@ -526,7 +527,7 @@ async function exportAll() {
   const photos = await exporterPhotos();
   const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib(), photos });
   deliverFile('Sauvegarder tous mes plans', data, `calque-sauvegarde-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.calque.json`,
-    `${plans.length} plan${plans.length > 1 ? 's' : ''}${photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`);
+    `${plans.length} plan${plans.length > 1 ? 's' : ''}${photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`, sauvegardeFaite);
 }
 const isPlanObj = (o) => o && typeof o === 'object' && Array.isArray(o.walls) && Array.isArray(o.nodes);
 /* import d'une sauvegarde complète : n'écrase jamais un plan existant */
