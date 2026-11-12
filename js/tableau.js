@@ -285,7 +285,8 @@ function renderEvSide() {
   kids.push(h('button', { type: 'button', class: 'ev-row ev-inst', 'data-key': 'install:0', 'aria-expanded': String(!!instOpen), onclick: () => evSelect({ t: 'install', id: 0 }) },
     h('span', { class: 'ev-badge' }, 'AGCP'), h('span', { class: 'ev-main' }, h('b', null, 'Arrivée et installation'), h('small', null, `${inst.kva} kVA · ${agcpLabel(inst.kva, inst.reseau)} · ${fmtArea(totalSurface())}`))));
   if (instOpen) kids.push(h('div', { class: 'ev-edit' },
-    sec('Puissance souscrite', segCtl([...new Set([...KVA_PALIERS[inst.reseau === 'tri' ? 'tri' : 'mono'], inst.kva])].sort((a, b) => a - b).map((v) => ({ v, n: v + ' kVA' })), inst.kva, (v) => { inst.kva = v; commit(); }),
+    /* boutons sur plusieurs lignes : tous les paliers visibles sans faire défiler (triphasé : jusqu'à 36 kVA) */
+    sec('Puissance souscrite', chipRow([...new Set([...KVA_PALIERS[inst.reseau === 'tri' ? 'tri' : 'mono'], inst.kva])].sort((a, b) => a - b), inst.kva, (v) => { inst.kva = v; commit(); }, (v) => v + ' kVA'),
       h('p', { class: 'note' }, `Disjoncteur de branchement ${agcpLabel(inst.kva, inst.reseau)}, différentiel 500 mA type S, fourni par le distributeur. Réglage usuel pour cette puissance (estimé) : à vérifier sur le contrat.`)),
     sec('Parafoudre', segCtl([{ v: false, n: 'Sans' }, { v: true, n: 'Avec parafoudre' }], !!inst.parafoudre, (v) => { inst.parafoudre = v; commit(); }),
       h('p', { class: 'note' }, 'Obligatoire si le bâtiment a un paratonnerre et dans certaines zones exposées à la foudre. Recommandé dans les autres cas.')),

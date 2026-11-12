@@ -15,7 +15,7 @@ indiquée par la session (git fetch, puis checkout). Ne modifie jamais main toi-
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (152/152 le 12 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (153/153 le 12 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
@@ -39,6 +39,7 @@ je débute sur GitHub et j'utilise un iPad.
 - n°8 (équipement minimal, relier les appareils sans circuit, Mesurer, rappel et sauvegardes par morceaux, accrochage
   au fond DXF, corrections des gaines après régénération, migrations vérifiées, import IFC essayé sur la maquette
   Allplan de l'utilisateur) : fusionnée le 12 novembre 2026, à la demande de l'utilisateur.
+- Essais iPad des demandes n°7 et n°8 faits par l'utilisateur le 12 novembre 2026 : « tout va bien » ; deux défauts signalés et corrigés le jour même (bouton « Actions… » de l'outil Groupe, choix de la puissance souscrite jusqu'à 36 kVA). L'utilisateur n'a pas de vrai plan DXF d'architecte : l'import DXF et la reconnaissance des murs restent essayés sur des fichiers de synthèse seulement.
 - La maquette IFC de l'utilisateur (« BERT_A.ifc ») a été essayée mais n'est pas dans le dépôt (données personnelles) :
   la lui redemander si besoin.
 

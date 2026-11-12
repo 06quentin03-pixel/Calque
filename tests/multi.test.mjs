@@ -43,6 +43,10 @@ test('groupe : rectangle, toucher pour retirer, déplacer au doigt et d’une di
   assert.deepEqual(s.multi, ['dim:d1', 'duct:g1', 'elec:e1', 'elec:e2', 'elec:e3', 'item:i1', 'text:t1', 'wall:w1', 'wall:w2', 'wall:w3', 'wall:w4'], 'tout ce qui est entièrement dans le rectangle, pas e4');
   assert.match(await page.$eval('#hint', (e) => e.textContent), /3 appareils, 1 meuble, 1 texte, 1 cote, 1 conduit, 4 murs/);
   assert.match(await page.$eval('#insp', (e) => e.textContent), /Groupe/);
+  /* paysage : panneau toujours visible, pas de bouton « Actions », le bandeau l'indique */
+  assert.ok(await page.getByRole('button', { name: 'Tourner de 90°' }).isVisible());
+  assert.equal(await page.locator('#hint >> text=/Actions du groupe/').count(), 0);
+  assert.match(await page.$eval('#hint', (e) => e.textContent), /actions dans le panneau de droite/);
   /* toucher un objet du groupe le retire, le retoucher le remet */
   const pt = await aEcran(page, 200, 200);
   await page.mouse.click(pt.x, pt.y); await wait(page, 100); assert.ok(!(await etat(page)).multi.includes('elec:e3'));
@@ -124,8 +128,32 @@ test('groupe sur iPad : rectangle au doigt, panneau en portrait par « Actions�
   await t('touchStart', a.x, a.y); for (let i = 1; i <= 6; i++) await t('touchMove', a.x + (b.x - a.x) * i / 6, a.y + (b.y - a.y) * i / 6); await t('touchEnd');
   await wait(page, 250);
   const s = await etat(page); assert.equal(s.multi.length, 11);
-  await page.locator('#hint >> text=Actions…').click(); await wait(page, 200);
+  /* portrait : le panneau des actions s'ouvre par le bouton du bandeau, et se referme */
+  assert.equal(await page.getByRole('button', { name: 'Tourner de 90°' }).isVisible(), false);
+  await page.locator('#hint >> text=Actions du groupe').click(); await wait(page, 200);
   assert.ok(await page.getByRole('button', { name: 'Tourner de 90°' }).isVisible());
+  await page.locator('#hint >> text=Fermer les actions').click(); await wait(page, 200);
+  assert.equal(await page.getByRole('button', { name: 'Tourner de 90°' }).isVisible(), false);
   assert.deepEqual(errors, []);
   await ctx.close();
+});
+
+test('puissance souscrite : tous les paliers visibles sans défilement (triphasé jusqu’à 36 kVA), paysage et portrait', async () => {
+  for (const viewport of [{ width: 1180, height: 820 }, { width: 820, height: 1180 }]) {
+    const { ctx, page, errors } = await fresh({ viewport });
+    await boot(page); // plan d'exemple : triphasé 36 kVA
+    await page.click('.vtab[data-view="elec"]'); await wait(page, 300);
+    await page.click('.ev-inst'); await wait(page, 300);
+    const r = await page.evaluate(() => {
+      const sec = [...document.querySelectorAll('.ev-edit .sec')].find((s) => /Puissance souscrite/.test(s.textContent));
+      const box = sec.getBoundingClientRect(), boutons = [...sec.querySelectorAll('button')];
+      return { n: boutons.map((b) => b.textContent), choisi: boutons.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.textContent), dedans: boutons.every((b) => { const q = b.getBoundingClientRect(); return q.left >= box.left - 1 && q.right <= box.right + 1; }) };
+    });
+    assert.deepEqual(r.n, ['6 kVA', '9 kVA', '12 kVA', '15 kVA', '18 kVA', '24 kVA', '30 kVA', '36 kVA'], `${viewport.width}`);
+    assert.deepEqual(r.choisi, ['36 kVA']); assert.ok(r.dedans, `tous visibles sans défiler (${viewport.width} × ${viewport.height})`);
+    await page.locator('.ev-edit button:has-text("24 kVA")').click(); await wait(page, 200);
+    assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).P.install.kva), 24);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
 });
