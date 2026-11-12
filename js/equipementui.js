@@ -9,6 +9,8 @@ import { commit } from './interaction.js';
 import { btn, btns, h, sec, toast } from './interface.js';
 import { ELEC_BY } from './symboles.js';
 import { aPoser, equiperPiece } from './equipement.js';
+import { nbSansCircuit } from './affectation.js';
+import { relierAppareils } from './tableau.js';
 
 const NOTE = 'D’après les règles de contrôle de Calque (nombre de socles par pièce, prises du plan de travail, sortie 32 A, point d’éclairage), pas encore rattachées à un extrait Legrand : proposition à vérifier. Les positions évitent portes, fenêtres, angles, volumes de la salle de bain, évier et plaque.';
 const pieceDe = (r) => ({ lv: r.label.lv, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 10000 });
@@ -22,7 +24,7 @@ function poser(lv, prop) {
 }
 function message(n, impossibles, pieces) {
   if (!n && !impossibles) return 'Rien à ajouter : l’équipement minimal est déjà présent.';
-  return `${n} appareil${n > 1 ? 's posés' : ' posé'}${pieces > 1 ? ` dans ${pieces} pièces` : ''}${impossibles ? ` ; ${impossibles} sans place libre le long des murs` : ''}. Vérifiez les positions, puis « Relier les appareils sans circuit » (Tableau électrique) : ils rejoignent les circuits sans modifier ceux qui existent.`;
+  return `${n} appareil${n > 1 ? 's posés' : ' posé'}${pieces > 1 ? ` dans ${pieces} pièces` : ''}${impossibles ? ` ; ${impossibles} sans place libre le long des murs` : ''}. Vérifiez les positions, puis « Relier les appareils sans circuit » (ici ou dans le Tableau électrique) : ils rejoignent les circuits sans modifier ceux qui existent.`;
 }
 function equiperUne(lbl) {
   const r = roomOfLabel(lbl); if (!r) return;
@@ -46,11 +48,15 @@ function equiperNiveau(lv) {
 function equipementSection(lbl) {
   const r = roomOfLabel(lbl); if (!r) return null;
   const prop = equiperPiece(P, pieceDe(r));
-  if (!prop.manque.length) return sec('Équipement minimal', h('p', { class: 'note' }, 'Présent d’après les règles de contrôle de Calque (à confirmer : règles pas encore rattachées à un extrait Legrand).'));
+  /* appareils posés mais pas encore sur un circuit (quand le tableau existe) : les relier sans toucher aux circuits */
+  const sans = P.circuits.length ? nbSansCircuit(P) : 0;
+  const relier = sans ? btns(btn(`Relier les appareils sans circuit (${sans})`, relierAppareils, 'sm', 'plus')) : null;
+  if (!prop.manque.length) return sec('Équipement minimal', h('p', { class: 'note' }, 'Présent d’après les règles de contrôle de Calque (à confirmer : règles pas encore rattachées à un extrait Legrand).'), relier);
   const n = prop.poses.length;
   return sec('Équipement minimal',
     h('ul', { class: 'eq-liste' }, prop.manque.map((m) => h('li', null, h('b', null, `${m.n} × ${nomType(m.type)}`), h('small', null, ' — ' + m.pourquoi)))),
     btns(btn(n ? `Poser l’équipement manquant (${n})` : 'Aucune place libre trouvée', () => equiperUne(lbl), n ? 'pri sm' : 'sm')),
+    relier,
     h('p', { class: 'note' }, NOTE));
 }
 /* section de l'inspecteur du niveau : toutes les pièces d'un coup */

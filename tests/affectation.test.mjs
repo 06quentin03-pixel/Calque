@@ -81,3 +81,16 @@ test('écran : plan d’exemple, prise posée par « Équiper », reliée au cir
   assert.deepEqual(errors, []);
   await c.close();
 });
+
+test('section de la pièce : après « Poser l’équipement manquant », « Relier les appareils sans circuit » sur place', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.evaluate(async () => { const N = await import('./js/noyau.js'); N.ui.sel = { t: 'room', id: N.P.rooms.find((r) => r.name === 'Local technique').id }; N.ui.inspOpen = true; (await import('./js/interface.js')).renderInspector(); });
+  await page.click('#insp >> text=Poser l’équipement manquant (1)'); await wait(page, 300);
+  await page.click('#insp >> text=Relier les appareils sans circuit (1)'); await wait(page, 300);
+  const r = await page.evaluate(async () => { const N = await import('./js/noyau.js'), A = await import('./js/affectation.js'); return { sans: A.nbSansCircuit(N.P), txt: document.getElementById('insp').textContent }; });
+  assert.equal(r.sans, 0); assert.ok(!/Relier les appareils sans circuit/.test(r.txt)); assert.match(r.txt, /Équipement minimal.*Présent/s);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+

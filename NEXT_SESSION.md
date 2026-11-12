@@ -14,7 +14,7 @@ c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (144/144 le 12 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (145/145 le 12 novembre 2026).
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.
@@ -63,7 +63,7 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage et en port
 7. **Disjoncteur d'abonné en triphasé** : Tableau › Arrivée et installation : 36 kVA triphasé affiche « 30/60 A
    tétrapolaire réglé à 60 A par phase » (valeur estimée : à comparer avec votre contrat).
 8. **Équipement minimal** : toucher le local technique du plan d'exemple › « Poser l'équipement manquant » ; sur un plan vide de quelques pièces nommées : inspecteur du niveau › « Équiper toutes les pièces » ; regarder si les positions conviennent à un électricien.
-9. **Relier les appareils sans circuit** : après « Équiper la pièce » sur le local technique, onglet Tableau électrique › bouton « Relier les appareils sans circuit (1) » : la prise rejoint un circuit de prises, aucun autre circuit ne change.
+9. **Relier les appareils sans circuit** : après « Équiper la pièce » sur le local technique, bouton « Relier les appareils sans circuit (1) » juste dessous (ou dans l'onglet Tableau électrique) : la prise rejoint un circuit de prises, aucun autre circuit ne change.
 10. **Outil Mesurer** (touche U ou bouton « Mesurer ») : au Pencil, toucher les angles d'une pièce, puis le premier point : surface affichée ; « Transformer en cotes ». En paysage, tous les outils de la barre de gauche sont visibles sans la faire défiler.
 11. **Rappel de sauvegarde** : à la première ouverture après la mise à jour, un bandeau en bas propose « Sauvegarder maintenant » ; la sauvegarde enregistrée dans Fichiers fait disparaître le rappel, et le menu affiche « faite aujourd'hui ».
 12. **Assistant** (Menu › Assistant : où en est mon projet ?) : lisible en portrait, chaque bouton mène à la bonne page.

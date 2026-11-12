@@ -534,6 +534,6 @@ async function exportElec(kind, fmt) {
 }
 
 export { CTRL_LABEL, KIND_LABEL, PRINT_COL, SCREEN_COL, SVG_FONT, addCircuit, addRcd, checksView, circuitEditor,
-  confirmBtnPlain, esc, evSelect, exportElec, goToRef, moveIn, panelSVG, rcdEditor, renderElecView, renderEvMain,
+  confirmBtnPlain, esc, evSelect, relierAppareils, exportElec, goToRef, moveIn, panelSVG, rcdEditor, renderElecView, renderEvMain,
   renderEvSide, repereTable, sLine, sText, setView, showCircuitOnPlan, symBox, symBreaker, symEarth, symRcd, symSpd,
   totalSurface, uniSVG };
