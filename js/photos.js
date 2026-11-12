@@ -107,6 +107,22 @@ async function exporterPhotos(ids) {
   }
   return out;
 }
+/* même contenu, pour la sauvegarde complète : un petit Blob par photo (texte JSON de la photo), sans jamais construire
+   un grand texte en mémoire (150 photos ≈ 230 Mo de texte : risque de fermeture de l'onglet sur iPad).
+   Renvoie { parts: [Blob], n } ; le navigateur garde les Blob hors de la mémoire du programme. */
+async function photosEnParties(ids) {
+  const out = { parts: [], n: 0 };
+  if (!(await ouvrirPhotos())) return out;
+  const want = ids ? new Set(ids) : null;
+  let keys = []; try { keys = await clesPhotos(); } catch (e) { return out; }
+  for (const id of keys) {
+    if (want && !want.has(id)) continue;
+    const r = await lirePhoto(id); if (!r || !r.blob) continue;
+    const o = { id: r.id, pid: r.pid, w: r.w, h: r.h, tw: r.tw, th: r.th, at: r.at, data: await enBase64(r.blob), thumb: r.thumb ? await enBase64(r.thumb) : null };
+    out.parts.push(new Blob([JSON.stringify(o)], { type: 'application/json' })); out.n++;
+  }
+  return out;
+}
 /* import : une photo déjà présente n'est jamais remplacée ; renvoie { added, kept, ok } */
 async function importerPhotos(list) {
   const o = { added: 0, kept: 0, ok: true };
@@ -140,4 +156,4 @@ async function supprimerPhotos(ids) {
 }
 
 export { MAX_COTE, MINI_COTE, PH, clesPhotos, deBase64, enBase64, enregistrerPhoto, espacePhotos, exporterPhotos, importerPhotos,
-  jpegMiniature, lirePhoto, oublierUrl, ouvrirPhotos, photosInutilisees, supprimerPhotos, toutesPhotos, urlPhoto };
+  jpegMiniature, lirePhoto, oublierUrl, ouvrirPhotos, photosInutilisees, supprimerPhotos, toutesPhotos, urlPhoto , photosEnParties };

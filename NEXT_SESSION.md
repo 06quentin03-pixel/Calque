@@ -14,7 +14,7 @@ c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (147/147 le 12 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (148/148 le 12 novembre 2026).
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.

@@ -14,7 +14,7 @@ import { photo3D } from './vue3d.js';
 import { exportUserLib, importUserLib } from './mabiblio.js';
 import { sauvegardeFaite } from './rappelui.js';
 import { DXF_UNITES, DxfCtx, buildDxf, dxfBilan, dxfOctets } from './dxf.js';
-import { exporterPhotos, importerPhotos } from './photos.js';
+import { exporterPhotos, importerPhotos, photosEnParties } from './photos.js';
 import { photosDuPlan } from './chantier.js';
 import { BASECACHE, COLCACHE, HELV, MC, PdfCtx, PdfPath, WINANSI, baselineOffset, buildPdf, deflateBytes, helvWidth, mkPath,
   parseColor, parseFont, pdfMeasure, pdfStr, pdfText16, pn, pn3, pn4, winAnsiBytes } from './pdf.js';
@@ -487,15 +487,19 @@ function shareableFile(data, name) {
   }
   return { file: new File([data], name, { type: 'application/json' }), share: false };
 }
+/* taille lisible d'un fichier */
+function taille(o) { return o >= 1048576 ? NF1.format(o / 1048576) + ' Mo' : NF1.format(o / 1024) + ' Ko'; }
+/* data : texte, ou Blob (sauvegarde complète assemblée par morceaux) */
 function deliverFile(title, data, name, note, fait) {
   const { file, share } = shareableFile(data, name);
   const copyBox = () => {
+    if (typeof data !== 'string') { toast('Enregistrement impossible ici : utilisez « Envoyer… » (menu de partage de l’iPad).'); return; }
     const ta = h('textarea', { class: 'txt', style: 'height:160px;padding:8px;font-family:var(--f-num);font-size:12px', readonly: true }, data);
     openModal(title, h('p', { class: 'note' }, 'Copiez ce texte et collez-le dans un fichier .json pour le conserver.'), ta,
       btns(btn('Copier', () => { navigator.clipboard && navigator.clipboard.writeText(data).then(() => toast('Copié.'), () => { ta.select(); toast('Sélectionné : copiez avec Ctrl+C.'); }); }, 'pri')));
   };
   openModal(title,
-    h('p', null, h('b', null, name), ' · ', NF1.format(data.length / 1024), ' Ko'),
+    h('p', null, h('b', null, name), ' · ', taille(typeof data === 'string' ? data.length : data.size)),
     h('p', { class: 'note' }, note),
     btns(
       share ? btn('Envoyer…', async () => {
@@ -524,8 +528,14 @@ async function exportAll() {
   const d = new Date(), pad = (n) => String(n).padStart(2, '0');
   /* « biblio » : références fabricant et composants personnalisés de l'appareil (ajouté en phase 2 ; ignoré par les anciennes versions) */
   /* « photos » (phase 7) : toutes les images du chantier enregistrées sur l'appareil (ignoré par les anciennes versions) */
-  const photos = await exporterPhotos();
-  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib(), photos });
+  /* le fichier est assemblé par morceaux (en-tête, puis une photo par morceau) : même contenu qu'un JSON.stringify
+     d'un seul tenant, sans grand texte en mémoire (iPad : beaucoup de photos de chantier) */
+  const ph = await photosEnParties();
+  const tete = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib() });
+  const parts = [tete.slice(0, -1) + ',"photos":['];
+  ph.parts.forEach((b, i) => { if (i) parts.push(','); parts.push(b); });
+  parts.push(']}');
+  const data = new Blob(parts, { type: 'application/json' }), photos = { length: ph.n };
   deliverFile('Sauvegarder tous mes plans', data, `calque-sauvegarde-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.calque.json`,
     `${plans.length} plan${plans.length > 1 ? 's' : ''}${photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`, sauvegardeFaite);
 }

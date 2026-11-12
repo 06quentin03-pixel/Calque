@@ -71,3 +71,25 @@ test('bandeau seulement dans la vue Plan, et jamais pendant les autres tests', a
   await ctx.close();
 });
 
+
+test('sauvegarde complète assemblée par morceaux : JSON valide, mêmes photos qu’avant, plusieurs photos', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), St = await import('./js/stockage.js'), Ph = await import('./js/photos.js');
+    St.openPlan(N.blankPlan('Trois photos'), 'p3', { quiet: true });
+    const cv = document.createElement('canvas'); cv.width = 320; cv.height = 200; const c = cv.getContext('2d');
+    for (let i = 0; i < 3; i++) { c.fillStyle = ['#c33', '#3c3', '#33c'][i]; c.fillRect(0, 0, 320, 200); const b = await new Promise((r) => cv.toBlob(r, 'image/jpeg', 0.9)); await Ph.enregistrerPhoto('f' + i, 'p3', new File([b], 'p.jpg', { type: 'image/jpeg' })); N.P.chantier.photos.push({ id: 'f' + i, lv: 'L0', x: 0, y: 0, at: 1 }); }
+    await St.saveNow();
+  });
+  const [dl] = await Promise.all([page.waitForEvent('download'), (async () => { await page.evaluate(async () => { (await import('./js/export.js')).exportAll(); }); await page.waitForSelector('#modal >> text=Enregistrer'); await page.click('#modal >> text=Enregistrer'); })()]);
+  const fs = await import('node:fs');
+  const o = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
+  const attendu = await page.evaluate(async () => (await import('./js/photos.js')).exporterPhotos());
+  assert.equal(o.format, 'calque-backup'); assert.equal(o.plans.length, 1); assert.ok(o.biblio);
+  assert.deepEqual(o.photos.map((x) => x.id).sort(), ['f0', 'f1', 'f2']);
+  assert.deepEqual(o.photos, attendu, 'photos identiques à l’ancienne méthode');
+  assert.match(await page.$eval('#toast', (e) => e.textContent), /enregistré/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
