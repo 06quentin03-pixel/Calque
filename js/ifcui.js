@@ -32,7 +32,7 @@ async function importIfc(file) {
   const ign = Object.entries(R.ignores).map(([k, v]) => `${v} ${k}`).join(', ');
   openModal('Importer une maquette IFC',
     h('p', null, h('b', null, file.name), ` · ${R.schema || 'IFC'} · unité : ${R.unite.nom}`),
-    kv([['Niveaux', R.niveaux.map((n) => `${n.nom} (${n.murs} murs)`).join(', ')], ['Murs', String(R.murs.length)], ['Portes', String(nb('door'))], ['Fenêtres', String(nb('window'))],
+    kv([['Niveaux', R.niveaux.map((n) => `${n.nom} (${n.murs} murs${n.h ? '' : ', hauteur 2,50 m par défaut'})`).join(', ')], ['Murs', String(R.murs.length)], ['Portes', String(nb('door'))], ['Fenêtres', String(nb('window'))],
       nb('gap') ? ['Réservations sans menuiserie', String(nb('gap'))] : null, ['Locaux nommés', String(R.espaces.length)]]),
     h('p', { class: 'note' }, `Un nouveau plan sera créé ; le plan en cours est enregistré et n’est pas modifié. Chaque mur est repris par son axe, son épaisseur et sa hauteur.${R.murs.some((m) => m.approx) ? ' Certains murs ne sont pas rectangulaires : ils sont repris par leur plus grande longueur (à vérifier).' : ''}`),
     R.illisibles ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${R.illisibles} mur${R.illisibles > 1 ? 's' : ''} non repris (géométrie non lue : murs courbes, inclinés ou décrits par des facettes).`) : null,
