@@ -7,7 +7,7 @@ import { geo, roomOfLabel } from './geometrie.js';
 import { commit } from './interaction.js';
 import { btn, btns, h, sec, toast } from './interface.js';
 import { ELEC_BY } from './symboles.js';
-import { equiperPiece } from './equipement.js';
+import { aPoser, equiperPiece } from './equipement.js';
 
 const NOTE = 'D’après les règles de contrôle de Calque (nombre de socles par pièce, prises du plan de travail, sortie 32 A, point d’éclairage), pas encore rattachées à un extrait Legrand : proposition à vérifier. Les positions évitent portes, fenêtres, angles, volumes de la salle de bain, évier et plaque.';
 const pieceDe = (r) => ({ lv: r.label.lv, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 10000 });
@@ -55,7 +55,7 @@ function equipementSection(lbl) {
 /* section de l'inspecteur du niveau : toutes les pièces d'un coup */
 function equipementNiveauSection(lv) {
   let n = 0, pieces = 0;
-  for (const r of geo(lv).rooms) { if (!r.label) continue; const k = equiperPiece(P, pieceDe(r)).poses.length; if (k) { n += k; pieces++; } }
+  for (const r of geo(lv).rooms) { if (!r.label) continue; const k = aPoser(P, pieceDe(r)); if (k) { n += k; pieces++; } } // rapide : sans les positions
   if (!n) return null;
   return sec('Équipement minimal',
     h('p', { class: 'note' }, `${pieces} pièce${pieces > 1 ? 's' : ''} de ce niveau n’${pieces > 1 ? 'ont' : 'a'} pas l’équipement minimal (environ ${n} appareil${n > 1 ? 's' : ''} à poser).`),

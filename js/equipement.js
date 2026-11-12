@@ -95,6 +95,11 @@ function centre(poly) {
 /* rot d'un symbole mural dont la face est tournée vers (nx, ny) — même convention que l'aimantation du plan */
 const rotVers = (nx, ny) => { let r = Math.atan2(-nx, ny) / DEG; r = r % 360; if (r < 0) r += 360; return Math.round(r * 10) / 10; };
 
+/* nombre d'appareils à poser dans une pièce (rapide : sans chercher les positions) */
+function aPoser(plan, piece) {
+  const els = (plan.elec || []).filter((e) => e.lv === piece.lv && inPoly(e, piece.loop || piece.poly));
+  return manquants(piece.nom, piece.aire, els).reduce((s, m) => s + m.n, 0);
+}
 /* Propose les symboles à poser dans une pièce.
    piece : { lv, nom, poly (faces intérieures), loop (axes), aire (m²), holes } ; renvoie { poses: [{ type, x, y, rot, h }], liens: [[i, j]] (indices dans poses : commande → lumière), manque: [...], impossible: [...] } */
 function equiperPiece(plan, piece) {
@@ -102,7 +107,11 @@ function equiperPiece(plan, piece) {
   const manque = manquants(piece.nom, piece.aire, els);
   const out = { poses: [], liens: [], manque, impossible: [] };
   if (!manque.length) return out;
-  const ouv = ouverturesDuNiveau(plan, piece.lv);
+  /* seulement les ouvertures proches de la pièce (gros plans : des centaines d'ouvertures sur le niveau) */
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const q of piece.poly) { if (q.x < x0) x0 = q.x; if (q.x > x1) x1 = q.x; if (q.y < y0) y0 = q.y; if (q.y > y1) y1 = q.y; }
+  const M = 60, dedans = (q) => q.x >= x0 - M && q.x <= x1 + M && q.y >= y0 - M && q.y <= y1 + M;
+  const ouv = ouverturesDuNiveau(plan, piece.lv).filter((o) => dedans(o.a) || dedans(o.b));
   const items = (plan.items || []).filter((it) => it.lv === piece.lv && inPoly(it, piece.loop || piece.poly));
   const humides = items.filter((it) => /^(baignoire|baignoire_ilot|douche|douche_ita)$/.test(it.type));
   const chauds = items.filter((it) => /^(evier1|evier2|evier_eg|plaque|plaque90)$/.test(it.type));
@@ -183,4 +192,4 @@ function equiperPiece(plan, piece) {
   return out;
 }
 
-export { PIECE, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };
+export { PIECE, aPoser, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };
