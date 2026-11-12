@@ -55,7 +55,7 @@ function basculer(r) { const s = sel(), i = s.findIndex((x) => cle(x) === cle(r)
 function vider() { ui.multi = []; rafraichir(); }
 function rafraichir() {
   /* grand écran : le panneau du groupe s'ouvre dès qu'il y a une sélection (sur petit écran : bouton « Actions ») */
-  if (sel().length && !ui.inspOpen && !window.matchMedia('(max-width: 1099px)').matches) ui.inspOpen = true;
+  if (sel().length && !ui.inspOpen && !panneauFlottant()) ui.inspOpen = true;
   updateHint(); renderInspector(); requestRender(true);
 }
 function compte() {
@@ -227,12 +227,14 @@ EXT.tools.multi = {
     cv.style.cursor = hit && TYPES.includes(hit.t) ? (sel().some((x) => x.id === hit.id && x.t === hit.t) ? 'move' : 'pointer') : 'crosshair';
   },
 };
-EXT.hintKey.push(() => (ui.tool === 'multi' ? 'm' + sel().length : ''));
+/* panneau des actions : toujours affiché à droite sur grand écran (iPad en paysage), à ouvrir en portrait et sur téléphone */
+const panneauFlottant = () => window.matchMedia('(max-width: 1099px)').matches;
+EXT.hintKey.push(() => (ui.tool === 'multi' ? 'm' + sel().length + (panneauFlottant() ? 'f' + (ui.inspOpen ? 1 : 0) : 'l') : ''));
 EXT.hint.multi = () => {
   const n = valider().length;
   return [h('b', null, 'Groupe'),
-    h('span', { class: 'msg' }, n ? `${compte()} · faites glisser un objet du groupe pour tout déplacer` : 'Tracez un rectangle autour des objets, ou touchez-les un par un.'),
-    n ? btn('Actions…', () => { ui.inspOpen = true; renderInspector(); }, 'sm') : null,
+    h('span', { class: 'msg' }, n ? `${compte()} · faites glisser un objet du groupe pour tout déplacer${panneauFlottant() ? '' : ' · autres actions dans le panneau de droite'}` : 'Tracez un rectangle autour des objets, ou touchez-les un par un.'),
+    n && panneauFlottant() ? btn(ui.inspOpen ? 'Fermer les actions' : 'Actions du groupe', () => { ui.inspOpen = !ui.inspOpen; renderInspector(); updateHint(); }, ui.inspOpen ? 'sm' : 'pri sm') : null,
     n ? btn('Dupliquer', () => copier(ui.lv, 40, 40), 'sm') : null,
     n ? btn('Tout désélectionner', vider, 'sm') : btn('Tout le niveau', () => { ajouter(dansRect({ a: { x: -1e9, y: -1e9 }, b: { x: 1e9, y: 1e9 } })); rafraichir(); }, 'sm'),
     btn('Terminer', () => setTool('select'), 'pri sm')];
