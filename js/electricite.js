@@ -1,5 +1,6 @@
 /* Calque — module « electricite » : électricité : circuits, tableau, contrôle NF C 15-100.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
+import { besoinsPiece } from './equipement.js';
 import { C, IDX, NF0, NF1, P, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
@@ -144,7 +145,36 @@ function namesOf(labels, prefix, lvName) {
   if (L.length <= 3) return prefix + ' ' + L.join(', ');
   return prefix + ' ' + L.slice(0, 2).join(', ') + ' et ' + (L.length - 2) + ' autres';
 }
+/* après une régénération, chaque ancien circuit est associé au nouveau circuit qui reprend le plus de ses appareils :
+   les gaines (cid, cids) et la case « posé » du chantier suivent ; un circuit reformé à l'identique (mêmes appareils,
+   même type) garde aussi son nom, ses données de calcul saisies, son option DDA, sa commande, son calibre et sa section.
+   anciens : P.circuits d'avant ; avant : Map id d'appareil → ancien circuit. Renvoie { suivis, identiques }. */
+function reporterCircuits(anciens, avant) {
+  const membres = (cid, m) => P.elec.filter((e) => m(e) === cid).map((e) => e.id).sort();
+  const nouveauDe = new Map(); let identiques = 0;
+  for (const o of anciens) {
+    const ids = membres(o.id, (e) => avant.get(e.id)); if (!ids.length) continue;
+    const compte = new Map(); for (const id of ids) { const e = IDX.elec.get(id); if (e && e.cid) compte.set(e.cid, (compte.get(e.cid) || 0) + 1); }
+    let best = null; for (const [k, n] of compte) if (!best || n > best[1]) best = [k, n];
+    if (!best) continue;
+    nouveauDe.set(o.id, best[0]);
+    const c = P.circuits.find((x) => x.id === best[0]);
+    if (c && c.kind === o.kind && JSON.stringify(membres(c.id, (e) => e.cid)) === JSON.stringify(ids) && ![...nouveauDe.entries()].some(([k, v]) => k !== o.id && v === c.id)) {
+      for (const k of ['name', 'calc', 'dda', 'ctrl', 'cal', 'sec']) if (o[k] !== undefined) c[k] = o[k];
+      identiques++;
+    }
+  }
+  for (const d of P.ducts || []) {
+    if (d.sys !== 'elec') continue;
+    if (d.cid) { const n = nouveauDe.get(d.cid); if (n) d.cid = n; else delete d.cid; }
+    if (Array.isArray(d.cids)) { const l = [...new Set(d.cids.map((x) => nouveauDe.get(x)).filter((x) => x && x !== d.cid))]; if (l.length) d.cids = l; else delete d.cids; }
+  }
+  const pc = P.chantier && P.chantier.poses && P.chantier.poses.circ;
+  if (pc) for (const [k, v] of Object.entries(pc)) { delete pc[k]; const n = nouveauDe.get(k); if (n && !(n in pc)) pc[n] = v; }
+  return { suivis: nouveauDe.size, identiques };
+}
 function generateFromPlan() {
+  const anciens = (P.circuits || []).slice(), avant = new Map(P.elec.filter((e) => e.cid).map((e) => [e.id, e.cid]));
   const circs = [];
   const mk = (kind, name, extra) => { const k = CK[kind]; const c = Object.assign({ id: uid('c'), kind, name, cal: k.cal, sec: k.sec, rcd: null, dda: false, ctrl: k.ctrl || null }, extra || {}); circs.push(c); return c; };
   for (const e of P.elec) delete e.cid;
@@ -264,6 +294,7 @@ function generateFromPlan() {
   P.circuits = circs;
   assignRcds();
   if (!P.install) P.install = defaultInstall();
+  return anciens.length ? reporterCircuits(anciens, avant) : { suivis: 0, identiques: 0 };
 }
 function assignRcds() {
   const circs = P.circuits;
@@ -426,7 +457,7 @@ function nfcChecks() {
   }
   const lightsOnPlan = P.elec.filter((e) => LIGHTS.has(e.type));
   const orphans = P.elec.filter((e) => !NO_CIRCUIT.has(e.type) && !e.cid && !(ALARM.has(e.type) && e.type !== 'centrale'));
-  if (orphans.length) addR('cq_sans_circuit', 'warn', G2, `${orphans.length} symbole${orphans.length > 1 ? 's' : ''} du plan sans circuit (${[...new Set(orphans.map((e) => (ELEC_BY.get(e.type) || {}).n))].slice(0, 3).join(', ')}${orphans.length > 3 ? '…' : ''}).`, { t: 'elec', id: orphans[0].id });
+  if (orphans.length) addR('cq_sans_circuit', 'warn', G2, `${orphans.length} symbole${orphans.length > 1 ? 's' : ''} du plan sans circuit (${[...new Set(orphans.map((e) => (ELEC_BY.get(e.type) || {}).n))].slice(0, 3).join(', ')}${orphans.length > 3 ? '…' : ''}). « Relier les appareils sans circuit » (tableau) les rattache sans modifier les circuits existants.`, { t: 'elec', id: orphans[0].id });
   const mainRooms = [];
   for (const L of P.levels) for (const r of geo(L.id).rooms) if (r.label && /s[ée]jour|chambre|salon/i.test(r.label.name)) mainRooms.push(r);
   if (mainRooms.length >= 2 && lightsOnPlan.length && nLight < 2) addR('cq_ecl_2', 'err', G2, `${nLight} circuit d'éclairage : il en faut au moins 2 quand le logement a 2 pièces principales ou plus.`, null);
@@ -454,19 +485,15 @@ function nfcChecks() {
       const socles = inside.reduce((s, e) => s + (SOCKETS[e.type] || 0), 0);
       const pt = inside.filter((e) => e.type === 'pc_pt').length;
       const lights = inside.filter((e) => LIGHTS.has(e.type)).length;
-      let need = 0, why = '';
-      if (/s[ée]jour|salon/i.test(name)) { need = area <= 28 ? Math.max(5, Math.ceil(area / 4)) : 7; why = area <= 28 ? '1 socle par tranche de 4 m², 5 au minimum' : '7 au minimum au-delà de 28 m²'; }
-      else if (/chambre/i.test(name)) { need = 3; why = '3 au minimum'; }
-      else if (/cuisine/i.test(name)) { need = area <= 4 ? 3 : 6; why = area <= 4 ? '3 si 4 m² ou moins' : '6 dont 4 au-dessus du plan de travail'; }
-      else if (/salle (de bain|d.eau)|sdb/i.test(name)) { need = 1; why = '1 hors volumes'; }
-      else if (!/wc|toilette/i.test(name) && area > 4) { need = 1; why = '1 dans toute pièce de plus de 4 m² (hors WC)'; }
+      /* besoins : une seule définition, partagée avec l'équipement automatique (equipement.js) */
+      const bp = besoinsPiece(name, area), need = bp.socles, why = bp.pourquoi;
       if (need) {
         if (socles < need) addR('cq_socles_piece', 'err', G3, `${name} : ${socles} socle${socles > 1 ? 's' : ''} de prise, ${need} requis (${why}).`, ref);
         else addR('cq_socles_piece', 'ok', G3, `${name} : ${socles} socles de prise (${need} requis).`, ref);
       }
-      if (/cuisine/i.test(name) && area > 4 && pt < 4) addR('cq_cuisine_pt', 'err', G3, `${name} : ${pt} prise${pt > 1 ? 's' : ''} au-dessus du plan de travail, 4 requises.`, ref);
-      if (/cuisine/i.test(name) && !inside.some((e) => e.type === 'pc32')) addR('cq_cuisine_32', 'err', G3, `${name} : pas de sortie 32 A pour la plaque de cuisson.`, ref);
-      if (!lights) addR('cq_eclairage_piece', /dressing|placard|cellier/i.test(name) ? 'warn' : 'err', G3, `${name} : aucun point d'éclairage.`, ref);
+      if (bp.plan && pt < bp.plan) addR('cq_cuisine_pt', 'err', G3, `${name} : ${pt} prise${pt > 1 ? 's' : ''} au-dessus du plan de travail, ${bp.plan} requises.`, ref);
+      if (bp.cuisson && !inside.some((e) => e.type === 'pc32')) addR('cq_cuisine_32', 'err', G3, `${name} : pas de sortie 32 A pour la plaque de cuisson.`, ref);
+      if (!lights) addR('cq_eclairage_piece', bp.lumiereObligatoire ? 'err' : 'warn', G3, `${name} : aucun point d'éclairage.`, ref);
       if (/s[ée]jour|chambre|salon/i.test(name) && !inside.some((e) => e.type === 'rj45' || e.type === 'rj45_2')) addR('cq_rj45', 'info', G3, `${name} : une prise RJ45 est conseillée dans chaque pièce principale.`, ref);
       // salle de bain : volume 2 (0,60 m autour de la baignoire ou de la douche)
       if (/salle (de bain|d.eau)|sdb/i.test(name) || P.items.some((it) => it.lv === L.id && /baignoire|douche/.test(it.type) && inPoly(it, r.loop))) {

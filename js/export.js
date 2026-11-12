@@ -12,8 +12,10 @@ import { LIGHT, addVersion, getDownloads, listProjects, loadProject, lsSet, migr
   openProjects, saveBlobLocal, saveNow, scheduleSave, slug, writePlanLocal } from './stockage.js';
 import { photo3D } from './vue3d.js';
 import { exportUserLib, importUserLib } from './mabiblio.js';
+import { sauvegardeFaite } from './rappelui.js';
 import { DXF_UNITES, DxfCtx, buildDxf, dxfBilan, dxfOctets } from './dxf.js';
-import { exporterPhotos, importerPhotos } from './photos.js';
+import { exporterPhotos, importerPhotos, photosEnParties } from './photos.js';
+import { estSauvegarde, lireSauvegarde } from './lecture.js';
 import { photosDuPlan } from './chantier.js';
 import { BASECACHE, COLCACHE, HELV, MC, PdfCtx, PdfPath, WINANSI, baselineOffset, buildPdf, deflateBytes, helvWidth, mkPath,
   parseColor, parseFont, pdfMeasure, pdfStr, pdfText16, pn, pn3, pn4, winAnsiBytes } from './pdf.js';
@@ -486,22 +488,26 @@ function shareableFile(data, name) {
   }
   return { file: new File([data], name, { type: 'application/json' }), share: false };
 }
-function deliverFile(title, data, name, note) {
+/* taille lisible d'un fichier */
+function taille(o) { return o >= 1048576 ? NF1.format(o / 1048576) + ' Mo' : NF1.format(o / 1024) + ' Ko'; }
+/* data : texte, ou Blob (sauvegarde complète assemblée par morceaux) */
+function deliverFile(title, data, name, note, fait) {
   const { file, share } = shareableFile(data, name);
   const copyBox = () => {
+    if (typeof data !== 'string') { toast('Enregistrement impossible ici : utilisez « Envoyer… » (menu de partage de l’iPad).'); return; }
     const ta = h('textarea', { class: 'txt', style: 'height:160px;padding:8px;font-family:var(--f-num);font-size:12px', readonly: true }, data);
     openModal(title, h('p', { class: 'note' }, 'Copiez ce texte et collez-le dans un fichier .json pour le conserver.'), ta,
       btns(btn('Copier', () => { navigator.clipboard && navigator.clipboard.writeText(data).then(() => toast('Copié.'), () => { ta.select(); toast('Sélectionné : copiez avec Ctrl+C.'); }); }, 'pri')));
   };
   openModal(title,
-    h('p', null, h('b', null, name), ' · ', NF1.format(data.length / 1024), ' Ko'),
+    h('p', null, h('b', null, name), ' · ', taille(typeof data === 'string' ? data.length : data.size)),
     h('p', { class: 'note' }, note),
     btns(
       share ? btn('Envoyer…', async () => {
-        try { await navigator.share({ files: [file], title: name }); closeModal(); toast('Fichier envoyé.'); }
+        try { await navigator.share({ files: [file], title: name }); closeModal(); toast('Fichier envoyé.'); if (fait) fait(); }
         catch (e) { if (!(e && e.name === 'AbortError')) toast('Partage impossible : utilisez « Enregistrer ».'); }
       }, 'pri', 'up') : null,
-      btn('Enregistrer', async () => { if (await saveFile(file)) { closeModal(); toast('Fichier enregistré.'); } else copyBox(); }, share ? '' : 'pri', 'down')));
+      btn('Enregistrer', async () => { if (await saveFile(file)) { closeModal(); toast('Fichier enregistré.'); if (fait) fait(); } else copyBox(); }, share ? '' : 'pri', 'down')));
 }
 async function exportJSON() {
   /* photos du chantier jointes (images enregistrées sur l'appareil, hors du plan) : champ ignoré par les anciennes versions */
@@ -523,14 +529,20 @@ async function exportAll() {
   const d = new Date(), pad = (n) => String(n).padStart(2, '0');
   /* « biblio » : références fabricant et composants personnalisés de l'appareil (ajouté en phase 2 ; ignoré par les anciennes versions) */
   /* « photos » (phase 7) : toutes les images du chantier enregistrées sur l'appareil (ignoré par les anciennes versions) */
-  const photos = await exporterPhotos();
-  const data = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib(), photos });
+  /* le fichier est assemblé par morceaux (en-tête, puis une photo par morceau) : même contenu qu'un JSON.stringify
+     d'un seul tenant, sans grand texte en mémoire (iPad : beaucoup de photos de chantier) */
+  const ph = await photosEnParties();
+  const tete = JSON.stringify({ format: 'calque-backup', version: 1, createdAt: d.getTime(), plans, biblio: exportUserLib() });
+  const parts = [tete.slice(0, -1) + ',"photos":['];
+  ph.parts.forEach((b, i) => { if (i) parts.push(','); parts.push(b); });
+  parts.push(']}');
+  const data = new Blob(parts, { type: 'application/json' }), photos = { length: ph.n };
   deliverFile('Sauvegarder tous mes plans', data, `calque-sauvegarde-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.calque.json`,
-    `${plans.length} plan${plans.length > 1 ? 's' : ''}${photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`);
+    `${plans.length} plan${plans.length > 1 ? 's' : ''}${photos.length ? `, ${photos.length} photo${photos.length > 1 ? 's' : ''} du chantier` : ''}. Gardez ce fichier dans Fichiers (iCloud Drive) ou envoyez-le par mail : il permet de tout retrouver, même sur un autre iPad. À l’import, aucun plan existant n’est écrasé.`, sauvegardeFaite);
 }
 const isPlanObj = (o) => o && typeof o === 'object' && Array.isArray(o.walls) && Array.isArray(o.nodes);
 /* import d'une sauvegarde complète : n'écrase jamais un plan existant */
-async function importBackup(o) {
+async function importBackup(o, photosDeja) {
   await saveNow();
   const have = new Map((await listProjects()).map((p) => [p.id, p]));
   let added = 0, same = 0, copies = 0;
@@ -555,7 +567,7 @@ async function importBackup(o) {
   if (lib && lib.refs.kept) parts.push(`${lib.refs.kept} référence${lib.refs.kept > 1 ? 's' : ''} différente${lib.refs.kept > 1 ? 's' : ''} ignorée${lib.refs.kept > 1 ? 's' : ''} (la vôtre est gardée)`);
   if (lib && lib.comps.added + lib.comps.copies) { const n = lib.comps.added + lib.comps.copies; parts.push(`${n} composant${n > 1 ? 's' : ''} personnalisé${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''}`); }
   if (lib && !lib.ok) parts.push('bibliothèque non enregistrée (stockage indisponible)');
-  const ph = Array.isArray(o.photos) && o.photos.length ? await importerPhotos(o.photos) : null;
+  const ph = photosDeja || (Array.isArray(o.photos) && o.photos.length ? await importerPhotos(o.photos) : null);
   if (ph && ph.added) parts.push(`${ph.added} photo${ph.added > 1 ? 's' : ''} ajoutée${ph.added > 1 ? 's' : ''}`);
   if (ph && !ph.ok) parts.push('certaines photos n’ont pas pu être enregistrées');
   if (added) parts.push(`${added} plan${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`);
@@ -567,6 +579,18 @@ async function importBackup(o) {
 $('#fileIn').addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0]; e.target.value = '';
   if (!f) return;
+  /* sauvegarde complète : lue par morceaux, photos enregistrées au fil de la lecture (mémoire faible : lecture.js) */
+  let complete = false; try { complete = await estSauvegarde(f); } catch (err) { complete = false; }
+  if (complete) {
+    toast('Lecture de la sauvegarde…');
+    const ph = { added: 0, kept: 0, ok: true };
+    let r;
+    try { r = await lireSauvegarde(f, async (lot) => { const x = await importerPhotos(lot); ph.added += x.added; ph.kept += x.kept; if (!x.ok) ph.ok = false; }); }
+    catch (err) { console.error(err); toast('Sauvegarde illisible (fichier incomplet ou abîmé) : aucun plan importé.'); return; }
+    if (!Array.isArray(r.tete.plans)) { toast('Ce fichier n’est pas un plan Calque valide.'); return; }
+    try { await importBackup(r.tete, ph); } catch (err) { console.error(err); toast('Import interrompu : vérifiez « Mes plans ».'); }
+    return;
+  }
   let o;
   try { o = JSON.parse(await f.text()); } catch (err) { toast('Ce fichier n’est pas un plan Calque valide.'); return; }
   try {

@@ -147,3 +147,7 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Tests fiabilisés (polices d'internet bloquées) : 125/125, trois suites complètes de suite sans échec.
 - `NEXT_SESSION.md` réécrit (consignes de reprise, essais iPad, fusion).
 
+## 12 novembre 2026 — Mission (suite, après la fusion n°7)
+- Équipement minimal d'une pièce ; relier les appareils sans circuit ; outil Mesurer ; rappel de sauvegarde ; sauvegarde et import par morceaux (iPad, photos) ; accrochage au fond DXF ; corrections (gaines après régénération, suppression d'un circuit, conseil risqué, barre d'outils, échelle des fonds DXF) ; migrations v1 → v11 vérifiées sans perte ; import IFC essayé sur la maquette Allplan de l'utilisateur.
+- Tests : 152/152. Demande de fusion n°8 fusionnée à la demande de l'utilisateur.
+

@@ -206,6 +206,7 @@ function snapPoint(p, o) {
     for (const wg of geo(lv).walls.values()) for (const q of wg.poly) { const d = vdist(q, p); if (d < bd) { bd = d; best = q; } }
     if (best) return { x: best.x, y: best.y, kind: 'corner', guides: [] };
   }
+  for (const f of EXT.snap) { const r = f(p, tol, o); if (r) return r; } // traits d'un fond DXF (fondtraits.js)
   let q, snappedAng = null;
   if (o.from) {
     const v = vsub(p, o.from);
@@ -1034,8 +1035,8 @@ function drawSnapMarker(p) {
   }
   c.save(); c.strokeStyle = C.accent; c.fillStyle = C.accent; c.lineWidth = 1.5 * px;
   const r = 6 * px;
-  if (p.kind === 'node' || p.kind === 'corner') { c.beginPath(); c.rect(p.x - r, p.y - r, 2 * r, 2 * r); c.stroke(); }
-  else if (p.kind === 'wall') { c.beginPath(); c.moveTo(p.x - r, p.y - r); c.lineTo(p.x + r, p.y + r); c.moveTo(p.x + r, p.y - r); c.lineTo(p.x - r, p.y + r); c.stroke(); }
+  if (p.kind === 'node' || p.kind === 'corner' || p.kind === 'fond') { c.beginPath(); c.rect(p.x - r, p.y - r, 2 * r, 2 * r); c.stroke(); }
+  else if (p.kind === 'wall' || p.kind === 'fondAxe') { c.beginPath(); c.moveTo(p.x - r, p.y - r); c.lineTo(p.x + r, p.y + r); c.moveTo(p.x + r, p.y - r); c.lineTo(p.x - r, p.y + r); c.stroke(); }
   else { c.beginPath(); c.arc(p.x, p.y, r * 0.7, 0, Math.PI * 2); c.stroke(); }
   c.beginPath(); c.arc(p.x, p.y, 1.8 * px, 0, Math.PI * 2); c.fill();
   c.restore();

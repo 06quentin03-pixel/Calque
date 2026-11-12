@@ -1,45 +1,52 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 11 novembre 2026 (mission « développement autonome », en cours jusqu'au 17 novembre 2026).
+Mise à jour : 12 novembre 2026 (mission « développement autonome », en cours jusqu'au 17 novembre 2026).
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
 ---
 
 ```
-Projet Calque (dépôt 06quentin03-pixel/Calque), mission « développement autonome » (jusqu'au 17 novembre 2026).
-Travaille sur la branche claude/ecstatic-sagan-juah82 (git fetch, puis checkout). Ne touche jamais à main :
-c'est moi qui fusionne.
+Projet Calque (dépôt 06quentin03-pixel/Calque), suite de la mission « développement autonome ».
+Les demandes de fusion n°7 et n°8 sont fusionnées dans main : pars de main, sur la branche de développement
+indiquée par la session (git fetch, puis checkout). Ne modifie jamais main toi-même : c'est moi qui fusionne
+(sauf si je te demande explicitement de fusionner une demande de fusion).
 
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (129/129 le 11 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (152/152 le 12 novembre 2026).
+3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.
-Suite envisagée (voir ROADMAP.md, section « Mission ») : accrochage aux traits d'un fond DXF ; tableaux
-NF C 15-100 manquants quand je fournirai les extraits Legrand (ne rien inventer d'ici là).
+Pistes (ROADMAP.md, section « Mission ») : onglet Quantitatif plus réactif sur les très gros plans (≈ 80 ms par
+saisie) ; essais sur de vrais fichiers DXF (et IFC Revit / ArchiCAD) ; tableaux NF C 15-100 manquants quand je
+fournirai les extraits Legrand (ne rien inventer d'ici là).
 
 Contraintes : celles de CLAUDE.md (données vérifiée/saisie/estimée, trois statuts, jamais de conformité globale si
 tout n'est pas vérifié, extraits Legrand seuls, migration PLAN_VERSION/MIGRATIONS avec test et copie de sécurité,
 CORE de sw.js + nouveau nom de cache, iPad paysage/portrait et Pencil, tests et captures hors du dépôt, plan d'exemple
-complété à chaque fonction). À la fin de chaque étape : PROJECT_STATE.md, PROGRESS.md, CHANGELOG.md, commit, push.
-Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise un iPad.
+complété à chaque fonction, fichiers de l'utilisateur jamais ajoutés au dépôt). À la fin de chaque étape :
+PROJECT_STATE.md, PROGRESS.md, CHANGELOG.md, commit, push. Explique-moi tout simplement, en français :
+je débute sur GitHub et j'utilise un iPad.
 ```
 
 ---
 
-## Demande de fusion n°7
-Préparée le 12 novembre 2026 : https://github.com/06quentin03-pixel/Calque/pull/7 (branche `claude/ecstatic-sagan-juah82` → `main`).
-**À fusionner par l'utilisateur.** L'utilisateur enverra plus tard, depuis son iPad, une vraie maquette IFC pour éprouver
-l'import (et si possible un vrai DXF d'architecte) : à essayer en priorité dès réception, et corriger ce qui manque.
+## Demandes de fusion
+- n°7 (export DXF, quantitatif, Groupe, imports DXF et IFC, raccordement automatique, assistant) : fusionnée le 12 novembre 2026.
+- n°8 (équipement minimal, relier les appareils sans circuit, Mesurer, rappel et sauvegardes par morceaux, accrochage
+  au fond DXF, corrections des gaines après régénération, migrations vérifiées, import IFC essayé sur la maquette
+  Allplan de l'utilisateur) : fusionnée le 12 novembre 2026, à la demande de l'utilisateur.
+- La maquette IFC de l'utilisateur (« BERT_A.ifc ») a été essayée mais n'est pas dans le dépôt (données personnelles) :
+  la lui redemander si besoin.
 
 ## Pour essayer la branche sur l'iPad
 La version publiée (GitHub Pages) est celle de `main`. Pour avoir les nouveautés dans l'appli de tous les jours, il faut
 fusionner la branche `claude/ecstatic-sagan-juah82` dans `main` : sur github.com, onglet « Pull requests » ›
 « New pull request » › base `main`, compare `claude/ecstatic-sagan-juah82` › « Create pull request » › « Merge ».
-(La demande n°7 est déjà prête : il suffit de l'ouvrir et de toucher « Merge pull request ».) Vos plans ne sont pas touchés : le format passe
+(La demande n°7 est fusionnée : ses nouveautés sont déjà dans `main`. Le travail suivant passera par la demande n°8.) Vos plans ne sont pas touchés : le format passe
 de v10 à v11 avec une copie de sécurité dans l'historique des versions.
 
 ## Essais à faire sur l'iPad (ce que les tests automatiques ne couvrent pas)
@@ -54,14 +61,18 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage et en port
 4. **Import d'un vrai plan DXF d'architecte** (Menu › Importer un fond de plan) : unité proposée et dimensions
    annoncées ; retirer des calques ; avec « Créer aussi les murs » : regarder ce qui est bien reconnu et ce qui ne l'est
    pas (m'envoyer le fichier ou une capture si le résultat est mauvais : c'est le point le moins éprouvé).
-5. **Import d'une vraie maquette IFC** (Menu › Importer une maquette IFC), si vous en avez une (export Revit ou
-   ArchiCAD) : niveaux, murs, portes et fenêtres ; me signaler ce qui manque.
+4 bis. Avec un DXF importé en fond (sans « Créer aussi les murs ») : outil Mur au Pencil, toucher près des coins des murs du dessin : le repère carré apparaît et le mur se place sur l'axe.
+5. **Import de votre maquette IFC** (Menu › Importer une maquette IFC › BERT_A.ifc) : 3 niveaux, pièces nommées (SÉJOUR, CHAMBRE 1…), portes et fenêtres ; regarder aussi la 3D ; me signaler ce qui manque ou est faux.
 6. **Raccordement automatique** (Tableau électrique › Cheminements › « Raccorder les circuits incomplets ») sur un de
    vos plans : durée, lisibilité des gaines proposées, puis Annuler.
 7. **Disjoncteur d'abonné en triphasé** : Tableau › Arrivée et installation : 36 kVA triphasé affiche « 30/60 A
    tétrapolaire réglé à 60 A par phase » (valeur estimée : à comparer avec votre contrat).
-8. **Assistant** (Menu › Assistant : où en est mon projet ?) : lisible en portrait, chaque bouton mène à la bonne page.
-9. Mise à jour de l'appli installée (bandeau « nouvelle version ») ; un ancien plan s'ouvre, Menu › Historique des
+8. **Équipement minimal** : toucher le local technique du plan d'exemple › « Poser l'équipement manquant » ; sur un plan vide de quelques pièces nommées : inspecteur du niveau › « Équiper toutes les pièces » ; regarder si les positions conviennent à un électricien.
+9. **Relier les appareils sans circuit** : après « Équiper la pièce » sur le local technique, bouton « Relier les appareils sans circuit (1) » juste dessous (ou dans l'onglet Tableau électrique) : la prise rejoint un circuit de prises, aucun autre circuit ne change.
+10. **Outil Mesurer** (touche U ou bouton « Mesurer ») : au Pencil, toucher les angles d'une pièce, puis le premier point : surface affichée ; « Transformer en cotes ». En paysage, tous les outils de la barre de gauche sont visibles sans la faire défiler.
+11. **Rappel de sauvegarde** : à la première ouverture après la mise à jour, un bandeau en bas propose « Sauvegarder maintenant » ; la sauvegarde enregistrée dans Fichiers fait disparaître le rappel, et le menu affiche « faite aujourd'hui ».
+12. **Assistant** (Menu › Assistant : où en est mon projet ?) : lisible en portrait, chaque bouton mène à la bonne page.
+13. Mise à jour de l'appli installée (bandeau « nouvelle version ») ; un ancien plan s'ouvre, Menu › Historique des
    versions montre « Copie de sécurité avant mise à jour du format (v10 → v11) ».
 
 ## Toujours en attente de vous

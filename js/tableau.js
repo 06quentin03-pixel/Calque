@@ -6,17 +6,19 @@ import { ELEC_BY } from './symboles.js';
 import { FONT_UI, V } from './rendu2d.js';
 import { CALS, CK, KIND_ORDER, KVA_PALIERS, SECS, SEC_MAX, agcpLabel, agcpOf, circById, circMembers, circNumbers, circStats,
   circuitColor, defaultInstall, fmtCount, generateFromPlan, nfcChecks, orderCircuits, panelLayout, rcdById,
-  rcdCircuits, rcdLoad, rcdNumbers } from './electricite.js';
+  rcdCircuits, rcdLoad, rcdNumbers, roomAt } from './electricite.js';
 import { closeDimEdit, ductPts, ductVisible, elecVisible, resetFilters, updateFilterUI } from './reseaux.js';
 import { SCR, commit, finishChain, refreshUI, requestRender, resizeCanvas } from './interaction.js';
 import { btn, btns, chipRow, closePops, elecThumb, h, kv, sec, segCtl, textField, toast, updateHint } from './interface.js';
-import { slug } from './stockage.js';
+import { addVersion, slug } from './stockage.js';
+import { snapshot } from './historique.js';
 import { openFileModal } from './export.js';
 import { pastille, rapportDuPlan, rapportView } from './reglesui.js';
 import { v3Show } from './vue3d.js';
 import { bilanView, ficheButton } from './fiche.js';
 import { metresView } from './metres.js';
 import { quantPatch, quantView } from './quantitatifui.js';
+import { nbSansCircuit, relierSansCircuit } from './affectation.js';
 
 /* ============================================================
    CALQUE — onglet « Tableau électrique »
@@ -291,9 +293,16 @@ function renderEvSide() {
       h('p', { class: 'note' }, inst.reseau ? (inst.reseau === 'tri' ? 'Calculs en triphasé : choisissez la phase de chaque circuit dans sa fiche de calcul.' : 'Calculs en monophasé 230 V.') : 'Non précisé : les calculs retiennent le monophasé (valeur estimée).')),
     sec('Coffret', segCtl([{ v: 13, n: '13 modules par rangée' }, { v: 18, n: '18 modules' }], inst.row || 13, (v) => { inst.row = v; commit(); })),
     kv([['Surface des pièces', fmtArea(totalSurface())], ['Liaisons commandes', String(P.links.length)]])));
+  const aRelier = P.circuits.length ? nbSansCircuit(P) : 0;
   kids.push(h('div', { class: 'btns ev-actions' },
+    aRelier ? btn(`Relier les appareils sans circuit (${aRelier})`, relierAppareils, 'pri', 'plus') : null,
     P.circuits.length
-      ? confirmBtnPlain('Régénérer depuis le plan', 'Remplacer les circuits ?', () => { generateFromPlan(); ui.evSel = null; commit(); toast('Tableau régénéré à partir du plan.'); })
+      ? confirmBtnPlain('Régénérer depuis le plan', 'Remplacer tous les circuits ?', () => {
+        /* copie de sécurité dans l'historique des versions : les circuits remplacés restent récupérables même après fermeture */
+        if (!ui.isExample && P.id) addVersion(P.id, P.name || 'Plan', snapshot(), 'Copie de sécurité avant « Régénérer depuis le plan »').catch(() => { });
+        const r = generateFromPlan(); ui.evSel = null; commit();
+        toast(`Tableau régénéré : ${P.circuits.length} circuits${r.identiques ? `, dont ${r.identiques} inchangé${r.identiques > 1 ? 's' : ''} (nom et données saisies gardés)` : ''}. Les gaines suivent leurs circuits. Copie de l’ancien tableau dans l’historique des versions.`);
+      })
       : btn('Générer depuis le plan', () => { generateFromPlan(); ui.evSel = null; commit(); toast(`${P.circuits.length} circuits et ${P.rcds.length} différentiels créés.`); }, 'pri', 'plus'),
     btn('Circuit', addCircuit, 'sm', 'plus'), btn('Différentiel', addRcd, 'sm', 'plus')));
   if (!P.circuits.length && !P.rcds.length) {
@@ -399,7 +408,13 @@ function circuitEditor(c) {
     sec(null, btns(
       btn('Monter', () => { moveIn(P.circuits, c, -1, (x) => x.rcd === c.rcd); commit(); }, 'sm'),
       btn('Descendre', () => { moveIn(P.circuits, c, 1, (x) => x.rcd === c.rcd); commit(); }, 'sm'),
-      btn('Supprimer', () => { for (const e of P.elec) if (e.cid === c.id) delete e.cid; P.circuits = P.circuits.filter((x) => x !== c); ui.evSel = null; commit(); }, 'sm danger', 'del'))));
+      btn('Supprimer', () => {
+        for (const e of P.elec) if (e.cid === c.id) delete e.cid;
+        /* gaines : le circuit supprimé n'y passe plus ; case « posé » du chantier retirée */
+        for (const d of P.ducts) { if (d.cid === c.id) delete d.cid; if (Array.isArray(d.cids)) { d.cids = d.cids.filter((x) => x !== c.id); if (!d.cids.length) delete d.cids; } }
+        if (P.chantier && P.chantier.poses && P.chantier.poses.circ) delete P.chantier.poses.circ[c.id];
+        P.circuits = P.circuits.filter((x) => x !== c); ui.evSel = null; commit();
+      }, 'sm danger', 'del'))));
 }
 function showCircuitOnPlan(cid) {
   const ms = circMembers(cid);
@@ -437,6 +452,15 @@ function goToRef(ref) {
   if (ref.t === 'room') { const r = roomOfLabel(obj); if (r) p = labelPoint(r.poly); }
   if (ref.t === 'opening' && obj) { const wg = geo(lv).walls.get(obj.wall); if (wg) p = vadd(wg.A, vmul(wg.d, obj.t)); }
   if (p) requestAnimationFrame(() => { V.s = Math.max(V.s, 0.9); V.ox = SCR.w / 2 - p.x * V.s; V.oy = SCR.h / 2 - p.y * V.s; requestRender(); });
+}
+/* relie les appareils sans circuit, sans modifier les circuits existants (affectation.js) ; une seule étape d'annulation */
+function relierAppareils() {
+  const r = relierSansCircuit(P, { piece: (e) => { const q = roomAt(e); return q && q.label ? { id: q.label.id, nom: q.label.name } : null; } });
+  for (const a of r.affectations) { const e = IDX.elec.get(a.id); if (e) e.cid = a.cid; }
+  P.circuits.push(...r.circuits); P.rcds.push(...r.rcds);
+  if (r.affectations.length) commit();
+  const n = r.affectations.length, k = r.circuits.length, sans = r.circuits.filter((c) => !c.rcd).length;
+  toast(n ? `${n} appareil${n > 1 ? 's reliés' : ' relié'}${k ? `, ${k} circuit${k > 1 ? 's créés' : ' créé'}` : ' à des circuits existants'}${sans ? ` (${sans} sans différentiel libre : à rattacher)` : ''}${r.restants.length ? ` ; ${r.restants.length} sans circuit adapté` : ''}. Les circuits existants n’ont pas changé.` : 'Aucun appareil à relier.');
 }
 function renderEvMain() {
   /* contrôles : moteur de règles (regles.js), trois statuts, source et édition de chaque règle */
@@ -510,6 +534,6 @@ async function exportElec(kind, fmt) {
 }
 
 export { CTRL_LABEL, KIND_LABEL, PRINT_COL, SCREEN_COL, SVG_FONT, addCircuit, addRcd, checksView, circuitEditor,
-  confirmBtnPlain, esc, evSelect, exportElec, goToRef, moveIn, panelSVG, rcdEditor, renderElecView, renderEvMain,
+  confirmBtnPlain, esc, evSelect, relierAppareils, exportElec, goToRef, moveIn, panelSVG, rcdEditor, renderElecView, renderEvMain,
   renderEvSide, repereTable, sLine, sText, setView, showCircuitOnPlan, symBox, symBreaker, symEarth, symRcd, symSpd,
   totalSurface, uniSVG };

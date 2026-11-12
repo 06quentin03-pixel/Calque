@@ -81,7 +81,7 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 - Validation : 100/100 tests.
 
 ## Phase 8 — Validation finale
-- ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.
+- 🟨 Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad : migrations v1 → v11 sans perte et exports sur un plan migré (`tests/migrations.test.mjs`), hors ligne avec les modules chargés à la demande (`tests/architecture.test.mjs`) — fait le 12 novembre 2026 ; gros dossier PDF (115 pages en 0,7 s) et sauvegarde de 150 photos (mémoire 239 → 10 Mo à l'écriture, 377 → 111 Mo à l'import) mesurés et optimisés ; reste : essais sur l'iPad.
 - ⬜ Tableaux NF C 15-100 manquants (extraits Legrand payants, à fournir par l'utilisateur) : courants admissibles Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage des conduits (emplacement `remplissage_conduits` prêt dans `js/normes.js`). Les recopier dans `js/normes.js` (avec tests), puis activer In ≤ Iz, la limite de chute de tension et le remplissage.
 - ⬜ Rattacher les règles « de Calque » (`cq_…` dans `js/regles.js`) aux pages des extraits Legrand fournis, pour qu'elles puissent devenir « conformes » (changer leur version `v` et `REGLES_VERSION`).
 
@@ -96,7 +96,13 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Reconnaissance des murs, portes, fenêtres et noms de pièces d'un plan DXF (`js/dxfmurs.js`, 3 tests).
 - ✅ Import d'une maquette IFC 2x3 / 4 dans un nouveau plan (`js/ifcimport.js`, `js/ifcui.js`, 5 tests).
 - ✅ Assistant « Où en est mon projet ? » (`js/assistant.js`, `js/assistantui.js`, 2 tests).
-- ⬜ Suite envisagée, par ordre de valeur : accrochage aux traits d'un fond DXF (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+- ✅ Équipement minimal d'une pièce ou d'un niveau, posé d'un geste (`js/equipement.js`, `js/equipementui.js`, 4 tests).
+- ✅ Outil « Mesurer » (distance, surface, transformation en cotes) (`js/mesure.js`, 2 tests).
+- ✅ Correction des gaines après « Régénérer depuis le plan » et après la suppression d'un circuit (3 tests).
+- ✅ Relier les appareils sans circuit sans toucher aux circuits existants (`js/affectation.js`, 3 tests).
+- ✅ Rappel de la sauvegarde complète (`js/sauvegarde.js`, `js/rappelui.js`, 3 tests).
+- ✅ Accrochage aux traits d'un fond DXF (axes des murs pour Mur et Pièce) (`js/fondtraits.js`, 2 tests).
+- ⬜ Suite envisagée, par ordre de valeur : (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

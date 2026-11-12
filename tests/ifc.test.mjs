@@ -33,6 +33,13 @@ for (const [f, schema, unite] of [['maison-ifc4.ifc', 'IFC4', 'millimètres'], [
   });
 }
 
+test('niveau sans mur ni local (fondations, comme « Semelle » d’Allplan) : non repris, signalé', () => {
+  const t = lire('maison-ifc4.ifc').replace(/\nENDSEC;\s*END-ISO-10303-21;\s*$/, "\n#99990=IFCBUILDINGSTOREY('semelle',$,'Semelle',$,$,$,$,$,$,-300.);\nENDSEC;\nEND-ISO-10303-21;\n");
+  const R = lireIfc(t);
+  assert.deepEqual(R.niveaux.map((n) => n.nom), ['Rez-de-chaussée', 'Étage']);
+  assert.equal(R.ignores['niveaux sans mur (Semelle)'], 1);
+});
+
 test('fichiers non lisibles : rien n’est inventé', () => {
   assert.equal(lireIfc('pas un fichier IFC').murs.length, 0); assert.match(lireIfc('x').alertes[0], /illisible/);
   /* un mur sans volume extrudé est compté comme non repris */

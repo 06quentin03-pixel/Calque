@@ -64,6 +64,16 @@ test('hors ligne : l’application redémarre sans réseau grâce au Service Wor
   await wait(page, 800);
   assert.equal(await page.textContent('#projName'), 'Exemple : maison et atelier');
   await page.click('.vtab[data-view="3d"]'); await wait(page, 800);
+  /* modules chargés à la demande (menu) : servis par le cache, sans réseau */
+  await page.click('.vtab[data-view="plan"]'); await wait(page, 300);
+  await page.click('#btnMenu'); await page.click('#menuPop >> text=Assistant : où en est mon projet ?');
+  await page.waitForSelector('.as-etape', { timeout: 10000 });
+  await page.keyboard.press('Escape');
+  const hl = await page.evaluate(async () => { const m = await import('./js/ifcui.js'); const i = await import('./js/ifcimport.js'); return typeof m.importIfc === 'function' && typeof i.lireIfc === 'function'; });
+  assert.ok(hl, 'import IFC disponible hors ligne');
+  /* outils récents : Groupe, Mesurer, quantitatif, équipement */
+  await page.keyboard.press('u'); assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).ui.tool), 'mesure');
+  await page.click('.vtab[data-view="elec"]'); await page.click('#evBar >> text=Quantitatif'); await page.waitForSelector('#qtRoot');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

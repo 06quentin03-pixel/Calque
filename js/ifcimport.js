@@ -215,11 +215,15 @@ function lireIfc(texte) {
   /* hauteur des niveaux : hauteur la plus fréquente des murs ; épaisseur de plancher : écart avec le niveau suivant */
   R.niveaux = niveaux.map((n, i) => {
     const hs = R.murs.filter((m) => m.niveau === n.id).map((m) => Math.round(m.h)).filter((h) => h > 50).sort((a, b) => a - b);
-    const h = hs.length ? hs[Math.floor(hs.length / 2)] : null, suiv = niveaux[i + 1];
+    /* hauteur sous plafond : hauteur la plus fréquente des murs, si c'est une hauteur d'étage (combles : murets de 1,40 m → non retenue) */
+    const hm = hs.length ? hs[Math.floor(hs.length / 2)] : null, h = hm != null && hm >= 180 ? hm : null, suiv = niveaux[i + 1];
     const ecart = suiv ? suiv.elev - n.elev : null;
     let dalle = null; if (h != null && ecart != null && ecart - h >= 3 && ecart - h <= 100) dalle = Math.round(ecart - h);
-    return { id: n.id, nom: n.nom, elev: Math.round(n.elev * 10) / 10, h, dalle, murs: R.murs.filter((m) => m.niveau === n.id).length };
+    return { id: n.id, nom: n.nom, elev: Math.round(n.elev * 10) / 10, h, dalle, murs: R.murs.filter((m) => m.niveau === n.id).length, espaces: R.espaces.filter((e) => e.niveau === n.id).length };
   });
+  /* niveaux sans mur ni local (fondations, semelles…) : pas repris (signalés) */
+  const vides = R.niveaux.filter((n) => !n.murs && !n.espaces);
+  if (vides.length && vides.length < R.niveaux.length) { R.niveaux = R.niveaux.filter((n) => n.murs || n.espaces); R.ignores['niveaux sans mur (' + vides.map((n) => n.nom).join(', ') + ')'] = vides.length; }
   if (!R.niveaux.length && R.murs.length) { R.niveaux = [{ id: 0, nom: 'Niveau', elev: 0, h: null, dalle: null, murs: R.murs.length }]; for (const m of R.murs) m.niveau = 0; for (const o of [...R.ouvertures, ...R.espaces]) o.niveau = 0; }
   fermerAngles(R.murs);
   const r1 = (v) => Math.round(v * 10) / 10;

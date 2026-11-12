@@ -30,6 +30,9 @@ export async function fresh(opts = {}) {
   const ctx = await env.browser.newContext({ viewport: opts.viewport || { width: 1180, height: 820 }, acceptDownloads: true, serviceWorkers: 'block', hasTouch: !!opts.touch, isMobile: !!opts.mobile });
   /* polices d'internet bloquées : rendu identique d'une page à l'autre (sinon la police arrive parfois en cours de test) */
   await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  /* rappel de sauvegarde reporté (sinon son bandeau, affiché 5 s après l'ouverture, recouvre ce que les tests touchent) ;
+     opts.rappel : le laisser (tests du rappel) */
+  if (!opts.rappel) await ctx.addInitScript(() => { try { if (!localStorage.getItem('calque.sauvegarde')) localStorage.setItem('calque.sauvegarde', JSON.stringify({ derniere: 0, report: Date.now() + 864e7 })); } catch (e) { } });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

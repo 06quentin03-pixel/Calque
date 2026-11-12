@@ -10,6 +10,7 @@ import { generateFromPlan } from './electricite.js';
 import { closeDimEdit, finishDuct, openFilterPop } from './reseaux.js';
 import { SCR, finishChain, fitView, keys, makeElecFromDef, makeItemFromDef, newOpening, redo, requestRender,
   resizeCanvas, select, undo, zoomAt } from './interaction.js';
+import { lireEtat, verifierSauvegarde } from './rappelui.js';
 import { toucheGroupe } from './multi.js';
 import { renderEvMain, setView } from './tableau.js';
 import { loadUserLib } from './mabiblio.js';
@@ -17,7 +18,7 @@ import { ICON, closeModal, closePops, copyWalls, deleteSel, duplicateSel, h, nud
   renderViewPop, rotateSel, setTool, showPop, toast, updateHint } from './interface.js';
 import { DB, Store, askPersist, getDownloads, listProjects, loadProject, lsGet, openPlan, openProjects, saveNow,
   setSave, syncFromLocal } from './stockage.js';
-import { openExport } from './export.js';
+import { exportAll, openExport } from './export.js';
 import { samplePlan } from './exemple.js';
 import { V3, v3Key3, v3Refresh } from './vue3d.js';
 
@@ -49,7 +50,7 @@ window.addEventListener('keydown', (e) => {
   if (k === 'arrowright') { e.preventDefault(); nudgeSel(step, 0); return; }
   if (k === 'arrowup') { e.preventDefault(); nudgeSel(0, -step); return; }
   if (k === 'arrowdown') { e.preventDefault(); nudgeSel(0, step); return; }
-  const map = { v: 'select', m: 'wall', p: 'room', o: 'door', f: 'window', b: 'gap', c: 'dim', t: 'text', l: 'link', g: 'duct' };
+  const map = { v: 'select', m: 'wall', p: 'room', o: 'door', f: 'window', b: 'gap', c: 'dim', t: 'text', l: 'link', g: 'duct', u: 'mesure' };
   if (map[k]) { setTool(map[k]); return; }
   if (k === 'r') rotateSel(90);
 });
@@ -90,6 +91,7 @@ async function boot() {
   /* stockage principal IndexedDB ; reprise des plans de l'ancien stockage (localStorage, laissé intact) */
   if (typeof indexedDB !== 'undefined' && await DB.open()) { await syncFromLocal(); askPersist(); }
   await loadUserLib(); // références fabricant et composants personnalisés de l'appareil
+  await lireEtat().catch(() => { }); // date de la dernière sauvegarde complète (menu)
   let curId = lsGet('calque.cur');
   if (!curId) { const list = await listProjects(); if (list.length) curId = list[0].id; }
   let ok = false;
@@ -101,6 +103,8 @@ async function boot() {
   resizeCanvas();
   { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d' || vw === 'chantier') setView(vw); }
   getDownloads();
+  /* rappel de la sauvegarde complète, quelques secondes après l'ouverture (jamais pendant le chargement) */
+  setTimeout(() => { verifierSauvegarde(exportAll).catch(() => { }); }, 5000);
   const cloud = await Store.init();
   if (!cloud) { if (!ui.isExample) setSave('local'); return; }
   try {

@@ -63,11 +63,19 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `variantesui.js` | Fenêtre « Variantes », puce de la variante affichée, comparaison à l'écran | non |
 | `assistant.js` | Étapes du projet déduites du plan (fait, à faire, à surveiller), sans jamais annoncer de conformité | oui |
 | `assistantui.js` | Fenêtre « Où en est mon projet ? », boutons vers la bonne page | non |
+| `equipement.js` | Besoins d'une pièce (seule définition, partagée avec le contrôle), équipement manquant, positions le long des murs | oui |
+| `equipementui.js` | Sections « Équipement minimal » des inspecteurs de la pièce et du niveau | non |
+| `sauvegarde.js` | Décision du rappel de sauvegarde complète (7 jours, report de 3 jours) | oui |
+| `rappelui.js` | Date de la dernière sauvegarde complète, bandeau de rappel, libellé du menu | non |
+| `affectation.js` | Relier les appareils sans circuit aux circuits existants (capacités, pièce, niveau), créer les circuits manquants, sans modifier l'existant | oui |
+| `mesure.js` | Outil « Mesurer » : tronçons, total, surface, transformation en cotes | non |
 | `dxf.js` | Export DXF R12 : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre traits, cercles et textes par calque, `buildDxf` (unités mm/cm/m, Y vers le haut, Windows-1252) | oui |
 | `dxfimport.js` | Lecture d'un DXF (LINE, LWPOLYLINE, POLYLINE, CIRCLE, ARC, ELLIPSE, SPLINE, INSERT, TEXT, MTEXT), blocs développés, emprise sans les objets isolés, unité, dessin dans un canvas | oui |
 | `dxfmurs.js` | Reconnaissance des murs dans les traits d'un plan : paires de traits parallèles → axe et épaisseur, angles fermés, ouvertures (porte, fenêtre, passage) | oui |
 | `ifcimport.js` | Lecture d'une maquette IFC 2x3 / 4 (texte STEP) : unité, niveaux, murs (axe, épaisseur, hauteur), ouvertures, locaux | oui |
 | `ifcui.js` | Import IFC : résumé de la maquette, création d'un nouveau plan | non |
+| `lecture.js` | Lecture d'une sauvegarde complète par tranches : photos confiées par paquets, reste relu à la fin (mémoire faible) | oui |
+| `fondtraits.js` | Accrochage aux traits d'un fond DXF (axes des murs, extrémités), index spatial, repère image ↔ plan | non |
 | `quantitatif.js` | Quantitatif (appareillage, protections, matériel ; par pièce, par circuit), chiffrage (prix et temps saisis, total partiel), CSV, nettoyage de `chiffrage` (migration v11) | oui |
 | `quantitatifui.js` | Onglet « Quantitatif » du Tableau électrique : saisie des prix sans reconstruire le tableau (`quantPatch`), « mes prix », export CSV | non |
 | `multi.js` | Sélection multiple (outil « Groupe ») : rectangle, déplacement, rotation, copie (même niveau ou autre niveau), suppression, hauteur et circuit des appareils | non |
@@ -150,6 +158,8 @@ Elles sont recalculées par `touch()` après chaque modification.
 Enregistrées sur l'appareil dans IndexedDB (magasin `meta`, clé `biblio`) et dans `localStorage` (`calque.biblio`, secours) :
 `{ refs: { [idArticle]: { ref, fab, fiab, source, note, at } }, comps: [composants], prix: { [clé de ligne]: { pu, tps, at } }, savedAt }`.
 Elles sont ajoutées à la sauvegarde complète (champ `biblio`) ; l'import ne remplace jamais une donnée existante.
+
+Date de la dernière sauvegarde complète (rappel) : IndexedDB `meta`, clé `sauvegarde` (`{ derniere, report }` en ms) et `localStorage` `calque.sauvegarde` ; la plus récente fait foi.
 Fiabilité : `verifiee` (source obligatoire), `saisie`, `estimee`.
 
 ## Hors ligne et mises à jour

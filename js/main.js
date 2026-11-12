@@ -17,6 +17,8 @@ import './vue3d.js';
 import './fiche.js';
 import './chantierui.js';
 import './multi.js';
+import './mesure.js';
+import './fondtraits.js';
 import './demarrage.js';
 import { boot } from './demarrage.js';
 import { watchUpdates } from './miseajour.js';
