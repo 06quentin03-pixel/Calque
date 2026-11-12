@@ -1,5 +1,6 @@
 /* Calque — module « electricite » : électricité : circuits, tableau, contrôle NF C 15-100.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
+import { besoinsPiece } from './equipement.js';
 import { C, IDX, NF0, NF1, P, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
@@ -454,19 +455,15 @@ function nfcChecks() {
       const socles = inside.reduce((s, e) => s + (SOCKETS[e.type] || 0), 0);
       const pt = inside.filter((e) => e.type === 'pc_pt').length;
       const lights = inside.filter((e) => LIGHTS.has(e.type)).length;
-      let need = 0, why = '';
-      if (/s[ée]jour|salon/i.test(name)) { need = area <= 28 ? Math.max(5, Math.ceil(area / 4)) : 7; why = area <= 28 ? '1 socle par tranche de 4 m², 5 au minimum' : '7 au minimum au-delà de 28 m²'; }
-      else if (/chambre/i.test(name)) { need = 3; why = '3 au minimum'; }
-      else if (/cuisine/i.test(name)) { need = area <= 4 ? 3 : 6; why = area <= 4 ? '3 si 4 m² ou moins' : '6 dont 4 au-dessus du plan de travail'; }
-      else if (/salle (de bain|d.eau)|sdb/i.test(name)) { need = 1; why = '1 hors volumes'; }
-      else if (!/wc|toilette/i.test(name) && area > 4) { need = 1; why = '1 dans toute pièce de plus de 4 m² (hors WC)'; }
+      /* besoins : une seule définition, partagée avec l'équipement automatique (equipement.js) */
+      const bp = besoinsPiece(name, area), need = bp.socles, why = bp.pourquoi;
       if (need) {
         if (socles < need) addR('cq_socles_piece', 'err', G3, `${name} : ${socles} socle${socles > 1 ? 's' : ''} de prise, ${need} requis (${why}).`, ref);
         else addR('cq_socles_piece', 'ok', G3, `${name} : ${socles} socles de prise (${need} requis).`, ref);
       }
-      if (/cuisine/i.test(name) && area > 4 && pt < 4) addR('cq_cuisine_pt', 'err', G3, `${name} : ${pt} prise${pt > 1 ? 's' : ''} au-dessus du plan de travail, 4 requises.`, ref);
-      if (/cuisine/i.test(name) && !inside.some((e) => e.type === 'pc32')) addR('cq_cuisine_32', 'err', G3, `${name} : pas de sortie 32 A pour la plaque de cuisson.`, ref);
-      if (!lights) addR('cq_eclairage_piece', /dressing|placard|cellier/i.test(name) ? 'warn' : 'err', G3, `${name} : aucun point d'éclairage.`, ref);
+      if (bp.plan && pt < bp.plan) addR('cq_cuisine_pt', 'err', G3, `${name} : ${pt} prise${pt > 1 ? 's' : ''} au-dessus du plan de travail, ${bp.plan} requises.`, ref);
+      if (bp.cuisson && !inside.some((e) => e.type === 'pc32')) addR('cq_cuisine_32', 'err', G3, `${name} : pas de sortie 32 A pour la plaque de cuisson.`, ref);
+      if (!lights) addR('cq_eclairage_piece', bp.lumiereObligatoire ? 'err' : 'warn', G3, `${name} : aucun point d'éclairage.`, ref);
       if (/s[ée]jour|chambre|salon/i.test(name) && !inside.some((e) => e.type === 'rj45' || e.type === 'rj45_2')) addR('cq_rj45', 'info', G3, `${name} : une prise RJ45 est conseillée dans chaque pièce principale.`, ref);
       // salle de bain : volume 2 (0,60 m autour de la baignoire ou de la douche)
       if (/salle (de bain|d.eau)|sdb/i.test(name) || P.items.some((it) => it.lv === L.id && /baignoire|douche/.test(it.type) && inPoly(it, r.loop))) {

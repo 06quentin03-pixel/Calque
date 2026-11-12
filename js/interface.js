@@ -24,6 +24,7 @@ import { f3Def, itemHeight3 } from './vue3d.js';
 import { compSection, materielSection, openTechLib } from './biblioui.js';
 import { ficheButton } from './fiche.js';
 import { fondSection, pickFond } from './fond.js';
+import { equipementNiveauSection, equipementSection } from './equipementui.js';
 import { TYPES_CHEMIN } from './cheminement.js';
 import { itineraireSection, startZone } from './routeui.js';
 import { eclairageSection, lumSection } from './eclairageui.js';
@@ -503,6 +504,7 @@ function inspRoom(lbl) {
         style: `background:${i ? 'linear-gradient(' + C[k] + ',' + C[k] + '),var(--c-room)' : 'var(--c-room)'}`,
         onclick: () => { lbl.tint = i; commit(); },
       })))),
+      equipementSection(lbl),
       eclairageSection(lbl),
       sec(null, btns(btn('Recentrer l’étiquette', () => { const p = labelPoint(r.poly); lbl.x = Math.round(p.x); lbl.y = Math.round(p.y); commit(); }, 'sm', 'center'))),
       h('p', { class: 'note' }, 'La pièce est détectée à partir des murs qui la ferment. Touchez deux fois son nom sur le plan pour le modifier, ou faites-le glisser.'),
@@ -559,7 +561,8 @@ function inspLevel() {
         numField('Épaisseur plancher', lvl.slab, 'cm', (v) => { lvl.slab = v; commit(); }, { id: 'f-lvs', min: 0, max: 100 })),
       numField('Altitude du sol fini', lvl.elev, 'cm', (v) => { lvl.elev = v; commit(); }, { id: 'f-lve', min: -5000, max: 10000 })),
     fondSection(),
-  ];
+    equipementNiveauSection(ui.lv),
+  ].filter(Boolean);
   if (empty) parts.push(sec('Pour commencer', h('div', { class: 'empty-help' },
     h('span', null, 'Avec l’outil ', h('b', null, 'Pièce'), ', faites glisser un rectangle : quatre murs sont créés d’un coup.'),
     h('span', null, 'Avec l’outil ', h('b', null, 'Mur'), ', touchez chaque angle, ou tapez une longueur et une direction pour une cote exacte.'),
