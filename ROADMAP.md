@@ -81,7 +81,7 @@ Dépend de : 1a (stockage IndexedDB indispensable pour les photos).
 - Validation : 100/100 tests.
 
 ## Phase 8 — Validation finale
-- ⬜ Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad.
+- 🟨 Projets de référence, tests complets, vérification hors ligne, migrations et exports, optimisation iPad : migrations v1 → v11 sans perte et exports sur un plan migré (`tests/migrations.test.mjs`), hors ligne avec les modules chargés à la demande (`tests/architecture.test.mjs`) — fait le 12 novembre 2026 ; reste : essais sur l'iPad, gros dossiers PDF et nombreuses photos.
 - ⬜ Tableaux NF C 15-100 manquants (extraits Legrand payants, à fournir par l'utilisateur) : courants admissibles Iz, modes de pose, facteurs de correction, chutes de tension maximales, constantes ρ et λ, simultanéité, remplissage des conduits (emplacement `remplissage_conduits` prêt dans `js/normes.js`). Les recopier dans `js/normes.js` (avec tests), puis activer In ≤ Iz, la limite de chute de tension et le remplissage.
 - ⬜ Rattacher les règles « de Calque » (`cq_…` dans `js/regles.js`) aux pages des extraits Legrand fournis, pour qu'elles puissent devenir « conformes » (changer leur version `v` et `REGLES_VERSION`).
 
