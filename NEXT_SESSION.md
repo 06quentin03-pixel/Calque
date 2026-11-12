@@ -30,11 +30,16 @@ Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise 
 
 ---
 
+## Demande de fusion n°7
+Préparée le 12 novembre 2026 : https://github.com/06quentin03-pixel/Calque/pull/7 (branche `claude/ecstatic-sagan-juah82` → `main`).
+**À fusionner par l'utilisateur.** L'utilisateur enverra plus tard, depuis son iPad, une vraie maquette IFC pour éprouver
+l'import (et si possible un vrai DXF d'architecte) : à essayer en priorité dès réception, et corriger ce qui manque.
+
 ## Pour essayer la branche sur l'iPad
 La version publiée (GitHub Pages) est celle de `main`. Pour avoir les nouveautés dans l'appli de tous les jours, il faut
 fusionner la branche `claude/ecstatic-sagan-juah82` dans `main` : sur github.com, onglet « Pull requests » ›
 « New pull request » › base `main`, compare `claude/ecstatic-sagan-juah82` › « Create pull request » › « Merge ».
-(Claude peut préparer la demande de fusion si vous le lui demandez.) Vos plans ne sont pas touchés : le format passe
+(La demande n°7 est déjà prête : il suffit de l'ouvrir et de toucher « Merge pull request ».) Vos plans ne sont pas touchés : le format passe
 de v10 à v11 avec une copie de sécurité dans l'historique des versions.
 
 ## Essais à faire sur l'iPad (ce que les tests automatiques ne couvrent pas)

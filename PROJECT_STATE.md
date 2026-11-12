@@ -21,7 +21,7 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 6 | Documents et moteur de règles | ✅ terminée, **fusionnée dans `main` (demande n°5, avec le nouveau plan d'exemple, à la demande de l'utilisateur)**, **validée sur iPad** (5 novembre 2026) |
 | 7 | Chantier et variantes | ✅ terminée (demande de fusion n°6 à fusionner, essais iPad à faire) |
 | 8 | Validation finale | ⬜ |
-| — | Mission « développement autonome » (9 novembre 2026) : export DXF, quantitatif et chiffrage, correctifs | 🟨 en cours, branche `claude/ecstatic-sagan-juah82` |
+| — | Mission « développement autonome » (9 novembre 2026) : export DXF, quantitatif, sélection multiple, imports DXF et IFC, raccordement automatique, assistant | 🟨 en cours, branche `claude/ecstatic-sagan-juah82` ; **demande de fusion n°7 préparée le 12 novembre 2026, à fusionner par l'utilisateur** |
 
 ## Ce qui marche aujourd'hui (phases 3 et 4)
 - **Moteur de calcul** `js/calcul.js` (sans écran, testé avec Node) : intensité mono/tri, P/Q/S, cos φ, chute de tension, IB ≤ In, section/calibre, nombre de points, type de différentiel, calibre des différentiels (règle de l'amont / de l'aval), bilan de puissance, équilibrage des phases.
