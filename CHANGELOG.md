@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-12 — Suite de la mission (après la fusion n°9) : saisie des prix, import IFC sur de vraies maquettes
+- **Quantitatif plus réactif sur les très gros plans** : saisir un prix, un temps de pose, le taux horaire ou la TVA ne recalcule plus que les totaux (avant : pièces, gaines, contrôles et dessin du plan étaient refaits à chaque saisie). Mesure sur 100 logements (600 appareils) : environ 35 ms par saisie → environ 1 ms. Annuler/rétablir et l'enregistrement fonctionnent comme avant (une étape par saisie).
+- **Import IFC essayé sur six vraies maquettes publiques** (Revit 2011, 2015 et 2021 ; ArchiCAD 11 et 18 ; IFC 2x3 et IFC 4 ; fichiers gardés hors du dépôt). Quatre défauts trouvés et corrigés :
+  - **murs décrits « en facettes »** (Revit en IFC 4, ArchiCAD récent) : ils n'étaient pas lus. Ils sont repris par leur rectangle au sol quand ils le remplissent (mur droit) ; un mur courbe ou en L reste « non repris » (compté, jamais deviné). Maison Revit IFC 4 : 5 murs sur 5 (avant : 2) ; institut ArchiCAD : 119 sur 119 (avant : 117) ; Duplex Revit : 57 sur 57 (avant : 56) ;
+  - **portes et fenêtres sans réservation** dans la maquette : placées dans le mur qui les contient d'après leur propre volume (annoncées « à vérifier » dans le résumé de l'import) ;
+  - **morceaux d'un même mur empilés** (soubassement + élévation) : regroupés en un seul mur au lieu d'être dessinés l'un sur l'autre ; **murs posés en hauteur** (retombées sous plafond, « décalage de la base » de Revit) : plus dessinés au sol du niveau (comptés dans « non repris »), ou rangés dans le niveau où ils reposent ;
+  - **nom des pièces** : quand plusieurs locaux de la maquette tombent dans une même pièce du plan (séjour, cuisine et entrée ouverts), elle prend le nom du plus grand (avant : le premier venu, par exemple « Bathroom ») ; le point repère d'un local en L est maintenant toujours à l'intérieur.
+  - Résultat dans l'application : institut ArchiCAD (5 niveaux) : 82 pièces nommées sur 82 ; maison ArchiCAD « FZK-Haus » : conforme au plan connu ; maison Revit de 53 Mo lue en 1 s.
+  - Limite connue : une maquette « de construction » très détaillée (murs en plusieurs peaux séparées, menuiseries modélisées comme des murs) donne un plan chargé, à nettoyer à la main.
+- Service Worker : cache `calque-v39`. Tests : 155/155 (`tests/quantitatif.test.mjs` porté à 6, `tests/ifc.test.mjs` à 7).
+
 ## 2026-11-12 — Retours des essais iPad (après la fusion n°8)
 - **Outil Groupe, bouton « Actions… »** : en paysage, le panneau de droite affiche déjà toutes les actions du groupe ; le bouton n'y faisait donc rien de visible. Il disparaît en paysage (le bandeau indique « autres actions dans le panneau de droite ») ; en portrait et sur téléphone, il s'appelle « Actions du groupe », ouvre le panneau, puis devient « Fermer les actions ».
 - **Puissance souscrite** : les paliers s'affichent sur plusieurs lignes ; en triphasé, 6 à 36 kVA sont tous visibles sans faire défiler (avant : il fallait faire glisser la liste pour atteindre 36 kVA).

@@ -337,6 +337,20 @@ function commit() {
   refreshUI();
   emit(EV.PLAN_CHANGE, { cause: 'modification' });
 }
+/* modification qui ne touche ni le dessin ni l'électricité (prix et temps du chiffrage) : même étape d'annulation et
+   même enregistrement que commit(), mais sans recalculer les pièces, les gaines, les contrôles ni redessiner le plan.
+   `apres` met à jour l'écran concerné. Renvoie false si rien n'a changé. */
+function commitLeger(apres) {
+  const pk = packPlan(P, H.cur);
+  if (samePack(pk, H.cur)) return false;
+  H.u.push(H.cur); H.r.length = 0; H.cur = pk;
+  historyTrim();
+  scheduleSave();
+  updateUndo();
+  if (apres) apres();
+  emit(EV.PLAN_CHANGE, { cause: 'modification', leger: true });
+  return true;
+}
 function revert() { setP(unpackPlan(H.cur)); touch(); refreshUI(); emit(EV.PLAN_CHANGE, { cause: 'retour' }); }
 function undo() {
   if (!H.u.length) return;
@@ -1194,7 +1208,7 @@ function updateStatus() {
 }
 
 export { CLOSET_MODELS, DOOR_MODELS, GAP_MODELS, K_screen, OPENING_ART, OPENING_MODELS, OPENING_NAMES, SCENE,
-  SCENE_SLOW_MS, SCR, TAP, TOOLS, WIN_MODELS, clearWallLen, commit, contentBBox, coteLine, ctx, cv, downState, drag,
+  SCENE_SLOW_MS, SCR, TAP, TOOLS, WIN_MODELS, clearWallLen, commit, commitLeger, contentBBox, coteLine, ctx, cv, downState, drag,
   drawOverlay, drawSelShape, drawSnapMarker, drawWallTags, evPos, finishChain, fitView, focusField, gest, gridSnapItem,
   handleDot, handleDrag, handlesOf, hitTest, hitTol, ignoreUntilUp, interiorSide, isDoubleTap, keys, lastTap, linkTap,
   lockedWallPoint, magnetElec, magnetItem, makeElecFromDef, makeItemFromDef, makeRect, moveDrag, newOpening,

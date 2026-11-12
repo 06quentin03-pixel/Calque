@@ -47,6 +47,59 @@ test('fichiers non lisibles : rien n’est inventé', () => {
   const R = lireIfc(t); assert.equal(R.murs.length, 0); assert.equal(R.illisibles, 1); assert.deepEqual(R.ignores, { dalles: 1 });
 });
 
+/* maquette de synthèse écrite à la main, à la façon de Revit (IFC4) et d'ArchiCAD récent : murs en facettes, mur en
+   deux morceaux empilés, porte et fenêtre sans réservation (unité : mètres, repères à l'origine) */
+function ifcFacettes() {
+  const L = []; let n = 100;
+  const add = (txt) => { L.push(`#${++n}=${txt};`); return n; };
+  const pt = (p) => add(`IFCCARTESIANPOINT((${p.map((v) => v.toFixed(3)).join(',')}))`);
+  /* prisme vertical de base `poly` (sens quelconque), de z0 à z1, en IfcFacetedBrep */
+  const brep = (poly, z0, z1) => {
+    const b = poly.map(([x, y]) => pt([x, y, z0])), t = poly.map(([x, y]) => pt([x, y, z1])), faces = [];
+    const face = (ids) => { const l = add(`IFCPOLYLOOP((${ids.map((i) => '#' + i).join(',')}))`), o = add(`IFCFACEOUTERBOUND(#${l},.T.)`); faces.push(add(`IFCFACE((#${o}))`)); };
+    face([...b].reverse()); face(t);
+    for (let i = 0; i < poly.length; i++) { const j = (i + 1) % poly.length; face([b[i], b[j], t[j], t[i]]); }
+    const sh = add(`IFCCLOSEDSHELL((${faces.map((i) => '#' + i).join(',')}))`);
+    return add(`IFCFACETEDBREP(#${sh})`);
+  };
+  const forme = (items, type = 'Brep') => { const r = add(`IFCSHAPEREPRESENTATION($,'Body','${type}',(${items.map((i) => '#' + i).join(',')}))`); return add(`IFCPRODUCTDEFINITIONSHAPE($,$,(#${r}))`); };
+  const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const niv = add("IFCBUILDINGSTOREY('n',$,'Rez-de-chauss\\X2\\00E9\\X0\\e',$,$,$,$,$,.ELEMENT.,0.)");
+  const els = [];
+  /* mur nord en deux peaux de facettes dans la même représentation (5 m × 0,20 m, h 2,50 m) */
+  els.push(add(`IFCWALL('a',$,'Nord',$,$,$,#${forme([brep(rect(0, 0, 5, 0.12), 0, 2.5), brep(rect(0, 0.12, 5, 0.2), 0, 2.5)])},$)`));
+  /* même mur, morceau du dessus (2,50 → 3,00 m) en volume extrudé : un seul mur de 3 m attendu */
+  const o = pt([2.5, 0.1, 2.5]), ax = add(`IFCAXIS2PLACEMENT3D(#${o},$,$)`), pr = add('IFCRECTANGLEPROFILEDEF(.AREA.,$,$,5.,0.2)'), dz = add('IFCDIRECTION((0.,0.,1.))');
+  els.push(add(`IFCWALLSTANDARDCASE('b',$,'Nord haut',$,$,$,#${forme([add(`IFCEXTRUDEDAREASOLID(#${pr},#${ax},#${dz},0.5)`)], 'SweptSolid')},$)`));
+  /* mur ouest tourné de 90° (0,20 × 4 m) */
+  els.push(add(`IFCWALL('c',$,'Ouest',$,$,$,#${forme([brep(rect(0, 0, 0.2, 4), 0, 2.5)])},$)`));
+  /* mur en L d'un seul bloc : pas un mur droit, non repris */
+  els.push(add(`IFCWALL('d',$,'En L',$,$,$,#${forme([brep([[8, 0], [12, 0], [12, 4], [11.8, 4], [11.8, 0.2], [8, 0.2]], 0, 2.5)])},$)`));
+  /* porte de 0,90 × 2,10 m dans le mur nord, sans réservation ; fenêtre de 1,20 m à 0,95 m du sol dans le mur ouest ; fenêtre de toit hors de tout mur */
+  els.push(add(`IFCDOOR('e',$,'Porte',$,$,$,#${forme([brep(rect(2, 0.05, 2.9, 0.15), 0, 2.1)])},$,2.1,0.9)`));
+  els.push(add(`IFCWINDOW('f',$,'Fen\\X2\\00EA\\X0\\tre',$,$,$,#${forme([brep(rect(0.04, 1.4, 0.16, 2.6), 0.95, 2.2)])},$,$,$)`));
+  els.push(add(`IFCWINDOW('g',$,'Toit',$,$,$,#${forme([brep(rect(2, 2, 3, 3), 2.6, 2.7)])},$,$,$)`));
+  add(`IFCRELCONTAINEDINSPATIALSTRUCTURE('r',$,$,$,(${els.map((i) => '#' + i).join(',')}),#${niv})`);
+  return "ISO-10303-21;\nHEADER;\nFILE_SCHEMA(('IFC4'));\nENDSEC;\nDATA;\n" + L.join('\n') + '\nENDSEC;\nEND-ISO-10303-21;\n';
+}
+test('murs en facettes (Revit IFC4, ArchiCAD), morceaux empilés regroupés, porte et fenêtre sans réservation placées ; mur en L non deviné', () => {
+  const R = lireIfc(ifcFacettes());
+  assert.equal(R.schema, 'IFC4'); assert.equal(R.illisibles, 1, 'le mur en L n’est pas repris'); assert.equal(R.fusions, 1);
+  assert.deepEqual(R.murs.map((m) => [m.nom, m.th, Math.round(m.h), Math.round(m.z)]), [['Nord', 20, 300, 0], ['Ouest', 20, 250, 0]]);
+  const [nord, ouest] = R.murs;
+  /* axes : chaque mur s'arrête sur l'axe de l'autre (angle fermé) : nord de x = 0,10 à 5,00 m, ouest de y = 0,10 à 4,00 m */
+  assert.equal(Math.round(Math.abs(nord.a.x - nord.b.x)), 490);
+  assert.ok(Math.abs(Math.abs(nord.a.y - nord.b.y)) < 0.01 && Math.abs(ouest.a.x - ouest.b.x) < 0.01);
+  assert.equal(Math.round(Math.abs(ouest.a.y - ouest.b.y)), 390, 'du milieu du mur nord (y = 0,10) au bout (y = 4,00)');
+  assert.equal(nord.approx, true, 'mur en facettes : à vérifier');
+  /* ouvertures déduites de leur volume */
+  assert.deepEqual(R.ouvertures.map((o) => [o.kind, o.mur === nord.id ? 'nord' : 'ouest', Math.round(o.w), Math.round(o.h), Math.round(o.sill), o.deduite]),
+    [['door', 'nord', 90, 210, 0, true], ['window', 'ouest', 120, 125, 95, true]]);
+  const porte = R.ouvertures[0], x0 = Math.min(nord.a.x, nord.b.x);
+  assert.equal(Math.round(porte.x - x0), 235, 'milieu de la porte à 2,45 m de l’angle, soit 2,35 m de l’axe du mur ouest'); assert.ok(Math.abs(porte.y - nord.a.y) < 0.01);
+  assert.equal(R.ignores['portes ou fenêtres sans réservation dans un mur'], 1, 'la fenêtre de toit n’est pas placée');
+});
+
 test('import IFC dans l’application : nouveau plan avec 2 niveaux, murs, porte, fenêtre, pièces nommées ; l’ancien plan est gardé', async () => {
   const { ctx, page, errors } = await fresh();
   await boot(page);

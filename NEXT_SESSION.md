@@ -8,21 +8,21 @@ Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
 ```
 Projet Calque (dépôt 06quentin03-pixel/Calque), suite de la mission « développement autonome ».
-Les demandes de fusion n°7 et n°8 sont fusionnées dans main : pars de main, sur la branche de développement
+Les demandes de fusion n°7, n°8 et n°9 sont fusionnées dans main : pars de main, sur la branche de développement
 indiquée par la session (git fetch, puis checkout). Ne modifie jamais main toi-même : c'est moi qui fusionne
 (sauf si je te demande explicitement de fusionner une demande de fusion).
 
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (153/153 le 12 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (155/155 le 12 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.
-Pistes (ROADMAP.md, section « Mission ») : onglet Quantitatif plus réactif sur les très gros plans (≈ 80 ms par
-saisie) ; essais sur de vrais fichiers DXF (et IFC Revit / ArchiCAD) ; tableaux NF C 15-100 manquants quand je
-fournirai les extraits Legrand (ne rien inventer d'ici là).
+Pistes (ROADMAP.md, section « Mission ») : essais sur de vrais fichiers DXF d'architecte ; itinéraire des gaines
+d'un étage à l'autre ; tableaux NF C 15-100 manquants quand je fournirai les extraits Legrand (ne rien inventer
+d'ici là).
 
 Contraintes : celles de CLAUDE.md (données vérifiée/saisie/estimée, trois statuts, jamais de conformité globale si
 tout n'est pas vérifié, extraits Legrand seuls, migration PLAN_VERSION/MIGRATIONS avec test et copie de sécurité,
@@ -43,10 +43,13 @@ je débute sur GitHub et j'utilise un iPad.
 - La maquette IFC de l'utilisateur (« BERT_A.ifc ») a été essayée mais n'est pas dans le dépôt (données personnelles) :
   la lui redemander si besoin.
 
+- n°9 (bouton « Actions… » du Groupe, puissance souscrite) : fusionnée le 12 novembre 2026 ; essais iPad : « tout va bien ».
+- Travail suivant (saisie des prix plus rapide, import IFC Revit / ArchiCAD) : sur la branche `claude/beautiful-sagan-pd72qi`, pas encore fusionné.
+
 ## Pour essayer la branche sur l'iPad
 La version publiée (GitHub Pages) est celle de `main`. Pour avoir les nouveautés dans l'appli de tous les jours, il faut
-fusionner la branche `claude/ecstatic-sagan-juah82` dans `main` : sur github.com, onglet « Pull requests » ›
-« New pull request » › base `main`, compare `claude/ecstatic-sagan-juah82` › « Create pull request » › « Merge ».
+fusionner la branche de développement de la session (`claude/beautiful-sagan-pd72qi`) dans `main` : sur github.com, onglet « Pull requests » ›
+« New pull request » › base `main`, compare `claude/beautiful-sagan-pd72qi` › « Create pull request » › « Merge ».
 (La demande n°7 est fusionnée : ses nouveautés sont déjà dans `main`. Le travail suivant passera par la demande n°8.) Vos plans ne sont pas touchés : le format passe
 de v10 à v11 avec une copie de sécurité dans l'historique des versions.
 
@@ -75,6 +78,9 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage et en port
 12. **Assistant** (Menu › Assistant : où en est mon projet ?) : lisible en portrait, chaque bouton mène à la bonne page.
 13. Mise à jour de l'appli installée (bandeau « nouvelle version ») ; un ancien plan s'ouvre, Menu › Historique des
    versions montre « Copie de sécurité avant mise à jour du format (v10 → v11) ».
+
+14. **Quantitatif sur un gros plan** : saisir plusieurs prix à la suite : la saisie doit être immédiate, les totaux à jour, « Annuler » revient d'une saisie.
+15. **Import IFC** d'une maquette Revit ou ArchiCAD si vous en avez une : le résumé annonce les portes et fenêtres « placées d'après leur position » et les murs regroupés ; vérifier les pièces et leurs noms.
 
 ## Toujours en attente de vous
 - Extraits Legrand NF C 15-100 manquants (Iz, modes de pose, facteurs de correction, chutes de tension, simultanéité,

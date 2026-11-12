@@ -27,15 +27,18 @@ async function importIfc(file) {
   if (file.size > MAX_OCTETS) return refus(`Ce fichier fait ${Math.round(file.size / 1e6)} Mo : il est trop lourd pour être lu sur cet appareil (limite : 150 Mo). Demandez un export de l’architecture seule, sans les réseaux ni le mobilier.`);
   toast('Lecture de la maquette…'); await new Promise((r) => setTimeout(r, 30));
   let R; try { R = lireIfc(await file.text()); } catch (e) { console.error(e); R = null; }
-  if (!R || !R.murs.length) return refus(R && R.alertes.length ? R.alertes[0] : 'Aucun mur lisible dans ce fichier IFC (pas de mur, ou murs décrits autrement que par un volume extrudé).');
+  if (!R || !R.murs.length) return refus(R && R.alertes.length ? R.alertes[0] : 'Aucun mur lisible dans ce fichier IFC (pas de mur, ou murs courbes ou de forme complexe).');
   const nb = (k) => R.ouvertures.filter((o) => o.kind === k).length;
+  const deduites = R.ouvertures.filter((o) => o.deduite).length;
   const ign = Object.entries(R.ignores).map(([k, v]) => `${v} ${k}`).join(', ');
   openModal('Importer une maquette IFC',
     h('p', null, h('b', null, file.name), ` · ${R.schema || 'IFC'} · unité : ${R.unite.nom}`),
     kv([['Niveaux', R.niveaux.map((n) => `${n.nom} (${n.murs} murs${n.h ? '' : ', hauteur 2,50 m par défaut'})`).join(', ')], ['Murs', String(R.murs.length)], ['Portes', String(nb('door'))], ['Fenêtres', String(nb('window'))],
       nb('gap') ? ['Réservations sans menuiserie', String(nb('gap'))] : null, ['Locaux nommés', String(R.espaces.length)]]),
     h('p', { class: 'note' }, `Un nouveau plan sera créé ; le plan en cours est enregistré et n’est pas modifié. Chaque mur est repris par son axe, son épaisseur et sa hauteur.${R.murs.some((m) => m.approx) ? ' Certains murs ne sont pas rectangulaires : ils sont repris par leur plus grande longueur (à vérifier).' : ''}`),
-    R.illisibles ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${R.illisibles} mur${R.illisibles > 1 ? 's' : ''} non repris (géométrie non lue : murs courbes, inclinés ou décrits par des facettes).`) : null,
+    R.illisibles ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${R.illisibles} mur${R.illisibles > 1 ? 's' : ''} non repris (géométrie non lue : murs courbes, inclinés ou de forme complexe).`) : null,
+    deduites ? h('p', { class: 'note' }, `${deduites} porte${deduites > 1 ? 's' : ''} ou fenêtre${deduites > 1 ? 's' : ''} sans réservation dans la maquette : placée${deduites > 1 ? 's' : ''} dans le mur qui ${deduites > 1 ? 'les' : 'la'} contient, d’après ${deduites > 1 ? 'leur' : 'sa'} position (à vérifier).`) : null,
+    R.fusions ? h('p', { class: 'note' }, `${R.fusions} morceau${R.fusions > 1 ? 'x' : ''} de mur superposé${R.fusions > 1 ? 's' : ''} (même axe, même épaisseur) regroupé${R.fusions > 1 ? 's' : ''} avec ${R.fusions > 1 ? 'leur' : 'son'} mur.`) : null,
     ign ? h('p', { class: 'note' }, `Non repris dans le plan : ${ign}.`) : null,
     btns(btn('Créer le plan', () => creerPlan(R, file.name), 'pri'), btn('Annuler', closeModal)));
   return true;
@@ -68,11 +71,16 @@ async function creerPlan(R, nomFichier) {
     clampOpening(op); no++;
   }
   touch(); syncRooms();
+  /* nom des pièces : quand plusieurs locaux de la maquette tombent dans une même pièce du plan (séjour, cuisine et entrée
+     ouverts l'un sur l'autre), elle prend le nom du plus grand */
+  const choisi = new Map();
   for (const e of R.espaces) {
     const lv = idNiv.get(e.niveau); if (!lv) continue;
-    const room = geo(lv).rooms.find((r) => r.label && /^Pièce \d+$/.test(r.label.name) && inPoly(e, r.poly));
-    if (room) { room.label.name = e.nom; nn++; }
+    const room = geo(lv).rooms.find((r) => r.label && inPoly(e, r.poly) && !(r.holes || []).some((t) => inPoly(e, t)));
+    if (!room) continue;
+    const c = choisi.get(room.label); if (!c || (e.aire || 0) > (c.aire || 0)) choisi.set(room.label, e);
   }
+  for (const [label, e] of choisi) { label.name = e.nom; nn++; }
   touch(); historyReset(); ui.inspOpen = false; refreshUI(); fitView(); scheduleSave();
   toast(`Maquette importée : ${P.levels.length} niveau${P.levels.length > 1 ? 'x' : ''}, ${nm} murs, ${no} ouvertures${nn ? `, ${nn} pièce${nn > 1 ? 's nommées' : ' nommée'}` : ''}. Vérifiez les cotes avant d’implanter l’électricité.`);
   return { murs: nm, ouvertures: no, noms: nn };
