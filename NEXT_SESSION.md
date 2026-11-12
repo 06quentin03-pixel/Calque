@@ -14,7 +14,7 @@ c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (149/149 le 12 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (151/151 le 12 novembre 2026).
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
 chaque étape. Priorités : 1) bugs et sécurité des données, 2) amélioration de l'existant, 3) fonctions manquantes.
@@ -56,6 +56,7 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage et en port
 4. **Import d'un vrai plan DXF d'architecte** (Menu › Importer un fond de plan) : unité proposée et dimensions
    annoncées ; retirer des calques ; avec « Créer aussi les murs » : regarder ce qui est bien reconnu et ce qui ne l'est
    pas (m'envoyer le fichier ou une capture si le résultat est mauvais : c'est le point le moins éprouvé).
+4 bis. Avec un DXF importé en fond (sans « Créer aussi les murs ») : outil Mur au Pencil, toucher près des coins des murs du dessin : le repère carré apparaît et le mur se place sur l'axe.
 5. **Import d'une vraie maquette IFC** (Menu › Importer une maquette IFC), si vous en avez une (export Revit ou
    ArchiCAD) : niveaux, murs, portes et fenêtres ; me signaler ce qui manque.
 6. **Raccordement automatique** (Tableau électrique › Cheminements › « Raccorder les circuits incomplets ») sur un de

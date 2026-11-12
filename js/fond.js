@@ -6,6 +6,7 @@ import { DEG, EXT, P, inPoly, projSeg, touch, ui, uid } from './noyau.js';
 import { geo, syncRooms } from './geometrie.js';
 import { addWall, clampOpening } from './mutations.js';
 import { reconnaitreMurs, segmentsDuDxf } from './dxfmurs.js';
+import { enregistrerTraits, etatTraits } from './fondtraits.js';
 import { V } from './rendu2d.js';
 import { commit, cv, newOpening, requestRender } from './interaction.js';
 import { btn, btns, closeModal, confirmBtn, h, openModal, renderInspector, sec, setTool, toast, updateHint } from './interface.js';
@@ -134,8 +135,8 @@ function dxfImage(maxSide) {
   const W = z.x1 - z.x0, H = z.y1 - z.y0, k = maxSide / Math.max(W, H);
   const cvs = document.createElement('canvas'); cvs.width = Math.max(1, Math.round(W * k)); cvs.height = Math.max(1, Math.round(H * k));
   const c = cvs.getContext('2d'); c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, cvs.width, cvs.height);
-  dessinerDxf(c, R, z, cvs.width, cvs.height, { calques: DXF.calques, trait: maxSide > 2000 ? 2 : 1 });
-  return { cvs, em, W, H, k };
+  const kd = dessinerDxf(c, R, z, cvs.width, cvs.height, { calques: DXF.calques, trait: maxSide > 2000 ? 2 : 1 });
+  return { cvs, em, W, H, k, z, kd };
 }
 function dxfModal() {
   const R = DXF.R, noms = [...R.calques.entries()].filter(([, c]) => c.n > 0).sort((a, b) => b[1].n - a[1].n);
@@ -158,6 +159,23 @@ function dxfModal() {
     btns(btn('Importer comme fond de plan', dxfValider, 'pri'), btn('Annuler', closeModal)),
   ];
 }
+/* traits du dessin pour l'accrochage (fondtraits.js) : sommets des traits droits et axes des murs reconnus,
+   en pixels de l'image du fond ; enregistrés sur l'appareil, hors du plan */
+function traitsDuFond(key, im, cm) {
+  try {
+    const R = DXF.R, z = im.z, kd = im.kd, h = im.cvs.height;
+    const px = (X, Y) => [(X - z.x0) * kd, h - (Y - z.y0) * kd];
+    const points = [];
+    for (const t of R.traits) {
+      if ((DXF.calques && !DXF.calques.has(t.l)) || t.arc || t.courbe) continue;
+      for (let i = 0; i < t.p.length && points.length < 400000; i += 2) points.push(...px(t.p[i], t.p[i + 1]));
+    }
+    const { segments, arcs } = segmentsDuDxf(R, DXF.calques, (X, Y) => ({ x: X * cm, y: -Y * cm }), cm);
+    const axes = [];
+    for (const m of reconnaitreMurs(segments, arcs).murs) axes.push(...px(m.a.x / cm, -m.a.y / cm), ...px(m.b.x / cm, -m.b.y / cm));
+    enregistrerTraits(key, points, axes).catch(() => { });
+  } catch (e) { console.error(e); }
+}
 function dxfValider() {
   const im = dxfImage(MAX_SIDE); if (!im) { toast('Aucun trait dans les calques choisis.'); return; }
   let src = im.cvs.toDataURL('image/jpeg', 0.86);
@@ -166,13 +184,16 @@ function dxfValider() {
   const cm = UNITES[DXF.u].cm, old = fondOf(ui.lv);
   const center = { x: (cv.clientWidth / 2 - V.ox) / V.s, y: (cv.clientHeight / 2 - V.oy) / V.s };
   const key = uid('img'); P.fondImg[key] = src;
-  /* échelle exacte : 1 pixel = (unité du fichier en cm) / (pixels par unité) */
-  const f = { id: uid('f'), lv: ui.lv, img: key, name: DXF.nom.slice(0, 120), wpx: im.cvs.width, hpx: im.cvs.height, s: cm / im.k, cx: Math.round(center.x), cy: Math.round(center.y), rot: 0, op: 0.6, visible: true, cal: true };
+  /* échelle exacte : 1 pixel = (unité du fichier en cm) / (pixels par unité réellement dessinés, après arrondi de la taille de l'image) */
+  const f = { id: uid('f'), lv: ui.lv, img: key, name: DXF.nom.slice(0, 120), wpx: im.cvs.width, hpx: im.cvs.height, s: cm / im.kd, cx: Math.round(center.x), cy: Math.round(center.y), rot: 0, op: 0.6, visible: true, cal: true };
   if (old) { P.fonds.splice(P.fonds.indexOf(old), 1); if (!P.fonds.some((x) => x.img === old.img)) delete P.fondImg[old.img]; }
-  P.fonds.push(f); im.cvs.width = im.cvs.height = 0;
+  P.fonds.push(f);
+  traitsDuFond(key, im, cm);
+  im.cvs.width = im.cvs.height = 0;
   let murs = null;
   if (DXF.murs) {
-    const Xc = (im.em.x0 + im.em.x1) / 2, Yc = (im.em.y0 + im.em.y1) / 2;
+    /* point du fichier au centre de l'image (le centre du fond) */
+    const Xc = im.z.x0 + f.wpx / 2 / im.kd, Yc = im.z.y0 + f.hpx / 2 / im.kd;
     try { murs = dxfMurs(DXF.R, DXF.calques, (X, Y) => ({ x: f.cx + (X - Xc) * cm, y: f.cy - (Y - Yc) * cm }), cm); } catch (e) { console.error(e); murs = null; toast('Reconnaissance des murs impossible sur ce dessin.'); }
     if (murs && murs.murs) f.op = 0.35;
   }
@@ -331,6 +352,7 @@ function fondSection() {
     btns(btn(vis ? 'Masquer' : 'Afficher', () => { f.visible = !vis; commit(); }, 'sm'),
       btn('Remplacer', pickFond, 'sm', 'img'),
       confirmBtn('Retirer', 'Confirmer ?', () => { P.fonds.splice(P.fonds.indexOf(f), 1); if (!P.fonds.some((x) => x.img === f.img)) delete P.fondImg[f.img]; commit(); toast('Fond retiré (Annuler pour le récupérer).'); })),
+    /\.dxf$/i.test(f.name || '') ? h('p', { class: 'note' }, (() => { const e = etatTraits(f.img); return e === false ? 'Accrochage aux traits du dessin indisponible sur cet appareil : réimportez le fichier DXF pour en profiter.' : 'Accrochage aux traits du dessin : les outils Mur et Pièce s’accrochent aux axes des murs du dessin, les autres outils aux extrémités des traits.'; })()) : null,
     h('p', { class: 'note' }, 'Le fond aide à dessiner : il n’apparaît pas dans les exports PDF et image.'));
 }
 

@@ -101,7 +101,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Correction des gaines après « Régénérer depuis le plan » et après la suppression d'un circuit (3 tests).
 - ✅ Relier les appareils sans circuit sans toucher aux circuits existants (`js/affectation.js`, 3 tests).
 - ✅ Rappel de la sauvegarde complète (`js/sauvegarde.js`, `js/rappelui.js`, 3 tests).
-- ⬜ Suite envisagée, par ordre de valeur : accrochage aux traits d'un fond DXF (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
+- ✅ Accrochage aux traits d'un fond DXF (axes des murs pour Mur et Pièce) (`js/fondtraits.js`, 2 tests).
+- ⬜ Suite envisagée, par ordre de valeur : (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

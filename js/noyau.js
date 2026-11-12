@@ -199,7 +199,8 @@ const C = {};
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
 const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {},
-  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [] };
+  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [] };
+/* snap[] (p, tol) → { x, y, kind, guides } : accrochage ajouté par un module (traits d'un fond DXF), après les angles des murs */
 /* top[] (c, lv, opts) : dessiné au-dessus du plan ; hit[] (p, tol) → { t, id } avant les objets du plan ;
    obj[t](id) : objet sélectionné d'un type ajouté ; del[t](id) : suppression ; inspVide() : inspecteur sans sélection ;
    selectDown(wp, sp) : remplace l'outil Sélection s'il renvoie un geste ; view[] (v) : appelé au changement de vue */ // insp : inspecteur d'un type d'objet ajouté par un module
