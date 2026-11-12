@@ -10,7 +10,8 @@ import { CALS, CK, KIND_ORDER, KVA_PALIERS, SECS, SEC_MAX, agcpLabel, agcpOf, ci
 import { closeDimEdit, ductPts, ductVisible, elecVisible, resetFilters, updateFilterUI } from './reseaux.js';
 import { SCR, commit, finishChain, refreshUI, requestRender, resizeCanvas } from './interaction.js';
 import { btn, btns, chipRow, closePops, elecThumb, h, kv, sec, segCtl, textField, toast, updateHint } from './interface.js';
-import { slug } from './stockage.js';
+import { addVersion, slug } from './stockage.js';
+import { snapshot } from './historique.js';
 import { openFileModal } from './export.js';
 import { pastille, rapportDuPlan, rapportView } from './reglesui.js';
 import { v3Show } from './vue3d.js';
@@ -296,7 +297,12 @@ function renderEvSide() {
   kids.push(h('div', { class: 'btns ev-actions' },
     aRelier ? btn(`Relier les appareils sans circuit (${aRelier})`, relierAppareils, 'pri', 'plus') : null,
     P.circuits.length
-      ? confirmBtnPlain('Régénérer depuis le plan', 'Remplacer les circuits ?', () => { generateFromPlan(); ui.evSel = null; commit(); toast('Tableau régénéré à partir du plan.'); })
+      ? confirmBtnPlain('Régénérer depuis le plan', 'Remplacer tous les circuits ?', () => {
+        /* copie de sécurité dans l'historique des versions : les circuits remplacés restent récupérables même après fermeture */
+        if (!ui.isExample && P.id) addVersion(P.id, P.name || 'Plan', snapshot(), 'Copie de sécurité avant « Régénérer depuis le plan »').catch(() => { });
+        const r = generateFromPlan(); ui.evSel = null; commit();
+        toast(`Tableau régénéré : ${P.circuits.length} circuits${r.identiques ? `, dont ${r.identiques} inchangé${r.identiques > 1 ? 's' : ''} (nom et données saisies gardés)` : ''}. Les gaines suivent leurs circuits. Copie de l’ancien tableau dans l’historique des versions.`);
+      })
       : btn('Générer depuis le plan', () => { generateFromPlan(); ui.evSel = null; commit(); toast(`${P.circuits.length} circuits et ${P.rcds.length} différentiels créés.`); }, 'pri', 'plus'),
     btn('Circuit', addCircuit, 'sm', 'plus'), btn('Différentiel', addRcd, 'sm', 'plus')));
   if (!P.circuits.length && !P.rcds.length) {
@@ -402,7 +408,13 @@ function circuitEditor(c) {
     sec(null, btns(
       btn('Monter', () => { moveIn(P.circuits, c, -1, (x) => x.rcd === c.rcd); commit(); }, 'sm'),
       btn('Descendre', () => { moveIn(P.circuits, c, 1, (x) => x.rcd === c.rcd); commit(); }, 'sm'),
-      btn('Supprimer', () => { for (const e of P.elec) if (e.cid === c.id) delete e.cid; P.circuits = P.circuits.filter((x) => x !== c); ui.evSel = null; commit(); }, 'sm danger', 'del'))));
+      btn('Supprimer', () => {
+        for (const e of P.elec) if (e.cid === c.id) delete e.cid;
+        /* gaines : le circuit supprimé n'y passe plus ; case « posé » du chantier retirée */
+        for (const d of P.ducts) { if (d.cid === c.id) delete d.cid; if (Array.isArray(d.cids)) { d.cids = d.cids.filter((x) => x !== c.id); if (!d.cids.length) delete d.cids; } }
+        if (P.chantier && P.chantier.poses && P.chantier.poses.circ) delete P.chantier.poses.circ[c.id];
+        P.circuits = P.circuits.filter((x) => x !== c); ui.evSel = null; commit();
+      }, 'sm danger', 'del'))));
 }
 function showCircuitOnPlan(cid) {
   const ms = circMembers(cid);

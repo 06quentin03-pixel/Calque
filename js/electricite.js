@@ -145,7 +145,36 @@ function namesOf(labels, prefix, lvName) {
   if (L.length <= 3) return prefix + ' ' + L.join(', ');
   return prefix + ' ' + L.slice(0, 2).join(', ') + ' et ' + (L.length - 2) + ' autres';
 }
+/* après une régénération, chaque ancien circuit est associé au nouveau circuit qui reprend le plus de ses appareils :
+   les gaines (cid, cids) et la case « posé » du chantier suivent ; un circuit reformé à l'identique (mêmes appareils,
+   même type) garde aussi son nom, ses données de calcul saisies, son option DDA, sa commande, son calibre et sa section.
+   anciens : P.circuits d'avant ; avant : Map id d'appareil → ancien circuit. Renvoie { suivis, identiques }. */
+function reporterCircuits(anciens, avant) {
+  const membres = (cid, m) => P.elec.filter((e) => m(e) === cid).map((e) => e.id).sort();
+  const nouveauDe = new Map(); let identiques = 0;
+  for (const o of anciens) {
+    const ids = membres(o.id, (e) => avant.get(e.id)); if (!ids.length) continue;
+    const compte = new Map(); for (const id of ids) { const e = IDX.elec.get(id); if (e && e.cid) compte.set(e.cid, (compte.get(e.cid) || 0) + 1); }
+    let best = null; for (const [k, n] of compte) if (!best || n > best[1]) best = [k, n];
+    if (!best) continue;
+    nouveauDe.set(o.id, best[0]);
+    const c = P.circuits.find((x) => x.id === best[0]);
+    if (c && c.kind === o.kind && JSON.stringify(membres(c.id, (e) => e.cid)) === JSON.stringify(ids) && ![...nouveauDe.entries()].some(([k, v]) => k !== o.id && v === c.id)) {
+      for (const k of ['name', 'calc', 'dda', 'ctrl', 'cal', 'sec']) if (o[k] !== undefined) c[k] = o[k];
+      identiques++;
+    }
+  }
+  for (const d of P.ducts || []) {
+    if (d.sys !== 'elec') continue;
+    if (d.cid) { const n = nouveauDe.get(d.cid); if (n) d.cid = n; else delete d.cid; }
+    if (Array.isArray(d.cids)) { const l = [...new Set(d.cids.map((x) => nouveauDe.get(x)).filter((x) => x && x !== d.cid))]; if (l.length) d.cids = l; else delete d.cids; }
+  }
+  const pc = P.chantier && P.chantier.poses && P.chantier.poses.circ;
+  if (pc) for (const [k, v] of Object.entries(pc)) { delete pc[k]; const n = nouveauDe.get(k); if (n && !(n in pc)) pc[n] = v; }
+  return { suivis: nouveauDe.size, identiques };
+}
 function generateFromPlan() {
+  const anciens = (P.circuits || []).slice(), avant = new Map(P.elec.filter((e) => e.cid).map((e) => [e.id, e.cid]));
   const circs = [];
   const mk = (kind, name, extra) => { const k = CK[kind]; const c = Object.assign({ id: uid('c'), kind, name, cal: k.cal, sec: k.sec, rcd: null, dda: false, ctrl: k.ctrl || null }, extra || {}); circs.push(c); return c; };
   for (const e of P.elec) delete e.cid;
@@ -265,6 +294,7 @@ function generateFromPlan() {
   P.circuits = circs;
   assignRcds();
   if (!P.install) P.install = defaultInstall();
+  return anciens.length ? reporterCircuits(anciens, avant) : { suivis: 0, identiques: 0 };
 }
 function assignRcds() {
   const circs = P.circuits;

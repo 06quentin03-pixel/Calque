@@ -134,7 +134,7 @@ const TOL_JONCTION = 3; // cm : une extrémité libre à moins de 3 cm d'une aut
 const PASSIFS = new Set(['tableau', 'tab_div', 'derivation', 'gtl', TRAVERSEE]);
 const GCACHE = new WeakMap();
 function signature(plan) {
-  return JSON.stringify([(plan.ducts || []).filter(isElecDuct), (plan.elec || []).map((e) => [e.id, e.lv, e.type, e.x, e.y, e.rot, e.h, e.to, e.cid]), (plan.levels || []).map((l) => [l.id, l.elev, l.h])]);
+  return JSON.stringify([(plan.circuits || []).map((c) => c.id), (plan.ducts || []).filter(isElecDuct), (plan.elec || []).map((e) => [e.id, e.lv, e.type, e.x, e.y, e.rot, e.h, e.to, e.cid]), (plan.levels || []).map((l) => [l.id, l.elev, l.h])]);
 }
 function grapheGaines(plan) {
   const sig = signature(plan), hit = GCACHE.get(plan);
@@ -208,7 +208,11 @@ function grapheGaines(plan) {
       }
     }
   }
-  const G = { nodes, adj, edges, ducts: new Map(ducts.map((d) => [d.id, d])), E };
+  /* circuits portés par chaque gaine, sans ceux qui n'existent plus (circuit supprimé, tableau régénéré) :
+     une gaine dont tous les circuits ont disparu redevient utilisable par tous */
+  const valides = new Set((plan.circuits || []).map((c) => c.id));
+  const portes = new Map(ducts.map((d) => [d.id, circuitsDe(d).filter((id) => valides.has(id))]));
+  const G = { nodes, adj, edges, ducts: new Map(ducts.map((d) => [d.id, d])), portes, E };
   GCACHE.set(plan, { sig, G });
   return G;
 }
@@ -229,7 +233,7 @@ function plusCourts(G, src, cid) {
     if (done.has(u)) continue; done.add(u);
     if (u !== src && !passable(u)) continue; // on peut y arriver, pas en repartir
     for (const e of G.adj.get(u) || []) {
-      if (e.duct && cid && !gainePourCircuit(G.ducts.get(e.duct), cid)) continue;
+      if (e.duct && cid) { const l = G.portes ? G.portes.get(e.duct) : circuitsDe(G.ducts.get(e.duct)); if (l && l.length && !l.includes(cid)) continue; }
       const w = e.a === u ? e.b : e.a, nd = du + e.h + e.v;
       if (nd < (D.has(w) ? D.get(w) : Infinity) - 1e-9) { D.set(w, nd); prev.set(w, e); Q.push([nd, w]); }
     }
