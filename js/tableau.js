@@ -6,7 +6,7 @@ import { ELEC_BY } from './symboles.js';
 import { FONT_UI, V } from './rendu2d.js';
 import { CALS, CK, KIND_ORDER, KVA_PALIERS, SECS, SEC_MAX, agcpLabel, agcpOf, circById, circMembers, circNumbers, circStats,
   circuitColor, defaultInstall, fmtCount, generateFromPlan, nfcChecks, orderCircuits, panelLayout, rcdById,
-  rcdCircuits, rcdLoad, rcdNumbers } from './electricite.js';
+  rcdCircuits, rcdLoad, rcdNumbers, roomAt } from './electricite.js';
 import { closeDimEdit, ductPts, ductVisible, elecVisible, resetFilters, updateFilterUI } from './reseaux.js';
 import { SCR, commit, finishChain, refreshUI, requestRender, resizeCanvas } from './interaction.js';
 import { btn, btns, chipRow, closePops, elecThumb, h, kv, sec, segCtl, textField, toast, updateHint } from './interface.js';
@@ -17,6 +17,7 @@ import { v3Show } from './vue3d.js';
 import { bilanView, ficheButton } from './fiche.js';
 import { metresView } from './metres.js';
 import { quantPatch, quantView } from './quantitatifui.js';
+import { nbSansCircuit, relierSansCircuit } from './affectation.js';
 
 /* ============================================================
    CALQUE — onglet « Tableau électrique »
@@ -291,7 +292,9 @@ function renderEvSide() {
       h('p', { class: 'note' }, inst.reseau ? (inst.reseau === 'tri' ? 'Calculs en triphasé : choisissez la phase de chaque circuit dans sa fiche de calcul.' : 'Calculs en monophasé 230 V.') : 'Non précisé : les calculs retiennent le monophasé (valeur estimée).')),
     sec('Coffret', segCtl([{ v: 13, n: '13 modules par rangée' }, { v: 18, n: '18 modules' }], inst.row || 13, (v) => { inst.row = v; commit(); })),
     kv([['Surface des pièces', fmtArea(totalSurface())], ['Liaisons commandes', String(P.links.length)]])));
+  const aRelier = P.circuits.length ? nbSansCircuit(P) : 0;
   kids.push(h('div', { class: 'btns ev-actions' },
+    aRelier ? btn(`Relier les appareils sans circuit (${aRelier})`, relierAppareils, 'pri', 'plus') : null,
     P.circuits.length
       ? confirmBtnPlain('Régénérer depuis le plan', 'Remplacer les circuits ?', () => { generateFromPlan(); ui.evSel = null; commit(); toast('Tableau régénéré à partir du plan.'); })
       : btn('Générer depuis le plan', () => { generateFromPlan(); ui.evSel = null; commit(); toast(`${P.circuits.length} circuits et ${P.rcds.length} différentiels créés.`); }, 'pri', 'plus'),
@@ -437,6 +440,15 @@ function goToRef(ref) {
   if (ref.t === 'room') { const r = roomOfLabel(obj); if (r) p = labelPoint(r.poly); }
   if (ref.t === 'opening' && obj) { const wg = geo(lv).walls.get(obj.wall); if (wg) p = vadd(wg.A, vmul(wg.d, obj.t)); }
   if (p) requestAnimationFrame(() => { V.s = Math.max(V.s, 0.9); V.ox = SCR.w / 2 - p.x * V.s; V.oy = SCR.h / 2 - p.y * V.s; requestRender(); });
+}
+/* relie les appareils sans circuit, sans modifier les circuits existants (affectation.js) ; une seule étape d'annulation */
+function relierAppareils() {
+  const r = relierSansCircuit(P, { piece: (e) => { const q = roomAt(e); return q && q.label ? { id: q.label.id, nom: q.label.name } : null; } });
+  for (const a of r.affectations) { const e = IDX.elec.get(a.id); if (e) e.cid = a.cid; }
+  P.circuits.push(...r.circuits); P.rcds.push(...r.rcds);
+  if (r.affectations.length) commit();
+  const n = r.affectations.length, k = r.circuits.length, sans = r.circuits.filter((c) => !c.rcd).length;
+  toast(n ? `${n} appareil${n > 1 ? 's reliés' : ' relié'}${k ? `, ${k} circuit${k > 1 ? 's créés' : ' créé'}` : ' à des circuits existants'}${sans ? ` (${sans} sans différentiel libre : à rattacher)` : ''}${r.restants.length ? ` ; ${r.restants.length} sans circuit adapté` : ''}. Les circuits existants n’ont pas changé.` : 'Aucun appareil à relier.');
 }
 function renderEvMain() {
   /* contrôles : moteur de règles (regles.js), trois statuts, source et édition de chaque règle */

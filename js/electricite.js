@@ -427,7 +427,7 @@ function nfcChecks() {
   }
   const lightsOnPlan = P.elec.filter((e) => LIGHTS.has(e.type));
   const orphans = P.elec.filter((e) => !NO_CIRCUIT.has(e.type) && !e.cid && !(ALARM.has(e.type) && e.type !== 'centrale'));
-  if (orphans.length) addR('cq_sans_circuit', 'warn', G2, `${orphans.length} symbole${orphans.length > 1 ? 's' : ''} du plan sans circuit (${[...new Set(orphans.map((e) => (ELEC_BY.get(e.type) || {}).n))].slice(0, 3).join(', ')}${orphans.length > 3 ? '…' : ''}).`, { t: 'elec', id: orphans[0].id });
+  if (orphans.length) addR('cq_sans_circuit', 'warn', G2, `${orphans.length} symbole${orphans.length > 1 ? 's' : ''} du plan sans circuit (${[...new Set(orphans.map((e) => (ELEC_BY.get(e.type) || {}).n))].slice(0, 3).join(', ')}${orphans.length > 3 ? '…' : ''}). « Relier les appareils sans circuit » (tableau) les rattache sans modifier les circuits existants.`, { t: 'elec', id: orphans[0].id });
   const mainRooms = [];
   for (const L of P.levels) for (const r of geo(L.id).rooms) if (r.label && /s[ée]jour|chambre|salon/i.test(r.label.name)) mainRooms.push(r);
   if (mainRooms.length >= 2 && lightsOnPlan.length && nLight < 2) addR('cq_ecl_2', 'err', G2, `${nLight} circuit d'éclairage : il en faut au moins 2 quand le logement a 2 pièces principales ou plus.`, null);

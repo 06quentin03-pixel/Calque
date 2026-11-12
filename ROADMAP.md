@@ -97,6 +97,7 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Import d'une maquette IFC 2x3 / 4 dans un nouveau plan (`js/ifcimport.js`, `js/ifcui.js`, 5 tests).
 - ✅ Assistant « Où en est mon projet ? » (`js/assistant.js`, `js/assistantui.js`, 2 tests).
 - ✅ Équipement minimal d'une pièce ou d'un niveau, posé d'un geste (`js/equipement.js`, `js/equipementui.js`, 4 tests).
+- ✅ Relier les appareils sans circuit sans toucher aux circuits existants (`js/affectation.js`, 3 tests).
 - ✅ Rappel de la sauvegarde complète (`js/sauvegarde.js`, `js/rappelui.js`, 3 tests).
 - ⬜ Suite envisagée, par ordre de valeur : accrochage aux traits d'un fond DXF (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 

@@ -96,7 +96,7 @@ test('écran : « Équiper toutes les pièces du niveau », contrôles des pièc
     return { n: N.P.elec.length, liens: N.P.links.length, undo: H.H.u.length, err: El.nfcChecks().filter((c) => rids.includes(c.rid) && c.sev !== 'ok').map((c) => c.msg), ok: El.nfcChecks().filter((c) => c.rid === 'cq_socles_piece' && c.sev === 'ok').length, toast: document.getElementById('toast').textContent };
   });
   assert.equal(r.undo, u0 + 1, 'une seule étape'); assert.deepEqual(r.err, []); assert.equal(r.ok, 4);
-  assert.equal(r.liens, 4); assert.ok(r.n >= 7 + 6 + 1 + 3 + 1 + 8, `${r.n} appareils`); assert.match(r.toast, /appareils posés dans 4 pièces.*Régénérer depuis le plan/);
+  assert.equal(r.liens, 4); assert.ok(r.n >= 7 + 6 + 1 + 3 + 1 + 8, `${r.n} appareils`); assert.match(r.toast, /appareils posés dans 4 pièces.*Relier les appareils sans circuit/);
   assert.equal(await page.locator('#insp >> text=Équiper toutes les pièces du niveau').count(), 0, 'plus rien à poser');
   await page.click('#btnUndo'); await wait(page, 200);
   assert.deepEqual(await page.evaluate(async () => { const P = (await import('./js/noyau.js')).P; return [P.elec.length, P.links.length]; }), [0, 0]);

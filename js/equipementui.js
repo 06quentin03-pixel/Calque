@@ -1,7 +1,8 @@
 /* Calque — module « equipementui » : section « Équipement minimal » de l'inspecteur d'une pièce et du niveau.
    Pose, en une seule étape d'« Annuler », les prises, la sortie 32 A, le point lumineux et sa commande qui manquent
    d'après les règles de contrôle de Calque (calculs dans equipement.js, sans écran). Les symboles posés ne sont reliés
-   à aucun circuit : « Régénérer depuis le plan » (onglet Tableau électrique) les répartit. */
+   à aucun circuit : « Relier les appareils sans circuit » (onglet Tableau électrique, affectation.js) les rattache
+   sans modifier les circuits existants. */
 import { IDX, P, ui, uid } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { commit } from './interaction.js';
@@ -21,7 +22,7 @@ function poser(lv, prop) {
 }
 function message(n, impossibles, pieces) {
   if (!n && !impossibles) return 'Rien à ajouter : l’équipement minimal est déjà présent.';
-  return `${n} appareil${n > 1 ? 's posés' : ' posé'}${pieces > 1 ? ` dans ${pieces} pièces` : ''}${impossibles ? ` ; ${impossibles} sans place libre le long des murs` : ''}. Vérifiez les positions, puis « Régénérer depuis le plan » (Tableau électrique) pour les relier aux circuits.`;
+  return `${n} appareil${n > 1 ? 's posés' : ' posé'}${pieces > 1 ? ` dans ${pieces} pièces` : ''}${impossibles ? ` ; ${impossibles} sans place libre le long des murs` : ''}. Vérifiez les positions, puis « Relier les appareils sans circuit » (Tableau électrique) : ils rejoignent les circuits sans modifier ceux qui existent.`;
 }
 function equiperUne(lbl) {
   const r = roomOfLabel(lbl); if (!r) return;

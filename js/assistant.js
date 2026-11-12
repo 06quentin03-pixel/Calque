@@ -34,7 +34,7 @@ function avancement(plan, ctx) {
   const orph = elec.filter((e) => !NO_CIRCUIT.has(e.type) && !e.cid && !(ALARM.has(e.type) && e.type !== 'centrale'));
   if (!app.length) add('tableau', 'Générer le tableau électrique', 'attente', 'Après l’implantation des appareils.');
   else if (!circuits.length) add('tableau', 'Générer le tableau électrique', 'afaire', 'Aucun circuit : onglet Tableau électrique › « Générer depuis le plan ».', 'tableau');
-  else add('tableau', 'Générer le tableau électrique', orph.length ? 'attention' : 'fait', `${pl(circuits.length, 'circuit')}, ${pl((plan.rcds || []).length, 'différentiel')}.${orph.length ? ` ${pl(orph.length, 'appareil')} sans circuit : régénérez le tableau ou reliez-les à la main.` : ''}`, orph.length ? 'tableau' : null);
+  else add('tableau', 'Générer le tableau électrique', orph.length ? 'attention' : 'fait', `${pl(circuits.length, 'circuit')}, ${pl((plan.rcds || []).length, 'différentiel')}.${orph.length ? ` ${pl(orph.length, 'appareil')} sans circuit : « Relier les appareils sans circuit » les rattache sans modifier les circuits existants.` : ''}`, orph.length ? 'tableau' : null);
   /* 4. contrôles (jamais « conforme » ici : renvoi au rapport) */
   if (!circuits.length) add('controles', 'Voir le rapport de contrôle', 'attente', 'Après la génération du tableau.');
   else if (!c.rapport) add('controles', 'Voir le rapport de contrôle', 'afaire', 'Onglet Tableau électrique › Contrôle NF C 15-100.', 'controles');
