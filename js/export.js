@@ -15,6 +15,7 @@ import { exportUserLib, importUserLib } from './mabiblio.js';
 import { sauvegardeFaite } from './rappelui.js';
 import { DXF_UNITES, DxfCtx, buildDxf, dxfBilan, dxfOctets } from './dxf.js';
 import { exporterPhotos, importerPhotos, photosEnParties } from './photos.js';
+import { estSauvegarde, lireSauvegarde } from './lecture.js';
 import { photosDuPlan } from './chantier.js';
 import { BASECACHE, COLCACHE, HELV, MC, PdfCtx, PdfPath, WINANSI, baselineOffset, buildPdf, deflateBytes, helvWidth, mkPath,
   parseColor, parseFont, pdfMeasure, pdfStr, pdfText16, pn, pn3, pn4, winAnsiBytes } from './pdf.js';
@@ -541,7 +542,7 @@ async function exportAll() {
 }
 const isPlanObj = (o) => o && typeof o === 'object' && Array.isArray(o.walls) && Array.isArray(o.nodes);
 /* import d'une sauvegarde complète : n'écrase jamais un plan existant */
-async function importBackup(o) {
+async function importBackup(o, photosDeja) {
   await saveNow();
   const have = new Map((await listProjects()).map((p) => [p.id, p]));
   let added = 0, same = 0, copies = 0;
@@ -566,7 +567,7 @@ async function importBackup(o) {
   if (lib && lib.refs.kept) parts.push(`${lib.refs.kept} référence${lib.refs.kept > 1 ? 's' : ''} différente${lib.refs.kept > 1 ? 's' : ''} ignorée${lib.refs.kept > 1 ? 's' : ''} (la vôtre est gardée)`);
   if (lib && lib.comps.added + lib.comps.copies) { const n = lib.comps.added + lib.comps.copies; parts.push(`${n} composant${n > 1 ? 's' : ''} personnalisé${n > 1 ? 's' : ''} ajouté${n > 1 ? 's' : ''}`); }
   if (lib && !lib.ok) parts.push('bibliothèque non enregistrée (stockage indisponible)');
-  const ph = Array.isArray(o.photos) && o.photos.length ? await importerPhotos(o.photos) : null;
+  const ph = photosDeja || (Array.isArray(o.photos) && o.photos.length ? await importerPhotos(o.photos) : null);
   if (ph && ph.added) parts.push(`${ph.added} photo${ph.added > 1 ? 's' : ''} ajoutée${ph.added > 1 ? 's' : ''}`);
   if (ph && !ph.ok) parts.push('certaines photos n’ont pas pu être enregistrées');
   if (added) parts.push(`${added} plan${added > 1 ? 's' : ''} ajouté${added > 1 ? 's' : ''}`);
@@ -578,6 +579,18 @@ async function importBackup(o) {
 $('#fileIn').addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0]; e.target.value = '';
   if (!f) return;
+  /* sauvegarde complète : lue par morceaux, photos enregistrées au fil de la lecture (mémoire faible : lecture.js) */
+  let complete = false; try { complete = await estSauvegarde(f); } catch (err) { complete = false; }
+  if (complete) {
+    toast('Lecture de la sauvegarde…');
+    const ph = { added: 0, kept: 0, ok: true };
+    let r;
+    try { r = await lireSauvegarde(f, async (lot) => { const x = await importerPhotos(lot); ph.added += x.added; ph.kept += x.kept; if (!x.ok) ph.ok = false; }); }
+    catch (err) { console.error(err); toast('Sauvegarde illisible (fichier incomplet ou abîmé) : aucun plan importé.'); return; }
+    if (!Array.isArray(r.tete.plans)) { toast('Ce fichier n’est pas un plan Calque valide.'); return; }
+    try { await importBackup(r.tete, ph); } catch (err) { console.error(err); toast('Import interrompu : vérifiez « Mes plans ».'); }
+    return;
+  }
   let o;
   try { o = JSON.parse(await f.text()); } catch (err) { toast('Ce fichier n’est pas un plan Calque valide.'); return; }
   try {
