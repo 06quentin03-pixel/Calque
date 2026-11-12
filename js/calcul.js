@@ -277,7 +277,7 @@ function controlesDifferentiels(plan) {
   if (!tableDisponible('differentiels_logement')) return { global: [C('dd_nombre', 'verification', 'Tableau manquant.')], rcds: [] };
   const T = DD_TAB();
   const inst = plan.install || {};
-  const agcp = fini(inst.kva) ? { v: agcpOf(inst.kva)[1], st: 'estimee', src: `Réglage usuel du disjoncteur d’abonné pour ${inst.kva} kVA (valeur de Calque, à vérifier sur le contrat)` } : null;
+  const agcp = fini(inst.kva) ? { v: agcpOf(inst.kva, inst.reseau)[1], st: 'estimee', src: `Réglage usuel du disjoncteur d’abonné pour ${inst.kva} kVA en ${inst.reseau === 'tri' ? 'triphasé (par phase)' : 'monophasé'} (valeur de Calque, à vérifier sur le contrat)` } : null;
   const gen = (plan.elec || []).some((x) => GENERATEURS.has(x.type));
   const global = [];
   const nA = rcds.filter((r) => r.type === 'A').length;

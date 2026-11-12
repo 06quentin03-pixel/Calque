@@ -15,6 +15,7 @@ import { nettoyerPhotometrie } from './photometrie.js';
 import { nettoyerDoc } from './documents.js';
 import { nettoyerChantier } from './chantier.js';
 import { nettoyerVariantes } from './variantes.js';
+import { nettoyerChiffrage } from './quantitatif.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -119,6 +120,12 @@ const MIGRATIONS = {
   9(p) {
     const v = nettoyerVariantes(p.variantes);
     if (v) p.variantes = v; else delete p.variantes;
+    return p;
+  },
+  /* v10 → v11 : chiffrage (`chiffrage` : prix unitaires HT et temps de pose saisis par ligne du quantitatif, taux horaire,
+     TVA). Les plans v10 n'en ont pas : chiffrage vide ; aucun prix n'est deviné. */
+  10(p) {
+    p.chiffrage = nettoyerChiffrage(p.chiffrage);
     return p;
   },
 };

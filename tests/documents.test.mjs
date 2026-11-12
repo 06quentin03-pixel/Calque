@@ -91,7 +91,7 @@ test('dossier PDF complet (sans écran) : chapitres, sommaire, cartouche avec in
   const bytes = new Uint8Array(await res.blob.arrayBuffer());
   const st = structurePDF(bytes);
   assert.equal(st.pages, res.pages);
-  assert.deepEqual(res.chapitres.map((c) => c.id), ['garde', 'plans', 'unifilaire', 'coffret', 'nomenclature', 'bilan', 'metres', 'eclairage', 'controles', 'chantier', 'variantes']);
+  assert.deepEqual(res.chapitres.map((c) => c.id), ['garde', 'plans', 'unifilaire', 'coffret', 'nomenclature', 'bilan', 'metres', 'quantitatif', 'eclairage', 'controles', 'chantier', 'variantes']);
   assert.ok(res.chapitres.every((c, i, a) => i === 0 || c.page > a[i - 1].page), 'pages croissantes');
   const T = textesPDF(bytes), all = T.join('\n');
   // cartouche sur chaque page : indice courant B, page n / N
@@ -140,19 +140,19 @@ test('migration v7 → v8 : informations du dossier vides, copie de sécurité',
     const z = S.migratePlan(JSON.parse(JSON.stringify(y.plan)));
     return { ver: S.PLAN_VERSION, has: Object.keys(S.MIGRATIONS).map(Number), x, y, z };
   }, [v7, bad]);
-  assert.equal(m.ver, 10); // format actuel (phase 7 : v10)
+  assert.equal(m.ver, 11); // format actuel
   for (let v = 1; v < m.ver; v++) assert.ok(m.has.includes(v), `migration ${v} → ${v + 1}`);
-  assert.equal(m.x.from, 7); assert.equal(m.x.plan.v, 10);
+  assert.equal(m.x.from, 7); assert.equal(m.x.plan.v, 11);
   assert.deepEqual(m.x.plan.doc, { revisions: [] }, 'aucun indice inventé');
   assert.deepEqual(m.y.plan.doc, { revisions: [{ i: 'B', date: 10, objet: 'ok' }] }, 'valeurs invalides retirées');
   assert.deepEqual(m.z.plan, m.y.plan, 'migration sans effet sur un plan à jour');
   await wait(page, 800);
   const vers = await idb(page, 'versions');
-  const v = vers.find((x) => x.pid === 'pD7' && /avant mise à jour du format \(v7 → v10\)/.test(x.why));
+  const v = vers.find((x) => x.pid === 'pD7' && /avant mise à jour du format \(v7 → v11\)/.test(x.why));
   assert.ok(v, 'copie de sécurité avant mise à jour du format');
   assert.equal(JSON.parse((await idb(page, 'vdata', v.k)).json).v, 7, 'la copie est le plan d’origine');
   const cur = await page.evaluate(async () => { const P = (await import('./js/noyau.js')).P; return { v: P.v, n: P.circuits.length, doc: P.doc }; });
-  assert.equal(cur.v, 10); assert.equal(cur.n, 2, 'rien de perdu'); assert.deepEqual(cur.doc, { revisions: [] });
+  assert.equal(cur.v, 11); assert.equal(cur.n, 2, 'rien de perdu'); assert.deepEqual(cur.doc, { revisions: [] });
   assert.deepEqual(errors, []);
   await ctx.close();
 });

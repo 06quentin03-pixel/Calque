@@ -47,6 +47,8 @@ test('gros plan : le rendu limité à la zone visible est identique au rendu com
   }
 });
 
+/* attend que l'affichage soit stable (deux images dessinées, puis une pause) : indépendant de la charge de la machine */
+const calme = async (page) => { await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))); await wait(page, 350); };
 test('gros plan : l’image mémorisée du plan donne le même résultat pendant le tracé d’un mur', async () => {
   async function run(query) {
     const { ctx, page, errors } = await fresh();
@@ -55,13 +57,13 @@ test('gros plan : l’image mémorisée du plan donne le même résultat pendant
     const b = await canvasBox(page);
     await page.click('.tool[data-tool="wall"]');
     const shots = [];
-    await page.mouse.click(b.x + 300, b.y + 300); await wait(page, 200);
+    await page.mouse.click(b.x + 300, b.y + 300); await calme(page);
     for (let i = 0; i < 10; i++) await page.mouse.move(b.x + 320 + i * 17, b.y + 305 + i * 3);
-    await wait(page, 200); shots.push(await canvasPixels(page)); // aperçu du mur au-dessus de l'image mémorisée
-    await page.mouse.click(b.x + 500, b.y + 300); await wait(page, 300);
-    await page.mouse.move(b.x + 520, b.y + 420); await wait(page, 200); shots.push(await canvasPixels(page)); // le nouveau mur apparaît
-    await page.keyboard.press('Escape'); await wait(page, 200);
-    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await wait(page, 300); shots.push(await canvasPixels(page));
+    await calme(page); shots.push(await canvasPixels(page)); // aperçu du mur au-dessus de l'image mémorisée
+    await page.mouse.click(b.x + 500, b.y + 300); await calme(page);
+    await page.mouse.move(b.x + 520, b.y + 420); await calme(page); shots.push(await canvasPixels(page)); // le nouveau mur apparaît
+    await page.keyboard.press('Escape'); await calme(page);
+    await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await calme(page); shots.push(await canvasPixels(page));
     await ctx.close();
     return { shots, errors };
   }

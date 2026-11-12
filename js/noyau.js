@@ -140,7 +140,7 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 10;
+const PLAN_VERSION = 11;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
@@ -149,6 +149,7 @@ function blankPlan(name) {
     circuits: [], rcds: [], links: [], ducts: [], zones: [], etudes: [], photometries: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
     doc: { revisions: [] },
     chantier: { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] },
+    chiffrage: { prix: {}, temps: {} },
   };
 }
 function normalizePlan(p) {
@@ -162,6 +163,8 @@ function normalizePlan(p) {
   if (!o.chantier || typeof o.chantier !== 'object' || Array.isArray(o.chantier)) o.chantier = { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] };
   { const c = o.chantier; if (!c.poses || typeof c.poses !== 'object') c.poses = {}; for (const k of ['app', 'circ']) if (!c.poses[k] || typeof c.poses[k] !== 'object') c.poses[k] = {};
     for (const k of ['reserves', 'photos', 'notes', 'journal']) if (!Array.isArray(c[k])) c[k] = []; }
+  if (!o.chiffrage || typeof o.chiffrage !== 'object' || Array.isArray(o.chiffrage)) o.chiffrage = { prix: {}, temps: {} };
+  for (const k of ['prix', 'temps']) if (!o.chiffrage[k] || typeof o.chiffrage[k] !== 'object' || Array.isArray(o.chiffrage[k])) o.chiffrage[k] = {};
   if (!o.levels.length) o.levels = blankPlan().levels;
   return o;
 }

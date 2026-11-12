@@ -2,7 +2,7 @@
    (portes, fenêtres, murs, zones interdites, conduits de VMC). JavaScript pur, sans accès à l'écran : testable avec Node.
    Les conflits sont des points d'attention de Calque, pas des règles de la norme : ils ne disent jamais « conforme ». */
 import { isNum } from './noyau.js';
-import { hauteurParcours, isElecDuct, pointsGaine } from './cheminement.js';
+import { TRAVERSEE, ancrage, cheminCircuit, circuitsDe, grapheGaines, hauteurParcours, isElecDuct, plusCourts, pointsGaine, tableauDu } from './cheminement.js';
 
 /* ---------------- géométrie du niveau ---------------- */
 function obstacles(plan, lv) {
@@ -184,4 +184,65 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
   return { pts: clean, len, murs, cloisons, cellule: cs };
 }
 
+/* ---------------- raccordement automatique d'un circuit ----------------
+   Relie au tableau, par des gaines proposées, tous les points d'un circuit qui ne le sont pas encore.
+   À chaque tour, le point non raccordé le plus proche d'un point déjà raccordé du même niveau (tableau, point du même
+   circuit, boîte de dérivation, passage entre étages) est relié à celui-ci par chercherItineraire : les prises se
+   suivent donc de proche en proche. Le plan n'est pas modifié : renvoie { gaines: [{ lv, pts, a, b, cid, len }],
+   echecs: [{ id, raison }], deja (points déjà raccordés) } ; l'appelant crée les gaines. */
+function raccorderCircuit(plan, cid, opts = {}) {
+  const out = { cid, gaines: [], echecs: [], deja: 0 };
+  const T = tableauDu(plan);
+  if (!T) { out.raison = 'Posez d’abord le tableau électrique sur le plan.'; return out; }
+  const tmp = Object.assign({}, plan, { ducts: (plan.ducts || []).slice() });
+  const byId = new Map((plan.elec || []).map((e) => [e.id, e]));
+  const rates = new Set(); let n = 0;
+  out.deja = cheminCircuit(tmp, cid).atteints;
+  for (let tour = 0; tour < 400; tour++) {
+    const ch = cheminCircuit(tmp, cid);
+    const reste = ch.nonAtteints.filter((id) => !rates.has(id)).map((id) => byId.get(id)).filter(Boolean);
+    if (!reste.length) break;
+    const G = grapheGaines(tmp), sp = G.nodes.has('e:' + T.id) ? plusCourts(G, 'e:' + T.id, cid) : { D: new Map() };
+    /* un passage entre étages dont le jumeau est raccordé est lui aussi un point de départ, sur son niveau */
+    const relies = (plan.elec || []).filter((x) => x.id === T.id || (sp.D.has('e:' + x.id) && (x.cid === cid || x.type === TRAVERSEE || x.type === 'derivation')) || (x.type === TRAVERSEE && x.to && sp.D.has('e:' + x.to)));
+    const troncs = tmp.ducts.filter((d) => isElecDuct(d) && !String(d.id).startsWith('~auto') && !circuitsDe(d).length && sp.D.has(`v:${d.id}:0`)).map((d) => ({ d, pts: pointsGaine(tmp, d) }));
+    let best = null;
+    for (const e of reste) {
+      const a = ancrage(e);
+      for (const x of relies) { if (x.lv !== e.lv || x.id === e.id) continue; const b = ancrage(x), d = Math.hypot(a.x - b.x, a.y - b.y); if (!best || d < best.d) best = { e, from: x, d }; }
+      /* cheminement commun (goulotte, chemin de câbles… sans circuit attitré) déjà relié au tableau : on s'y pique au plus près */
+      for (const t of troncs) {
+        if (t.d.lv !== e.lv) continue;
+        for (let m = 1; m < t.pts.length; m++) {
+          const A = t.pts[m - 1], B = t.pts[m], L2 = (B.x - A.x) ** 2 + (B.y - A.y) ** 2; if (!L2) continue;
+          const u = Math.max(0, Math.min(1, ((a.x - A.x) * (B.x - A.x) + (a.y - A.y) * (B.y - A.y)) / L2));
+          const q = { x: A.x + u * (B.x - A.x), y: A.y + u * (B.y - A.y) }, d = Math.hypot(a.x - q.x, a.y - q.y);
+          if (!best || d < best.d - 1e-6) best = { e, pique: q, d };
+        }
+      }
+    }
+    /* aucun point raccordé sur le niveau des points restants : on raccorde d'abord un passage entre étages qui y mène */
+    if (!best) {
+      const niveaux = new Set(reste.map((e) => e.lv));
+      for (const x of plan.elec || []) {
+        if (x.type !== TRAVERSEE || !x.to || rates.has(x.id) || sp.D.has('e:' + x.id)) continue;
+        const j = byId.get(x.to); if (!j || !niveaux.has(j.lv)) continue;
+        const a = ancrage(x);
+        for (const r of relies) { if (r.lv !== x.lv || r.id === x.id) continue; const b = ancrage(r), d = Math.hypot(a.x - b.x, a.y - b.y); if (!best || d < best.d) best = { e: x, from: r, d }; }
+      }
+    }
+    if (!best) { for (const e of reste) { rates.add(e.id); out.echecs.push({ id: e.id, raison: 'Aucun point de ce niveau n’est raccordé au tableau (posez un passage entre étages et raccordez-le).' }); } break; }
+    const dep = best.pique ? { x: Math.round(best.pique.x * 10) / 10, y: Math.round(best.pique.y * 10) / 10 } : ancrage(best.from);
+    const res = chercherItineraire(tmp, best.e.lv, dep, ancrage(best.e), { pose: opts.pose || null });
+    if (!res) { rates.add(best.e.id); out.echecs.push({ id: best.e.id, raison: 'Aucun itinéraire : une zone interdite ou des portes bloquent le passage.' }); continue; }
+    const g = { id: '~auto' + (n++), lv: best.e.lv, sys: 'elec', pts: res.pts, a: best.pique ? null : best.from.id, b: best.e.id, cid, len: res.len };
+    if (best.pique) { g.pts[0] = dep; g.pique = true; }
+    if (opts.kind) g.kind = opts.kind;
+    if (opts.pose) { g.pose = opts.pose; if (opts.pose === 'hauteur' && isNum(opts.z)) g.z = opts.z; }
+    tmp.ducts.push(g); out.gaines.push(g);
+  }
+  return out;
+}
+
+export { raccorderCircuit };
 export { COUT, chercherItineraire, conflitsGaine, conflitsPlan, inPoly, obstacles };

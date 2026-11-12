@@ -10,6 +10,9 @@ import { conflitsPlan } from './itineraire.js';
 import { goToRef } from './tableau.js';
 import { badgeDonnee, champDonnee, openFiche, pillStatut } from './fiche.js';
 import { lignesCircuits, listeMateriel, remplissageGaines } from './materiel.js';
+import { messageAuto, raccorderAuto } from './routeui.js';
+import { toast } from './interface.js';
+import { tableauDu } from './cheminement.js';
 
 const m = (cm, d = 1) => (cm == null ? '—' : fmt(cm / 100, d) + ' m');
 
@@ -21,7 +24,18 @@ function longueursSection(lignes) {
   const totalCmd = lignes.filter((l) => l.ch.complet).reduce((s, l) => s + (l.cmd || 0), 0);
   const partiels = lignes.filter((l) => !l.ch.complet && l.ch.atteints).length;
   const box = (n, v, sub) => h('div', { class: 'ev-sumbox bi-box' }, h('b', null, v), h('span', null, n), sub ? h('small', null, sub) : null);
+  /* raccordement automatique des circuits incomplets (gaines proposées, à vérifier) */
+  const aFaire = lignes.filter((l) => !l.ch.complet && l.ch.points.length).map((l) => l.c.id);
+  const lancer = async (cids, bouton) => {
+    const txt = bouton.textContent; bouton.disabled = true;
+    const b = await raccorderAuto(cids, (i, n) => { bouton.textContent = `Recherche… ${i + 1} / ${n}`; });
+    bouton.textContent = txt; bouton.disabled = false; toast(messageAuto(b));
+  };
+  const auto = aFaire.length && tableauDu(P) ? h('section', null, h('h3', null, 'Raccordement automatique'),
+    h('p', { class: 'note' }, `${aFaire.length} circuit${aFaire.length > 1 ? 's ne sont' : ' n’est'} pas entièrement raccordé${aFaire.length > 1 ? 's' : ''} au tableau. Calque peut proposer les gaines manquantes : chaque point est relié au point déjà raccordé le plus proche, en évitant les zones interdites, avec le type et la pose de gaine choisis en dernier. Ce sont des propositions à vérifier et à corriger sur le plan ; « Annuler » les retire toutes.`),
+    h('div', { class: 'btns' }, (() => { const b = btn(`Raccorder les ${aFaire.length} circuits incomplets`, () => lancer(aFaire, b), 'pri'); b.id = 'autoTous'; return b; })())) : null;
   return [
+    auto,
     h('div', { class: 'ev-sum bi-sum' },
       box('Circuits raccordés par les gaines', `${raccordes} / ${lignes.length}`, raccordes < lignes.length ? 'les autres : longueur à saisir ou gaines à tracer' : null),
       box('Câble à commander', totalCmd ? fmt(totalCmd, 0) + ' m' : '—', `circuits raccordés seulement · réserve ${fmt(res.v, 0)} % (${LIB_STATUT[res.st].toLowerCase()})${partiels ? ` · ${partiels} circuit${partiels > 1 ? 's' : ''} incomplet${partiels > 1 ? 's' : ''} non compté${partiels > 1 ? 's' : ''}` : ''}`)),
@@ -40,7 +54,7 @@ function longueursSection(lignes) {
         h('td', { class: 'n' }, m(l.ch.arbre)),
         h('td', { class: 'n' }, l.cmd != null ? fmt(l.cmd, 0) + ' m' : '—'),
         h('td', { class: 'n' }, l.Lfiche ? [fmt(l.Lfiche.v, 1) + ' m ', badgeDonnee(l.Lfiche.st)] : badgeDonnee(null)),
-        h('td', null, btn('Fiche', () => openFiche(l.c.id), 'sm')))))))),
+        h('td', null, h('div', { class: 'btns' }, !l.ch.complet && l.ch.points.length && tableauDu(P) ? (() => { const b = btn('Raccorder', () => lancer([l.c.id], b), 'sm'); return b; })() : null, btn('Fiche', () => openFiche(l.c.id), 'sm'))))))))),
   ];
 }
 

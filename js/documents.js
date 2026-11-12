@@ -21,6 +21,7 @@ import { lignesCircuits, listeMateriel, remplissageGaines } from './materiel.js'
 import { implantationActuelle, propositions, TYPES_ECL } from './eclairage.js';
 import { REGLES_VERSION } from './regles.js';
 import { STATUT_BY, avancement, resumeReserves } from './chantier.js';
+import { chiffrer, quantitatif } from './quantitatif.js';
 
 /* ---------------- réglages de mise en page ---------------- */
 const FORMATS = { A4: [595.28, 841.89], A3: [841.89, 1190.55] };
@@ -38,6 +39,7 @@ const CHAPITRES = [
   { id: 'nomenclature', n: 'Nomenclatures' },
   { id: 'bilan', n: 'Bilan de puissance' },
   { id: 'metres', n: 'Métrés et matériel' },
+  { id: 'quantitatif', n: 'Quantitatif et chiffrage' },
   { id: 'eclairage', n: 'Études d’éclairage' },
   { id: 'controles', n: 'Rapport de contrôle' },
   { id: 'chantier', n: 'Suivi de chantier (avancement, réserves, photos)' },
@@ -417,6 +419,42 @@ function chapMetres(R, plan, o) {
   if (L.vertInconnues) R.texte(`${L.vertInconnues} verticale(s) non comptée(s) (pose de gaine non précisée) : longueurs sous-estimées.`, { color: COL.bad, size: 8 });
 }
 
+/* quantitatif complet et chiffrage : prix et temps saisis par l'utilisateur seulement ; total « partiel » s'il manque un prix */
+function chapQuantitatif(R, plan, o) {
+  R.page('quantitatif');
+  const q = quantitatif(plan, { pieces: o.pieces || null }), ch = chiffrer(q, plan.chiffrage);
+  const eur = (v) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v).replace(/[\u202F\u00A0]/g, ' ') + ' €';
+  R.titre('Quantitatif et chiffrage');
+  R.encadre('Appareils comptés sur le plan, protections lues dans le tableau ; cheminements et conducteurs ESTIMÉS (mesurés sur le plan, réserve comprise). Prix unitaires et temps de pose saisis par l’utilisateur : document estimatif, pas un devis contractuel.', COL.est);
+  if (!ch.lignes.length) { R.texte('Rien à compter pour le moment.', { color: COL.ink2 }); return; }
+  const prix = ch.chiffrees > 0;
+  const ref = (l) => { const r = l.art && o.referenceDe ? o.referenceDe({ art: l.art }) : null; return r && r.ref ? '\n' + [r.fab, r.ref].filter(Boolean).join(' ') : ''; };
+  const cols = [{ t: 'Catégorie', w: 1 }, { t: 'Désignation', w: 2.6 }, { t: 'Quantité', w: 0.8, al: 'r' }];
+  if (prix) cols.push({ t: 'Prix unitaire HT', w: 0.9, al: 'r' }, { t: 'Total HT', w: 0.9, al: 'r' });
+  R.tableau(cols, ch.lignes.map((l) => {
+    const r = ref(l), row = [l.cat, { t: l.des + r, petit: !!r }, { t: `${fmt(l.qte, 0)} ${l.unite}`, st: l.st === 'estimee' ? 'estimee' : undefined, b: true }];
+    if (prix) row.push(l.pu ? { t: eur(l.pu.v), st: l.pu.st } : { t: '', manquante: true }, l.total != null ? eur(l.total) : '—');
+    return row;
+  }));
+  if (prix) {
+    const part = ch.complet ? '' : ` — PARTIEL : ${ch.sansPrix} ligne${ch.sansPrix > 1 ? 's' : ''} sans prix`;
+    const tot = [[`Fournitures HT${part}`, eur(ch.fournitures)]];
+    if (ch.mainOeuvre != null) tot.push([`Main-d’œuvre HT (${fmt(ch.heures, 1)} h × ${fmt(ch.tauxH.v, 2)} €/h, ${ch.lignesAvecTemps} ligne${ch.lignesAvecTemps > 1 ? 's' : ''} avec un temps de pose)`, eur(ch.mainOeuvre)]);
+    tot.push([{ t: `Total HT${ch.complet ? '' : ' partiel'}`, b: true }, { t: eur(ch.totalHT), b: true }]);
+    if (ch.tva) tot.push([`TVA ${fmt(ch.tva.v, 1)} %`, eur(ch.montantTVA)], [{ t: `Total TTC${ch.complet ? '' : ' partiel'}`, b: true }, { t: eur(ch.totalTTC), b: true }]);
+    else tot.push([{ t: 'TVA non saisie : total hors taxes seulement.', petit: true }, '']);
+    R.titre('Totaux', 2);
+    R.tableau([{ t: '', w: 4 }, { t: 'Montant', w: 1, al: 'r' }], tot);
+  } else R.texte('Aucun prix saisi : quantités seules (onglet Tableau électrique › Quantitatif pour saisir les prix).', { size: 8, color: COL.ink2 });
+  if (q.parPiece.length) {
+    R.titre('Appareils par pièce', 2);
+    const rows = [];
+    for (const g of q.parPiece) g.lignes.forEach((l, i) => rows.push([i ? '' : g.niveau, i ? '' : { t: g.piece, b: true }, l.des, { t: `${fmt(l.qte, 0)} ${l.unite}`, b: true }]));
+    R.tableau([{ t: 'Niveau', w: 1.1 }, { t: 'Pièce', w: 1.5 }, { t: 'Appareil', w: 2.8 }, { t: 'Quantité', w: 0.7, al: 'r' }], rows);
+  }
+  if (q.sansLongueur.length) R.texte(`Conducteurs non comptés (circuits pas entièrement raccordés par les gaines) : ${q.sansLongueur.join(', ')}.`, { color: COL.bad, size: 8 });
+}
+
 function chapEclairage(R, plan, o) {
   R.page('eclairage');
   R.titre('Études d’éclairage');
@@ -600,6 +638,7 @@ function composerDossier(plan, opts) {
   if (choix.has('nomenclature')) chapNomenclature(R, plan, o);
   if (choix.has('bilan')) chapBilan(R, plan, o);
   if (choix.has('metres')) chapMetres(R, plan, o);
+  if (choix.has('quantitatif')) chapQuantitatif(R, plan, o);
   if (choix.has('eclairage')) chapEclairage(R, plan, o);
   if (choix.has('controles')) chapControles(R, plan, o);
   if (choix.has('chantier')) chapChantier(R, plan, o);

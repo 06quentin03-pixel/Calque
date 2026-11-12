@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 6 novembre 2026, fin de la phase 7.
+Mise à jour : 9 novembre 2026, mission « développement autonome » (après la phase 7).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -21,12 +21,13 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 | 6 | Documents et moteur de règles | ✅ terminée, **fusionnée dans `main` (demande n°5, avec le nouveau plan d'exemple, à la demande de l'utilisateur)**, **validée sur iPad** (5 novembre 2026) |
 | 7 | Chantier et variantes | ✅ terminée (demande de fusion n°6 à fusionner, essais iPad à faire) |
 | 8 | Validation finale | ⬜ |
+| — | Mission « développement autonome » (9 novembre 2026) : export DXF, quantitatif, sélection multiple, imports DXF et IFC, raccordement automatique, assistant | 🟨 en cours, branche `claude/ecstatic-sagan-juah82` ; **demande de fusion n°7 préparée le 12 novembre 2026, à fusionner par l'utilisateur** |
 
 ## Ce qui marche aujourd'hui (phases 3 et 4)
 - **Moteur de calcul** `js/calcul.js` (sans écran, testé avec Node) : intensité mono/tri, P/Q/S, cos φ, chute de tension, IB ≤ In, section/calibre, nombre de points, type de différentiel, calibre des différentiels (règle de l'amont / de l'aval), bilan de puissance, équilibrage des phases.
 - **Fiche de calcul** d'un circuit (`js/fiche.js`), ouverte depuis l'inspecteur d'un symbole et depuis le tableau.
 - **Onglet « Bilan »** du tableau : puissances, coefficient ks, circuits, équilibrage, interrupteurs différentiels, état des tableaux Legrand.
-- **Format des plans v10** (phase 7 : `variantes` en v10, `chantier` en v9) ; v8 (phase 6 : cartouche et indices de révision du dossier, `doc` ; v7 en phase 5 : photométries, études d'éclairage, photométrie d'un luminaire ; v6 en phase 4 : type, pose et circuits des gaines, passages entre étages, zones interdites, réserve de câble).
+- **Format des plans v11** (`chiffrage` en v11 ; phase 7 : `variantes` en v10, `chantier` en v9) ; v8 (phase 6 : cartouche et indices de révision du dossier, `doc` ; v7 en phase 5 : photométries, études d'éclairage, photométrie d'un luminaire ; v6 en phase 4 : type, pose et circuits des gaines, passages entre étages, zones interdites, réserve de câble).
 - **Cheminements** `js/cheminement.js` (sans écran) : gaine ICTA, tube IRL, goulotte, chemin de câbles ; pose sol / plafond / hauteur ; verticales ; passages entre étages ; longueurs par circuit (vol d'oiseau, cheminement, à commander avec réserve). Onglet « Cheminements » du tableau (`js/metres.js`).
 - **Longueur L de la fiche** : mesurée sur le plan (« estimée ») tant qu'aucune longueur n'est saisie.
 - **Itinéraire et conflits** `js/itineraire.js` (sans écran) + `js/routeui.js` : zones interdites, proposition d'itinéraire, conflits (portes, fenêtres, murs, zones, VMC).
@@ -53,6 +54,17 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Variantes** (étape 2, terminée) : Menu › Variantes. Partie électrique propre à chaque variante, bâtiment commun ; afficher, dupliquer, renommer, version principale, suppression protégée (copie dans l'historique) ; comparaison (appareils, puissance, éclairage, matériel, contrôles) ; chapitre du dossier PDF. Format **v10** (`variantes`).
   - Modules : `js/variantes.js` (sans écran), `js/variantesui.js`.
 
+## Mission « développement autonome » (depuis le 9 novembre 2026)
+- **Export DXF** `js/dxf.js` (sans écran) : contexte `DxfCtx` (hérite de `PdfCtx`) qui enregistre le dessin du moteur 2D, calques posés par `drawSceneIn` (`c.calque(nom)`), fichier R12 en Windows-1252. Écran : fenêtre d'export (`export.js`, `composeDXF`).
+- **Quantitatif et chiffrage** `js/quantitatif.js` (sans écran) + `js/quantitatifui.js` (onglet « Quantitatif ») : lignes à clé stable (`app:<type>`, `art:<article>`, `comp:<composant>`, `disj:<calibre>:<mono|tri>`, `dd:<type>:<calibre>:<réseau>`, `dda`, `parafoudre`, `mat:<catégorie>|<désignation>`), par pièce et par circuit, prix et temps saisis (`plan.chiffrage`, format **v11**), « mes prix » sur l'appareil (`UL.prix`, `mabiblio.js`), CSV, chapitre du dossier PDF.
+- **Sélection multiple** `js/multi.js` : outil `multi` (« Groupe », `EXT.tools`), sélection dans `ui.multi` (références `{ t, id }`), panneau du groupe par `EXT.inspVide` (chaîné avec celui du chantier), clavier par `toucheGroupe` (`demarrage.js`).
+- **Import DXF** `js/dxfimport.js` (sans écran : `lireDxf`, `empriseDxf`, `uniteProbable`, `dessinerDxf`) ; écran dans `fond.js` (`importDxf`) : le DXF est dessiné en image JPEG (4096 px au plus) et devient un fond de plan ordinaire avec `s` exact et `cal: true` (aucun changement de format).
+- **Reconnaissance des murs** `js/dxfmurs.js` (sans écran : `reconnaitreMurs(segments, arcs)`, `segmentsDuDxf`) ; écran : `dxfMurs` dans `fond.js` (murs par `addWall`, ouvertures par `newOpening`, noms des pièces d'après les textes du DXF).
+- **Import IFC** `js/ifcimport.js` (sans écran : lecteur STEP à la demande, repères `IfcLocalPlacement`, volumes `IfcExtrudedAreaSolid` y compris sous `IfcBooleanClippingResult` et `IfcMappedItem`, `lireIfc` → niveaux, murs, ouvertures, locaux en cm) ; écran `js/ifcui.js` (chargé à la demande depuis le menu) : nouveau plan par `openPlan` puis `addWall` / `newOpening`. Fichiers de référence écrits par IfcOpenShell : `tests/maison-ifc4.ifc`, `tests/maison-ifc2x3.ifc`.
+- **Assistant** `js/assistant.js` (sans écran : `avancement(plan, ctx)`) + `js/assistantui.js` (fenêtre, chargée à la demande depuis le menu).
+- **Raccordement automatique** : `raccorderCircuit(plan, cid, opts)` dans `itineraire.js` (sans écran, ne modifie pas le plan) ; écran : `raccorderAuto` (`routeui.js`), `creerGaineElec` (`reseaux.js`), boutons dans `metres.js` et l'inspecteur.
+- **Disjoncteur d'abonné** : `agcpOf(kva, reseau)` et `KVA_PALIERS` dans `elecdonnees.js` (valeurs usuelles, « estimées »).
+
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).
 | Tableau | État |
@@ -72,17 +84,22 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **100/100 réussis** (fin de phase 7).
-- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests).
-- Test instable connu : `ipad.test.mjs` « rendu limité à la zone visible… », un échec intermittent observé une fois (probablement le chargement des polices).
+- `node --test tests/*.test.mjs` : **129/129 réussis** (9 novembre 2026).
+- Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (5 tests), `multi` (3 tests), `dxfimport` (3 tests), `routage` (5 tests), `dxfmurs` (3 tests), `ifc` (5 tests), `assistant` (2 tests).
+- Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
 ## Points ouverts
 - Essais iPad de la phase 5 : **validés** par l'utilisateur le 5 novembre 2026 (« tout marche »), y compris un vrai fichier IES / LDT de fabricant. Essais iPad de la phase 4 : **validés** le 5 novembre 2026. Phase 3 validée sur iPad le 5 novembre 2026.
 - 3D : un appareil mural ne se déplace pas depuis la 3D (sur le plan seulement) ; la coupe n'a pas de face de remplissage (les murs coupés paraissent creux).
 - Itinéraire proposé niveau par niveau (passer d'un étage à l'autre par un passage entre étages déjà raccordé).
 - Import des catalogues fabricants : mis de côté par l'utilisateur (module `js/catalogue.js` prêt, inactif).
-- Le disjoncteur d'abonné affiché en triphasé reste celui du monophasé (à reprendre).
+- Raccordement automatique : les gaines proposées peuvent longer un mur par l'extérieur ou se superposer entre circuits (une gaine par circuit) : à corriger à la main si besoin. Un cheminement commun existant (sans circuit attitré) est utilisé ; les gaines proposées ne sont pas regroupées entre elles.
+- Reconnaissance des murs : validée sur des plans de synthèse (droits, tournés, avec du « bruit ») ; sur un vrai plan d'architecte le résultat dépendra du dessin (murs en hachures pleines, murs courbes, poteaux : non reconnus) : à essayer avec un fichier réel et à ajuster.
+- Import IFC : validé sur des maquettes écrites par IfcOpenShell (IFC 4 en mm, IFC 2x3 en m), pas encore sur un export réel de Revit ou d'ArchiCAD : à essayer avec un fichier réel. Murs courbes ou en facettes non repris (comptés).
+- Import DXF : essayé avec des fichiers écrits par ezdxf (R12 et R2010) et par Calque, pas encore avec un vrai plan d'architecte (AutoCAD, ArchiCAD, Revit) : à essayer avec un fichier réel. DXF binaire et DWG non lus.
+- Export DXF : non essayé dans AutoCAD lui-même (vérifié avec la bibliothèque ezdxf et un rendu) ; à ouvrir une fois dans le logiciel du destinataire.
 
 ## Branches
 - `main` : version utilisée tous les jours (GitHub Pages).
-- `claude/layer-modification-prompt-feasibility-nw7oa4` : branche de développement.
+- `claude/layer-modification-prompt-feasibility-nw7oa4` : branche de développement des phases 1 à 7 (fusionnée).
+- `claude/ecstatic-sagan-juah82` : branche de la mission « développement autonome » (partie de `main` après la fusion n°6).

@@ -5,10 +5,10 @@ import { EXT, IDX, P, S, ui, uid } from './noyau.js';
 import { RC, V } from './rendu2d.js';
 import { commit, cv, requestRender } from './interaction.js';
 import { btn, btns, deleteSel, h, inspHead, body, kv, renderInspector, sec, setTool, textField, toast, updateHint } from './interface.js';
-import { famOn, finishDuct } from './reseaux.js';
+import { creerGaineElec, famOn, finishDuct } from './reseaux.js';
 import { goToRef } from './tableau.js';
 import { ancrage, cheminCircuit, grapheGaines, plusCourts, tableauDu, TRAVERSEE } from './cheminement.js';
-import { chercherItineraire, conflitsGaine } from './itineraire.js';
+import { chercherItineraire, conflitsGaine, raccorderCircuit } from './itineraire.js';
 import { ELEC_BY } from './symboles.js';
 
 const ROUGE = '#C2362B';
@@ -152,6 +152,34 @@ EXT.overlay.push((c, px) => {
   for (const p of pts) { c.beginPath(); c.arc(p.x, p.y, 3.5 * px, 0, Math.PI * 2); c.fillStyle = '#D24F1A'; c.fill(); }
 });
 
+/* ---------------- raccordement automatique ---------------- */
+/* relie par des gaines proposées tous les points non raccordés des circuits donnés : une seule étape d'« Annuler ».
+   suivi(i, n) est appelé avant chaque circuit (affichage de l'avancement). Renvoie { gaines, points, echecs, len }. */
+async function raccorderAuto(cids, suivi) {
+  const bilan = { gaines: 0, echecs: [], len: 0, circuits: 0 };
+  const pose = S.ductPose === 'hauteur' && !Number.isFinite(S.ductZ) ? null : S.ductPose || null;
+  for (let i = 0; i < cids.length; i++) {
+    if (suivi) { suivi(i, cids.length); await new Promise((r) => setTimeout(r, 0)); }
+    const r = raccorderCircuit(P, cids[i], { pose });
+    if (r.gaines.length) bilan.circuits++;
+    for (const g of r.gaines) { creerGaineElec(g); bilan.gaines++; bilan.len += g.len; }
+    for (const e of r.echecs) bilan.echecs.push(Object.assign({ cid: cids[i] }, e));
+  }
+  if (bilan.gaines) { if (!famOn('gaines')) S.filt.off = S.filt.off.filter((x) => x !== 'gaines'); S.layers.elec = true; commit(); requestRender(); }
+  return bilan;
+}
+function messageAuto(b) {
+  if (!b.gaines && !b.echecs.length) return 'Tout est déjà raccordé au tableau.';
+  const e = b.echecs.length;
+  return `${b.gaines} gaine${b.gaines > 1 ? 's' : ''} proposée${b.gaines > 1 ? 's' : ''} (${Math.round(b.len / 100)} m à l’horizontale)${e ? ` ; ${e} point${e > 1 ? 's' : ''} sans itinéraire` : ''}. Vérifiez les tracés ; « Annuler » retire tout.`;
+}
+async function raccorderEtDire(cids) {
+  toast('Recherche des itinéraires…'); await new Promise((r) => setTimeout(r, 30));
+  const b = await raccorderAuto(cids);
+  toast(messageAuto(b)); renderInspector();
+  return b;
+}
+
 /* section de l'inspecteur d'un symbole relié à un circuit : raccordement par les gaines */
 function itineraireSection(e) {
   const def = ELEC_BY.get(e.type);
@@ -161,7 +189,7 @@ function itineraireSection(e) {
   return sec('Cheminement',
     ok ? h('p', { class: 'note' }, `Raccordé au tableau par les gaines : ${fmtM(pt.dist)} (verticales comprises).`)
       : h('p', { class: 'note' }, ch.tableau ? 'Pas encore raccordé au tableau par les gaines.' : 'Pas de tableau électrique sur le plan.'),
-    btns(ok ? null : btn('Proposer un itinéraire', () => proposerItineraire(e), 'sm', 'duct'), btn('Zone interdite', startZone, 'sm')));
+    btns(ok ? null : btn('Proposer un itinéraire', () => proposerItineraire(e), 'sm', 'duct'), ch.tableau && !ch.complet ? btn(`Raccorder tout le circuit (${ch.nonAtteints.length})`, () => raccorderEtDire([e.cid]), 'sm') : null, btn('Zone interdite', startZone, 'sm')));
 }
 
 /* conflits d'une gaine, pour son inspecteur */
@@ -172,4 +200,5 @@ function conflitsSection(d) {
     h('p', { class: 'note' }, 'Points d’attention de Calque (pas une règle de la norme).'));
 }
 
+export { messageAuto, raccorderAuto, raccorderEtDire };
 export { conflitsSection, departPour, finishZone, inspZone, itineraireSection, proposerItineraire, startZone, validerItineraire, zoneAt, ZD };

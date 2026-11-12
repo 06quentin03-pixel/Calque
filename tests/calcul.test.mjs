@@ -220,7 +220,11 @@ test('données électriques sorties de electricite.js : chargées sans écran, v
   assert.equal(D.SEC_MAX[2.5], 20); assert.equal(D.CK.cuisson.cal, 32); assert.equal(D.elecPower({ type: 'rad_elec' }), 1500);
   assert.equal(D.elecPower({ type: 'rad_elec', p: 750 }), 750); assert.equal(D.elecPower({ type: 'pc' }), 0);
   assert.equal(D.defaultKindFor('pc32'), 'cuisson'); assert.equal(D.accepts('eclairage', 'spot'), true);
-  assert.deepEqual(D.agcpOf(9), [15, 45]); assert.equal(D.circLoad({ kind: 'chauffage', cal: 20 }), 20); assert.equal(D.circLoad({ kind: 'prises', cal: 20 }), 10);
+  assert.deepEqual(D.agcpOf(9), [15, 45, 45]); assert.deepEqual(D.agcpOf(12, 'mono'), [30, 60, 60]);
+  /* triphasé : réglage par phase (36 kVA → 60 A, 18 kVA → 30 A) ; palier inconnu : réglage calculé, sans plage */
+  assert.deepEqual(D.agcpOf(36, 'tri'), [30, 60, 60]); assert.deepEqual(D.agcpOf(18, 'tri'), [10, 30, 30]); assert.deepEqual(D.agcpOf(9, 'tri'), [10, 15, 30]);
+  assert.deepEqual(D.agcpOf(36, 'mono'), [0, 160, 0]); assert.match(D.agcpLabel(36, 'tri'), /30\/60 A tétrapolaire réglé à 60 A par phase/); assert.match(D.agcpLabel(9), /^15\/45 A réglé à 45 A$/);
+  for (const r of ['mono', 'tri']) for (const k of D.KVA_PALIERS[r]) { const i = k * 1000 / (r === 'tri' ? 690 : 230), set = D.agcpOf(k, r)[1]; assert.ok(set >= i && set < i + 13, `${k} kVA ${r} : réglage ${set} A pour ${i.toFixed(1)} A`); } assert.equal(D.circLoad({ kind: 'chauffage', cal: 20 }), 20); assert.equal(D.circLoad({ kind: 'prises', cal: 20 }), 10);
   assert.equal(D.puissanceSymbole({ type: 'pc' }), null, 'prise : aucune puissance devinée');
 });
 

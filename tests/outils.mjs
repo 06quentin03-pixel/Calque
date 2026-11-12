@@ -28,6 +28,8 @@ after(async () => { await env.browser?.close(); server?.close(); });
 
 export async function fresh(opts = {}) {
   const ctx = await env.browser.newContext({ viewport: opts.viewport || { width: 1180, height: 820 }, acceptDownloads: true, serviceWorkers: 'block', hasTouch: !!opts.touch, isMobile: !!opts.mobile });
+  /* polices d'internet bloquées : rendu identique d'une page à l'autre (sinon la police arrive parfois en cours de test) */
+  await ctx.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));

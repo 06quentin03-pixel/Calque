@@ -46,7 +46,7 @@ test('chantier (sans écran) : nettoyage sans rien deviner, avancement, réserve
   assert.ok(distanceTrait({ pts: [0, 0, 100, 0] }, { x: 50, y: 3 }) === 3);
 });
 
-test('migration v8 → v9 (puis v10) : chantier vide, copie de sécurité dans l’historique', async () => {
+test('migration v8 → v9 (puis v11) : chantier vide, copie de sécurité dans l’historique', async () => {
   const { ctx, page, errors } = await fresh();
   const old = { v: 8, id: 'pV8', name: 'Plan v8', levels: [{ id: 'L0', name: 'RDC', elev: 0, h: 250, slab: 20 }], nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [], circuits: [], rcds: [], links: [], ducts: [], install: { kva: 9 }, doc: { revisions: [] } };
   await seedPlan(ctx, old);
@@ -57,9 +57,9 @@ test('migration v8 → v9 (puis v10) : chantier vide, copie de sécurité dans l
     const vs = await St.versionsOf(N.P.id);
     return { v: N.P.v, ch: N.P.chantier, why: vs.map((x) => x.why) };
   });
-  assert.equal(r.v, 10); // format actuel
+  assert.equal(r.v, 11); // format actuel
   assert.deepEqual(r.ch, { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] });
-  assert.ok(r.why.some((w) => /v8 → v10/.test(w)), r.why.join(' | '));
+  assert.ok(r.why.some((w) => /v8 → v11/.test(w)), r.why.join(' | '));
   assert.deepEqual(errors, []);
   await ctx.close();
 });
