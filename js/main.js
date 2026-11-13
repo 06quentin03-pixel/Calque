@@ -22,6 +22,7 @@ import './fondtraits.js';
 import './calquesui.js';
 import './cablerui.js';
 import './circuitsui.js';
+import './schemaui.js';
 import './demarrage.js';
 import { boot } from './demarrage.js';
 import { watchUpdates } from './miseajour.js';

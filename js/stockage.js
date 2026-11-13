@@ -18,6 +18,7 @@ import { nettoyerVariantes } from './variantes.js';
 import { nettoyerChiffrage } from './quantitatif.js';
 import { nettoyerCalques, nettoyerVues } from './calques.js';
 import { nettoyerCircuitV12 } from './cablage.js';
+import { nettoyerSchemas } from './schema.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -152,6 +153,12 @@ const MIGRATIONS = {
      prévient une ancienne version de Calque qu'elle ne connaît pas ces symboles. */
   12(p) {
     for (const d of Array.isArray(p.ducts) ? p.ducts : []) nettoyerGaine(d);
+    return p;
+  },
+  /* v13 → v14 : schémas électriques (onglet « Schémas ») : `schemas` { folios: [{ id, titre, type, syms, fils, textes }] },
+     indépendants du bâtiment. Les plans v13 n'en ont pas : aucun folio ; rien n'est deviné. */
+  13(p) {
+    p.schemas = nettoyerSchemas(p.schemas);
     return p;
   },
 };

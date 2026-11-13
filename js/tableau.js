@@ -246,10 +246,11 @@ function setView(v) {
   $('#main').hidden = !planLike;
   $('#elecView').hidden = v !== 'elec';
   $('#view3d').hidden = v !== '3d';
-  $('#levels').hidden = v === 'elec';
+  $('#levels').hidden = v === 'elec' || v === 'schema';
+  { const sv = $('#schemaView'); if (sv) sv.hidden = v !== 'schema'; }
   $('#btnView').hidden = !planLike;
-  $('#btnFilter').hidden = v === 'elec';
-  $('#btnExport').hidden = v === 'elec';
+  $('#btnFilter').hidden = v === 'elec' || v === 'schema';
+  $('#btnExport').hidden = v === 'elec' || v === 'schema';
   closeDimEdit(); updateFilterUI();
   for (const b of $$('.vtab')) b.setAttribute('aria-pressed', String(b.dataset.view === v));
   closePops();

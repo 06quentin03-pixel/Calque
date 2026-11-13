@@ -10,13 +10,15 @@ import { P, blankPlan, inPoly, projSeg, setP, touch, uid, vdot, vsub } from './n
 import { geo, syncRooms } from './geometrie.js';
 import { addWall, clampOpening } from './mutations.js';
 import { ELEC_BY, FURN_BY } from './symboles.js';
-import { generateFromPlan } from './electricite.js';
+import { generateFromPlan, circNumbers } from './electricite.js';
 import { makeElecFromDef, makeItemFromDef, newOpening } from './interaction.js';
 import { copyWalls } from './interface.js';
 import { articlesFor } from './technique.js';
 import { REGLES_VERSION } from './regles.js';
 import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
 import { dupliquer, initialiser } from './variantes.js';
+import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
+import { agcpLabel } from './elecdonnees.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -302,6 +304,7 @@ function samplePlan() {
   variantesExemple();
   chiffrageExemple();
   plansElectriquesExemple();
+  schemasExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
 }
@@ -404,6 +407,15 @@ function chiffrageExemple() {
   for (const [k, v] of Object.entries(prix)) c.prix[k] = { v, st: 'saisie', src };
   for (const [k, v] of Object.entries(temps)) c.temps[k] = { v, st: 'saisie', src };
   P.chiffrage = c;
+}
+
+/* onglet « Schémas » : les modèles de Calque (démarrage direct, inverseur, télérupteur, va-et-vient) et la distribution
+   créée depuis le tableau du plan. Aucune référence de matériel : elles restent à saisir. */
+function schemasExemple() {
+  const sch = schemasDe(P);
+  for (const m of ['demarrage', 'inversion', 'telerupteur', 'vaetvient']) appliquerModele(sch, m);
+  const inst = P.install || {};
+  depuisTableau(sch, P, { reperes: circNumbers(), arrivee: `Arrivée : disjoncteur de branchement ${agcpLabel(inst.kva, inst.reseau)} (${inst.kva} kVA, valeurs estimées)` });
 }
 
 export { NOM_EXEMPLE, samplePlan };

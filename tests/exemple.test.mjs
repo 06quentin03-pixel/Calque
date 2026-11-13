@@ -42,7 +42,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 13);
+  assert.equal(r.v, 14);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -116,7 +116,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 13);
+  assert.equal(r.v, 14);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
@@ -127,7 +127,12 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
   assert.ok(r.nom >= 8); assert.ok(r.svg > 500);
   assert.ok(r.cablageRegles >= 1, 'contrôles de câblage dans le rapport');
   /* demandes du 13 novembre : gaine dans la cloison, boîte de dérivation murale, sortie de câble radiateur raccordée */
-  assert.deepEqual(r.demandes, { cloison: true, mur: true, sortie: true, raccordee: true }); assert.notEqual(r.global, 'conforme', 'jamais de conformité globale');
+  assert.deepEqual(r.demandes, { cloison: true, mur: true, sortie: true, raccordee: true });
+  /* onglet « Schémas » : modèles et distribution importée du tableau, sans erreur de schéma */
+  const sc = await page.evaluate(async () => { const N = await import('./js/noyau.js'), S = await import('./js/schema.js'); const s = N.P.schemas;
+    return { n: s.folios.length, types: [...new Set(s.folios.map((f) => f.type))].sort(), err: S.controlesSchema(s).filter((x) => x.niveau === 'erreur').length, nom: S.nomenclature(s).lignes.length, bor: S.borniers(s).map((b) => b.rep), disj: s.folios.filter((f) => f.type === 'distribution').reduce((t, f) => t + f.syms.filter((y) => y.t === 'disj2').length, 0), circ: N.P.circuits.length }; });
+  assert.ok(sc.n >= 5); assert.deepEqual(sc.types, ['developpe', 'distribution', 'principe']);
+  assert.equal(sc.err, 0); assert.ok(sc.nom >= 15); assert.ok(sc.bor.includes('X1')); assert.equal(sc.disj, sc.circ); assert.notEqual(r.global, 'conforme', 'jamais de conformité globale');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

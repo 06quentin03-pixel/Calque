@@ -58,12 +58,12 @@ test('migration v11 → v12 : copie de sécurité, valeurs invalides retirées, 
     const N = await import('./js/noyau.js');
     return { v: N.P.v, calques: N.P.calques, vues: N.P.vues, c0: N.P.circuits[0], c1: N.P.circuits[1], sc: N.P.elec.map((e) => e.sc ?? null), n: N.P.elec.length, texts: N.P.texts.length };
   });
-  assert.equal(r.v, 13);
+  assert.equal(r.v, 14);
   assert.deepEqual(r.calques, { prises: { col: '#AA0000' } }); assert.deepEqual(r.vues, []);
   assert.ok(!('col' in r.c0)); assert.equal(r.c1.courbe, 'C'); assert.equal(r.c1.cond, 'r2v');
   assert.deepEqual(r.sc, [null, null, null, 1.5, null]); assert.equal(r.n, 5); assert.equal(r.texts, 1);
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
-  assert.ok(vers.some((w) => /\(v11 → v13\)/.test(w)), vers.join(' | '));
+  assert.ok(vers.some((w) => /\(v11 → v14\)/.test(w)), vers.join(' | '));
   assert.deepEqual(errors, []);
   await ctx.close();
 });

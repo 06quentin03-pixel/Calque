@@ -652,7 +652,7 @@ function setTool(t) {
   if (t !== 'select' && t !== 'place' && (ui.sel || ui.inspOpen)) { ui.sel = null; if (window.matchMedia('(max-width: 1099px)').matches) ui.inspOpen = false; renderInspector(); }
   ui.chain = null; ui.cursor = null; ui.roomDraft = null; ui.dimDraft = null; ui.ghost = null;
   if (t !== 'wall') ui.wallLenTxt = '';
-  for (const b of $$('.tool')) b.setAttribute('aria-pressed', String(b.dataset.tool === t || (t === 'place' && ui.place && b.dataset.tool === ui.place.from)));
+  for (const b of $$('.tool[data-tool]')) b.setAttribute('aria-pressed', String(b.dataset.tool === t || (t === 'place' && ui.place && b.dataset.tool === ui.place.from)));
   cv.style.cursor = '';
   updateHint(); requestRender();
 }

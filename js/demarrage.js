@@ -1,6 +1,6 @@
 /* Calque — module « demarrage » : plan d’exemple, clavier, démarrage.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, P, blankPlan, inPoly, loadSettings, projSeg, setP, touch, ui, uid, vdot, vsub } from './noyau.js';
+import { $, $$, EXT, P, blankPlan, inPoly, loadSettings, projSeg, setP, touch, ui, uid, vdot, vsub } from './noyau.js';
 import { geo, syncRooms } from './geometrie.js';
 import { addWall, clampOpening } from './mutations.js';
 import { H } from './historique.js';
@@ -37,6 +37,7 @@ window.addEventListener('keydown', (e) => {
   }
   if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
   if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+  if (ui.view === 'schema') { if (EXT.toucheSchema) EXT.toucheSchema(e, k, mod); return; } // onglet Schémas : ses propres raccourcis
   if (toucheGroupe(e, k)) return;
   if (mod && k === 'd') { e.preventDefault(); duplicateSel(); return; }
   if (mod) return;
@@ -101,7 +102,7 @@ async function boot() {
   }
   if (!ok) openPlan(samplePlan(), uid('p'), { example: true });
   resizeCanvas();
-  { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d' || vw === 'chantier') setView(vw); }
+  { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d' || vw === 'chantier' || vw === 'schema') setView(vw); }
   getDownloads();
   /* rappel de la sauvegarde complète, quelques secondes après l'ouverture (jamais pendant le chargement) */
   setTimeout(() => { verifierSauvegarde(exportAll).catch(() => { }); }, 5000);
