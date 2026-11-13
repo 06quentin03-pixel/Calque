@@ -393,7 +393,7 @@ function majBarre() {
 function majHint() {
   const el = $('#schHint'); if (!el) return;
   let k = null;
-  if (SU.test) k = [h('b', null, 'Tester'), h('span', { class: 'msg' }, 'Touchez les commandes encadrées en vert ; fils sous tension en couleur.'), btn('Repos', () => { SU.simE = SIM.etatInitial(); recalculer(); majInsp(); dessiner(); }, 'sm'), btn('Quitter', () => basculerTest(false), 'pri sm')];
+  if (SU.test) k = [h('b', null, 'Tester'), h('span', { class: 'msg' }, 'Touchez les commandes encadrées en vert ; fils sous tension en couleur. État : touchez le nom du folio.'), btn('Repos', () => { SU.simE = SIM.etatInitial(); recalculer(); majInsp(); dessiner(); }, 'sm'), btn('Quitter', () => basculerTest(false), 'pri sm')];
   else if (SU.tool === 'fil') k = [h('b', null, 'Fil'), h('span', { class: 'msg' }, SU.fil ? 'Touchez le point suivant : le fil se termine sur une borne ou un autre fil.' : 'Touchez une borne (point orange) ou un fil pour commencer.'),
     SU.fil ? btn('Terminer le fil', finirFil, 'sm') : null, btn('Fermer', () => setOutil('select'), 'pri sm')];
   else if (SU.tool === 'place' && SU.place) k = [h('b', null, SYM_BY.get(SU.place).n), h('span', { class: 'msg' }, 'Touchez la feuille pour le poser (plusieurs fois si besoin). Posé sur un fil, il s’y insère.'),
@@ -449,7 +449,7 @@ function majInsp() {
   box.replaceChildren(...parts.filter(Boolean));
   /* écran étroit (iPad en portrait, téléphone) : panneau fermé tant que rien n'est sélectionné, comme dans la vue Plan */
   const etroit = window.matchMedia('(max-width: 1099px)').matches;
-  box.classList.toggle('closed', etroit && !SU.test && !SU.sel.size && !SU.inspOuvert && !!f);
+  box.classList.toggle('closed', etroit && !SU.sel.size && !SU.inspOuvert && !!f);
   const x = box.querySelector('.insp-head .x');
   if (x) x.onclick = (ev) => { ev.stopPropagation(); SU.inspOuvert = false; SU.sel.clear(); box.classList.add('closed'); dessiner(); };
   if (focusId) { const el = document.getElementById(focusId); if (el) el.focus(); }

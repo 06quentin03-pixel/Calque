@@ -200,11 +200,13 @@ const planV14 = () => ({
 });
 test('écran : migration v14 → v15 (copie de sécurité, champs invalides retirés, rien de deviné)', async () => {
   const { ctx, page, errors } = await fresh();
-  await seedPlan(ctx, planV14()); await boot(page);
+  await seedPlan(ctx, planV14()); await ctx.addInitScript((o) => { window.__v14 = o; }, planV14()); await boot(page);
   const r = await page.evaluate(async () => {
     const N = await import('./js/noyau.js'); const P = N.P;
     const vers = await new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; });
-    return { v: P.v, items: P.items.map((x) => x.tremie || null), rooms: P.rooms.map((x) => [x.ext || null, x.sol || null]), elec: P.elec.map((x) => [x.col || null, x.tab || null, x.w || null, x.d || null]), conds: P.ducts[0].conds, vers };
+    /* pièces sans murs : effacées à l'ouverture (rien à détecter) ; leur nettoyage est vérifié sur la migration seule */
+    const S = await import('./js/stockage.js'), m = S.migratePlan(JSON.parse(JSON.stringify(window.__v14)));
+    return { v: P.v, items: P.items.map((x) => x.tremie || null), rooms: m.plan.rooms.map((x) => [x.ext || null, x.sol || null]), elec: P.elec.map((x) => [x.col || null, x.tab || null, x.w || null, x.d || null]), conds: P.ducts[0].conds, vers };
   });
   assert.equal(r.v, 15);
   assert.ok(r.vers.some((w) => /\(v14 → v15\)/.test(w)), 'copie de sécurité');

@@ -28,7 +28,7 @@ const estVide = (nom, aire) => /^Pièce \d+$/.test(String(nom || '')) && aire < 
 /* besoins d'une pièce d'après son nom et sa surface (m²) */
 function besoinsPiece(nom, aire, ext) {
   const n = String(nom || '');
-  /* terrasse, balcon (pièce extérieure, v15) : pas une pièce d'habitation, aucun besoin de socles ni d'éclairage imposé ici */
+  /* terrasse, balcon (pièce extérieure, v15) ou sol supprimé (vide) : pas une pièce d'habitation, aucun besoin imposé ici */
   if (ext) return { socles: 0, pourquoi: '', plan: 0, cuisson: false, lumiere: false, lumiereObligatoire: false, rj45: false, vide: true, exterieure: true };
   if (estVide(n, aire)) return { socles: 0, pourquoi: '', plan: 0, cuisson: false, lumiere: false, lumiereObligatoire: false, rj45: false, vide: true };
   let socles = 0, pourquoi = '';

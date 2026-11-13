@@ -189,6 +189,8 @@ function levelBelow(lv) { const L = levelsSorted(); const i = L.findIndex((l) =>
    Hors surface habitable, sans plafond ; l'étage du dessous n'est pas touché. */
 const PIECES_EXT = { terrasse: 'Terrasse', balcon: 'Balcon' };
 const estExterieure = (lbl) => !!(lbl && PIECES_EXT[lbl.ext]);
+/* pièce non contrôlée comme une pièce d'habitation : terrasse, balcon, ou sol supprimé (trémie, vide) */
+const horsHabitation = (lbl) => estExterieure(lbl) || !!(lbl && lbl.sol === 'vide');
 function climbHeight(lv) {
   const l = levelOf(lv), up = levelAbove(lv);
   if (up) return up.elev - l.elev;
@@ -219,7 +221,7 @@ function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setP(v) { P = v; }
 
-export { PIECES_EXT, estExterieure };
+export { PIECES_EXT, estExterieure, horsHabitation };
 export { $, $$, C, DEG, EXT, LAYERS_CH, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
   fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,
