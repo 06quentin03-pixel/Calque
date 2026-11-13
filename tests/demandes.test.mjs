@@ -308,7 +308,7 @@ test('écran : plan d’exemple, choix des conducteurs dans le gestionnaire de c
     assert.ok(apres.on.includes('KM1'), 'auto-maintien après avoir lâché');
     assert.ok(apres.insp.includes('Mode test') && apres.insp.includes('enclenché'));
     assert.ok(apres.ow, 'pas de défilement horizontal');
-    await page.click('#schInsp >> text=Quitter le test'); await wait(page, 200);
+    await page.click('#schHint >> text=Quitter'); await wait(page, 200); // bandeau toujours visible (le panneau est fermé en portrait)
     assert.equal(await page.evaluate(async () => (await import('./js/schemaui.js')).ETAT_SCHEMA.test), false);
     assert.deepEqual(errors, []);
     await ctx.close();
