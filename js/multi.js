@@ -10,6 +10,7 @@ import { addWall, clampOpening, deleteWall, normDeg, wallsAt } from './mutations
 import { isStair } from './symboles.js';
 import { accepts, circNumbers, circuitLabel, cleanLinks } from './electricite.js';
 import { ductVisible, elecVisible } from './reseaux.js';
+import { calqueDeElec, calqueDeGaine, calqueVerrouille, calqueVisible } from './calques.js';
 import { TAP, commit, cv, drawSelShape, hitTest, hitTol, panDrag, pencilMode, requestRender, revert } from './interaction.js';
 import { body, btn, btns, confirmBtn, h, inspHead, numField, renderInspector, sec, setTool, toast, updateHint } from './interface.js';
 
@@ -27,8 +28,19 @@ function valider() {
   if (ok.length !== s.length) ui.multi = ok;
   return ui.multi;
 }
+/* calque d'un objet du groupe (verrouillé ou masqué : jamais pris) */
+function calqueDe(t, o) {
+  if (t === 'elec') return calqueDeElec(o);
+  if (t === 'duct') return calqueDeGaine(o);
+  if (t === 'item') return isStair(o.type) ? 'archi' : 'mobilier';
+  if (t === 'text') return 'annotations';
+  if (t === 'dim') return 'cotations';
+  return 'archi';
+}
 function visible(t, o) {
   if (o.lv !== ui.lv) return false;
+  const cq = calqueDe(t, o);
+  if (!calqueVisible(cq) || calqueVerrouille(cq)) return false;
   if (t === 'elec') return S.layers.elec && elecVisible(o);
   if (t === 'duct') return S.layers.elec && ductVisible(o);
   if (t === 'item') return isStair(o.type) || S.layers.furn;

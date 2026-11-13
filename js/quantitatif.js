@@ -10,7 +10,8 @@ import { distToEdges, inPoly, isNum } from './noyau.js';
 import { ELEC_BY } from './symboles.js';
 import { ART_BY } from './technique.js';
 import { CK } from './elecdonnees.js';
-import { TRAVERSEE } from './cheminement.js';
+import { TRAVERSEE, aCommander } from './cheminement.js';
+import { FONCTIONS, cablagePlan } from './cablage.js';
 import { conducteurs, lignesCircuits, listeMateriel } from './materiel.js';
 
 const HORS_PIECE = 'Hors pièce';
@@ -80,8 +81,8 @@ function quantitatif(plan, opts) {
     if (!e || HORS_APPAREILLAGE.has(e.type)) continue;
     const d = designer(plan, e, comps);
     let l = par.get(d.cle);
-    if (!l) { par.set(d.cle, (l = { cle: d.cle, cat: 'Appareillage', des: d.des, qte: 0, unite: 'u', st: 'saisie', note: '', niveaux: new Map() })); if (d.art) l.art = d.art; lignes.push(l); }
-    l.qte++; l.niveaux.set(e.lv, (l.niveaux.get(e.lv) || 0) + 1);
+    if (!l) { par.set(d.cle, (l = { cle: d.cle, cat: 'Appareillage', des: d.des, qte: 0, unite: 'u', st: 'saisie', note: '', niveaux: new Map(), ids: [] })); if (d.art) l.art = d.art; lignes.push(l); }
+    l.qte++; l.niveaux.set(e.lv, (l.niveaux.get(e.lv) || 0) + 1); l.ids.push(e.id); // ids : retrouver la ligne sur le plan
     const piece = pieces ? pieceDe(pieces, e.lv, e) : null;
     if (pieces) ajoute(piecesMap, e.lv + '|' + piece, () => ({ lv: e.lv, niveau: lvNom.get(e.lv) || '', piece, m: new Map() }), d, 1);
     if (e.cid) ajoute(circMap, e.cid, () => ({ id: e.cid, m: new Map() }), d, 1);
@@ -90,7 +91,7 @@ function quantitatif(plan, opts) {
   lignes.sort(tri);
   /* protections du tableau */
   const prot = new Map();
-  const P = (cle, des, note) => { let l = prot.get(cle); if (!l) prot.set(cle, (l = { cle, cat: 'Protections', des, qte: 0, unite: 'u', st: 'saisie', note })); l.qte++; return l; };
+  const P = (cle, des, note, cid) => { let l = prot.get(cle); if (!l) prot.set(cle, (l = { cle, cat: 'Protections', des, qte: 0, unite: 'u', st: 'saisie', note, circs: [] })); l.qte++; if (cid) l.circs.push(cid); return l; };
   const inst = plan.install || {};
   const circuits = plan.circuits || [];
   const protCirc = (c) => {
@@ -99,7 +100,7 @@ function quantitatif(plan, opts) {
     if (c.dda) out.push({ cle: 'dda', des: 'Détecteur d’arc (DDA)' });
     return out;
   };
-  for (const c of circuits) for (const d of protCirc(c)) P(d.cle, d.des, 'un par circuit du tableau');
+  for (const c of circuits) for (const d of protCirc(c)) P(d.cle, d.des, 'un par circuit du tableau', c.id);
   for (const r of plan.rcds || []) if (isNum(r.cal)) P(`dd:${r.type}:${r.cal}:${inst.reseau === 'tri' ? 'tri' : 'mono'}`, `Interrupteur différentiel 30 mA type ${r.type} ${r.cal} A${inst.reseau === 'tri' ? ' tétrapolaire' : ''}`, 'lu dans le tableau');
   if (inst.parafoudre) P('parafoudre', 'Parafoudre', 'option de l’installation');
   const lp = [...prot.values()].sort(tri);
@@ -107,13 +108,22 @@ function quantitatif(plan, opts) {
   const M = listeMateriel(plan);
   const lm = M.lignes.map((l) => ({ cle: `mat:${l.cat}|${l.des}`, cat: l.cat, des: l.des, qte: l.qte, unite: l.unite, st: l.st, note: l.note }));
   /* par circuit : protection + appareils + câble à commander */
-  const nums = reperes(plan), lc = new Map(lignesCircuits(plan).map((x) => [x.c.id, x]));
+  const nums = reperes(plan), lc = new Map(lignesCircuits(plan).map((x) => [x.c.id, x])), CAB = cablagePlan(plan);
   const parCircuit = circuits.map((c) => {
     const g = circMap.get(c.id), ls = [];
     for (const d of protCirc(c)) ls.push({ cle: d.cle, des: d.des, qte: 1, unite: 'u' });
     if (g) ls.push(...[...g.m.values()].sort(tri));
     const x = lc.get(c.id);
-    if (x && x.ch.complet && x.cmd != null) { const k = conducteurs(plan, c); ls.push({ cle: `mat:Conducteurs|${isNum(c.sec) ? `Fil ou câble ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(c.sec)} mm²` : 'Section non indiquée'}`, des: `Conducteurs ${isNum(c.sec) ? String(c.sec).replace('.', ',') + ' mm²' : '(section non indiquée)'} (${k.txt})`, qte: x.cmd * k.n, unite: 'm', st: 'estimee' }); }
+    if (x && x.ch.complet && x.cmd != null) {
+      const cleFil = `mat:Conducteurs|${isNum(c.sec) ? `Fil ou câble ${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(c.sec)} mm²` : 'Section non indiquée'}`;
+      const cab = CAB.circuits.get(c.id), res = M.reserve;
+      if (cab && cab.troncons.length) {
+        /* moteur de câblage : conducteurs réels du schéma usuel (navettes, retours, fil pilote…) */
+        const fils = Object.entries(cab.fils);
+        if (fils.length) ls.push({ cle: cleFil, des: `Conducteurs ${isNum(c.sec) ? String(c.sec).replace('.', ',') + ' mm²' : '(section non indiquée)'} (${fils.map(([fn]) => (FONCTIONS[fn] ? FONCTIONS[fn].n.toLowerCase() : fn)).join(', ')})`, qte: fils.reduce((s2, [, cm]) => s2 + aCommander(cm, res), 0), unite: 'm', st: 'estimee' });
+        for (const [des, cm] of Object.entries(cab.cables)) ls.push({ cle: `mat:Conducteurs|Câble ${des}`, des: `Câble ${des}`, qte: aCommander(cm, res), unite: 'm', st: 'estimee' });
+      } else { const k = conducteurs(plan, c); ls.push({ cle: cleFil, des: `Conducteurs ${isNum(c.sec) ? String(c.sec).replace('.', ',') + ' mm²' : '(section non indiquée)'} (${k.txt})`, qte: x.cmd * k.n, unite: 'm', st: 'estimee' }); }
+    }
     return { id: c.id, repere: nums.get(c.id), nom: c.name, type: (CK[c.kind] || { n: 'Autre' }).n, lignes: ls, cableConnu: !!(x && x.ch.complet && x.cmd != null) };
   });
   const ordre = new Map((plan.levels || []).map((l, i) => [l.id, i]));

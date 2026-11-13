@@ -12,6 +12,7 @@
 
    Ce qui demande l'écran (dessin du plan, SVG du tableau, contour des pièces, règles du plan) est fourni par
    l'appelant (`dossierui.js`) au moyen des options ; sans ces options, le chapitre l'indique au lieu d'inventer. */
+import { nomenclatureTableau } from './nomenclature.js';
 import { PdfCtx, buildPdf, textWidth } from './pdf.js';
 import { dessinerSVG } from './svgpdf.js';
 import { CONF, LIB_STATUT, bilanDuPlan, equilibrageDuPlan, fmt } from './calcul.js';
@@ -34,6 +35,7 @@ const CTRL_COL = { conforme: COL.ok, non_conforme: COL.bad, verification: COL.ve
 const CHAPITRES = [
   { id: 'garde', n: 'Page de garde, sommaire et révisions' },
   { id: 'plans', n: 'Plans techniques' },
+  { id: 'plans_elec', n: 'Plans électriques (implantation, câblage, éclairage, prises, spécialisés, courants faibles)' },
   { id: 'unifilaire', n: 'Schéma unifilaire' },
   { id: 'coffret', n: 'Coffret électrique' },
   { id: 'nomenclature', n: 'Nomenclatures' },
@@ -308,6 +310,26 @@ function chapPlans(R, plan, o) {
   return n;
 }
 
+/* plans électriques : une page par vue et par niveau (vues de calques.js), légende automatique (symboles, circuits,
+   conducteurs). Un niveau sans rien à montrer dans une vue est sauté. */
+const VUES_DOSSIER = [['implantation', 'Plan d’implantation électrique'], ['cablage', 'Plan de câblage'], ['eclairage', 'Plan d’éclairage'],
+  ['prises', 'Plan des prises'], ['specialises', 'Plan des équipements spécialisés'], ['faibles', 'Plan des courants faibles']];
+function chapPlansElec(R, plan, o) {
+  const niveaux = (plan.levels || []).filter((l) => !o.niveaux || o.niveaux.includes(l.id));
+  if (!o.dessinerPlan) { R.page('plans_elec'); R.texte('Plans non disponibles : le dessin du plan se fait depuis l’application.', { color: COL.ink2 }); return 0; }
+  const vues = VUES_DOSSIER.filter(([id]) => !o.vuesPlans || o.vuesPlans.includes(id));
+  let n = 0;
+  for (const [vue, titre] of vues) for (const L of niveaux) {
+    if (o.vueAContenu && !o.vueAContenu(vue, L.id)) continue;
+    const pg = R.page('plans_elec', { titre: `${titre} · ${L.name}`, format: o.formatPlans || 'A4', paysage: o.paysagePlans !== false, helv: false });
+    const r = o.dessinerPlan(pg.ctx, { x: pg.corps.x - 6, y: pg.corps.y - 8, w: pg.corps.w + 12, h: pg.corps.h + 16 }, L, { vue });
+    if (!r) { R.texte(`${L.name} : niveau vide.`, { color: COL.ink2 }); continue; }
+    pg.echelle = r.echelle || null; n++;
+  }
+  if (!n) { R.page('plans_elec'); R.texte('Aucun appareil électrique à montrer.', { color: COL.ink2 }); }
+  return n;
+}
+
 function chapSVG(R, id, svg, titre, o) {
   if (!svg) { R.page(id, { titre }); R.texte('Pas encore de tableau : générez-le depuis le plan (Tableau électrique).', { color: COL.ink2 }); return; }
   const pg = R.page(id, { titre, format: o.formatSchemas || 'A4', paysage: true });
@@ -334,6 +356,13 @@ function chapNomenclature(R, plan, o) {
   if (!rcds.length) R.texte('Aucun interrupteur différentiel.', { color: COL.ink2 });
   else R.tableau([{ t: 'Repère', w: 0.7 }, { t: 'Type', w: 0.6 }, { t: 'Calibre', w: 0.7, al: 'r' }, { t: 'Sensibilité', w: 0.8, al: 'r' }, { t: 'Circuits protégés', w: 4 }],
     rcds.map((r) => [{ t: rn.get(r.id), b: true }, r.type, r.cal + ' A', '30 mA', (plan.circuits || []).filter((c) => c.rcd === r.id).map((c) => nums.get(c.id) + ' ' + c.name).join(', ') || '—']));
+  /* nomenclature du tableau (appareils modulaires regroupés, repères) : nomenclature.js */
+  const nt = nomenclatureTableau(plan, nums, rn, o.layCoffret || null);
+  if (nt.lignes.length) {
+    R.titre('Nomenclature du tableau', 2);
+    R.tableau([{ t: 'Groupe', w: 1.4 }, { t: 'Désignation', w: 3 }, { t: 'Qté', w: 0.5, al: 'r' }, { t: 'Repères', w: 2 }, { t: 'Fiabilité', w: 0.8 }],
+      nt.lignes.map((l) => [l.groupe, l.des, { t: String(l.qte), b: true }, l.reperes.join(', ') || '—', l.st === 'estimee' ? { t: 'Estimée', st: 'estimee' } : 'Lue']));
+  }
   R.titre('Nomenclature des appareils (symboles du plan)', 2);
   const names = lvName(plan), rows = [];
   for (const L of plan.levels || []) {
@@ -633,6 +662,7 @@ function composerDossier(plan, opts) {
   const R = new Redacteur(infoDossier(plan, o));
   if (choix.has('garde')) chapGarde(R, plan, o);
   if (choix.has('plans')) chapPlans(R, plan, o);
+  if (choix.has('plans_elec')) chapPlansElec(R, plan, o);
   if (choix.has('unifilaire')) chapSVG(R, 'unifilaire', o.svgUnifilaire, 'Schéma unifilaire du tableau de répartition', o);
   if (choix.has('coffret')) chapSVG(R, 'coffret', o.svgCoffret, 'Coffret électrique (implantation des appareils)', o);
   if (choix.has('nomenclature')) chapNomenclature(R, plan, o);

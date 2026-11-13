@@ -18,7 +18,8 @@ function obstacles(plan, lv) {
   for (const o of plan.openings || []) { const W = byId.get(o.wall); if (W && isNum(o.t) && isNum(o.w)) W.ops.push(o); }
   const zones = (plan.zones || []).filter((z) => z.lv === lv && Array.isArray(z.pts) && z.pts.length >= 3);
   const vmc = (plan.ducts || []).filter((d) => d.lv === lv && d.sys === 'vmc' && Array.isArray(d.pts)).map((d) => ({ d, pts: pointsGaine(plan, d) }));
-  return { walls, zones, vmc };
+  const gaines = (plan.ducts || []).filter((d) => d.lv === lv && isElecDuct(d) && Array.isArray(d.pts) && d.pts.length >= 2).map((d) => ({ d, pts: pointsGaine(plan, d) }));
+  return { walls, zones, vmc, gaines };
 }
 function inPoly(p, poly) {
   let c = false;
@@ -93,7 +94,8 @@ function conflitsPlan(plan) {
 /* ---------------- recherche d'itinéraire ----------------
    Grille sur le niveau, quatre directions, coût = longueur + virages + traversées de murs ; les zones interdites
    sont infranchissables, les portes aussi pour une pose « à une hauteur donnée ». Résultat : { pts, len, murs, cloisons } ou null. */
-const COUT = { virage: 40, mur: 300, cloison: 80, vmc: 4 };
+/* croise : entrée sur une gaine électrique existante (évite les croisements inutiles entre gaines) */
+const COUT = { virage: 40, mur: 300, cloison: 80, vmc: 4, croise: 50 };
 class Tas {
   constructor() { this.a = []; }
   get size() { return this.a.length; }
@@ -116,6 +118,8 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
   const cx = (i) => x0 + i * cs, cy = (j) => y0 + j * cs;
   const extra = new Float32Array(N); // coût ajouté pour entrer dans la case (Infinity = interdite)
   const kindAt = new Uint8Array(N); // 1 mur, 2 cloison (pour compter les traversées)
+  const surG = new Uint8Array(N); // case sur une gaine électrique existante
+  const eviter = opts.eviterGaines !== false && O.gaines.length;
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
     const p = { x: cx(i), y: cy(j) }, k = j * nx + i;
     for (const z of O.zones) {
@@ -135,6 +139,11 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
     if (extra[k] === 0) for (const v of O.vmc) { for (let m = 1; m < v.pts.length; m++) if (distSeg(p, v.pts[m - 1], v.pts[m]) <= (v.d.dia || 125) / 20 + cs) { extra[k] = COUT.vmc; break; } if (extra[k]) break; }
   }
   const cell = (p) => ({ i: Math.max(0, Math.min(nx - 1, Math.round((p.x - x0) / cs))), j: Math.max(0, Math.min(ny - 1, Math.round((p.y - y0) / cs))) });
+  /* gaines existantes tracées sur la grille (pas d'un demi-pas de grille) */
+  if (eviter) for (const G of O.gaines) for (let m = 1; m < G.pts.length; m++) {
+    const A = G.pts[m - 1], B = G.pts[m], L = Math.hypot(B.x - A.x, B.y - A.y), n = Math.max(1, Math.ceil(L / (cs / 2)));
+    for (let q = 0; q <= n; q++) { const c = cell({ x: A.x + (B.x - A.x) * q / n, y: A.y + (B.y - A.y) * q / n }); const k = c.j * nx + c.i; if (extra[k] !== Infinity) surG[k] = 1; }
+  }
   const s = cell(from), g = cell(to), sk = s.j * nx + s.i, gk = g.j * nx + g.i;
   extra[sk] = 0; extra[gk] = 0;
   /* A* sur (case, direction) : la direction permet de compter les virages */
@@ -154,7 +163,7 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
       if (ii < 0 || jj < 0 || ii >= nx || jj >= ny) continue;
       const kk = jj * nx + ii, ex = extra[kk]; if (ex === Infinity) continue;
       if (dir !== 4 && (dd + 2) % 4 === dir) continue; // pas de demi-tour
-      const nc = gc + cs + ex + (dir !== 4 && dir !== dd ? COUT.virage : 0), ns = kk * 5 + dd;
+      const nc = gc + cs + ex + (dir !== 4 && dir !== dd ? COUT.virage : 0) + (surG[kk] && !surG[k] ? COUT.croise : 0), ns = kk * 5 + dd;
       if (nc < best[ns]) { best[ns] = nc; prev[ns] = st; tas.push(nc + H(kk), ns); }
     }
   }
@@ -162,8 +171,8 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
   const cells = []; for (let st = fin; st >= 0; st = prev[st]) cells.push(Math.floor(st / 5));
   cells.reverse();
   /* traversées de murs : entrées dans une suite de cases de mur */
-  let murs = 0, cloisons = 0;
-  for (let m = 1; m < cells.length; m++) { const a = kindAt[cells[m]], b = kindAt[cells[m - 1]]; if (a && a !== b) { if (a === 1) murs++; else cloisons++; } }
+  let murs = 0, cloisons = 0, croisements = 0;
+  for (let m = 1; m < cells.length; m++) { const a = kindAt[cells[m]], b = kindAt[cells[m - 1]]; if (a && a !== b) { if (a === 1) murs++; else cloisons++; } if (surG[cells[m]] && !surG[cells[m - 1]] && m < cells.length - 1) croisements++; }
   /* coins seulement */
   const raw = cells.map((k) => ({ x: cx(k % nx), y: cy(Math.floor(k / nx)) }));
   const corners = [];
@@ -181,7 +190,7 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
   const clean = [];
   for (const p of pts) if (!clean.length || Math.hypot(p.x - clean[clean.length - 1].x, p.y - clean[clean.length - 1].y) > 0.5) clean.push({ x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 });
   let len = 0; for (let m = 1; m < clean.length; m++) len += Math.hypot(clean[m].x - clean[m - 1].x, clean[m].y - clean[m - 1].y);
-  return { pts: clean, len, murs, cloisons, cellule: cs };
+  return { pts: clean, len, murs, cloisons, croisements, cellule: cs };
 }
 
 /* ---------------- raccordement automatique d'un circuit ----------------

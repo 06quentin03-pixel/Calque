@@ -9,6 +9,7 @@ import { circuitColor } from './electricite.js';
 import { DIMHIT, drawDuctLabels, drawDucts, elecVisible, linkVisible, setDIMHIT } from './reseaux.js';
 import { SCR } from './interaction.js';
 import { mkPath } from './export.js';
+import { calqueDeElec, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
 
 /* ============================================================
    CALQUE — rendu canvas
@@ -73,64 +74,81 @@ function drawSceneIn(lv, opts) {
   const g = geo(lv);
   const K = K_();
   const below = levelBelow(lv);
+  /* calques : architecture (pièces, murs, ouvertures, escaliers) et mobilier, avec leur opacité */
+  const archi = calqueVisible('archi'), aArchi = opaciteCalque('archi'), aMob = opaciteCalque('mobilier');
+  const alpha = (a) => { c.globalAlpha = a; };
   // pièces
-  for (const r of g.rooms) {
-    if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
-    c.beginPath(); pathPoly(c, r.poly); for (const h of r.holes) pathPoly(c, h);
-    const tint = r.label && r.label.tint ? Cc[TINTS[r.label.tint]] : null;
-    c.fillStyle = Cc.room; c.fill('evenodd');
-    if (tint) { c.fillStyle = tint; c.fill('evenodd'); }
+  if (archi) {
+    alpha(aArchi);
+    for (const r of g.rooms) {
+      if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
+      c.beginPath(); pathPoly(c, r.poly); for (const h of r.holes) pathPoly(c, h);
+      const tint = r.label && r.label.tint ? Cc[TINTS[r.label.tint]] : null;
+      c.fillStyle = Cc.room; c.fill('evenodd');
+      if (tint) { c.fillStyle = tint; c.fill('evenodd'); }
+    }
+    alpha(1);
   }
   if (S.layers.grid && !opts.export) drawGrid();
   setWorld();
   lay('DIVERS');
   for (const f of EXT.under) { c.save(); try { f(c, lv, opts); } finally { c.restore(); } }
-  if (below && S.layers.ghost && !opts.export) drawGhost(below.id);
+  if (below && S.layers.ghost && !opts.export && archi) drawGhost(below.id);
   // trémies des escaliers du niveau inférieur
   lay('ESCALIERS');
-  if (below) for (const it of P.items) if (it.lv === below.id && isStair(it.type) && itemInView(it)) drawItem(c, it, K, 'upper');
+  alpha(aArchi);
+  if (below && archi) for (const it of P.items) if (it.lv === below.id && isStair(it.type) && itemInView(it)) drawItem(c, it, K, 'upper');
   // mobilier
+  const stairs = () => { if (!archi) return; alpha(aArchi); for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full'); };
   if (opts.export ? opts.furn !== false : S.layers.furn) {
-    for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
+    stairs();
     lay('MOBILIER');
+    alpha(aMob);
     for (const it of P.items) if (it.lv === lv && !isStair(it.type) && itemInView(it)) drawItem(c, it, K);
-  } else {
-    for (const it of P.items) if (it.lv === lv && isStair(it.type) && itemInView(it)) drawItem(c, it, K, levelAbove(lv) ? 'lower' : 'full');
-  }
+  } else stairs();
+  alpha(1);
   lay('MURS');
-  drawWalls(g);
+  if (archi) { alpha(aArchi); drawWalls(g); }
   lay('OUVERTURES');
-  drawOpenings(g);
+  if (archi) { drawOpenings(g); alpha(1); }
   if (S.layers.elec) {
     lay('ELEC_CHEMINEMENTS');
     drawDucts(lv, opts);
+    lay('ELEC_CABLAGE');
+    for (const f of EXT.cablage) { c.save(); try { f(c, lv, opts); } finally { c.restore(); } }
     lay('ELEC_LIAISONS');
     if (S.layers.links !== false) drawLinks(lv, opts);
     lay('ELEC_APPAREILS');
     for (const e of P.elec) {
       if (e.lv !== lv || !elecVisible(e)) continue;
-      if (VIEW && !inView(e.x, e.y, elecSize(K) * 1.6)) continue;
+      if (VIEW && !inView(e.x, e.y, elecSize(K) * 1.6 * (e.sc || 1))) continue;
+      const cq = calqueDeElec(e);
       let K2 = K;
-      if (S.layers.circ !== false && e.cid) { const col = circuitColor(e.cid, !!opts.export); if (col) K2 = Object.assign({}, K, { elec: col }); }
+      const col = S.layers.circ !== false && e.cid ? circuitColor(e.cid, !!opts.export) : null;
+      if (col) K2 = Object.assign({}, K, { elec: col });
+      else { const cc = couleurCalque(cq); if (cc) K2 = Object.assign({}, K, { elec: cc }); }
       if (!opts.export && ui.hl && e.cid === ui.hl) drawHalo(e);
+      if (!opts.export && ui.hlIds && ui.hlIds.has(e.id)) drawHalo(e);
+      const op = opaciteCalque(cq); if (op < 1) alpha(op);
       drawElec(c, e, K2);
       if (e.mark) drawElecMark(c, e, K2);
+      if (op < 1) alpha(1);
     }
   }
   lay('COTES');
-  if (!opts.export || opts.dims !== false) drawDims(lv);
+  if (S.layers.dims && (!opts.export || opts.dims !== false)) { alpha(opaciteCalque('cotations')); drawDims(lv); alpha(1); }
   setScreen();
   const occ = roomLabelRects(g);
   if (RC === SCR) setDIMHIT([]);
-  if (S.layers.dims) drawWallDims(g, occ);
+  if (S.layers.dims && archi) { alpha(opaciteCalque('cotations')); drawWallDims(g, occ); alpha(1); }
   lay('PIECES');
-  drawRoomLabels(g);
+  if (archi) { alpha(aArchi); drawRoomLabels(g); alpha(1); }
   lay('ELEC_CHEMINEMENTS');
   if (S.layers.elec) drawDuctLabels(lv, opts);
   lay('TEXTES');
-  drawTexts(lv);
+  if (calqueVisible('annotations')) { alpha(opaciteCalque('annotations')); drawTexts(lv); alpha(1); }
   lay('COTES');
-  if (!opts.export || opts.dims !== false) drawDimLabels(lv);
+  if (S.layers.dims && (!opts.export || opts.dims !== false)) { alpha(opaciteCalque('cotations')); drawDimLabels(lv); alpha(1); }
   lay('CHANTIER');
   if (EXT.top.length) { for (const f of EXT.top) { setWorld(); c.save(); try { f(c, lv, opts); } finally { c.restore(); } } setScreen(); }
 }

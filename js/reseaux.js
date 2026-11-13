@@ -1,6 +1,6 @@
 /* Calque — module « reseaux » : réseaux : filtres, conduits VMC et gaines, cotes modifiables.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, C, IDX, NF2, P, S, bboxOf, clamp, fmtLenU, inPoly, isNum, projSeg, saveSettings, snapTo, ui, uid, vadd,
+import { $, C, EXT, IDX, NF2, P, S, bboxOf, clamp, fmtLenU, inPoly, isNum, projSeg, saveSettings, snapTo, ui, uid, vadd,
   vang, vdir, vdist, vlen, vmid, vmul, vperp, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
@@ -15,6 +15,7 @@ import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h
 import { v3Refresh } from './vue3d.js';
 import { conflitsSection } from './routeui.js';
 import { remplissageGaines } from './materiel.js';
+import { calqueDeElec, calqueDeGaine, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -28,27 +29,35 @@ const fold = (str) => String(str || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
 const FAMS = () => [...ELEC_CATS.map((c) => ({ id: c.id, name: c.name })), { id: 'gaines', name: 'Gaines électriques' }];
 const famOn = (id) => !S.filt.off.includes(id);
 function filtCirc() { const id = S.filt.circ; return id && P && circById(id) ? id : null; }
-function filterActive() { return S.filt.off.length > 0 || !!filtCirc(); }
+/* circuits affichés : un seul (filtre « Circuit du tableau ») ou plusieurs (gestionnaire de circuits) ; null = tous */
+function circsFiltre() {
+  const fc = filtCirc(); if (fc) return new Set([fc]);
+  const l = Array.isArray(S.filt.circs) ? S.filt.circs.filter((id) => P && circById(id)) : [];
+  return l.length ? new Set(l) : null;
+}
+function filterActive() { return S.filt.off.length > 0 || !!circsFiltre(); }
 function elecVisible(e) {
   if (!S.layers.elec) return false;
   const def = ELEC_BY.get(e.type);
   if (def && !famOn(def.cat)) return false;
-  const fc = filtCirc();
-  if (fc && e.cid !== fc) return false;
+  if (!calqueVisible(calqueDeElec(e))) return false;
+  const fc = circsFiltre();
+  if (fc && !fc.has(e.cid)) return false;
   return true;
 }
 function ductVisible(d) {
   if (!S.layers.elec) return false;
-  const fc = filtCirc();
+  if (!calqueVisible(calqueDeGaine(d))) return false;
+  const fc = circsFiltre();
   if (d.sys === 'vmc') {
     if (!famOn('ventilation')) return false;
-    if (fc) { const c = circById(fc); return !!c && c.kind === 'vmc'; }
+    if (fc) return [...fc].some((id) => { const c = circById(id); return !!c && c.kind === 'vmc'; });
     return true;
   }
   if (!famOn('gaines')) return false;
-  return !(fc && d.cid !== fc);
+  return !(fc && !circuitsDe(d).some((id) => fc.has(id)));
 }
-function linkVisible(l) { const a = IDX.elec.get(l.a), b = IDX.elec.get(l.b); return !!a && !!b && elecVisible(a) && elecVisible(b); }
+function linkVisible(l) { const a = IDX.elec.get(l.a), b = IDX.elec.get(l.b); return !!a && !!b && calqueVisible('circuits') && elecVisible(a) && elecVisible(b); }
 const PRESETS = [
   { id: 'all', n: 'Tout', on: null },
   { id: 'prises', n: 'Prises', on: ['prises', 'appareils'] },
@@ -60,13 +69,13 @@ const PRESETS = [
   { id: 'none', n: 'Murs seuls', on: [] },
 ];
 function presetMatch(p) {
-  if (filtCirc() || !S.layers.elec) return false;
+  if (circsFiltre() || !S.layers.elec) return false;
   const off = new Set(S.filt.off);
   if (!p.on) return off.size === 0;
   return FAMS().every((f) => off.has(f.id) === !p.on.includes(f.id));
 }
 function applyPreset(p) {
-  S.filt.circ = null;
+  S.filt.circ = null; S.filt.circs = []; S.vue = null;
   S.filt.off = p.on ? FAMS().map((f) => f.id).filter((id) => !p.on.includes(id)) : [];
   S.layers.links = !p.on || !!p.links;
   S.layers.elec = true;
@@ -74,16 +83,18 @@ function applyPreset(p) {
 }
 function afterFilter() {
   saveSettings();
+  if (EXT.apresFiltre) EXT.apresFiltre();
   const s = ui.sel;
   if (s && ((s.t === 'elec' && IDX.elec.get(s.id) && !elecVisible(IDX.elec.get(s.id))) || (s.t === 'duct' && IDX.ducts.get(s.id) && !ductVisible(IDX.ducts.get(s.id))))) { ui.sel = null; renderInspector(); }
   updateFilterUI(); requestRender();
   if (ui.view === '3d') v3Refresh();
 }
-function resetFilters() { S.filt = { off: [], circ: null }; S.layers.elec = true; afterFilter(); }
+function resetFilters() { S.filt = { off: [], circ: null, circs: [] }; S.layers.elec = true; afterFilter(); }
 function filterSummary() {
   const parts = [];
-  const fc = filtCirc();
-  if (fc) parts.push(`circuit ${circNumbers().get(fc)} · ${circById(fc).name}`);
+  const fs = circsFiltre();
+  if (fs && fs.size === 1) { const fc = [...fs][0]; parts.push(`circuit ${circNumbers().get(fc)} · ${circById(fc).name}`); }
+  else if (fs) { const nums = circNumbers(); parts.push(`circuits ${[...fs].map((id) => nums.get(id)).sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10)).join(', ')}`); }
   if (S.filt.off.length) {
     const p = PRESETS.find((x) => x.on && FAMS().every((f) => S.filt.off.includes(f.id) === !x.on.includes(f.id)));
     const vis = FAMS().filter((f) => famOn(f.id));
@@ -115,11 +126,12 @@ function renderFilterPop() {
   const nums = circNumbers();
   const csel = h('select', { class: 'txt', 'aria-label': 'Circuit affiché' }, h('option', { value: '' }, 'Tous les circuits'),
     P.circuits.map((c) => h('option', { value: c.id, selected: c.id === S.filt.circ }, `${nums.get(c.id)} · ${c.name}`)));
-  csel.addEventListener('change', () => { S.filt.circ = csel.value || null; S.layers.elec = true; afterFilter(); });
+  csel.addEventListener('change', () => { S.filt.circ = csel.value || null; S.filt.circs = []; S.vue = null; S.layers.elec = true; afterFilter(); });
   const famRow = (f) => {
     const n = famCount(f.id);
     const b = h('button', { type: 'button', role: 'switch', 'aria-checked': String(S.layers.elec && famOn(f.id)) }, h('span', null, f.name), h('small', { class: 'fcount' }, n ? String(n) : ''), h('span', { class: 'sw', 'aria-hidden': 'true' }));
     b.addEventListener('click', () => {
+      S.vue = null;
       const off = new Set(S.filt.off);
       if (!S.layers.elec) { S.layers.elec = true; S.filt.off = FAMS().map((x) => x.id).filter((id) => id !== f.id); }
       else { if (off.has(f.id)) off.delete(f.id); else off.add(f.id); S.filt.off = [...off]; }
@@ -180,9 +192,10 @@ function ductEndName(id) {
   return (def ? def.n : 'Symbole') + (r && r.label ? ' · ' + r.label.name : '');
 }
 function ductColor(d, exp) {
-  if (d.sys === 'vmc') return RC.C.vmc;
+  const cc = couleurCalque(calqueDeGaine(d));
+  if (d.sys === 'vmc') return cc || RC.C.vmc;
   if (S.layers.circ !== false && d.cid) { const c = circuitColor(d.cid, exp); if (c) return c; }
-  return RC.C.gaine;
+  return cc || RC.C.gaine;
 }
 /* sens de l'air : +1 de a vers b, -1 de b vers a */
 function ductFlow(d) {
@@ -220,12 +233,13 @@ function drawDucts(lv, opts) {
     if (VIEW && !bbInView(bboxOf(pts))) continue;
     const col = ductColor(d, !!opts.export);
     c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
+    const op = opaciteCalque(calqueDeGaine(d)); if (op < 1) c.globalAlpha = op;
     if (d.sys === 'vmc') {
       const w = Math.max((d.dia || 125) / 10, 4.5 * px), inner = Math.max(w - 2.2 * px, w * 0.45);
       ductPath(c, pts); c.strokeStyle = col; c.lineWidth = w + 1.2 * px; c.stroke();
       ductPath(c, pts); c.strokeStyle = RC.C.room; c.lineWidth = inner; c.stroke();
-      ductPath(c, pts); c.strokeStyle = col; c.globalAlpha = 0.2; c.stroke(); c.globalAlpha = 1;
-      if (d.mat === 'souple' || !d.mat) { ductPath(c, pts); c.setLineDash([1.2 * px, 3.2 * px]); c.lineWidth = Math.min(inner * 0.8, 2.4 * px + inner * 0.3); c.globalAlpha = 0.5; c.stroke(); c.setLineDash([]); c.globalAlpha = 1; }
+      const a0 = c.globalAlpha; ductPath(c, pts); c.strokeStyle = col; c.globalAlpha = a0 * 0.2; c.stroke(); c.globalAlpha = a0;
+      if (d.mat === 'souple' || !d.mat) { ductPath(c, pts); c.setLineDash([1.2 * px, 3.2 * px]); c.lineWidth = Math.min(inner * 0.8, 2.4 * px + inner * 0.3); c.globalAlpha = a0 * 0.5; c.stroke(); c.setLineDash([]); c.globalAlpha = a0; }
       const fl = ductFlow(d);
       if (fl) for (let i = 1; i < pts.length; i++) {
         const a = pts[i - 1], b = pts[i], L = vdist(a, b);
@@ -251,7 +265,7 @@ function drawGaine(c, d, pts, col, px) {
     ductPath(c, pts); c.strokeStyle = col; c.lineWidth = w + 1.4 * px; c.stroke();
     ductPath(c, pts); c.strokeStyle = RC.C.room; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.stroke();
     if (k === 'cdc') { ductPath(c, pts); c.strokeStyle = col; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.lineCap = 'butt'; c.setLineDash([1.2 * px, 7 * px]); c.stroke(); c.setLineDash([]); c.lineCap = 'round'; }
-    else { ductPath(c, pts); c.strokeStyle = col; c.globalAlpha = 0.18; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.stroke(); c.globalAlpha = 1; }
+    else { const a0 = c.globalAlpha; ductPath(c, pts); c.strokeStyle = col; c.globalAlpha = a0 * 0.18; c.lineWidth = Math.max(w - 1.4 * px, w * 0.5); c.stroke(); c.globalAlpha = a0; }
     return;
   }
   ductPath(c, pts); c.strokeStyle = col; c.lineWidth = Math.max(2 * px, ((d.dia || 20) / 10) * 0.7);
@@ -829,6 +843,7 @@ function openDimEdit(dh) {
 function setDIMHIT(v) { DIMHIT = v; }
 
 export { creerGaineElec };
+export { circsFiltre };
 export { DIMHIT, DUCT_DIAS, FAMS, KITCHEN_Q, PRESETS, VENT_DUCT_ONLY, VENT_GROUPS, VMC_MODE_NOTE, afterFilter,
   applyPreset, autoDuctDia, boucheDebit, boucheDia, closeDimEdit, dimHitAt, drawDuctDraft, drawDuctLabels, drawDucts,
   ductAnchor, ductAt, ductCanAttach, ductColor, ductEndName, ductFlow, ductHandleDrag, ductHandles, ductHintMsg,

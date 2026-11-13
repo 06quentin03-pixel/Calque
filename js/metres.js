@@ -28,11 +28,13 @@ function longueursSection(lignes) {
   const aFaire = lignes.filter((l) => !l.ch.complet && l.ch.points.length).map((l) => l.c.id);
   const lancer = async (cids, bouton) => {
     const txt = bouton.textContent; bouton.disabled = true;
-    const b = await raccorderAuto(cids, (i, n) => { bouton.textContent = `Recherche… ${i + 1} / ${n}`; });
-    bouton.textContent = txt; bouton.disabled = false; toast(messageAuto(b));
+    /* propositions affichées sur le plan : rien n'est créé avant « Valider » */
+    const { proposerRaccordement } = await import('./cablerui.js');
+    await proposerRaccordement(cids, (i, n) => { bouton.textContent = `Recherche… ${i + 1} / ${n}`; });
+    bouton.textContent = txt; bouton.disabled = false;
   };
   const auto = aFaire.length && tableauDu(P) ? h('section', null, h('h3', null, 'Raccordement automatique'),
-    h('p', { class: 'note' }, `${aFaire.length} circuit${aFaire.length > 1 ? 's ne sont' : ' n’est'} pas entièrement raccordé${aFaire.length > 1 ? 's' : ''} au tableau. Calque peut proposer les gaines manquantes : chaque point est relié au point déjà raccordé le plus proche, en évitant les zones interdites, avec le type et la pose de gaine choisis en dernier. Ce sont des propositions à vérifier et à corriger sur le plan ; « Annuler » les retire toutes.`),
+    h('p', { class: 'note' }, `${aFaire.length} circuit${aFaire.length > 1 ? 's ne sont' : ' n’est'} pas entièrement raccordé${aFaire.length > 1 ? 's' : ''} au tableau. Calque peut proposer les gaines manquantes : chaque point est relié au point déjà raccordé le plus proche, en évitant les zones interdites, avec le type et la pose de gaine choisis en dernier. Les gaines proposées s’affichent sur le plan : rien n’est créé avant « Valider » ; « Annuler » les retire ensuite toutes.`),
     h('div', { class: 'btns' }, (() => { const b = btn(`Raccorder les ${aFaire.length} circuits incomplets`, () => lancer(aFaire, b), 'pri'); b.id = 'autoTous'; return b; })())) : null;
   return [
     auto,

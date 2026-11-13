@@ -24,6 +24,8 @@ function isDarkTheme() { const c = C.paper || '#fff'; const m = c.match(/^#?([0-
 function circuitColor(cid, forceLight) {
   const i = P.circuits.findIndex((c) => c.id === cid);
   if (i < 0) return null;
+  /* couleur choisie par l'utilisateur (format v12), sinon couleur automatique selon le rang */
+  const col = P.circuits[i].col; if (col) return col;
   const pal = !forceLight && isDarkTheme() ? CIRC_COLORS_DK : CIRC_COLORS;
   return pal[i % pal.length];
 }

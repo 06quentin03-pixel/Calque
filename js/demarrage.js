@@ -50,7 +50,7 @@ window.addEventListener('keydown', (e) => {
   if (k === 'arrowright') { e.preventDefault(); nudgeSel(step, 0); return; }
   if (k === 'arrowup') { e.preventDefault(); nudgeSel(0, -step); return; }
   if (k === 'arrowdown') { e.preventDefault(); nudgeSel(0, step); return; }
-  const map = { v: 'select', m: 'wall', p: 'room', o: 'door', f: 'window', b: 'gap', c: 'dim', t: 'text', l: 'link', g: 'duct', u: 'mesure' };
+  const map = { v: 'select', m: 'wall', p: 'room', o: 'door', f: 'window', b: 'gap', c: 'dim', t: 'text', l: 'link', g: 'duct', u: 'mesure', k: 'cabler' };
   if (map[k]) { setTool(map[k]); return; }
   if (k === 'r') rotateSel(90);
 });

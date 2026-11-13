@@ -42,7 +42,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 11);
+  assert.equal(r.v, 12);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -62,7 +62,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.etudes >= 3 && r.lum >= 20);
   // documents et règles (phase 6) : cartouche, indice A, dossier complet, rapport
   assert.equal(r.doc.revisions[0].i, 'A'); assert.ok(r.doc.client && r.doc.affaire);
-  assert.equal(r.chap, 12); assert.ok(r.pages >= 25, `${r.pages} pages`);
+  assert.equal(r.chap, 13); assert.ok(r.pages >= 25, `${r.pages} pages`);
   assert.ok(r.rap.total > 300 && r.rap.cq > 50); assert.notEqual(r.rap.global, 'conforme');
   // chantier (phase 7) : cases « posé » (appareils et circuits), réserves aux trois statuts avec échéance, photos à prendre
   // (aucune photo inventée), annotations, historique ; chapitre « Suivi de chantier » du dossier
