@@ -71,9 +71,8 @@ test('colonne de passage : les gaines raccordées à la colonne, à n’importe 
   const ch = CH.cheminCircuit(p, 'c1');
   assert.equal(ch.complet, true, 'aucune gaine au rez-de-chaussée : la colonne relie directement le tableau');
   /* longueur jusqu'à pc2 : du tableau (130 cm) au plafond des combles (540 + 230 = 770) : 640 cm de montée,
-     puis 300 cm à l'horizontale et 200 cm de descente (230 − 30) ; distance horizontale tableau → colonne comprise */
-  const dx = Math.hypot(CH.ancrage(T).x - T.x, CH.ancrage(T).y - T.y);
-  assert.ok(Math.abs(ch.Lmax - (640 + dx + 300 + 200)) < 1, `Lmax = ${ch.Lmax}`);
+     puis 300 cm à l'horizontale et 200 cm de descente (230 − 30) ; la colonne est au point de raccordement du tableau */
+  assert.ok(Math.abs(ch.Lmax - (640 + 300 + 200)) < 1, `Lmax = ${ch.Lmax}`);
   /* sans le lien `tab`, la colonne ne touche plus le tableau : circuit incomplet */
   const q = JSON.parse(JSON.stringify(p)); for (const x of q.elec) delete x.tab;
   assert.equal(CH.cheminCircuit(q, 'c1').complet, false);
