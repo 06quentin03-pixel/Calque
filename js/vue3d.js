@@ -1,12 +1,12 @@
 /* Calque — module « vue3d » : vue 3D : moteur WebGL 2 intégré.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, C, DEG, IDX, NF1, P, S, touch, bboxOf, clamp, climbHeight, distToEdges, fmtArea, fmtLenU, inPoly, labelPoint,
+import { $, C, DEG, IDX, NF1, P, S, estExterieure, touch, bboxOf, clamp, climbHeight, distToEdges, fmtArea, fmtLenU, inPoly, labelPoint,
   levelAbove, levelBelow, levelOf, levelsSorted, nodeOf, saveSettings, ui, vadd, vdist, vlen, vmid, vmul, vnorm, vperp,
   vsub } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { itemToWorld, wallLength } from './mutations.js';
 import { H } from './historique.js';
-import { ELEC_BY, furnDef, isStair, stairInfo, stairModel } from './symboles.js';
+import { ELEC_BY, furnDef, isStair, stairInfo, stairModel, stairZones } from './symboles.js';
 import { FONT_LABEL, FONT_UI, V, closetLeafHinges, closetPlane } from './rendu2d.js';
 import { LIGHTS, circById, circNumbers, circuitColor, circuitLabel, cleanLinks, isDarkTheme, roomAt, roomName } from './electricite.js';
 import { ductLen, ductPts, ductVisible, elecVisible } from './reseaux.js';
@@ -307,7 +307,7 @@ const glowC = (c) => [c[0], c[1], c[2], 220];
 /* ---------------- couleurs de la maquette ---------------- */
 const K3 = {
   wall: [239, 237, 231], wallCap: [52, 57, 62], part: [247, 246, 242], partCap: [126, 134, 140],
-  floor: [228, 219, 203], slabSide: [208, 203, 193], ceil: [250, 250, 248],
+  floor: [228, 219, 203], slabSide: [208, 203, 193], ceil: [250, 250, 248], terrasse: [196, 188, 172],
   white: [249, 249, 246], white2: [236, 236, 232], wood: [203, 170, 128], woodDk: [160, 124, 88], dark: [70, 75, 81], black: [40, 43, 47],
   steel: [200, 205, 209], fabric: [139, 154, 166], fabric2: [176, 188, 196], stone: [214, 209, 199], water: [168, 206, 224], tile: [214, 218, 220],
   leaf: [104, 152, 96], pot: [180, 124, 90], doorLeaf: [244, 241, 234], doorEntry: [88, 94, 102], frame: [253, 253, 251], glass: [170, 208, 226],
@@ -432,11 +432,42 @@ function v3o() { if (!S.v3 || typeof S.v3 !== 'object') S.v3 = {}; for (const k 
 /* objets masqués dans la vue 3D (réglage de l'affichage, par plan : le plan lui-même n'est jamais modifié) */
 function v3Hidden() { const o = v3o(), l = o.hid[P.id]; return new Set(Array.isArray(l) ? l : []); }
 function v3SetHidden(set) { const o = v3o(); if (set.size) o.hid[P.id] = [...set].slice(-500); else delete o.hid[P.id]; saveSettings(); }
+/* emprise d'un escalier dans le monde : contour réel (en L, en U…) et morceaux convexes (voir stairZones) */
 function stairFootprint(it) {
-  if (it.type === 'esc_helice') { const R = Math.min(it.w, it.d) / 2; return circlePts({ x: it.x, y: it.y }, R, 20); }
-  return [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => itemToWorld(it, (a * it.w) / 2, (b * it.d) / 2));
+  const z = stairZones(it), W = (p) => itemToWorld(it, p.x, p.y);
+  return { contour: z.contour.map(W), parts: z.parts.map((q) => q.map(W)) };
 }
-function floorCol3(r) { const t = r.label && r.label.tint; return t && TINT3[t] ? mixRGB(K3.floor, TINT3[t], 0.3) : K3.floor; }
+/* deux segments se coupent-ils (intérieur strict) ? */
+function segCross(a, b, c, d) {
+  const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const d1 = o(c, d, a), d2 = o(c, d, b), d3 = o(a, b, c), d4 = o(a, b, d);
+  return ((d1 > 1e-6 && d2 < -1e-6) || (d1 < -1e-6 && d2 > 1e-6)) && ((d3 > 1e-6 && d4 < -1e-6) || (d3 < -1e-6 && d4 > 1e-6));
+}
+/* trous à découper dans le sol d'une pièce pour les escaliers donnés (escaliers sans trémie exclus par l'appelant) :
+   contour exact quand l'escalier est entièrement dans la pièce, sinon chaque morceau convexe découpé par la pièce */
+function tremieHoles(r, foots) {
+  const out = [];
+  for (const fp of foots) {
+    const c = fp.contour, poly = r.poly;
+    const dedans = c.every((p) => inPoly(p, poly) && distToEdges(p, poly) > 1)
+      && !c.some((p, i) => { const q = c[(i + 1) % c.length]; return poly.some((u, j) => segCross(p, q, u, poly[(j + 1) % poly.length])); });
+    if (dedans) { out.push(c); continue; }
+    for (const part of fp.parts) { const ix = cleanRing(clipConvex(poly, part)); if (ix.length >= 3 && Math.abs(ringArea(ix)) > 200) out.push(shrinkRing(ix, 0.6)); }
+  }
+  return out;
+}
+/* l'escalier découpe-t-il le sol de l'étage du dessus ? (réglage « trémie » de l'escalier, format v15) */
+const avecTremie = (it) => it.tremie !== 'aucune';
+function floorCol3(r) {
+  const base = estExterieure(r.label) ? K3.terrasse : K3.floor, t = r.label && r.label.tint;
+  return t && TINT3[t] ? mixRGB(base, TINT3[t], 0.3) : base;
+}
+/* la pièce est-elle sous un vide de l'étage du dessus (pièce « sol supprimé ») ? alors pas de plafond (visite) */
+function videAuDessus(r, above) {
+  if (!above) return false;
+  const c = labelPoint(r.poly);
+  return geo(above.id).rooms.some((q) => q.label && q.label.sol === 'vide' && inPoly(c, q.poly));
+}
 function elecAccent(e, def) {
   if (e.cid && S.layers.circ !== false) { const c = circuitColor(e.cid, true); if (c) return hexRGB(c); }
   return CAT3[def.cat] || [96, 104, 112];
@@ -471,14 +502,16 @@ function build3D() {
     }
     for (const hb of g.hubs) solid3(G.w, [hb.pts], E - tb, top, hb.mur ? K3.wall : K3.part, 0, { top: hb.mur ? K3.wallCap : K3.partCap });
     // sols (dalle), trémies au-dessus des escaliers du niveau inférieur
-    const tremies = below ? P.items.filter((it) => it.lv === below.id && isStair(it.type)).map(stairFootprint) : [];
-    const ownStairs = P.items.filter((it) => it.lv === lv.id && isStair(it.type)).map(stairFootprint);
-    const cutHoles = (r, list) => { const out = []; for (const fp of list) { const ix = cleanRing(clipConvex(r.poly, fp)); if (ix.length >= 3 && Math.abs(ringArea(ix)) > 200) out.push(shrinkRing(ix, 0.6)); } return out; };
+    const tremies = below ? P.items.filter((it) => it.lv === below.id && isStair(it.type) && avecTremie(it)).map(stairFootprint) : [];
+    const ownStairs = P.items.filter((it) => it.lv === lv.id && isStair(it.type) && avecTremie(it)).map(stairFootprint);
+    const above = levelAbove(lv.id);
     for (const r of g.rooms) {
       if (r.label && hid.has(r.label.id)) continue;
       const fc = floorCol3(r);
-      solid3(G.s, [r.poly, ...r.holes, ...cutHoles(r, tremies)], E - tb, E, fc, r.label ? pick({ t: 'room', id: r.label.id, lv: lv.id }) : 0, { top: fc, bot: K3.ceil, side: K3.slabSide });
-      if (visit) solid3(G.s, [r.poly, ...r.holes, ...cutHoles(r, ownStairs)], E + Hh - 0.8, E + Hh, K3.ceil, 0, { edges: false });
+      /* pièce « sol supprimé » (trémie dessinée, vide sur double hauteur) : pas de dalle */
+      if (!(r.label && r.label.sol === 'vide')) solid3(G.s, [r.poly, ...r.holes, ...tremieHoles(r, tremies)], E - tb, E, fc, r.label ? pick({ t: 'room', id: r.label.id, lv: lv.id }) : 0, { top: fc, bot: K3.ceil, side: K3.slabSide });
+      /* plafond (visite) : aucun sur une terrasse ou un balcon, ni sous un vide de l'étage du dessus */
+      if (visit && !estExterieure(r.label) && !videAuDessus(r, above)) solid3(G.s, [r.poly, ...r.holes, ...tremieHoles(r, ownStairs)], E + Hh - 0.8, E + Hh, K3.ceil, 0, { edges: false });
       if (r.label && o.labels) {
         // points candidats sur le sol de la pièce : l'étiquette se pose sur une partie visible
         const c0 = labelPoint(r.poly), bb = bboxOf(r.poly), pts = [];
@@ -759,6 +792,16 @@ function duct3(G, d, E, Lh, id, o) {
 /* passages entre étages : conduit vertical entre les deux symboles jumeaux, à travers le plancher */
 function passages3(G, visIds, hid, pick, o) {
   const done = new Set();
+  /* colonnes de passage : gaine technique de la taille du tableau, du plancher du niveau le plus bas au plafond du plus haut visible */
+  const cols = new Map();
+  for (const e of P.elec) if (e.type === TRAVERSEE && e.col && !hid.has(e.id) && visIds.has(e.lv)) { if (!cols.has(e.col)) cols.set(e.col, []); cols.get(e.col).push(e); }
+  for (const m of cols.values()) {
+    for (const e of m) done.add(e.id);
+    const Ls = m.map((e) => [e, levelOf(e.lv)]).filter((x) => x[1]).sort((a, b) => a[1].elev - b[1].elev); if (!Ls.length) continue;
+    const e0 = Ls[0][0], y0 = Ls[0][1].elev + 1, top = Ls[Ls.length - 1][1], y1 = top.elev + (top.h || 250) - 1;
+    const w = e0.w || 30, d = e0.d || 20, pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => itemToWorld(e0, (a * w) / 2, (b * d) / 2));
+    solid3(G.w, [pts], y0, y1, mixRGB(K3.gaine, [255, 255, 255], 0.55), pick({ t: 'elec', id: e0.id, lv: e0.lv }), { top: K3.gaine });
+  }
   for (const e of P.elec) {
     if (e.type !== TRAVERSEE || done.has(e.id) || hid.has(e.id)) continue;
     const t = jumelle(P, e, IDX.elec); if (!t) continue;
@@ -1494,6 +1537,7 @@ function v3Key3(e) {
   return false;
 }
 
+export { stairFootprint, tremieHoles };
 export { CAM, CAT3, EL3, F3, FS_MAIN, FS_PICK, FS_SH, G3, GB, K3, LDIR, PT3, R3, TINT3, V3, V3DEF, VS_MAIN, VS_SH,
   build3D, camEye, camRay, camTo, camVP, circlePts, cleanRing, clipConvex, clipHalf, closet3, curLevel3, duct3, earcut,
   elec3, elecAccent, f3Def, fitCam3, floorCol3, furn3, glProgram, glowC, hexRGB, isConvex, itemHeight3, kBase,

@@ -51,6 +51,9 @@
 .ci-cond { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .ci-cond td { padding: 4px 4px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 .ci-cond td:last-child { text-align: right; font-family: var(--f-num); white-space: nowrap; }
+.ci-gaines { display: grid; gap: 8px; margin-top: 8px; }
+.ci-gaine { display: grid; gap: 4px; padding: 6px 0; border-top: 1px solid var(--rule); font-size: 12.5px; }
+.ci-gaine small { color: var(--ink-2); }
 .seg.exp-fmt { flex-wrap: wrap; height: auto; }
 .seg.exp-fmt button { flex: 1 1 auto; }
 .qt-voir { float: right; margin: 0 0 4px 8px; min-height: 32px; }
@@ -73,6 +76,11 @@
 .sch-tab th, .sch-tab td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--rule); vertical-align: top; }
 .sch-tab th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
 .sch-net { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--rule); font-family: var(--f-num); font-size: 12px; font-weight: 650; }
+.sim-li .sim-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--rule); flex: none; }
+.sim-li.on .sim-dot { background: #1E8F4E; box-shadow: 0 0 0 3px rgba(30,143,78,.2); }
+.sim-li.on .v { color: #1E8F4E; font-weight: 650; }
+.sim-leg { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--ink-2); }
+.sim-leg i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 @media (max-width: 760px) { .sch-bar { flex-wrap: wrap; } .sch-acts { width: 100%; overflow-x: auto; } }
 </style></head><body>
 <title>Calque Plans</title>

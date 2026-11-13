@@ -42,7 +42,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 14);
+  assert.equal(r.v, 15);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -116,7 +116,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 14);
+  assert.equal(r.v, 15);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);

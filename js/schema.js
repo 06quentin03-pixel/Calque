@@ -397,6 +397,8 @@ function depuisTableau(sch, plan, libelles) {
 
 /* ---------------- dessin d'un folio (écran, PDF, SVG, DXF) ----------------
    c : contexte canvas en millimètres. o : { cartouche: { projet, client, date, indice }, couleurs, sel: Set d'ids, exporter } */
+/* couleurs du mode test (simulation.js) */
+const SIM_COUL = { phase: '#D12F2F', neutre: '#2F6FD1', 'dc+': '#E0701A', 'dc-': '#5B3FC4', terre: '#3FA34D', court: '#C400C4', actif: '#1E8F4E' };
 const COUL = { ink: '#1D2125', ink2: '#5C656C', ink3: '#8A939A', fil: '#1D2125', sel: '#D24F1A', cadre: '#1D2125', fond: '#FFFFFF', jonction: '#1D2125', pot: '#2356C4' };
 function dessinerFolio(c, sch, fi, o) {
   o = o || {};
@@ -427,9 +429,12 @@ function dessinerFolio(c, sch, fi, o) {
   /* fils */
   cal('SCH_FILS');
   c.lineWidth = 0.35; c.strokeStyle = K.fil;
+  const sim = o.sim || null;
   for (const w of f.fils) {
     if (w.pts.length < 2) continue;
     c.strokeStyle = o.sel && o.sel.has(w.id) ? K.sel : K.fil; c.lineWidth = o.sel && o.sel.has(w.id) ? 0.7 : 0.35;
+    /* mode test : couleur du potentiel (phase rouge, neutre bleu, continu, court-circuit), fils hors tension estompés */
+    if (sim) { const st = sim.parFil.get(w.id); c.strokeStyle = st ? SIM_COUL[st] : K.ink3; c.lineWidth = st ? 0.75 : 0.3; }
     c.beginPath(); c.moveTo(w.pts[0].x, w.pts[0].y); for (const p of w.pts.slice(1)) c.lineTo(p.x, p.y); c.stroke();
   }
   /* points de jonction : bout de fil sur un autre fil, ou point commun à trois fils ou plus */
@@ -454,7 +459,16 @@ function dessinerFolio(c, sch, fi, o) {
   }
   /* symboles et leurs repères */
   cal('SCH_SYMBOLES');
-  for (const s of f.syms) dessinerSymbole(c, s, o.sel && o.sel.has(s.id) ? K.sel : K.ink);
+  if (sim) {
+    /* récepteurs en marche : halo (lampe, voyant allumés ; bobine enclenchée ; moteur qui tourne) */
+    const on = new Set(sim.charges.filter((x) => x.on).map((x) => x.s.id));
+    for (const s of f.syms) if (on.has(s.id)) {
+      const b = boiteDe(s), cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2, r = Math.max(4, Math.min(12, Math.max(b.x1 - b.x0, b.y1 - b.y0) / 2 + 1.5));
+      c.save(); c.fillStyle = s.t === 'lampe' || s.t === 'voyant' ? 'rgba(255,196,0,.55)' : 'rgba(46,170,92,.28)';
+      c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill(); c.restore();
+    }
+  }
+  for (const s of f.syms) dessinerSymbole(c, s, o.sel && o.sel.has(s.id) ? K.sel : sim && sim.actifs && sim.actifs.has(s.id) ? SIM_COUL.actif : K.ink, sim ? sim.contacts.get(s.id) : null);
   cal('SCH_REPERES');
   for (const s of f.syms) {
     const d = SYM_BY.get(s.t); if (!d) continue;
@@ -539,6 +553,7 @@ function nettoyerSchemas(s) {
 }
 
 export { FAMILLES };
+export { SIM_COUL };
 export { COUL, FEUILLE, LCOL, MODELES, TYPES_FOLIO, ZONE, appareils, appliquerModele, borniers, colonne, controlesSchema, depuisTableau, dessinerFolio, enL,
   equipotentielles, insererSurFil, listeFils, nettoyerSchemas, nomenclature, nomsBornes, nouveauFolio, position, prochainNumBorne, prochainRepere,
   renvois, repereNouveau, schemasDe, simplifier, surSegment };

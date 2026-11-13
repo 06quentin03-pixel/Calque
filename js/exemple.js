@@ -18,6 +18,8 @@ import { REGLES_VERSION } from './regles.js';
 import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
 import { dupliquer, initialiser } from './variantes.js';
 import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
+import { colonneTableau } from './cheminement.js';
+import { raccorderCircuit } from './itineraire.js';
 import { agcpLabel } from './elecdonnees.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
@@ -61,7 +63,8 @@ function maison() {
   op(1000, 500, 'window', { type: 'oscillo', w: 60, h: 75, sill: 145, leaves: 1 });
   const it = (k, x, y, rot, extra) => { const d = FURN_BY.get(k); const o = makeItemFromDef(d, 'L0'); Object.assign(o, { x, y, rot }, extra || {}); P.items.push(o); };
   it('tv', 32.5, 220, 270); it('canape3', 290, 210, 90); it('tbasse', 150, 210, 90); it('tab4', 395, 380, 0); it('plante', 60, 60, 0);
-  it('escD', 511.5, 220, 0, { n: 16 });
+  /* escalier quart tournant (en L) : la trémie de l'étage ne découpe que ses deux volées (demande du 13 novembre 2026) */
+  it('escQ', 455, 220, 0, { n: 16, w: 200, d: 360, e: 90 });
   it('frigo', 42.5, 483.5, 270); it('col', 40, 543.5, 270); it('ev1', 40, 613.5, 270); it('lv', 40, 683.5, 270);
   it('mb60', 40, 760, 180); it('pl60', 100, 760, 180); it('mb60', 160, 760, 180); it('mb60', 220, 760, 180); it('hotte', 100, 765, 180);
   it('placard', 364.5, 520, 270, { w: 120 });
@@ -110,11 +113,20 @@ function maison() {
   vk(vmcG, at('vmc', 805, 645), [{ x: 635, y: 700 }, { x: 805, y: 700 }], 80);
   vk(vmcG, vmcR, [], 160);
   copyWalls('L0', 'L1');
+  /* balcon de l'étage seulement (demande du 13 novembre 2026) : trois garde-corps de 100 cm sur L1, rien au rez-de-chaussée */
+  const GC = { th: 10, kind: 'mur' };
+  for (const [a, b] of [[{ x: 330, y: 800 }, { x: 330, y: 960 }], [{ x: 330, y: 960 }, { x: 0, y: 960 }], [{ x: 0, y: 960 }, { x: 0, y: 800 }]]) for (const w of addWall('L1', a, b, GC)) w.h = 100;
+  /* vide sur l'entrée (double hauteur), fermé par des garde-corps sur l'étage : son sol est supprimé (voir plus bas) */
+  const V_ = [{ x: 360, y: 500 }, { x: 540, y: 500 }, { x: 540, y: 760 }, { x: 360, y: 760 }];
+  for (let i = 0; i < 4; i++) for (const w of addWall('L1', V_[i], V_[(i + 1) % 4], { th: 7, kind: 'cloison' })) w.h = 100;
   syncRooms();
   const name = (x, y, n, lv) => { const g = geo(lv || 'L0'); const r = g.rooms.find((q) => inPoly({ x, y }, q.loop)); if (r && r.label) { r.label.name = n; r.label.x = x; r.label.y = y; } };
   name(150, 395, 'Séjour'); name(175, 560, 'Cuisine'); name(445, 600, 'Entrée'); name(630, 520, 'Dégagement');
   name(860, 150, 'Chambre'); name(790, 505, 'Salle de bain'); name(765, 650, 'WC'); name(880, 690, 'Buanderie');
   name(760, 250, 'Combles aménageables', 'L1');
+  name(165, 885, 'Balcon', 'L1'); const bal = P.rooms.find((r) => r.name === 'Balcon' && r.lv === 'L1'); if (bal) bal.ext = 'balcon';
+  /* vide sur l'entrée (double hauteur) : sol de la pièce de l'étage supprimé */
+  { const r = geo('L1').rooms.filter((q) => inPoly({ x: 450, y: 630 }, q.loop)).sort((p, q) => p.area - q.area)[0]; if (r && r.label) Object.assign(r.label, { name: 'Vide sur entrée', x: 450, y: 630, sol: 'vide' }); }
   const lab = P.rooms.find((r) => r.name === 'Séjour'); if (lab) lab.tint = 1;
   const lab2 = P.rooms.find((r) => r.name === 'Salle de bain'); if (lab2) lab2.tint = 3;
   touch();
@@ -305,6 +317,7 @@ function samplePlan() {
   chiffrageExemple();
   plansElectriquesExemple();
   schemasExemple();
+  demandesExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
 }
@@ -411,6 +424,27 @@ function chiffrageExemple() {
 
 /* onglet « Schémas » : les modèles de Calque (démarrage direct, inverseur, télérupteur, va-et-vient) et la distribution
    créée depuis le tableau du plan. Aucune référence de matériel : elles restent à saisir. */
+/* demandes du 13 novembre 2026 (format v15) : colonne de passage du tableau sur les deux niveaux, circuits de l'étage
+   de la maison raccordés par cette colonne, choix des conducteurs dans deux gaines (fils, câble 5 conducteurs).
+   (L'escalier en L, le balcon et le vide sur entrée sont posés dans maison().) Valeurs d'exemple « saisie ». */
+function demandesExemple() {
+  touch();
+  const T = P.elec.find((e) => e.type === 'tableau');
+  const col = colonneTableau(P, T, () => uid('e'));
+  for (const m of col.nouveaux) P.elec.push(m);
+  touch();
+  /* circuits de l'étage de la maison : raccordés au tableau par la colonne (gaines au plafond de l'étage) */
+  const etage = P.circuits.filter((c) => P.elec.some((e) => e.cid === c.id && e.lv === 'L1' && e.x < 1100));
+  const choisis = [];
+  for (const c of etage) {
+    const r = raccorderCircuit(P, c.id, { kind: 'icta', pose: 'plafond' });
+    for (const g of r.gaines) { const d = Object.assign({}, g, { id: uid('k'), mat: 'icta', dia: 20 }); delete d.len; P.ducts.push(d); choisis.push([c, d]); }
+  }
+  /* choix des conducteurs : fils dans la première gaine, câble de 5 conducteurs (avec réserve) dans la deuxième */
+  if (choisis[0]) choisis[0][1].conds = { [choisis[0][0].id]: { t: 'h07vu' } };
+  if (choisis[1]) choisis[1][1].conds = { [choisis[1][0].id]: { t: 'r2v', n: 5 } };
+  touch();
+}
 function schemasExemple() {
   const sch = schemasDe(P);
   for (const m of ['demarrage', 'inversion', 'telerupteur', 'vaetvient']) appliquerModele(sch, m);

@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 13 novembre 2026, module « Plans électriques » (après la mission « développement autonome »).
+Mise à jour : 13 novembre 2026, demandes sur les escaliers, terrasses, colonne du tableau, câbles et test des schémas (format v15).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -82,6 +82,14 @@ Détail : `docs/MODULE_ELECTRIQUE.md`. **Fusionné dans `main` (demande n°11).*
 
 ## Onglet « Schémas » (13 novembre 2026)
 Éditeur de schémas électriques indépendant du bâtiment, rangé dans le projet (`P.schemas`, format **v14**) : `js/schemasymboles.js`, `js/schema.js` (sans écran), `js/schemaui.js`. Folios A3 avec cartouche, 45 symboles, fils d'équerre, repères et numéros de fils automatiques, renvois croisés, nomenclature, borniers, liste des fils, contrôles, 4 modèles, import du tableau, exports PDF / SVG / DXF. Tests : `tests/schemas.test.mjs`.
+
+## Demandes du 13 novembre 2026 (format v15, branche `claude/elegant-ritchie-zjivgm`)
+- Trémie à la forme réelle de l'escalier (`stairZones` dans `symboles.js`, `tremieHoles` dans `vue3d.js`), réglage `tremie: 'aucune'` ; sol d'une pièce supprimé (`sol: 'vide'` sur l'étiquette).
+- Terrasse et balcon d'un seul niveau (`ext` sur l'étiquette, `PIECES_EXT` / `estExterieure` dans `noyau.js`) : hors surface habitable et hors contrôles de pièces ; garde-corps de 100 cm.
+- Colonne de passage du tableau (`colonneTableau`, `membresColonne`, `tailleColonne` dans `cheminement.js` ; passages `traversee` avec `col`, `tab`, `w`, `d`) : un seul nœud du réseau des gaines, relié directement au tableau ; créée en posant le tableau, suit le tableau (`syncDucts`).
+- Conducteurs choisis gaine par gaine (`conds` de la gaine, `choixGaine`, `libelleTroncon`, anomalie `cb_cable_petit` dans `cablage.js`).
+- Mode « Tester » des schémas : `js/simulation.js` (sans écran), dessin des contacts dans leur position (`dessinerSymbole(c, o, coul, etat)`), couleurs des potentiels (`SIM_COUL` dans `schema.js`). L'état du test n'est jamais enregistré dans le plan.
+- Tests : `tests/demandes.test.mjs`.
 
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).

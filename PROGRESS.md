@@ -1,3 +1,8 @@
+## 13 novembre 2026 — Demandes : escaliers, terrasses, colonne du tableau, câbles et fils, test des schémas
+- Trémie en L ou en U à la forme de l'escalier, sol supprimé, terrasse et balcon d'un seul niveau (garde-corps), colonne de passage créée avec le tableau, conducteurs choisis gaine par gaine (fils ou câble), mode « Tester » des schémas (`js/simulation.js`).
+- Format v15 avec migration et copie de sécurité. Plan d'exemple complété (escalier en L, balcon, vide sur entrée, colonne, choix des conducteurs).
+- Tests : `tests/demandes.test.mjs`.
+
 
 ## 13 novembre 2026 — Onglet « Schémas »
 - Modules : `js/schemasymboles.js` (bibliothèque, sans écran), `js/schema.js` (moteur, sans écran), `js/schemaui.js` (écran).

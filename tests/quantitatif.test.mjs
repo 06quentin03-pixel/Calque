@@ -93,8 +93,8 @@ test('migration v10 → v11 : chiffrage vide, copie de sécurité ; onglet Quant
     await new Promise((res) => setTimeout(res, 300));
     return { v: N.P.v, ch: N.P.chiffrage, n: N.P.elec.length, why: (await St.versionsOf(N.P.id)).map((x) => x.why) };
   });
-  assert.equal(m.v, 14); assert.deepEqual(m.ch, { prix: {}, temps: {} }); assert.equal(m.n, 6, 'rien de perdu');
-  assert.ok(m.why.some((w) => /v10 → v14/.test(w)), m.why.join(' | '));
+  assert.equal(m.v, 15); assert.deepEqual(m.ch, { prix: {}, temps: {} }); assert.equal(m.n, 6, 'rien de perdu');
+  assert.ok(m.why.some((w) => /v10 → v15/.test(w)), m.why.join(' | '));
   await page.click('text=Tableau électrique'); await page.click('#evBar >> text=Quantitatif');
   const prix = page.locator('.qt-table input[data-k="prix|app:pc"]');
   await prix.fill('8,5');

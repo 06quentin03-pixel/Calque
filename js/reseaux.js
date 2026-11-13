@@ -10,13 +10,13 @@ import { circById, circNumbers, circuitColor, roomAt } from './electricite.js';
 import { K_screen, TAP, commit, ctx, drawSnapMarker, handleDot, hitTol, isDoubleTap, keys, requestRender, revert, tag } from './interaction.js';
 import { goToRef } from './tableau.js';
 import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h, inspHead, kv, numField, parseNum,
-  renderInspector, sec, segCtl, setTool, setWallFace, setWallLength, showPop, toast, toggleRow, updateHint,
+  renderInspector, row, sec, segCtl, setTool, setWallFace, setWallLength, showPop, toast, toggleRow, updateHint,
   wallSideName } from './interface.js';
 import { v3Refresh } from './vue3d.js';
 import { conflitsSection } from './routeui.js';
 import { remplissageGaines } from './materiel.js';
 import { calqueDeElec, calqueDeGaine, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
-import { DERIVATIONS, poseAHauteur, tracerALongueur } from './cheminement.js';
+import { DERIVATIONS, colonneTableau, membresColonne, poseAHauteur, tailleColonne, tracerALongueur } from './cheminement.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -172,6 +172,13 @@ function ductPts(d) {
 function ductLen(d) { const p = ductPts(d); let s = 0; for (let i = 1; i < p.length; i++) s += vdist(p[i - 1], p[i]); return s; }
 /* garde les extrémités enregistrées collées aux symboles (appelé à chaque validation) */
 function syncDucts() {
+  /* colonnes de passage : chaque passage suit le tableau d'où part sa colonne (déplacé, tourné) */
+  for (const e of P.elec) {
+    if (e.type !== TRAVERSEE || !e.col || !e.tab) continue;
+    const T = IDX.elec.get(e.tab);
+    if (!T || T.type !== 'tableau') { delete e.tab; continue; }
+    const a = ancrage(T); e.x = Math.round(a.x * 10) / 10; e.y = Math.round(a.y * 10) / 10; e.rot = T.rot || 0;
+  }
   for (const d of P.ducts) {
     for (const [k, i] of [['a', 0], ['b', d.pts.length - 1]]) {
       if (!d[k]) continue;
@@ -749,9 +756,46 @@ function remplissageLigne(d) {
   return sec('Remplissage', kv([['Circuits', r.n ? r.circuits.map((id) => circNumbers().get(id)).join(', ') : '—'], ['Occupation', r.taux != null ? `${String(Math.round(r.taux * 10) / 10).replace('.', ',')} % (indicatif)` : '—']]),
     h('p', { class: 'note' }, r.controle.detail));
 }
+/* colonne de passage d'un tableau : crée ou met à jour un passage par niveau, à l'aplomb du tableau */
+function creerColonne(T) {
+  const r = colonneTableau(P, T, () => uid('e'));
+  for (const m of r.nouveaux) { P.elec.push(m); IDX.elec.set(m.id, m); }
+  if (r.retires.length) { const out = new Set(r.retires.map((x) => x.id)); P.elec = P.elec.filter((x) => !out.has(x.id)); for (const id of out) IDX.elec.delete(id); }
+  return r;
+}
+function retirerColonne(col) {
+  const out = new Set(P.elec.filter((x) => x.type === TRAVERSEE && x.col === col).map((x) => x.id));
+  P.elec = P.elec.filter((x) => !out.has(x.id)); for (const id of out) IDX.elec.delete(id);
+  for (const d of P.ducts) for (const k of ['a', 'b']) if (d[k] && out.has(d[k])) d[k] = null;
+  return out.size;
+}
+const nomNiveau = (lv) => (P.levels.find((l) => l.id === lv) || {}).name || lv;
+/* panneau du tableau : sa colonne de passage entre les étages */
+function colonneSection(e) {
+  if (e.type !== 'tableau') return null;
+  const m = P.elec.filter((x) => x.type === TRAVERSEE && x.col && x.tab === e.id), n = P.levels.length;
+  if (n < 2 && !m.length) return sec('Colonne de passage', h('p', { class: 'note' }, 'Ajoutez un étage : une colonne de passage sera proposée à l’aplomb du tableau, pour faire monter les câbles d’un étage à l’autre.'));
+  const faire = () => { const r = creerColonne(e); commit(); toast(`Colonne de passage : ${r.membres.length} niveaux${r.nouveaux.length ? ` (${r.nouveaux.length} ajouté${r.nouveaux.length > 1 ? 's' : ''})` : ''}.`); };
+  if (!m.length) return sec('Colonne de passage', h('p', { class: 'note' }, 'Crée un passage de la taille du tableau sur chaque niveau, juste au-dessus et en dessous de lui. Les câbles montent alors dans cette colonne au lieu de passer ailleurs (par exemple par le garage).'), btns(btn('Créer la colonne de passage', faire, 'pri sm')));
+  const manque = P.levels.filter((l) => !m.some((x) => x.lv === l.id));
+  return sec('Colonne de passage',
+    h('p', { class: 'note' }, `${m.length} niveau${m.length > 1 ? 'x' : ''} : ${m.map((x) => nomNiveau(x.lv)).join(', ')}. Taille ${fmtIn(m[0].w || 0)} × ${fmtIn(m[0].d || 0)} cm. La colonne suit le tableau quand il est déplacé ; les gaines raccordées à la colonne, sur n’importe quel étage, rejoignent directement le tableau.`),
+    manque.length ? h('p', { class: 'note', style: 'color:var(--warn)' }, `Niveau${manque.length > 1 ? 'x' : ''} sans passage : ${manque.map((l) => l.name).join(', ')}.`) : null,
+    btns(manque.length ? btn('Compléter la colonne', faire, 'pri sm') : null, btn('Voir sur un autre étage', () => { const o = m.find((x) => x.lv !== e.lv); if (o) goToRef({ t: 'elec', id: o.id }); }, 'sm'),
+      btn('Retirer la colonne', () => { const k = retirerColonne(m[0].col); commit(); toast(`${k} passage${k > 1 ? 's' : ''} retiré${k > 1 ? 's' : ''} (Annuler pour revenir).`); }, 'sm danger')));
+}
 /* passage entre étages : niveau relié (le jumeau est créé au même endroit sur l'autre niveau) */
 function traverseeSection(e) {
   if (e.type !== TRAVERSEE) return null;
+  if (e.col) {
+    const m = membresColonne(P, e), T = e.tab && IDX.elec.get(e.tab);
+    const setT = (k) => (v) => { for (const x of m) x[k] = v; commit(); };
+    return sec('Colonne de passage',
+      h('p', { class: 'note' }, `${T ? 'Part du tableau' : 'Colonne'} · ${m.length} niveau${m.length > 1 ? 'x' : ''} : ${m.map((x) => nomNiveau(x.lv)).join(', ')}. Les gaines raccordées ici rejoignent ${T ? 'directement le tableau' : 'les autres niveaux de la colonne'}.`),
+      row(numField('Largeur', e.w || tailleColonne(P).w, 'cm', setT('w'), { id: 'f-colw', min: 5, max: 300 }), numField('Profondeur', e.d || tailleColonne(P).d, 'cm', setT('d'), { id: 'f-cold', min: 5, max: 300 })),
+      h('p', { class: 'note' }, 'Taille proposée d’après la largeur du tableau (estimée) : à ajuster à votre gaine technique.'),
+      btns(T ? btn('Voir le tableau', () => goToRef({ t: 'elec', id: T.id }), 'sm') : null, btn('Retirer la colonne', () => { const k = retirerColonne(e.col); commit(); toast(`${k} passages retirés (Annuler pour revenir).`); }, 'sm danger')));
+  }
   const tw = jumelle(P, e, IDX.elec);
   const others = P.levels.filter((l) => l.id !== e.lv);
   if (!others.length) return sec('Passage entre étages', h('p', { class: 'note' }, 'Ajoutez un autre niveau pour relier ce passage.'));
@@ -872,5 +916,5 @@ export { DIMHIT, DUCT_DIAS, FAMS, KITCHEN_Q, PRESETS, VENT_DUCT_ONLY, VENT_GROUP
   ductLen, ductPath, ductPts, ductTap, ductVisible, elecAt, elecRoom, elecVisible, famCount, famOn, filtCirc,
   filterActive, filterSummary, finishDuct, fold, gaineDia, inspDuct, linkVisible, networkSummary, openDimEdit,
   openFilterPop, presetMatch, renderFilterPop, resetFilters, reverseDuct, roomKindName, setDIMHIT, snapDuctPoint,
-  startDuctFrom, syncDucts, traverseeSection, updateFilterUI, vchkList, ventCounts, ventGroupSection, ventNeed, ventRooms, ventSection,
+  colonneSection, creerColonne, retirerColonne, startDuctFrom, syncDucts, traverseeSection, updateFilterUI, vchkList, ventCounts, ventGroupSection, ventNeed, ventRooms, ventSection,
   vmcChecks, vmcGraph };

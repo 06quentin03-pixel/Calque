@@ -1,7 +1,7 @@
 /* Calque — module « electricite » : électricité : circuits, tableau, contrôle NF C 15-100.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { besoinsPiece } from './equipement.js';
-import { C, IDX, NF0, NF1, P, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub } from './noyau.js';
+import { C, IDX, NF0, NF1, P, estExterieure, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
 import { ELEC_BY, S_ELEC } from './symboles.js';
@@ -488,7 +488,7 @@ function nfcChecks() {
       const pt = inside.filter((e) => e.type === 'pc_pt').length;
       const lights = inside.filter((e) => LIGHTS.has(e.type)).length;
       /* besoins : une seule définition, partagée avec l'équipement automatique (equipement.js) */
-      const bp = besoinsPiece(name, area), need = bp.socles, why = bp.pourquoi;
+      const bp = besoinsPiece(name, area, estExterieure(r.label)), need = bp.socles, why = bp.pourquoi;
       if (bp.vide) continue; // vide de moins de 1 m² sans nom (gaine, creux entre parois) : pas une pièce
       if (need) {
         if (socles < need) addR('cq_socles_piece', 'err', G3, `${name} : ${socles} socle${socles > 1 ? 's' : ''} de prise, ${need} requis (${why}).`, ref);
@@ -531,7 +531,7 @@ function nfcChecks() {
       const side = interiorSide(wg, o.t); if (!side) continue;
       const mid = vadd(wg.A, vmul(wg.d, o.t));
       const outPt = vsub(mid, vmul(wg.n, side * (wg.th / 2 + 20)));
-      const ok = els.some((x) => LIGHTS.has(x.type) && vdist(x, outPt) <= 180 && !g.rooms.some((r) => inPoly(x, r.loop)));
+      const ok = els.some((x) => LIGHTS.has(x.type) && vdist(x, outPt) <= 180 && !g.rooms.some((r) => !estExterieure(r.label) && inPoly(x, r.loop)));
       if (!ok) addR('cq_eclairage_acces', 'warn', G3, `Accès extérieur sans point d'éclairage au-dessus (${L.name}).`, { t: 'opening', id: o.id, lv: L.id });
     }
   }

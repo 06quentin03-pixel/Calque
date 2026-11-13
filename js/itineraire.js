@@ -219,7 +219,9 @@ function raccorderCircuit(plan, cid, opts = {}) {
     if (!reste.length) break;
     const G = grapheGaines(tmp), sp = G.nodes.has('e:' + T.id) ? plusCourts(G, 'e:' + T.id, cid) : { D: new Map() };
     /* un passage entre étages dont le jumeau est raccordé est lui aussi un point de départ, sur son niveau */
-    const relies = (plan.elec || []).filter((x) => x.id === T.id || (sp.D.has('e:' + x.id) && (x.cid === cid || x.type === TRAVERSEE || DERIVATIONS.has(x.type))) || (x.type === TRAVERSEE && x.to && sp.D.has('e:' + x.to)));
+    const relies = (plan.elec || []).filter((x) => x.id === T.id || (sp.D.has('e:' + x.id) && (x.cid === cid || x.type === TRAVERSEE || DERIVATIONS.has(x.type))) || (x.type === TRAVERSEE && x.to && sp.D.has('e:' + x.to))
+      /* colonne de passage du tableau (ou dont un autre niveau est raccordé) : point de départ sur chaque niveau */
+      || (x.type === TRAVERSEE && x.col && (x.tab === T.id || (plan.elec || []).some((m) => m.col === x.col && m.id !== x.id && sp.D.has('e:' + m.id)))));
     const troncs = tmp.ducts.filter((d) => isElecDuct(d) && !String(d.id).startsWith('~auto') && !circuitsDe(d).length && sp.D.has(`v:${d.id}:0`)).map((d) => ({ d, pts: pointsGaine(tmp, d) }));
     let best = null;
     for (const e of reste) {

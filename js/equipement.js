@@ -26,8 +26,10 @@ const PIECE = {
 const VIDE_MAX = 1;
 const estVide = (nom, aire) => /^Pièce \d+$/.test(String(nom || '')) && aire < VIDE_MAX;
 /* besoins d'une pièce d'après son nom et sa surface (m²) */
-function besoinsPiece(nom, aire) {
+function besoinsPiece(nom, aire, ext) {
   const n = String(nom || '');
+  /* terrasse, balcon (pièce extérieure, v15) : pas une pièce d'habitation, aucun besoin de socles ni d'éclairage imposé ici */
+  if (ext) return { socles: 0, pourquoi: '', plan: 0, cuisson: false, lumiere: false, lumiereObligatoire: false, rj45: false, vide: true, exterieure: true };
   if (estVide(n, aire)) return { socles: 0, pourquoi: '', plan: 0, cuisson: false, lumiere: false, lumiereObligatoire: false, rj45: false, vide: true };
   let socles = 0, pourquoi = '';
   if (PIECE.sejour.test(n)) { socles = aire <= 28 ? Math.max(5, Math.ceil(aire / 4)) : 7; pourquoi = aire <= 28 ? '1 socle par tranche de 4 m², 5 au minimum' : '7 au minimum au-delà de 28 m²'; }
@@ -47,8 +49,8 @@ function besoinsPiece(nom, aire) {
 const soclesDe = (els) => els.reduce((s, e) => s + (SOCKETS[e.type] || 0), 0);
 
 /* ce qui manque dans une pièce : [{ type, n, pourquoi }] ; els : symboles déjà dans la pièce */
-function manquants(nom, aire, els) {
-  const b = besoinsPiece(nom, aire), out = [];
+function manquants(nom, aire, els, ext) {
+  const b = besoinsPiece(nom, aire, ext), out = [];
   const pt = els.filter((e) => e.type === 'pc_pt').length;
   const addPt = Math.max(0, b.plan - pt);
   if (addPt) out.push({ type: 'pc_pt', n: addPt, pourquoi: `${b.plan} prises au-dessus du plan de travail` });
@@ -105,13 +107,13 @@ const rotVers = (nx, ny) => { let r = Math.atan2(-nx, ny) / DEG; r = r % 360; if
 /* nombre d'appareils à poser dans une pièce (rapide : sans chercher les positions) */
 function aPoser(plan, piece) {
   const els = (plan.elec || []).filter((e) => e.lv === piece.lv && inPoly(e, piece.loop || piece.poly));
-  return manquants(piece.nom, piece.aire, els).reduce((s, m) => s + m.n, 0);
+  return manquants(piece.nom, piece.aire, els, piece.ext).reduce((s, m) => s + m.n, 0);
 }
 /* Propose les symboles à poser dans une pièce.
    piece : { lv, nom, poly (faces intérieures), loop (axes), aire (m²), holes } ; renvoie { poses: [{ type, x, y, rot, h }], liens: [[i, j]] (indices dans poses : commande → lumière), manque: [...], impossible: [...] } */
 function equiperPiece(plan, piece) {
   const els = (plan.elec || []).filter((e) => e.lv === piece.lv && inPoly(e, piece.loop || piece.poly));
-  const manque = manquants(piece.nom, piece.aire, els);
+  const manque = manquants(piece.nom, piece.aire, els, piece.ext);
   const out = { poses: [], liens: [], manque, impossible: [] };
   if (!manque.length) return out;
   /* seulement les ouvertures proches de la pièce (gros plans : des centaines d'ouvertures sur le niveau) */

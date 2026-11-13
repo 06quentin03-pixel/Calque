@@ -21,10 +21,12 @@ function txt(c, s, x, y, taille, gras, align) {
 }
 
 /* ---------------- éléments de contacts (pôle vertical en x, bornes en (x, y0) et (x, y1)) ---------------- */
-/* contact à fermeture (NO) : lame inclinée qui ne touche pas le contact fixe */
-function lameNO(c, x, y0 = -10, y1 = 10) { ln(c, x, y0, x, -4); ln(c, x, 4, x, y1); ln(c, x, 4, x - 3.5, -4.5); }
-/* contact à ouverture (NF) : lame qui passe derrière le contact fixe (crochet) */
-function lameNF(c, x, y0 = -10, y1 = 10) { ln(c, x, y0, x, -4); ln(c, x, -4, x + 2.5, -4); ln(c, x, 4, x, y1); ln(c, x, 4, x + 3, -5); }
+/* état forcé pendant le dessin (mode « Tester » des schémas) : { ferme: true | false, pos: 1 | 2 } ou null (position de repos) */
+let ETAT = null;
+/* contact à fermeture (NO) : lame inclinée qui ne touche pas le contact fixe (fermé en mode test : lame droite) */
+function lameNO(c, x, y0 = -10, y1 = 10) { ln(c, x, y0, x, -4); ln(c, x, 4, x, y1); if (ETAT && ETAT.ferme === true) ln(c, x, 4, x - 0.6, -4); else ln(c, x, 4, x - 3.5, -4.5); }
+/* contact à ouverture (NF) : lame qui passe derrière le contact fixe (crochet) ; ouvert en mode test : lame écartée */
+function lameNF(c, x, y0 = -10, y1 = 10) { ln(c, x, y0, x, -4); ln(c, x, -4, x + 2.5, -4); ln(c, x, 4, x, y1); if (ETAT && ETAT.ferme === false) ln(c, x, 4, x - 3.5, -4.5); else ln(c, x, 4, x + 3, -5); }
 /* fonction de contacteur (demi-cercle), de disjoncteur (croix), de sectionneur (trait) sur le contact fixe */
 const fnContacteur = (c, x) => { c.beginPath(); c.arc(x, -4 - 1.2, 1.2, Math.PI * 0.5, Math.PI * 1.5, true); c.stroke(); };
 const fnDisj = (c, x) => { ln(c, x - 1.3, -5.3, x + 1.3, -2.7); ln(c, x + 1.3, -5.3, x - 1.3, -2.7); };
@@ -77,7 +79,7 @@ const SYMBOLES = [
   { t: 'bp_nf', cat: 'commande', n: 'Bouton-poussoir à ouverture (arrêt)', pre: 'S', bornes: [{ n: '11', x: 0, y: -10 }, { n: '12', x: 0, y: 10 }], boite: boite(-10, -10, 4, 10), draw(c) { lameNF(c, 0); bouton(c, 0); } },
   { t: 'au', cat: 'commande', n: 'Arrêt d’urgence (coup de poing)', pre: 'S', bornes: [{ n: '11', x: 0, y: -10 }, { n: '12', x: 0, y: 10 }], boite: boite(-11, -10, 4, 10), draw(c) { lameNF(c, 0); coupPoing(c, 0); } },
   { t: 'inter', cat: 'commande', n: 'Interrupteur (commande manuelle)', pre: 'S', bornes: B2, boite: boite(-10, -10, 3, 10), draw(c) { lameNO(c, 0); manuel(c, 0); } },
-  { t: 'vv', cat: 'commande', n: 'Commutateur va-et-vient', pre: 'S', bornes: [{ n: 'C', x: 0, y: 10 }, { n: '1', x: -5, y: -10 }, { n: '2', x: 5, y: -10 }], boite: boite(-7, -10, 7, 10), draw(c) { ln(c, 0, 10, 0, 4); ln(c, -5, -10, -5, -4); ln(c, 5, -10, 5, -4); ln(c, 0, 4, -4.5, -4.5); cercle(c, 0, 4, 0.5, c.strokeStyle); } },
+  { t: 'vv', cat: 'commande', n: 'Commutateur va-et-vient', pre: 'S', bornes: [{ n: 'C', x: 0, y: 10 }, { n: '1', x: -5, y: -10 }, { n: '2', x: 5, y: -10 }], boite: boite(-7, -10, 7, 10), draw(c) { ln(c, 0, 10, 0, 4); ln(c, -5, -10, -5, -4); ln(c, 5, -10, 5, -4); if (ETAT && ETAT.pos === 2) ln(c, 0, 4, 4.5, -4.5); else ln(c, 0, 4, -4.5, -4.5); cercle(c, 0, 4, 0.5, c.strokeStyle); } },
   { t: 'fdc', cat: 'commande', n: 'Interrupteur de position (fin de course)', pre: 'B', bornes: B2, boite: boite(-10, -10, 3, 10), draw(c) { lameNO(c, 0); galet(c, 0); } },
   { t: 'detecteur', cat: 'commande', n: 'Détecteur (3 fils)', pre: 'B', bornes: [{ n: '+', x: -5, y: -10 }, { n: '−', x: 5, y: -10 }, { n: 'S', x: 0, y: 10 }], boite: boite(-8, -10, 8, 10), draw(c) { ln(c, -5, -10, -5, -5); ln(c, 5, -10, 5, -5); ln(c, 0, 5, 0, 10); rect(c, -7.5, -5, 15, 10); pl(c, [0, -3, 3, 0, 0, 3, -3, 0], true); } },
   { t: 'voyant', cat: 'commande', n: 'Voyant lumineux', pre: 'H', bornes: [{ n: 'X1', x: 0, y: -10 }, { n: 'X2', x: 0, y: 10 }], boite: boite(-4, -10, 4, 10), draw(c) { ln(c, 0, -10, 0, -3.5); ln(c, 0, 3.5, 0, 10); cercle(c, 0, 0, 3.5); ln(c, -2.5, -2.5, 2.5, 2.5); ln(c, -2.5, 2.5, 2.5, -2.5); } },
@@ -121,13 +123,14 @@ function boiteDe(o) {
   const b = d.boite, pts = [versMonde(o, b.x0, b.y0), versMonde(o, b.x1, b.y1), versMonde(o, b.x0, b.y1), versMonde(o, b.x1, b.y0)];
   return { x0: Math.min(...pts.map((p) => p.x)), y0: Math.min(...pts.map((p) => p.y)), x1: Math.max(...pts.map((p) => p.x)), y1: Math.max(...pts.map((p) => p.y)) };
 }
-/* dessin d'un symbole posé (contexte canvas en mm) */
-function dessinerSymbole(c, o, coul) {
+/* dessin d'un symbole posé (contexte canvas en mm) ; etat (facultatif, mode test) : position des contacts */
+function dessinerSymbole(c, o, coul, etat) {
   const d = SYM_BY.get(o.t); if (!d) return;
   c.save(); c.translate(o.x, o.y);
   c.rotate(((o.rot || 0) * Math.PI) / 180); if (o.mir) c.scale(-1, 1);
   c.lineWidth = T; c.strokeStyle = coul || '#1D2125'; c.fillStyle = coul || '#1D2125'; c.lineCap = 'round'; c.lineJoin = 'round';
-  d.draw(c);
+  ETAT = etat || null;
+  try { d.draw(c); } finally { ETAT = null; }
   c.restore();
 }
 

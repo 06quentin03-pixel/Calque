@@ -1,6 +1,6 @@
 /* Calque — module « interface » : interface : inspecteur, panneaux, niveaux, fenêtres.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, C, DEG, EXT, IDX, NF1, P, S, clamp, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
+import { $, $$, C, DEG, EXT, IDX, NF1, P, PIECES_EXT, S, clamp, estExterieure, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
   levelOf, levelsSorted, nodeOf, saveSettings, setGEO, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
   vnorm, vsub } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
@@ -12,7 +12,7 @@ import { AUTONOMOUS, CK, CMDS, SOCKETS, SPOTLIKE, accepts, circById, circNumbers
   defaultKindFor, elecPower, fmtCount, orderCircuits, rcdCircuits, roomAt } from './electricite.js';
 import { calqueVisible, setCalqueVisible } from './calques.js';
 import { DUCT_DIAS, afterFilter, closeDimEdit, ductHintMsg, ductPts, ductVisible, finishDuct, fold, inspDuct,
-  networkSummary, startDuctFrom, traverseeSection, ventSection } from './reseaux.js';
+  networkSummary, startDuctFrom, traverseeSection, ventSection, colonneSection } from './reseaux.js';
 import { CLOSET_MODELS, DOOR_MODELS, GAP_MODELS, WIN_MODELS, commit, cv, lockedWallPoint, makeItemFromDef, newOpening,
   openingHeight, openingModels, refreshUI, refreshWallMsg, requestRender, selObj, select, undo, wallByLength,
   wallHeightSetting, wallHintMsg, wallLenLock, wallProps } from './interaction.js';
@@ -393,7 +393,11 @@ function inspItem(it) {
           : (it.type === 'esc_quart' || it.type === 'esc_demi') ? numField('Emmarchement', it.e || 90, 'cm', (v) => { it.e = v; commit(); }, { id: 'f-se', min: 50, max: 200 }) : null),
       kv([['Hauteur à monter', fmtIn(info.H) + ' cm'], ['Hauteur de marche', NF1.format(info.h) + ' cm'], ['Giron moyen', NF1.format(info.g) + ' cm'], ['Blondel 2h + g', NF1.format(info.b) + ' cm']]),
       h('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap' }, pill, h('span', { class: 'note' }, 'Confort idéal entre 60 et 64 cm.')),
-      levelAbove(it.lv) ? h('p', { class: 'note' }, `Arrive au niveau « ${levelAbove(it.lv).name} », où la trémie s’affiche automatiquement.`) : h('p', { class: 'note' }, 'Ajoutez un étage au-dessus pour voir la trémie et calculer la hauteur exacte.')));
+      levelAbove(it.lv) ? h('p', { class: 'note' }, `Arrive au niveau « ${levelAbove(it.lv).name} », où la trémie s’affiche automatiquement.`) : h('p', { class: 'note' }, 'Ajoutez un étage au-dessus pour voir la trémie et calculer la hauteur exacte.')),
+      sec('Trémie à l’étage du dessus', segCtl([{ v: '', n: 'Forme de l’escalier' }, { v: 'aucune', n: 'Aucune' }], it.tremie || '', (v) => { if (v) it.tremie = v; else delete it.tremie; commit(); }),
+        h('p', { class: 'note' }, it.tremie === 'aucune'
+          ? 'Le sol de l’étage du dessus reste entier. Découpez-le vous-même : sur l’étage du dessus, fermez la trémie par des murs (ou des garde-corps), touchez la pièce créée et choisissez « Sol : supprimé ».'
+          : 'Seules les marches et le palier sont découpés (un escalier en L ou en U ne retire pas le reste du rectangle). Choisissez « Aucune » pour dessiner la trémie vous-même.')));
   }
   parts.push(sec('Dimensions', round
     ? numField('Diamètre', it.w, 'cm', setDim('w'), { id: 'f-iw', min: 10, max: 3000 })
@@ -433,6 +437,7 @@ function inspElec(e) {
       sec('Symbole', sel),
       circuitSection(e),
       traverseeSection(e),
+      colonneSection(e),
       itineraireSection(e),
       materielSection(e),
       sec('Marquage', textField(null, e.mark, (v) => { v = v.trim().slice(0, 8); if (v) e.mark = v; else delete e.mark; commit(); }, { id: 'f-emark', ph: 'Texte court affiché près du symbole (facultatif)' })),
@@ -507,12 +512,40 @@ function inspRoom(lbl) {
         style: `background:${i ? 'linear-gradient(' + C[k] + ',' + C[k] + '),var(--c-room)' : 'var(--c-room)'}`,
         onclick: () => { lbl.tint = i; commit(); },
       })))),
+      typePieceSection(lbl, r),
       equipementSection(lbl),
       eclairageSection(lbl),
       sec(null, btns(btn('Recentrer l’étiquette', () => { const p = labelPoint(r.poly); lbl.x = Math.round(p.x); lbl.y = Math.round(p.y); commit(); }, 'sm', 'center'))),
       h('p', { class: 'note' }, 'La pièce est détectée à partir des murs qui la ferment. Touchez deux fois son nom sur le plan pour le modifier, ou faites-le glisser.'),
     ),
   ];
+}
+/* murs du pourtour d'une pièce qui ne bordent aucune autre pièce du niveau (côté vide ou extérieur) */
+function mursPourtourLibres(r, lv) {
+  const g = geo(lv), autres = new Set();
+  for (const q of g.rooms) if (q !== r) for (const he of q.hes) autres.add(he.g.w.id);
+  return [...new Set(r.hes.map((he) => he.g.w.id))].filter((id) => !autres.has(id)).map((id) => IDX.walls.get(id)).filter(Boolean);
+}
+/* type de pièce (intérieure, terrasse, balcon) et sol (plein ou supprimé), format v15 */
+function typePieceSection(lbl, r) {
+  const ext = lbl.ext || '', lvl = levelOf(lbl.lv);
+  const libres = ext ? mursPourtourLibres(r, lbl.lv) : [];
+  const gc = libres.length && libres.every((w) => w.h === 100);
+  return sec('Type de pièce',
+    segCtl([{ v: '', n: 'Intérieure' }, { v: 'terrasse', n: PIECES_EXT.terrasse }, { v: 'balcon', n: PIECES_EXT.balcon }], ext, (v) => {
+      if (v) lbl.ext = v; else delete lbl.ext;
+      if (v && /^Pièce \d+$/.test(lbl.name)) lbl.name = uniqueRoomName(PIECES_EXT[v], lbl);
+      commit();
+    }),
+    h('p', { class: 'note' }, ext
+      ? `${PIECES_EXT[ext]} du niveau « ${lvl.name} » seulement : hors surface habitable, sans plafond dans la vue 3D, non contrôlée comme une pièce d’habitation. L’étage du dessous n’est pas modifié.`
+      : 'Pour une terrasse ou un balcon à l’étage : fermez sa surface par des murs sur CE niveau, puis choisissez « Terrasse » ou « Balcon ».'),
+    ext && libres.length ? btns(btn(gc ? `Garde-corps en place (${libres.length} mur${libres.length > 1 ? 's' : ''}, 100 cm)` : `Murs du pourtour en garde-corps (100 cm)`, () => {
+      for (const w of libres) w.h = 100; commit(); toast(`${libres.length} mur${libres.length > 1 ? 's' : ''} ramené${libres.length > 1 ? 's' : ''} à 100 cm de haut (garde-corps). « Annuler » pour revenir.`);
+    }, 'sm')) : null,
+    h('div', { class: 'fld' }, h('span', null, 'Sol de la pièce'),
+      segCtl([{ v: '', n: 'Plein' }, { v: 'vide', n: 'Supprimé (trémie, vide)' }], lbl.sol || '', (v) => { if (v) lbl.sol = v; else delete lbl.sol; commit(); })),
+    lbl.sol === 'vide' ? h('p', { class: 'note' }, 'Pas de dalle sous cette pièce dans la vue 3D : trémie d’escalier dessinée à la main, mezzanine, double hauteur. Pour une trémie juste de la forme de l’escalier, laissez « Plein » : elle est découpée automatiquement.') : null);
 }
 function uniqueRoomName(n, self) {
   const used = new Set(P.rooms.filter((r) => r !== self).map((r) => r.name));
@@ -550,7 +583,7 @@ function elecThumb(def, size) {
 }
 function inspLevel() {
   const lvl = levelOf(ui.lv), g = geo(ui.lv);
-  const tot = g.rooms.reduce((s, r) => s + r.area, 0);
+  const tot = g.rooms.reduce((s, r) => s + (estExterieure(r.label) ? 0 : r.area), 0);
   const elecs = P.elec.filter((e) => e.lv === ui.lv);
   const counts = new Map();
   for (const e of elecs) counts.set(e.type, (counts.get(e.type) || 0) + 1);
@@ -573,8 +606,8 @@ function inspLevel() {
   if (g.rooms.length) parts.push(sec('Pièces', h('div', { class: 'list' },
     g.rooms.slice().sort((a, b) => (a.label ? a.label.name : '').localeCompare(b.label ? b.label.name : '', 'fr', { numeric: true })).map((r) => h('button', { type: 'button', class: 'li', onclick: () => select({ t: 'room', id: r.label.id }) },
       h('span', { class: 'sw', style: `background:${r.label && r.label.tint ? 'linear-gradient(' + C[TINTS[r.label.tint]] + ',' + C[TINTS[r.label.tint]] + '),var(--c-room)' : 'var(--c-room)'}` }),
-      h('span', null, r.label ? r.label.name : 'Pièce'), h('span', { class: 'v' }, fmtArea(r.area)))),
-    h('div', { class: 'li tot' }, h('span'), h('span', null, 'Surface totale'), h('span', { class: 'v' }, fmtArea(tot))))));
+      h('span', null, r.label ? r.label.name + (estExterieure(r.label) ? ' (extérieur)' : '') : 'Pièce'), h('span', { class: 'v' }, fmtArea(r.area)))),
+    h('div', { class: 'li tot' }, h('span'), h('span', null, 'Surface habitable'), h('span', { class: 'v' }, fmtArea(tot))))));
   if (counts.size) parts.push(sec('Légende électrique', h('div', { class: 'list' },
     ELEC.filter((d) => counts.has(d.t)).map((d) => h('div', { class: 'li', title: d.desc }, elecThumb(d, 28), h('span', null, d.n), h('span', { class: 'v' }, '× ' + counts.get(d.t))))),
   kv([socles ? ['Socles de prise 16 A', String(socles)] : null, lights ? ['Points d’éclairage', String(lights)] : null, ['Symboles au total', String(elecs.length)]])));

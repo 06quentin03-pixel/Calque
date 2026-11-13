@@ -140,7 +140,7 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 14;
+const PLAN_VERSION = 15;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
@@ -185,6 +185,10 @@ const levelOf = (id) => IDX.levels.get(id);
 function levelsSorted() { return P.levels.slice().sort((a, b) => a.elev - b.elev); }
 function levelAbove(lv) { const L = levelsSorted(); const i = L.findIndex((l) => l.id === lv); return i >= 0 && i < L.length - 1 ? L[i + 1] : null; }
 function levelBelow(lv) { const L = levelsSorted(); const i = L.findIndex((l) => l.id === lv); return i > 0 ? L[i - 1] : null; }
+/* pièces extérieures (format v15, champ `ext` de l'étiquette) : terrasse ou balcon posés sur UN niveau.
+   Hors surface habitable, sans plafond ; l'étage du dessous n'est pas touché. */
+const PIECES_EXT = { terrasse: 'Terrasse', balcon: 'Balcon' };
+const estExterieure = (lbl) => !!(lbl && PIECES_EXT[lbl.ext]);
 function climbHeight(lv) {
   const l = levelOf(lv), up = levelAbove(lv);
   if (up) return up.elev - l.elev;
@@ -215,6 +219,7 @@ function setGEO(v) { GEO = v; }
 /* modification depuis un autre module (une variable importée ne peut pas être réaffectée directement) */
 function setP(v) { P = v; }
 
+export { PIECES_EXT, estExterieure };
 export { $, $$, C, DEG, EXT, LAYERS_CH, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
   fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,

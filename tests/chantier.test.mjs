@@ -57,9 +57,9 @@ test('migration v8 → v9 (puis v11) : chantier vide, copie de sécurité dans l
     const vs = await St.versionsOf(N.P.id);
     return { v: N.P.v, ch: N.P.chantier, why: vs.map((x) => x.why) };
   });
-  assert.equal(r.v, 14); // format actuel
+  assert.equal(r.v, 15); // format actuel
   assert.deepEqual(r.ch, { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] });
-  assert.ok(r.why.some((w) => /v8 → v14/.test(w)), r.why.join(' | '));
+  assert.ok(r.why.some((w) => /v8 → v15/.test(w)), r.why.join(' | '));
   assert.deepEqual(errors, []);
   await ctx.close();
 });

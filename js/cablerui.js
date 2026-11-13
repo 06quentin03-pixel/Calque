@@ -59,7 +59,7 @@ function dessinerCablage(c, lv, opts) {
     /* désignation de chaque circuit, si le tronçon est assez long à l'écran */
     if (Ls < 90) continue;
     const lignes = liste.length > 3 ? [{ t: `${liste.length} circuits · ${n} conducteurs`, col: RC.C.ink2 }]
-      : liste.map((x) => ({ t: `${nums.get(x.cid) || ''} · ${x.des}`, col: (S.layers.circ !== false && circuitColor(x.cid, !!opts.export)) || RC.C.ink2 }));
+      : liste.map((x) => ({ t: `${nums.get(x.cid) || ''} · ${x.libelle || x.des}`, col: (S.layers.circ !== false && circuitColor(x.cid, !!opts.export)) || RC.C.ink2 }));
     lignes.forEach((l, i) => libelles.push({ p: { x: g.m.x - g.nn.x * (14 + i * 11) * px, y: g.m.y - g.nn.y * (14 + i * 11) * px }, t: l.t, col: l.col, ang: Math.atan2(a.b.y - a.a.y, a.b.x - a.a.x) }));
   }
   if (!libelles.length) return;

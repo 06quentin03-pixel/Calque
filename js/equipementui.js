@@ -3,7 +3,7 @@
    d'après les règles de contrôle de Calque (calculs dans equipement.js, sans écran). Les symboles posés ne sont reliés
    à aucun circuit : « Relier les appareils sans circuit » (onglet Tableau électrique, affectation.js) les rattache
    sans modifier les circuits existants. */
-import { IDX, P, ui, uid } from './noyau.js';
+import { IDX, P, estExterieure, ui, uid } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { commit } from './interaction.js';
 import { btn, btns, h, sec, toast } from './interface.js';
@@ -13,7 +13,7 @@ import { nbSansCircuit } from './affectation.js';
 import { relierAppareils } from './tableau.js';
 
 const NOTE = 'D’après les règles de contrôle de Calque (nombre de socles par pièce, prises du plan de travail, sortie 32 A, point d’éclairage), pas encore rattachées à un extrait Legrand : proposition à vérifier. Les positions évitent portes, fenêtres, angles, volumes de la salle de bain, évier et plaque.';
-const pieceDe = (r) => ({ lv: r.label.lv, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 10000 });
+const pieceDe = (r) => ({ lv: r.label.lv, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 10000, ext: estExterieure(r.label) });
 const nomType = (t) => (ELEC_BY.get(t) || {}).n || t;
 
 /* crée les symboles proposés (sans enregistrer l'étape) ; renvoie le nombre de symboles posés */

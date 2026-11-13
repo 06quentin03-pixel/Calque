@@ -307,6 +307,31 @@ function stairModel(it) {
   }
   return { steps, path, landing };
 }
+/* emprise réelle de l'escalier (repère local, miroir appliqué) : sert à découper la trémie de l'étage du dessus.
+   { contour : polygone de l'emprise (en L, en U…), parts : morceaux convexes dont la réunion est le contour }.
+   Un escalier en L ne découpe donc que ses deux volées, pas le rectangle qui l'entoure. */
+function stairZones(it) {
+  const w = it.w, d = it.d, fx = it.flip ? -1 : 1;
+  const P_ = (x, y) => ({ x: fx * x, y });
+  const rect = (x0, y0, x1, y1) => [P_(x0, y0), P_(x1, y0), P_(x1, y1), P_(x0, y1)];
+  if (it.type === 'esc_helice') {
+    const R = Math.min(w, d) / 2, c = [];
+    for (let i = 0; i < 24; i++) { const t = (i / 24) * Math.PI * 2; c.push({ x: Math.cos(t) * R, y: Math.sin(t) * R }); }
+    return { contour: c, parts: [c] };
+  }
+  if (it.type === 'esc_quart') {
+    const e = clamp(it.e || 90, 40, Math.min(w, d) - 20);
+    const contour = [P_(w / 2 - e, d / 2), P_(w / 2, d / 2), P_(w / 2, -d / 2), P_(-w / 2, -d / 2), P_(-w / 2, -d / 2 + e), P_(w / 2 - e, -d / 2 + e)];
+    return { contour, parts: [rect(w / 2 - e, -d / 2 + e, w / 2, d / 2), rect(-w / 2, -d / 2, w / 2, -d / 2 + e)] };
+  }
+  if (it.type === 'esc_demi') {
+    const e = clamp(it.e || 90, 40, w / 2 - 2);
+    const contour = [P_(w / 2 - e, d / 2), P_(w / 2, d / 2), P_(w / 2, -d / 2), P_(-w / 2, -d / 2), P_(-w / 2, d / 2), P_(-w / 2 + e, d / 2), P_(-w / 2 + e, -d / 2 + e), P_(w / 2 - e, -d / 2 + e)];
+    return { contour, parts: [rect(w / 2 - e, -d / 2 + e, w / 2, d / 2), rect(-w / 2, -d / 2, w / 2, -d / 2 + e), rect(-w / 2, -d / 2 + e, -w / 2 + e, d / 2)] };
+  }
+  const r = rect(-w / 2, -d / 2, w / 2, d / 2);
+  return { contour: r, parts: [r] };
+}
 function stairInfo(it) {
   const H = climbHeight(it.lv);
   const n = Math.max(3, Math.round(it.n || 15));
@@ -981,4 +1006,4 @@ export { tailleSym };
 export { DR, ELEC, ELEC_BY, ELEC_CATS, FURN, FURN_BY, FURN_CATS, S_ELEC, _circ, _dash, _eBox, _eCom, _eCross, _eFan,
   _eFill, _eLabel, _eLever, _eMotor, _ePrise, _eRoundTag, _eStem, _eSwitchBase, _ell, _fs, _ln, _nodash, _r, _rr, _txt,
   basin, drawElec, drawElecMark, drawItem, drawItemLabel, drawStair, elecBox, elecSize, furnDef, isStair, needsFlip, rectSteps,
-  rectStepsX, stairInfo, stairModel };
+  rectStepsX, stairInfo, stairModel, stairZones };
