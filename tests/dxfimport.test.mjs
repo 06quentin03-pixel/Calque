@@ -53,6 +53,13 @@ test('lecture d’un DXF : polylignes, renflement, arc, cercle, bloc développé
   assert.deepEqual(uniteProbable(R, em), { u: 4, sure: true });
   assert.deepEqual(uniteProbable({ unite: null }, { x0: 0, x1: 12, y0: 0, y1: 9 }), { u: 6, sure: false }, '12 unités : des mètres, à vérifier');
   assert.deepEqual(uniteProbable({ unite: null }, { x0: 0, x1: 1200, y0: 0, y1: 900 }), { u: 5, sure: false });
+  /* unité du fichier invraisemblable (vrai plan américain : dessiné en pouces, annoncé en millimètres → 87 cm de large) :
+     écartée ; les cotes en pieds et pouces écrites dans le dessin font proposer les pouces, à vérifier */
+  const us = { unite: 4, textes: ["13'8 x 14'", "11'6 x 13'", "5' x 8'1", 'BEDROOM'].map((s) => ({ s })) };
+  assert.deepEqual(uniteProbable(us, { x0: 0, x1: 866, y0: 0, y1: 572 }), { u: 1, sure: false, douteuse: 4, imperial: true });
+  assert.deepEqual(uniteProbable({ unite: 4, textes: [] }, { x0: 0, x1: 866, y0: 0, y1: 572 }), { u: 5, sure: false, douteuse: 4 }, 'sans cotes en pieds : d’après la taille');
+  assert.deepEqual(uniteProbable({ unite: 4, textes: [] }, { x0: 0, x1: 22000, y0: 0, y1: 14000 }), { u: 4, sure: true }, 'unité du fichier vraisemblable : gardée');
+  assert.deepEqual(uniteProbable({ unite: 4, textes: [] }, { x0: 0, x1: 4e6, y0: 0, y1: 2e6 }), { u: 4, sure: true }, 'rien de mieux à proposer : celle du fichier');
 });
 
 test('codage et aller-retour : Windows-1252 relu, DWG reconnu, un DXF écrit par Calque est relu avec son unité', () => {

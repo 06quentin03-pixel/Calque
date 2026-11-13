@@ -50,6 +50,27 @@ test('reconnaissance : murs avec leur épaisseur, angles fermés, porte (arc), f
   assert.equal(r4.murs.length, 1);
 });
 
+test('porte au bout d’un mur contre un mur en travers (près d’un angle) ; résultat indépendant de la position du dessin', () => {
+  /* mur de 20 cm en haut (y 0 → 20), mur de 20 cm à gauche (x 0 → 20), cloison de 7 cm (y 196,5 → 203,5) qui s'arrête
+     à 80 cm de la face du mur de gauche, arc de débattement de 80 cm au bout de la cloison */
+  const essai = (dx, dy, arc) => {
+    const S = [], L = (x0, y0, x1, y1) => S.push({ x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy });
+    L(0, 0, 600, 0); L(20, 20, 600, 20); L(0, 0, 0, 400); L(20, 20, 20, 400); L(100, 196.5, 400, 196.5); L(100, 203.5, 400, 203.5);
+    return reconnaitreMurs(S, arc ? [{ x: 100 + dx, y: 203.5 + dy, r: 80 }] : []);
+  };
+  const r = essai(0, 0, true), cl = r.murs.find((m) => m.th === 7);
+  assert.deepEqual([Math.min(cl.a.x, cl.b.x), Math.max(cl.a.x, cl.b.x), cl.a.y], [10, 400, 200], 'cloison prolongée jusqu’à l’axe du mur de gauche');
+  assert.deepEqual(r.ouvertures, [{ x: 60, y: 200, w: 80, kind: 'door' }]);
+  /* sans arc : rien n'est deviné */
+  const s = essai(0, 0, false), c2 = s.murs.find((m) => m.th === 7);
+  assert.equal(Math.min(c2.a.x, c2.b.x), 100); assert.deepEqual(s.ouvertures, []);
+  /* même dessin déplacé : même résultat, déplacé */
+  const t = essai(12345.6, -9876.5, true), dep = (m) => [m.a.x - 12345.6, m.a.y + 9876.5, m.b.x - 12345.6, m.b.y + 9876.5, m.th].map((v) => Math.round(v));
+  const tel = (m) => [m.a.x, m.a.y, m.b.x, m.b.y, m.th].map((v) => Math.round(v));
+  assert.deepEqual(t.murs.map(dep), r.murs.map(tel));
+  assert.equal(t.ouvertures.length, 1); assert.equal(t.ouvertures[0].kind, 'door');
+});
+
 test('du fichier DXF aux segments : unité, axe Y retourné, arcs gardés, courbes et calques écartés', () => {
   const R = lireDxf(dxfEssai());
   assert.equal(R.unite, 4); assert.equal(R.traits.filter((t) => t.arc).length, 1); assert.equal(R.traits.filter((t) => t.courbe).length, 1);
@@ -82,7 +103,7 @@ test('import DXF avec « Créer aussi les murs » : murs, porte, fenêtre et pi�
   assert.equal(r.larg, 780, 'échelle exacte : 7,80 m entre les axes des murs extérieurs');
   /* deux pièces : 3,765 × 5,60 m ≈ 21,1 m² chacune (cloison de 7 cm au milieu) */
   assert.deepEqual(r.pieces, [21.1, 21.1]);
-  assert.deepEqual(r.noms, ['Pièce 2', 'Sejour'], 'la pièce où le dessin écrit « Sejour » prend ce nom ; l’autre garde son nom par défaut');
+  assert.equal(r.noms.length, 2); assert.match(r.noms[0], /^Pièce \d+$/); assert.equal(r.noms[1], 'Sejour', 'la pièce où le dessin écrit « Sejour » prend ce nom ; l’autre garde son nom par défaut');
   assert.match(r.toast, /murs et 2 ouvertures proposés.*1 portes, 1 fenêtres.*à vérifier/);
   await page.click('#btnUndo'); await wait(page, 200);
   assert.deepEqual(await page.evaluate(async () => { const P = (await import('./js/noyau.js')).P; return [P.walls.length, P.openings.length, P.fonds.length]; }), [0, 0, 0]);

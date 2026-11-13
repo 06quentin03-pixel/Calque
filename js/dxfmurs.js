@@ -60,16 +60,17 @@ function reconnaitreMurs(segments, arcs, options) {
     if (avant && apres) { p.menuiserie = true; menuis.push(p); }
   }
   /* 3. morceaux alignés réunis ; les interruptions de 50 cm à 3 m deviennent des ouvertures */
-  const lignes = new Map();
-  for (const p of P) { if (p.menuiserie) continue; const k = p.q + '|' + Math.round(p.rho / 3) ; let l = lignes.get(k); if (!l) lignes.set(k, (l = [])); l.push(p); }
-  /* un même axe peut tomber dans deux cases voisines : on réunit les cases contiguës */
-  const cles = [...lignes.keys()].sort();
+  /* morceaux d'une même direction regroupés par axe : triés par distance à l'origine, un nouvel axe commence quand
+     l'écart dépasse 3 cm (le résultat ne dépend pas de la position du dessin dans le repère) */
+  const groupes = [];
+  const parQ = new Map(); for (const p of P) { if (p.menuiserie) continue; let l = parQ.get(p.q); if (!l) parQ.set(p.q, (l = [])); l.push(p); }
+  for (const l of parQ.values()) {
+    l.sort((a, b) => a.rho - b.rho);
+    let g = null;
+    for (const p of l) { if (!g || p.rho - g[g.length - 1].rho > 3) groupes.push((g = [])); g.push(p); }
+  }
   const murs = [], trous = [];
-  const vus = new Set();
-  for (const k of cles) {
-    if (vus.has(k)) continue;
-    const [q, r] = k.split('|').map(Number); let l = lignes.get(k).slice(); vus.add(k);
-    for (const k2 of [q + '|' + (r + 1), q + '|' + (r - 1)]) if (lignes.has(k2) && !vus.has(k2) && Math.abs(lignes.get(k2)[0].rho - l[0].rho) <= 3) { l = l.concat(lignes.get(k2)); vus.add(k2); }
+  for (const l of groupes) {
     l.sort((a, b) => a.t0 - b.t0);
     let cur = null;
     for (const p of l) {
@@ -99,12 +100,34 @@ function reconnaitreMurs(segments, arcs, options) {
     if (best) m[bout + 'n'] = best.tm;
   }
   for (const m of murs) { if (m.t0n != null) m.t0 = m.t0n; if (m.t1n != null) m.t1 = m.t1n; }
+  /* porte au bout d'un mur, contre un mur en travers (cas fréquent : porte près d'un angle) : le mur s'arrête à une
+     largeur de porte de l'axe de l'autre mur, et un arc de débattement de ce rayon est dessiné là. Le mur est prolongé
+     jusqu'à cet axe et l'interruption devient une porte. Sans arc, rien n'est prolongé (pas deviné). */
+  const arcPorte = (A, B, w, th) => (arcs || []).some((a) => (Math.abs(a.r - w) <= Math.max(8, 0.18 * w) || Math.abs(2 * a.r - w) <= Math.max(8, 0.18 * w))
+    && Math.min(Math.hypot(a.x - A.x, a.y - A.y), Math.hypot(a.x - B.x, a.y - B.y)) <= th / 2 + 15);
+  for (const m of murs) for (const bout of ['t0', 't1']) {
+    if (m[bout + 'n'] != null) continue;
+    const sens = bout === 't1' ? 1 : -1; let best = null;
+    for (const w of murs) {
+      if (w === m) continue;
+      const det = m.ux * w.uy - m.uy * w.ux; if (Math.abs(det) < 0.7) continue; // à peu près en travers
+      const O1 = pt(m, 0), O2 = pt(w, 0), dx = O2.x - O1.x, dy = O2.y - O1.y;
+      const tm = (dx * w.uy - dy * w.ux) / det, tw = (dx * m.uy - dy * m.ux) / det;
+      if (tw < w.t0 - m.th / 2 || tw > w.t1 + m.th / 2) continue;
+      const face = tm - sens * w.th / 2 / Math.abs(det), larg = (face - m[bout]) * sens;
+      if (larg < o.ouvMin || larg > 140) continue; // une porte, pas un passage
+      if (!best || larg < best.larg) best = { tm, face, larg, th: w.th };
+    }
+    if (!best || !arcPorte(pt(m, m[bout]), pt(m, best.face), best.larg, m.th)) continue;
+    trous.push(sens > 0 ? { m, t0: m.t1, t1: best.face, porte: true } : { m, t0: best.face, t1: m.t0, porte: true });
+    m[bout] = best.tm;
+  }
   /* 5. nature des ouvertures */
   const ouvertures = [];
   for (const g of trous) {
     const m = g.m, w = g.t1 - g.t0, c = pt(m, (g.t0 + g.t1) / 2), A = pt(m, g.t0), B = pt(m, g.t1);
-    let kind = 'gap';
-    for (const a of arcs || []) {
+    let kind = g.porte ? 'door' : 'gap';
+    if (!g.porte) for (const a of arcs || []) {
       if (Math.abs(a.r - w) > Math.max(8, 0.18 * w) && Math.abs(2 * a.r - w) > Math.max(8, 0.18 * w)) continue;
       const d = Math.min(Math.hypot(a.x - A.x, a.y - A.y), Math.hypot(a.x - B.x, a.y - B.y));
       if (d <= m.th / 2 + 15) { kind = 'door'; break; }

@@ -20,9 +20,15 @@ const PIECE = {
   sejour: /s[ée]jour|salon/i, chambre: /chambre/i, cuisine: /cuisine/i, sdb: /salle (de bain|d.eau)|sdb/i, wc: /wc|toilette/i,
   rangement: /dressing|placard|cellier/i, principale: /s[ée]jour|chambre|salon/i,
 };
+/* vide fermé par des murs (gaine, creux entre deux parois, poteau creux d'un plan importé) : surface de moins de 1 m²
+   et nom donné automatiquement (« Pièce 3 »). Ce n'est pas une pièce : rien n'y est demandé. Nommer l'espace (« WC »…)
+   suffit pour qu'il soit de nouveau contrôlé comme une pièce. */
+const VIDE_MAX = 1;
+const estVide = (nom, aire) => /^Pièce \d+$/.test(String(nom || '')) && aire < VIDE_MAX;
 /* besoins d'une pièce d'après son nom et sa surface (m²) */
 function besoinsPiece(nom, aire) {
   const n = String(nom || '');
+  if (estVide(n, aire)) return { socles: 0, pourquoi: '', plan: 0, cuisson: false, lumiere: false, lumiereObligatoire: false, rj45: false, vide: true };
   let socles = 0, pourquoi = '';
   if (PIECE.sejour.test(n)) { socles = aire <= 28 ? Math.max(5, Math.ceil(aire / 4)) : 7; pourquoi = aire <= 28 ? '1 socle par tranche de 4 m², 5 au minimum' : '7 au minimum au-delà de 28 m²'; }
   else if (PIECE.chambre.test(n)) { socles = 3; pourquoi = '3 au minimum'; }
@@ -49,6 +55,7 @@ function manquants(nom, aire, els) {
   const addPc = Math.max(0, b.socles - soclesDe(els) - addPt);
   if (addPc) out.push({ type: 'pc', n: addPc, pourquoi: `socles de prise : ${b.pourquoi}` });
   if (b.cuisson && !els.some((e) => e.type === 'pc32')) out.push({ type: 'pc32', n: 1, pourquoi: 'sortie 32 A pour la plaque de cuisson' });
+  if (b.vide) return out;
   if (b.lumiereObligatoire && !els.some((e) => LIGHTS.has(e.type))) {
     out.push({ type: 'pl', n: 1, pourquoi: 'un point d’éclairage dans chaque pièce' });
     out.push({ type: 'int_s', n: 1, pourquoi: 'commande du point lumineux, près de la porte', commande: true });
@@ -192,4 +199,4 @@ function equiperPiece(plan, piece) {
   return out;
 }
 
-export { PIECE, aPoser, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };
+export { PIECE, VIDE_MAX, aPoser, estVide, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };

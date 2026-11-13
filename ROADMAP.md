@@ -104,6 +104,7 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Accrochage aux traits d'un fond DXF (axes des murs pour Mur et Pièce) (`js/fondtraits.js`, 2 tests).
 - ✅ Saisie des prix immédiate sur les très gros plans (`commitLeger`, 1 test).
 - ✅ Import IFC éprouvé sur six vraies maquettes Revit / ArchiCAD : murs en facettes, menuiseries sans réservation, morceaux empilés, murs en hauteur, nom des pièces (1 test).
+- ✅ Import DXF essayé sur deux vrais plans : unité fausse du fichier écartée, reconnaissance indépendante du cadrage, porte près d'un angle, petits vides ignorés (2 tests).
 - ⬜ Suite envisagée, par ordre de valeur : (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
 ## Données à fournir par l'utilisateur (au moment voulu)

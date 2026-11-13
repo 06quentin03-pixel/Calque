@@ -15,7 +15,7 @@ indiquée par la session (git fetch, puis checkout). Ne modifie jamais main toi-
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md,
    CHANGELOG.md et docs/ARCHITECTURE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (155/155 le 12 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (156/156 le 13 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue le cycle : analyser, développer, tester, corriger, passer à la suite, sans me demander de valider
@@ -44,7 +44,7 @@ je débute sur GitHub et j'utilise un iPad.
   la lui redemander si besoin.
 
 - n°9 (bouton « Actions… » du Groupe, puissance souscrite) : fusionnée le 12 novembre 2026 ; essais iPad : « tout va bien ».
-- Travail suivant (saisie des prix plus rapide, import IFC Revit / ArchiCAD) : sur la branche `claude/beautiful-sagan-pd72qi`, pas encore fusionné.
+- Travail suivant (saisie des prix plus rapide, import IFC Revit / ArchiCAD, import DXF éprouvé sur de vrais plans) : sur la branche `claude/beautiful-sagan-pd72qi`, pas encore fusionné.
 
 ## Pour essayer la branche sur l'iPad
 La version publiée (GitHub Pages) est celle de `main`. Pour avoir les nouveautés dans l'appli de tous les jours, il faut
@@ -81,6 +81,7 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage et en port
 
 14. **Quantitatif sur un gros plan** : saisir plusieurs prix à la suite : la saisie doit être immédiate, les totaux à jour, « Annuler » revient d'une saisie.
 15. **Import IFC** d'une maquette Revit ou ArchiCAD si vous en avez une : le résumé annonce les portes et fenêtres « placées d'après leur position » et les murs regroupés ; vérifier les pièces et leurs noms.
+16. **Import DXF** d'un vrai plan (si vous en obtenez un) : l'unité proposée et la taille annoncée sont-elles justes ? Avec « Créer aussi les murs », les portes près des angles sont-elles placées ?
 
 ## Toujours en attente de vous
 - Extraits Legrand NF C 15-100 manquants (Iz, modes de pose, facteurs de correction, chutes de tension, simultanéité,

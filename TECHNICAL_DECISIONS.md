@@ -118,3 +118,9 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 - **Morceaux superposés** (même niveau, même axe à 1,5 cm, même épaisseur, recouvrement ≥ 50 % du plus court) : un seul mur. **Mur dont la base est à plus de 1,50 m du sol de son niveau** : rangé dans le niveau où il repose s'il y monte d'au moins 1 m, sinon écarté (retombée).
 - **Nom d'une pièce importée** : le plus grand local IFC qui s'y trouve.
 - Les maquettes d'essai publiques (Revit, ArchiCAD) ne sont pas dans le dépôt ; le test `tests/ifc.test.mjs` écrit une petite maquette de synthèse qui reproduit leurs particularités.
+
+## 13 novembre 2026 — import DXF sur de vrais plans
+- **Unité d'un DXF** : `$INSUNITS` est gardé s'il donne un dessin de 2 m à 3 km ; sinon l'unité est proposée (« à vérifier ») d'après la taille du dessin, ou en pouces / pieds si au moins trois textes ressemblent à des cotes en pieds et pouces. Raison : un vrai plan américain annonçait des millimètres pour un dessin en pouces.
+- **Reconnaissance des murs dans le repère du fichier** (cm, Y vers le bas), puis translation vers le plan : le résultat ne dépend plus du cadrage de l'écran ; les morceaux d'une même direction sont regroupés par écart de distance à l'origine ≤ 3 cm (au lieu de cases fixes de 3 cm, sensibles à la position).
+- **Porte au bout d'un mur** : prolongée seulement si un arc de débattement de la bonne taille est dessiné à l'un des deux bords (largeur 50 à 140 cm, mur en travers à plus de 45°). Pas d'arc : pas de porte devinée.
+- **Vide de moins de 1 m²** au nom automatique : pas une pièce (ni équipement ni contrôle de pièce). Seuil choisi sous la plus petite pièce réelle (WC ≈ 1,1 m²) ; un nom donné par l'utilisateur rétablit les contrôles.

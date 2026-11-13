@@ -219,11 +219,23 @@ function empriseDxf(R, calques) {
   }
   return Object.assign(full, { isoles: false });
 }
-/* unité probable quand le fichier ne la dit pas : d'après la taille du dessin (un bâtiment mesure de 3 à 300 m) */
+/* unité du dessin. Celle du fichier ($INSUNITS) est retenue si elle donne une taille vraisemblable (2 m à 3 km) :
+   sur de vrais plans elle est parfois fausse (plan en pouces annoncé « millimètres » → un bâtiment de 87 cm).
+   Sinon — ou quand le fichier ne dit rien — l'unité est proposée d'après la taille du dessin (un bâtiment mesure de
+   3 à 300 m) et d'après les cotes en pieds et pouces écrites dans le dessin (13'8 x 14') ; elle est alors « à vérifier ».
+   Renvoie { u, sure } et, si besoin, `douteuse` (unité du fichier écartée) et `imperial` (cotes en pieds et pouces). */
 function uniteProbable(R, emprise) {
-  if (R.unite && UNITES[R.unite]) return { u: R.unite, sure: true };
   const d = emprise ? Math.max(emprise.x1 - emprise.x0, emprise.y1 - emprise.y0) : 0;
-  return { u: d >= 5000 ? 4 : d >= 300 ? 5 : 6, sure: false };
+  const plausible = (u) => { const m = d * UNITES[u].cm / 100; return m >= 2 && m <= 3000; };
+  const fichier = R.unite && UNITES[R.unite] ? R.unite : null;
+  if (fichier && (!(d > 0) || plausible(fichier))) return { u: fichier, sure: true };
+  let n = 0; for (const t of R.textes || []) if (/\d+\s*'\s*-?\s*(\d|x|$)/i.test(t.s) || /\d+\s*"/.test(t.s)) n++;
+  const imperial = n >= 3;
+  const out = { u: imperial && plausible(1) ? 1 : imperial && plausible(2) ? 2 : d >= 5000 ? 4 : d >= 300 ? 5 : 6, sure: false };
+  if (fichier && out.u === fichier) return { u: fichier, sure: true }; // rien de mieux à proposer
+  if (fichier) out.douteuse = fichier;
+  if (imperial) out.imperial = true;
+  return out;
 }
 /* dessine les traits et les textes dans un contexte canvas : zone { x0, y0, x1, y1 } du fichier → rectangle w × h pixels */
 function dessinerDxf(c, R, emprise, w, h, opts) {
