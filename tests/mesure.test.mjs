@@ -45,7 +45,7 @@ test('barre d’outils : tous les outils visibles sans défilement sur iPad (pay
     const { ctx, page, errors } = await fresh({ viewport });
     await boot(page);
     const r = await page.$eval('#toolbar', (e) => ({ deborde: e.scrollHeight > e.clientHeight + 1, n: e.querySelectorAll('.tool').length, mesure: !!e.querySelector('[data-tool="mesure"]') }));
-    assert.deepEqual(r, { deborde: false, n: 15, mesure: true }, `${viewport.width} × ${viewport.height}`);
+    assert.deepEqual(r, { deborde: false, n: 16, mesure: true }, `${viewport.width} × ${viewport.height}`);
     assert.deepEqual(errors, []);
     await ctx.close();
   }

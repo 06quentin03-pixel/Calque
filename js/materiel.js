@@ -9,6 +9,7 @@ import { REGLES, tableDisponible } from './normes.js';
 import { aCommander, cheminCircuit, circuitsDe, isElecDuct, longueurGaine, nomChemin, reserveDe, sectionNominale, tailleChemin, TRAVERSEE, typeChemin } from './cheminement.js';
 import { conflitsPlan } from './itineraire.js';
 import { ELEC_BY } from './symboles.js';
+import { FONCTIONS, cablagePlan } from './cablage.js';
 
 const nf = (d) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d });
 const lire = (x) => (x && typeof x === 'object' && isNum(x.v) && x.v > 0 ? x : null);
@@ -75,17 +76,36 @@ function listeMateriel(plan) {
     const g = gr.get(k) || { cm: 0, n: 0 }; g.cm += L.total; g.n++; gr.set(k, g);
   }
   for (const [k, g] of [...gr.entries()].sort()) add('Cheminements', k, aCommander(g.cm, res), 'm', `${g.n} tronçon${g.n > 1 ? 's' : ''}, ${nf(1).format(g.cm / 100)} m mesurés + réserve`);
-  /* conducteurs par section, pour les circuits entièrement raccordés */
-  const sec = new Map(), sansL = [];
+  /* conducteurs par section, pour les circuits entièrement raccordés : moteur de câblage (cablage.js) — phase, neutre,
+     terre, retours de lampe, navettes, fils de commande et fil pilote ; fils sous conduit en mètres de fil, câbles en
+     mètres de câble. Arrondi au mètre par circuit et par fonction, réserve comprise. */
+  const sec = new Map(), cables = new Map(), sansL = [];
+  const CAB = cablagePlan(plan);
   for (const c of plan.circuits || []) {
     const ch = chs.get(c.id);
     if (!ch || !ch.complet || ch.arbre == null) { if (ch && ch.points.length) sansL.push(c.name); continue; }
-    const m = aCommander(ch.arbre, res), k = conducteurs(plan, c);
+    const cab = CAB.circuits.get(c.id);
     const key = isNum(c.sec) ? c.sec : null;
-    const s = sec.get(key) || { m: 0, circuits: [] }; s.m += m * k.n; s.circuits.push(c.name); sec.set(key, s);
+    if (!cab || !cab.troncons.length) { // pas de tronçon (points au tableau) : ancienne estimation
+      const m = aCommander(ch.arbre, res), k = conducteurs(plan, c);
+      const s = sec.get(key) || { m: 0, circuits: [], fn: {} }; s.m += m * k.n; s.circuits.push(c.name); sec.set(key, s); continue;
+    }
+    const fns = Object.entries(cab.fils);
+    if (fns.length) {
+      const s = sec.get(key) || { m: 0, circuits: [], fn: {} };
+      for (const [fn, cm] of fns) { const q = aCommander(cm, res); s.m += q; s.fn[fn] = (s.fn[fn] || 0) + q; }
+      s.circuits.push(c.name); sec.set(key, s);
+    }
+    for (const [des, cm] of Object.entries(cab.cables)) {
+      const g = cables.get(des) || { m: 0, circuits: [] }; g.m += aCommander(cm, res); g.circuits.push(c.name); cables.set(des, g);
+    }
   }
   for (const [s, v] of [...sec.entries()].sort((a, b) => (a[0] || 0) - (b[0] || 0))) {
-    add('Conducteurs', s != null ? `Fil ou câble ${nf(1).format(s)} mm²` : 'Section non indiquée', v.m, 'm', `${v.circuits.length} circuit${v.circuits.length > 1 ? 's' : ''} ; phase, neutre et terre comptés (navettes et retours de commande non comptés)`);
+    const det = Object.entries(v.fn).sort((a, b) => (FONCTIONS[a[0]] || {}).ordre - (FONCTIONS[b[0]] || {}).ordre).map(([fn, q]) => `${FONCTIONS[fn] ? FONCTIONS[fn].n.toLowerCase() : fn} ${q} m`).join(', ');
+    add('Conducteurs', s != null ? `Fil ou câble ${nf(1).format(s)} mm²` : 'Section non indiquée', v.m, 'm', `${v.circuits.length} circuit${v.circuits.length > 1 ? 's' : ''}${det ? ' ; ' + det : ' ; phase, neutre et terre'} (schéma de câblage usuel)`);
+  }
+  for (const [des, v] of [...cables.entries()].sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))) {
+    add('Conducteurs', `Câble ${des.replace(',', ',')}`, v.m, 'm', `${v.circuits.length} circuit${v.circuits.length > 1 ? 's' : ''} ; mètres de câble (chemins de câbles ou câble choisi)`);
   }
   /* boîtes et accessoires comptés sur le plan */
   const elec = (plan.elec || []);

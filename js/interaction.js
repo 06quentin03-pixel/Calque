@@ -9,6 +9,7 @@ import { addWall, clampOpening, findNodeNear, findWallNear, itemToLocal, itemToW
 import { H, historyTrim, packPlan, samePack, unpackPlan } from './historique.js';
 import { EV, emit } from './evenements.js';
 import { ELEC_BY, _rr, drawElec, drawItem, elecBox, furnDef, isStair } from './symboles.js';
+import { calqueDeElec, calqueDeGaine, calqueVerrouille, calqueVisible } from './calques.js';
 import { DEBUG, FONT_LABEL, K_, V, drawScene, pathPoly, setRC, setScreen, setWorld, textBox, w2s } from './rendu2d.js';
 import { CMDS, LINK_TARGETS, linkAnchor, toggleLink } from './electricite.js';
 import { closeDimEdit, dimHitAt, drawDuctDraft, ductAt, ductHandleDrag, ductHandles, ductLen, ductPts, ductTap,
@@ -136,45 +137,49 @@ function handlesOf(sel) {
   }
   return out;
 }
+/* calque utilisable : affiché et non verrouillé (un objet d'un calque verrouillé ne se sélectionne pas) */
+const libre = (id) => calqueVisible(id) && !calqueVerrouille(id);
 function hitTest(p, tolPx) {
   const tol = tolPx / V.s, lv = ui.lv, g = geo(lv), K = K_screen();
+  const archi = libre('archi');
   for (const f of EXT.hit) { const r = f(p, tol); if (r) return r; } // objets ajoutés par un module (chantier…)
   for (const h of handlesOf(ui.sel)) if (vdist(h.p, p) <= tol * (h.kind === 'dmid' ? 1 : 1.3) + 3 / V.s) return { t: 'handle', kind: h.kind, id: h.id, text: h.text, idx: h.idx };
   if (S.layers.elec) for (let i = P.elec.length - 1; i >= 0; i--) {
-    const e = P.elec[i]; if (e.lv !== lv || !elecVisible(e)) continue;
+    const e = P.elec[i]; if (e.lv !== lv || !elecVisible(e) || calqueVerrouille(calqueDeElec(e))) continue;
     const l = itemToLocal(e, p), b = elecBox(e, K), m = tol * 0.4;
     if (l.x >= b.x0 - m && l.x <= b.x1 + m && l.y >= b.y0 - m && l.y <= b.y1 + m) return { t: 'elec', id: e.id };
   }
   setRC(SCR);
-  for (let i = P.texts.length - 1; i >= 0; i--) {
+  if (libre('annotations')) for (let i = P.texts.length - 1; i >= 0; i--) {
     const t = P.texts[i]; if (t.lv !== lv) continue;
     const bx = textBox(t), l = itemToLocal(t, p);
     if (Math.abs(l.x) <= bx.w / 2 + tol * 0.3 && Math.abs(l.y) <= bx.h / 2 + tol * 0.3) return { t: 'text', id: t.id };
   }
-  for (const d of P.dims) {
+  if (libre('cotations')) for (const d of P.dims) {
     if (d.lv !== lv) continue;
     if (projSeg(p, { x: d.ax, y: d.ay }, { x: d.bx, y: d.by }).d <= tol) return { t: 'dim', id: d.id };
   }
-  for (const o of P.openings) {
+  if (archi) for (const o of P.openings) {
     const wg = g.walls.get(o.wall); if (!wg) continue;
     const u = vdot(vsub(p, wg.A), wg.d), v = vdot(vsub(p, wg.A), wg.n);
     if (u >= o.t - o.w / 2 - tol * 0.3 && u <= o.t + o.w / 2 + tol * 0.3 && Math.abs(v) <= wg.th / 2 + tol * 0.6) return { t: 'opening', id: o.id };
   }
   let bn = null, bd = Math.max(tol, 9 / V.s);
-  for (const n of P.nodes) { if (n.lv !== lv) continue; const dd = vdist(n, p); if (dd <= bd) { bd = dd; bn = n; } }
+  if (archi) for (const n of P.nodes) { if (n.lv !== lv) continue; const dd = vdist(n, p); if (dd <= bd) { bd = dd; bn = n; } }
   if (bn && wallsAt(bn.id).length) return { t: 'node', id: bn.id };
-  const dk = ductAt(p, tol); if (dk) return { t: 'duct', id: dk };
-  for (const wg of g.walls.values()) {
+  const dk = ductAt(p, tol); if (dk && !calqueVerrouille(calqueDeGaine(IDX.ducts.get(dk)))) return { t: 'duct', id: dk };
+  if (archi) for (const wg of g.walls.values()) {
     const pr = projSeg(p, wg.A, wg.B);
     if (pr.t >= 0 && pr.t <= 1 && pr.d <= wg.th / 2 + tol * 0.35) return { t: 'wall', id: wg.w.id };
   }
   for (let i = P.items.length - 1; i >= 0; i--) {
     const it = P.items[i]; if (it.lv !== lv) continue;
     if (!S.layers.furn && !isStair(it.type)) continue;
+    if (!libre(isStair(it.type) ? 'archi' : 'mobilier')) continue;
     const l = itemToLocal(it, p);
     if (Math.abs(l.x) <= it.w / 2 + tol * 0.2 && Math.abs(l.y) <= it.d / 2 + tol * 0.2) return { t: 'item', id: it.id };
   }
-  for (const o of P.openings) {
+  if (archi) for (const o of P.openings) {
     if (o.kind !== 'door') continue;
     const wg = g.walls.get(o.wall); if (!wg) continue;
     const s = o.side || 1, x0 = o.t - o.w / 2, x1 = o.t + o.w / 2;
@@ -184,14 +189,14 @@ function hitTest(p, tolPx) {
       if (Math.hypot(u - hx, v - wg.th / 2) <= o.w) return { t: 'opening', id: o.id };
     }
   }
-  if (S.layers.names || S.layers.areas) for (const r of g.rooms) {
+  if (archi && (S.layers.names || S.layers.areas)) for (const r of g.rooms) {
     if (!r.label) continue;
     const sp = { x: r.label.x * V.s + V.ox, y: r.label.y * V.s + V.oy }, ps = { x: p.x * V.s + V.ox, y: p.y * V.s + V.oy };
     const hw = Math.max(34, (r.label.name || '').length * 4.2 + 8);
     if (Math.abs(ps.x - sp.x) <= hw && Math.abs(ps.y - sp.y) <= 18) return { t: 'label', id: r.label.id };
   }
-  const zid = zoneAt(p); if (zid) return { t: 'zone', id: zid }; // zone interdite : avant la pièce qui la contient
-  for (const r of g.rooms) if (r.label && inPoly(p, r.loop) && !r.holes.some((h) => inPoly(p, h))) return { t: 'room', id: r.label.id };
+  const zid = libre('gaines') ? zoneAt(p) : null; if (zid) return { t: 'zone', id: zid }; // zone interdite : avant la pièce qui la contient
+  if (archi) for (const r of g.rooms) if (r.label && inPoly(p, r.loop) && !r.holes.some((h) => inPoly(p, h))) return { t: 'room', id: r.label.id };
   return null;
 }
 
@@ -636,7 +641,7 @@ TOOLS.select = {
       const dh = dimHitAt(sp);
       if (dh) return panDrag(sp, () => openDimEdit(dh));
     }
-    if (!h) return panDrag(sp, () => { select(null); ui.inspOpen = false; renderInspector(); if (ui.hl) { ui.hl = null; updateHint(); } });
+    if (!h) return panDrag(sp, () => { select(null); ui.inspOpen = false; renderInspector(); if (ui.hl || ui.hlIds) { ui.hl = null; ui.hlIds = null; updateHint(); requestRender(); } });
     if (h.t === 'room') return panDrag(sp, (w, s2) => { select(h); onTapSelected(h, s2); });
     if (h.t === 'handle') return handleDrag(h, wp, sp);
     select(h);

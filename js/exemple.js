@@ -301,8 +301,36 @@ function samplePlan() {
   chantierExemple();
   variantesExemple();
   chiffrageExemple();
+  plansElectriquesExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
+}
+/* module « Plans électriques » (format v12) : personnalisation des calques, vue enregistrée, couleur, courbe et type de
+   conducteur de circuits, taille de symboles, télérupteur et fil pilote pour montrer le moteur de câblage.
+   Valeurs d'exemple choisies par Calque (« saisie ») : ni données de fabricant, ni exigences réglementaires. */
+function plansElectriquesExemple() {
+  P.calques = { mobilier: { op: 0.7 }, faibles: { col: '#0E7490' }, cotations: { nom: 'Cotes' } };
+  for (const c of P.circuits) {
+    const els = P.elec.filter((e) => e.cid === c.id);
+    c.courbe = c.kind === 'pac' || c.kind === 'motorisation' ? 'D' : 'C';
+    if (els.some((e) => e.type === 'pc_tri')) c.cond = 'r2v'; // goulotte de l'atelier : câble à gaine
+    else if (c.kind === 'prises' && els.every((e) => e.lv === 'L0' && e.x < 1100)) c.cond = 'h07vu'; // maison : fils sous ICTA
+    if (c.kind === 'irve') c.col = '#15803D';
+    /* boutons-poussoirs de l'atelier : télérupteur au tableau (fil de commande compté par le moteur de câblage) */
+    if (els.some((e) => e.type === 'bp')) c.ctrl = 'telerupteur';
+  }
+  const tg = P.elec.find((e) => e.type === 'tableau'); if (tg) tg.sc = 1.25;
+  const td = P.elec.find((e) => e.type === 'tab_div');
+  if (td) { td.sc = 1.5; sym('L0', 'prog_fp', td.x + 30, td.y + 120, 270, { h: 130 }); } // fil pilote des radiateurs
+  /* mezzanine : second va-et-vient relié aux mêmes dalles (navettes comptées par le moteur de câblage) */
+  const im = P.elec.find((e) => e.lv === 'L1' && e.type === 'int_vv' && e.x > 1100);
+  if (im) {
+    const vv = sym('L1', 'int_vv', im.x + 300, im.y, im.rot, { h: im.h, cid: im.cid });
+    for (const l of P.links.filter((k) => k.a === im.id)) P.links.push({ id: uid('k'), lv: 'L1', a: vv.id, b: l.b });
+    vers('L1', { x: 1700, y: im.y }, vv, { pose: 'sol' });
+  }
+  const eclAtelier = P.circuits.filter((c) => c.kind === 'eclairage' && P.elec.some((e) => e.cid === c.id && e.type === 'reglette')).map((c) => c.id);
+  P.vues = [{ id: 'vu-ex-atelier', nom: 'Atelier : éclairage câblé', off: ['mobilier', 'prises', 'specialises', 'faibles', 'annotations', 'cotations'], fade: ['archi'], circs: eclAtelier }];
 }
 /* variantes (phase 7) : « Standard » (principale, affichée), « Économique » et « Haut de gamme ».
    Valeurs d'exemple de Calque (fictives) : aucune n'est une donnée de fabricant. */

@@ -11,6 +11,9 @@ import { btn, btns, h, openModal, sec, segCtl, toast } from './interface.js';
 import { addVersion, slug } from './stockage.js';
 import { dessinerPlanZone, fileActions } from './export.js';
 import { PRINT_COL, panelSVG, uniSVG } from './tableau.js';
+import { panelLayout } from './electricite.js';
+import { avecVue } from './calques.js';
+import { ductVisible, elecVisible } from './reseaux.js';
 import { articleView } from './technique.js';
 import { UL } from './mabiblio.js';
 import { rapportDuPlan } from './reglesui.js';
@@ -45,7 +48,10 @@ function optionsDossier(d) {
   return {
     chapitres: d.chap, formatPlans: d.fmt, formatSchemas: d.fmtSch,
     niveaux: levelsSorted().map((l) => l.id),
-    dessinerPlan: (c, zone, L) => dessinerPlanZone(c, zone, L),
+    dessinerPlan: (c, zone, L, x) => dessinerPlanZone(c, zone, L, x),
+    /* une vue a-t-elle quelque chose à montrer sur ce niveau (appareils ou gaines visibles) ? */
+    vueAContenu: (vue, lv) => avecVue(vue, () => P.elec.some((e) => e.lv === lv && elecVisible(e)) || P.ducts.some((d) => d.lv === lv && d.sys === 'elec' && ductVisible(d))),
+    layCoffret: has ? panelLayout() : null,
     dessinerPlanChantier: (c, zone, L) => dessinerPlanZone(c, zone, L, { chantier: true, furn: false }),
     svgUnifilaire: has ? uniSVG(PRINT_COL, null).svg : null,
     svgCoffret: has ? panelSVG(PRINT_COL, null).svg : null,

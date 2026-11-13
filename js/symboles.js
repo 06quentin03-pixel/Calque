@@ -829,9 +829,11 @@ const ELEC = [
 { const ci = (d) => ELEC_CATS.findIndex((x) => x.id === d.cat); ELEC.sort((a, b) => ci(a) - ci(b)); }
 const ELEC_BY = new Map(ELEC.map((e) => [e.t, e]));
 function elecSize(K) { return Math.max(S_ELEC, 20 * K.px); }
+/* taille d'un symbole (format v12) : 0,5 à 3, 1 par défaut */
+const tailleSym = (e) => (e && typeof e.sc === 'number' && e.sc >= 0.5 && e.sc <= 3 ? e.sc : 1);
 function drawElec(c, e, K) {
   const def = ELEC_BY.get(e.type); if (!def) return;
-  const u = elecSize(K);
+  const u = elecSize(K) * tailleSym(e);
   c.save();
   c.translate(e.x, e.y); c.rotate((e.rot || 0) * DEG);
   c.scale(u, u);
@@ -844,7 +846,7 @@ function drawElec(c, e, K) {
 /* marquage d'un composant personnalisé (« IP55 », « 20A »…), écrit à l'écart du symbole, toujours lisible */
 function drawElecMark(c, e, K) {
   if (!e.mark) return;
-  const def = ELEC_BY.get(e.type), u = elecSize(K);
+  const def = ELEC_BY.get(e.type), u = elecSize(K) * tailleSym(e);
   c.save();
   c.translate(e.x, e.y); c.rotate((e.rot || 0) * DEG);
   c.translate(0, (def && def.wall ? 1.08 : 0.72) * u);
@@ -856,7 +858,7 @@ function drawElecMark(c, e, K) {
   c.restore();
 }
 function elecBox(e, K) {
-  const def = ELEC_BY.get(e.type); const u = elecSize(K);
+  const def = ELEC_BY.get(e.type); const u = elecSize(K) * tailleSym(e);
   if (!def) return { x0: -u / 2, y0: -u / 2, x1: u / 2, y1: u / 2 };
   const wide = ['tableau', 'reglette', 'led', 'rad_elec', 'com'].includes(e.type);
   const hw = (def.bw || (wide ? 0.72 : 0.5)) * u;
@@ -973,6 +975,7 @@ function drawItemLabel(c, it, K) {
   c.restore();
 }
 
+export { tailleSym };
 export { DR, ELEC, ELEC_BY, ELEC_CATS, FURN, FURN_BY, FURN_CATS, S_ELEC, _circ, _dash, _eBox, _eCom, _eCross, _eFan,
   _eFill, _eLabel, _eLever, _eMotor, _ePrise, _eRoundTag, _eStem, _eSwitchBase, _ell, _fs, _ln, _nodash, _r, _rr, _txt,
   basin, drawElec, drawElecMark, drawItem, drawItemLabel, drawStair, elecBox, elecSize, furnDef, isStair, needsFlip, rectSteps,

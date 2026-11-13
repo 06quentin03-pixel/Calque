@@ -140,7 +140,7 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 11;
+const PLAN_VERSION = 12;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
@@ -150,6 +150,7 @@ function blankPlan(name) {
     doc: { revisions: [] },
     chantier: { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] },
     chiffrage: { prix: {}, temps: {} },
+    calques: {}, vues: [],
   };
 }
 function normalizePlan(p) {
@@ -165,6 +166,8 @@ function normalizePlan(p) {
     for (const k of ['reserves', 'photos', 'notes', 'journal']) if (!Array.isArray(c[k])) c[k] = []; }
   if (!o.chiffrage || typeof o.chiffrage !== 'object' || Array.isArray(o.chiffrage)) o.chiffrage = { prix: {}, temps: {} };
   for (const k of ['prix', 'temps']) if (!o.chiffrage[k] || typeof o.chiffrage[k] !== 'object' || Array.isArray(o.chiffrage[k])) o.chiffrage[k] = {};
+  if (!o.calques || typeof o.calques !== 'object' || Array.isArray(o.calques)) o.calques = {};
+  if (!Array.isArray(o.vues)) o.vues = [];
   if (!o.levels.length) o.levels = blankPlan().levels;
   return o;
 }
@@ -199,7 +202,8 @@ const C = {};
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
 const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {},
-  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [] };
+  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [], cablage: [] };
+/* cablage[] (c, lv, opts) : dessiné juste au-dessus des gaines, sous les liaisons et les appareils (câblage des circuits) */
 /* snap[] (p, tol) → { x, y, kind, guides } : accrochage ajouté par un module (traits d'un fond DXF), après les angles des murs */
 /* top[] (c, lv, opts) : dessiné au-dessus du plan ; hit[] (p, tol) → { t, id } avant les objets du plan ;
    obj[t](id) : objet sélectionné d'un type ajouté ; del[t](id) : suppression ; inspVide() : inspecteur sans sélection ;

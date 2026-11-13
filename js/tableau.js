@@ -1,5 +1,6 @@
 /* Calque — module « tableau » : onglet « Tableau électrique » : schéma unifilaire, coffret.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
+import { nomenclatureTableau } from './nomenclature.js';
 import { $, $$, EXT, IDX, NF0, NF1, P, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { ELEC_BY } from './symboles.js';
@@ -15,7 +16,7 @@ import { snapshot } from './historique.js';
 import { openFileModal } from './export.js';
 import { pastille, rapportDuPlan, rapportView } from './reglesui.js';
 import { v3Show } from './vue3d.js';
-import { bilanView, ficheButton } from './fiche.js';
+import { badgeDonnee, bilanView, ficheButton } from './fiche.js';
 import { metresView } from './metres.js';
 import { quantPatch, quantView } from './quantitatifui.js';
 import { nbSansCircuit, relierSansCircuit } from './affectation.js';
@@ -401,6 +402,7 @@ function circuitEditor(c) {
     sec('Section des conducteurs', chipRow(SECS, c.sec, (v) => { c.sec = v; commit(); }, (v) => String(v).replace('.', ',') + ' mm²'),
       smax && c.cal > smax ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${String(c.sec).replace('.', ',')} mm² n'admet pas plus de ${smax} A.`) : null),
     sec('Interrupteur différentiel', rcdSel, k.typeA ? h('p', { class: 'note' }, 'Ce circuit doit être sous un différentiel de type A (ou F).') : null),
+    ...(EXT.champsCircuit ? EXT.champsCircuit(c) : []),
     sec('Options', segCtl([{ v: false, n: 'Sans DDA' }, { v: true, n: 'Détecteur d’arc' }], !!c.dda, (v) => { c.dda = v; commit(); }), ctrlSel),
     sec('Sur le plan',
       h('div', { class: 'ro', style: `color:${st.over ? 'var(--bad)' : 'var(--ink)'}` }, fmtCount(st)),
@@ -496,8 +498,21 @@ function renderEvMain() {
     if (g.dataset.cid) evSelect({ t: 'circuit', id: g.dataset.cid }); else evSelect({ t: 'rcd', id: g.dataset.rid });
   });
   const kids = [wrap];
-  if (ui.evTab === 'panel') kids.push(repereTable());
+  if (ui.evTab === 'panel') kids.push(repereTable(), nomenclatureView());
   cv2.replaceChildren(...kids);
+}
+/* nomenclature du tableau (nomenclature.js) : appareils modulaires regroupés, repères des circuits, coffret */
+function nomenclatureView() {
+  const n = nomenclatureTableau(P, circNumbers(), rcdNumbers(), P.circuits.length ? panelLayout() : null);
+  let grp = null; const rows = [];
+  for (const l of n.lignes) {
+    if (l.groupe !== grp) { grp = l.groupe; rows.push(h('tr', { class: 'qt-cat' }, h('th', { colspan: '4' }, grp))); }
+    rows.push(h('tr', null, h('td', null, l.des, l.note ? h('small', { class: 'note', style: 'display:block' }, l.note) : null), h('td', { class: 'n' }, h('b', null, String(l.qte))),
+      h('td', null, l.reperes.join(', ') || '—'), h('td', null, l.st === 'estimee' ? badgeDonnee('estimee') : h('span', { class: 'badge b-saisie' }, 'Lu dans le tableau'))));
+  }
+  return h('div', { class: 'ev-table', id: 'nomTableau' }, h('h3', null, 'Nomenclature du tableau'),
+    h('p', { class: 'note' }, 'Générée depuis les circuits et les différentiels : toute modification d’un circuit (calibre, courbe, options) s’y reporte. Aucune référence de fabricant.'),
+    h('table', null, h('thead', null, h('tr', null, ['Désignation', 'Qté', 'Repères', 'Fiabilité'].map((t) => h('th', null, t)))), h('tbody', null, rows)));
 }
 function repereTable() {
   const nums = circNumbers(), rn = rcdNumbers();

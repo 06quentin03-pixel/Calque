@@ -88,6 +88,14 @@ function exporterCSV() {
   openFileModal('Quantitatif pour tableur', file, `${file.name} · s’ouvre dans Numbers, Excel ou LibreOffice (séparateur point-virgule). Contient le quantitatif chiffré, les quantités par pièce et par circuit.`);
 }
 
+/* retrouver une ligne du quantitatif sur le plan : appareils mis en évidence, ou circuits protégés */
+async function voirSurPlan(l) {
+  const T = await import('./tableau.js'), CU = await import('./circuitsui.js');
+  T.setView('plan');
+  if (l.ids && l.ids.length) { CU.montrer(l.ids); toast(`${l.qte} × ${l.des} : mis en évidence sur le plan${new Set(l.ids.map((id) => (P.elec.find((e) => e.id === id) || {}).lv)).size > 1 ? ' (aussi sur d’autres niveaux)' : ''}.`); }
+  else if (l.circs && l.circs.length === 1) CU.selectionner(l.circs[0], true);
+  else if (l.circs) { CU.setAffiches(new Set(l.circs)); toast(`${l.circs.length} circuits protégés par « ${l.des} » affichés.`); }
+}
 function tableGlobale(ch, refs) {
   const rows = []; let cat = null;
   for (const l of ch.lignes) {
@@ -99,8 +107,9 @@ function tableGlobale(ch, refs) {
     const tp = champ({ value: enSaisie(l.temps ? l.temps.v : null), 'aria-label': `Temps de pose en minutes : ${l.des}`, placeholder: 'min', 'data-k': 'temps|' + l.cle });
     tp.addEventListener('change', () => saisir('temps', l.cle, tp));
     refs.set(l.cle, { tot, pu, tp });
+    const voir = (l.ids && l.ids.length) || (l.circs && l.circs.length) ? h('button', { type: 'button', class: 'btn sm qt-voir', title: 'Retrouver sur le plan', onclick: () => voirSurPlan(l) }, 'Voir') : null;
     rows.push(h('tr', { 'data-cle': l.cle },
-      h('td', null, l.des, r ? h('small', { class: 'note', style: 'display:block' }, [r.fab, r.ref].filter(Boolean).join(' ')) : null, l.note ? h('small', { class: 'note', style: 'display:block' }, l.note) : null),
+      h('td', null, voir, l.des, r ? h('small', { class: 'note', style: 'display:block' }, [r.fab, r.ref].filter(Boolean).join(' ')) : null, l.note ? h('small', { class: 'note', style: 'display:block' }, l.note) : null),
       h('td', { class: 'n' }, h('b', null, `${nb(l.qte)} ${l.unite}`)),
       h('td', null, l.st === 'estimee' ? badgeDonnee('estimee') : h('span', { class: 'badge b-saisie' }, 'Comptée')),
       h('td', { class: 'n' }, pu), tot, h('td', { class: 'n' }, tp)));

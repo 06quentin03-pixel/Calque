@@ -443,7 +443,8 @@ function inspElec(e) {
         fixedPose ? kv([['Hauteur de pose', fixedPose]]) : numField('Hauteur de pose (axe)', e.h != null ? e.h : def.h || 0, 'cm', (v) => { e.h = v; commit(); }, { id: 'f-eh', min: 0, max: 600 }),
         ['rad_elec', 'seche_serv_e', 'spot', 'led', 'rail_spot', 'plancher', 'soufflant_sdb'].includes(e.type) ? numField(SPOTLIKE.has(e.type) ? 'Puissance (spots : 1 point par 300 VA)' : 'Puissance', elecPower(e), SPOTLIKE.has(e.type) ? 'VA' : 'W', (v) => { e.p = v; commit(); }, { id: 'f-ep', min: 1, max: 10000 }) : null),
       sec('Orientation', btns(btn('90°', () => rotateSel(-90), 'sm', 'rotL'), btn('90°', () => rotateSel(90), 'sm', 'rotR'))),
-      def.cat !== 'ventilation' ? sec('Gaine', btns(btn('Tracer une gaine d’ici', () => startDuctFrom(e, 'elec'), 'sm', 'duct')), ductsOf(e).length ? h('p', { class: 'note' }, `${ductsOf(e).length} conduit${ductsOf(e).length > 1 ? 's' : ''} raccordé${ductsOf(e).length > 1 ? 's' : ''} à ce symbole.`) : null) : null,
+      sec('Taille du symbole', chipRow([0.75, 1, 1.25, 1.5, 2], e.sc || 1, (v) => { if (v === 1) delete e.sc; else e.sc = v; commit(); }, (v) => Math.round(v * 100) + ' %')),
+      def.cat !== 'ventilation' ? sec('Gaine', btns(btn('Tracer une gaine d’ici', () => startDuctFrom(e, 'elec'), 'sm', 'duct'), EXT.cabler ? btn('Câbler depuis ici', () => EXT.cabler(e), 'sm') : null), ductsOf(e).length ? h('p', { class: 'note' }, `${ductsOf(e).length} conduit${ductsOf(e).length > 1 ? 's' : ''} raccordé${ductsOf(e).length > 1 ? 's' : ''} à ce symbole.`) : null) : null,
       sec(null, btns(btn('Dupliquer', duplicateSel, '', 'dup'), btn('Supprimer', deleteSel, 'danger', 'del'))),
     ),
   ];
@@ -644,6 +645,8 @@ function setTool(t) {
   ui.tool = t;
   if (t !== 'place') ui.place = null;
   ui.linkSrc = null;
+  ui.cabler = null; // outil « Câbler » : départ oublié (demarrerCablage le remet après)
+  if (t !== 'propose') ui.propRacc = null; // propositions de raccordement non validées : abandonnées
   if (t === 'link' && !S.layers.elec) { S.layers.elec = true; saveSettings(); }
   if (t !== 'select' && t !== 'place' && (ui.sel || ui.inspOpen)) { ui.sel = null; if (window.matchMedia('(max-width: 1099px)').matches) ui.inspOpen = false; renderInspector(); }
   ui.chain = null; ui.cursor = null; ui.roomDraft = null; ui.dimDraft = null; ui.ghost = null;

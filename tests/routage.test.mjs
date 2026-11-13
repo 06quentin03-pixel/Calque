@@ -57,12 +57,23 @@ test('raccordement automatique : sans passage entre étages, les points de l’�
   const r0 = raccorderCircuit(p, 'c1', {}); assert.equal(r0.gaines.length, 0); assert.match(r0.raison, /tableau/);
 });
 
-test('onglet Cheminements : « Raccorder les circuits incomplets » crée les gaines en une seule étape d’annulation', async () => {
+test('onglet Cheminements : « Raccorder les circuits incomplets » propose les gaines, rien n’est créé avant « Valider », une seule étape d’annulation', async () => {
   const { ctx, page, errors } = await fresh();
   await seedPlan(ctx, plan()); await boot(page);
   await page.click('text=Tableau électrique'); await page.click('#evBar >> text=Cheminements');
   assert.match(await page.$eval('#autoTous', (e) => e.textContent), /Raccorder les 2 circuits incomplets/);
   await page.click('#autoTous');
+  /* proposition affichée sur le plan, plan inchangé ; « Refuser » ne change rien */
+  await page.waitForSelector('#propValider', { timeout: 20000 });
+  assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).P.ducts.length), 0, 'rien n’est créé sans validation');
+  assert.match(await page.$eval('#propValider', (e) => e.textContent), /Valider \(7\)/);
+  await page.click('#propRefuser'); await wait(page, 200);
+  assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).P.ducts.length), 0);
+  assert.equal(await page.evaluate(async () => (await import('./js/historique.js')).H.u.length), 0, 'aucune étape d’annulation');
+  await page.click('text=Tableau électrique'); await page.click('#evBar >> text=Cheminements');
+  await page.click('#autoTous');
+  await page.waitForSelector('#propValider', { timeout: 20000 });
+  await page.click('#propValider');
   await page.waitForFunction(async () => (await import('./js/noyau.js')).P.ducts.length >= 7, null, { timeout: 20000 });
   await wait(page, 300);
   const r = await page.evaluate(async () => {
@@ -70,7 +81,8 @@ test('onglet Cheminements : « Raccorder les circuits incomplets » crée les ga
     return { n: N.P.ducts.length, complets: N.P.circuits.map((c) => CH.cheminCircuit(N.P, c.id).complet), ids: N.P.ducts.every((d) => /^k/.test(d.id) && d.dia > 0 && d.sys === 'elec'), undo: H.H.u.length, toast: document.getElementById('toast').textContent };
   });
   assert.equal(r.n, 7); assert.deepEqual(r.complets, [true, true]); assert.ok(r.ids); assert.equal(r.undo, 1);
-  assert.match(r.toast, /7 gaines proposées/);
+  assert.match(r.toast, /7 gaines créées/);
+  await page.click('text=Tableau électrique'); await page.click('#evBar >> text=Cheminements');
   assert.equal(await page.locator('#autoTous').count(), 0, 'plus rien à raccorder');
   await page.click('#btnUndo'); await wait(page, 200);
   assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).P.ducts.length), 0);

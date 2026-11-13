@@ -173,11 +173,11 @@ function messageAuto(b) {
   const e = b.echecs.length;
   return `${b.gaines} gaine${b.gaines > 1 ? 's' : ''} proposée${b.gaines > 1 ? 's' : ''} (${Math.round(b.len / 100)} m à l’horizontale)${e ? ` ; ${e} point${e > 1 ? 's' : ''} sans itinéraire` : ''}. Vérifiez les tracés ; « Annuler » retire tout.`;
 }
+/* propose le raccordement (affiché sur le plan, à valider) : le plan n'est pas modifié ici */
 async function raccorderEtDire(cids) {
   toast('Recherche des itinéraires…'); await new Promise((r) => setTimeout(r, 30));
-  const b = await raccorderAuto(cids);
-  toast(messageAuto(b)); renderInspector();
-  return b;
+  const { proposerRaccordement } = await import('./cablerui.js');
+  return proposerRaccordement(cids);
 }
 
 /* section de l'inspecteur d'un symbole relié à un circuit : raccordement par les gaines */
@@ -189,7 +189,7 @@ function itineraireSection(e) {
   return sec('Cheminement',
     ok ? h('p', { class: 'note' }, `Raccordé au tableau par les gaines : ${fmtM(pt.dist)} (verticales comprises).`)
       : h('p', { class: 'note' }, ch.tableau ? 'Pas encore raccordé au tableau par les gaines.' : 'Pas de tableau électrique sur le plan.'),
-    btns(ok ? null : btn('Proposer un itinéraire', () => proposerItineraire(e), 'sm', 'duct'), ch.tableau && !ch.complet ? btn(`Raccorder tout le circuit (${ch.nonAtteints.length})`, () => raccorderEtDire([e.cid]), 'sm') : null, btn('Zone interdite', startZone, 'sm')));
+    btns(ok ? null : btn('Proposer un itinéraire', () => proposerItineraire(e), 'sm', 'duct'), ch.tableau && !ch.complet ? btn(`Proposer le raccordement (${ch.nonAtteints.length})`, () => raccorderEtDire([e.cid]), 'sm') : null, btn('Zone interdite', startZone, 'sm')));
 }
 
 /* conflits d'une gaine, pour son inspecteur */

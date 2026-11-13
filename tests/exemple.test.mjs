@@ -42,7 +42,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 11);
+  assert.equal(r.v, 12);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -62,7 +62,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.etudes >= 3 && r.lum >= 20);
   // documents et règles (phase 6) : cartouche, indice A, dossier complet, rapport
   assert.equal(r.doc.revisions[0].i, 'A'); assert.ok(r.doc.client && r.doc.affaire);
-  assert.equal(r.chap, 12); assert.ok(r.pages >= 25, `${r.pages} pages`);
+  assert.equal(r.chap, 13); assert.ok(r.pages >= 25, `${r.pages} pages`);
   assert.ok(r.rap.total > 300 && r.rap.cq > 50); assert.notEqual(r.rap.global, 'conforme');
   // chantier (phase 7) : cases « posé » (appareils et circuits), réserves aux trois statuts avec échéance, photos à prendre
   // (aucune photo inventée), annotations, historique ; chapitre « Suivi de chantier » du dossier
@@ -91,6 +91,39 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.qt.pieces.includes('Atelier') && r.qt.pieces.includes('Séjour') && r.qt.circ === r.circuits);
   assert.ok(Object.values(r.chiff.prix).every((x) => x.st === 'saisie' && /fictive/.test(x.src)));
   assert.ok(r.qt.chiffrees === Object.keys(r.chiff.prix).length && r.qt.chiffrees >= 10 && r.qt.complet === false && r.qt.ht > 0 && r.qt.ttc > r.qt.ht && r.qt.mo > 0); assert.ok(r.chapQt);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('plan d’exemple : module « Plans électriques » (calques, vue enregistrée, circuits v12, câblage, nomenclature, exports)', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.evaluate(async () => { const S = await import('./js/stockage.js'); await S.openSample(); });
+  await wait(page, 800);
+  const r = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), C = await import('./js/cablage.js'), K = await import('./js/calques.js'), E = await import('./js/export.js');
+    const El = await import('./js/electricite.js'), No = await import('./js/nomenclature.js'), U = await import('./js/reglesui.js');
+    const P = N.P, R = C.cablagePlan(P), cabs = [...R.circuits.values()];
+    const fns = new Set(); for (const c of cabs) for (const f of Object.keys(c.longueurs)) fns.add(f);
+    const des = new Set(); for (const c of cabs) for (const t of c.troncons) des.add(t.des);
+    const svg = K.avecVue('cablage', () => E.composeSVG({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, vue: 'cablage' }));
+    const rap = U.rapportDuPlan();
+    return { v: P.v, calques: P.calques, vues: P.vues.map((v) => ({ nom: v.nom, circs: (v.circs || []).length })),
+      col: P.circuits.filter((c) => c.col).length, courbes: [...new Set(P.circuits.map((c) => c.courbe))], conds: [...new Set(P.circuits.map((c) => c.cond).filter(Boolean))],
+      tele: P.circuits.some((c) => c.ctrl === 'telerupteur'), sc: P.elec.filter((e) => e.sc).length, fns: [...fns], des: [...des],
+      nom: No.nomenclatureTableau(P, El.circNumbers(), El.rcdNumbers(), El.panelLayout()).lignes.length, svg: svg.n,
+      cablageRegles: rap.resultats.filter((x) => x.id.startsWith('cb_')).length, global: rap.global, vueOk: K.appliquerVue('vu-ex-atelier') };
+  });
+  assert.equal(r.v, 12);
+  assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
+  assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
+  assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
+  assert.ok(r.tele); assert.ok(r.sc >= 2);
+  /* moteur de câblage : phase, neutre, terre, retours, navettes, commande du télérupteur, fil pilote, triphasé */
+  for (const f of ['L', 'N', 'PE', 'R', 'NAV', 'CMD', 'FP', 'L1', 'L2', 'L3']) assert.ok(r.fns.includes(f), 'conducteur ' + f);
+  for (const d of ['3G1,5', '3G2,5', '5G2,5']) assert.ok(r.des.includes(d), d);
+  assert.ok(r.nom >= 8); assert.ok(r.svg > 500);
+  assert.ok(r.cablageRegles >= 1, 'contrôles de câblage dans le rapport'); assert.notEqual(r.global, 'conforme', 'jamais de conformité globale');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

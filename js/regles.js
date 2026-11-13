@@ -21,9 +21,10 @@
 import { CONF, ficheDuPlan, controlesDifferentiels, statutGlobal } from './calcul.js';
 import { ED_2024, NORME, REGLES, SRC_GUIDE, tablesManquantes } from './normes.js';
 import { remplissageGaines } from './materiel.js';
+import { controlesCablage } from './cablage.js';
 
 /* version du jeu de règles : à changer à chaque modification d'une règle (et la version `v` de la règle) */
-const REGLES_VERSION = 'Calque-règles 2026.11 (1)';
+const REGLES_VERSION = 'Calque-règles 2026.11 (2)';
 
 /* origines des règles */
 const REFERENTIELS = {
@@ -37,7 +38,7 @@ const REFERENTIELS = {
   attention: { n: 'Point d’attention de Calque', verifie: false, source: 'Point d’attention de Calque (ce n’est pas une règle de la norme)', edition: '—' },
 };
 
-const G_INST = 'Tableau et protections', G_CIRC = 'Circuits', G_PIECES = 'Pièces', G_HAUT = 'Hauteurs de pose', G_VMC = 'Ventilation (VMC)', G_CALC = 'Calculs des circuits', G_CHEM = 'Cheminements';
+const G_CAB = 'Câblage et cohérence', G_INST = 'Tableau et protections', G_CIRC = 'Circuits', G_PIECES = 'Pièces', G_HAUT = 'Hauteurs de pose', G_VMC = 'Ventilation (VMC)', G_CALC = 'Calculs des circuits', G_CHEM = 'Cheminements';
 
 /* règles du moteur de calcul (calcul.js / normes.js) : source et édition reprises de normes.js */
 const DONNEES_CALC = {
@@ -105,11 +106,28 @@ const CALQUE = [
   const R = REFERENTIELS[nature === 'regle' ? 'calque' : nature];
   return { id, v: 1, groupe, nom, nature, ref: nature === 'regle' ? 'calque' : nature, source: R.source, edition: R.edition, donnees, voir: voir || null, tables: [] };
 });
+/* règles du module « Plans électriques » (moteur de câblage, cablage.js) : constats de conception d'après un schéma de
+   câblage usuel ; jamais « conformes » (sources non rattachées à un extrait Legrand) */
+const CABLAGE = [
+  ['cb_raccord', G_CAB, 'Points du circuit raccordés au tableau par les gaines', 'attention', ['Gaines', 'Symboles reliés au circuit']],
+  ['cb_cmd_seule', G_CAB, 'Chaque commande commande au moins un éclairage', 'attention', ['Liaisons commandes → éclairages']],
+  ['cb_lum_sans_cmd', G_CAB, 'Chaque éclairage est relié à une commande', 'attention', ['Liaisons commandes → éclairages']],
+  ['cb_vv', G_CAB, 'Va-et-vient par paires (permutateurs entre deux va-et-vient)', 'attention', ['Liaisons', 'Types des commandes']],
+  ['cb_bp', G_CAB, 'Boutons-poussoirs avec télérupteur', 'conseil', ['Commande du circuit', 'Types des commandes']],
+  ['cb_autre_circuit', G_CAB, 'Commande et éclairage sur le même circuit', 'attention', ['Liaisons', 'Circuits des symboles']],
+  ['cb_fils_cdc', G_CAB, 'Pas de fils isolés seuls sur un chemin de câbles', 'regle', ['Type de conducteur du circuit', 'Type du cheminement']],
+  ['cb_tab_tri', G_CAB, 'Circuit triphasé sur une installation triphasée', 'regle', ['Réseau de l’installation', 'Appareils du circuit']],
+  ['cb_tab_courbe', G_CAB, 'Courbe de déclenchement adaptée au circuit', 'attention', ['Courbe de la protection', 'Type de circuit']],
+  ['cb_tab_cond', G_CAB, 'Type de conducteur adapté à une installation fixe', 'conseil', ['Type de conducteur du circuit']],
+].map(([id, groupe, nom, nature, donnees, voir]) => {
+  const R = REFERENTIELS[nature === 'regle' ? 'calque' : nature];
+  return { id, v: 1, groupe, nom, nature, ref: nature === 'regle' ? 'calque' : nature, source: R.source, edition: R.edition, donnees, voir: voir || null, tables: [] };
+});
 
-const CATALOGUE = [...Object.keys(REGLES).map(regleCalcul), ...CALQUE];
+const CATALOGUE = [...Object.keys(REGLES).map(regleCalcul), ...CALQUE, ...CABLAGE];
 const CAT_BY = new Map(CATALOGUE.map((r) => [r.id, r]));
 const regle = (id) => CAT_BY.get(id) || null;
-const ORDRE_GROUPES = [G_INST, G_CIRC, G_CALC, G_CHEM, G_PIECES, G_HAUT, G_VMC];
+const ORDRE_GROUPES = [G_INST, G_CIRC, G_CALC, G_CHEM, G_CAB, G_PIECES, G_HAUT, G_VMC];
 
 /* ---------------- résultats ---------------- */
 /* un résultat ; « conforme » est refusé à une règle dont la source n'est pas vérifiée ou à qui il manque des données */
@@ -186,6 +204,15 @@ function evaluerPlan(plan, opts) {
   }
   /* 4. contrôles de l'ancien contrôle du tableau */
   for (const c of o.calque || []) res.push(depuisControleCalque(c));
+  /* 5. câblage et cohérence circuit ↔ tableau (cablage.js) : erreur → non conforme pour une règle (à corriger),
+     sinon « vérification nécessaire » ; avertissement → à revoir ; suggestion → recommandation */
+  if (o.cablage !== false) for (const x of controlesCablage(plan)) {
+    const r = regle(x.id); if (!r) continue;
+    const statut = x.niveau === 'erreur' && r.nature === 'regle' ? 'non_conforme' : 'verification';
+    const constat = x.niveau === 'suggestion' ? 'conseil' : x.niveau === 'avertissement' || x.niveau === 'erreur' ? 'a_revoir' : undefined;
+    res.push(resultat(x.id, statut, x.msg + ' (constat de Calque d’après un schéma de câblage usuel)', { objet: x.cid ? `${nums.get(x.cid) || ''} ${(plan.circuits.find((c) => c.id === x.cid) || {}).name || ''}`.trim() : null,
+      ref: x.cid ? { t: 'circuit', id: x.cid } : x.refs && x.refs[0] ? { t: 'elec', id: x.refs[0] } : null, constat: statut === 'non_conforme' ? undefined : constat, utilisees: r.donnees.map((n) => n + ' (plan)') }));
+  }
   res.sort((a, b) => ORDRE_GROUPES.indexOf(a.groupe) - ORDRE_GROUPES.indexOf(b.groupe) || RANG[a.statut] - RANG[b.statut] || (RANG_C[a.constat] || 0) - (RANG_C[b.constat] || 0));
   return rapport(res);
 }
@@ -206,4 +233,4 @@ function rapport(resultats) {
   return { version: REGLES_VERSION, resultats, synthese, global, globalLib: CONF[global], avis: avis + ' Ce rapport ne remplace ni l’avis d’un électricien qualifié ni l’attestation de conformité exigée pour la mise en service.', tablesManquantes: [...tm] };
 }
 
-export { CATALOGUE, CALQUE, ORDRE_GROUPES, REFERENTIELS, REGLES_VERSION, depuisControleCalque, evaluerPlan, rapport, regle, resultat };
+export { CABLAGE, CATALOGUE, CALQUE, ORDRE_GROUPES, REFERENTIELS, REGLES_VERSION, depuisControleCalque, evaluerPlan, rapport, regle, resultat };

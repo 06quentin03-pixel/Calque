@@ -16,6 +16,8 @@ import { nettoyerDoc } from './documents.js';
 import { nettoyerChantier } from './chantier.js';
 import { nettoyerVariantes } from './variantes.js';
 import { nettoyerChiffrage } from './quantitatif.js';
+import { nettoyerCalques, nettoyerVues } from './calques.js';
+import { nettoyerCircuitV12 } from './cablage.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -128,7 +130,30 @@ const MIGRATIONS = {
     p.chiffrage = nettoyerChiffrage(p.chiffrage);
     return p;
   },
+  /* v11 → v12 : module « Plans électriques ». Personnalisation des calques (`calques` : nom, couleur, opacité,
+     verrouillage), vues enregistrées (`vues[]`), couleur, courbe et type de conducteur d'un circuit (`col`, `courbe`,
+     `cond`), taille d'un symbole (`sc`). Les plans v11 n'en ont pas : calques par défaut, aucune vue, couleurs
+     automatiques ; rien n'est deviné. Valeurs invalides retirées (aussi dans les variantes non affichées). */
+  11(p) {
+    p.calques = nettoyerCalques(p.calques);
+    p.vues = nettoyerVues(p.vues);
+    for (const c of Array.isArray(p.circuits) ? p.circuits : []) nettoyerCircuitV12(c);
+    for (const e of Array.isArray(p.elec) ? p.elec : []) nettoyerTaille(e);
+    const l = p.variantes && Array.isArray(p.variantes.liste) ? p.variantes.liste : [];
+    for (const v of l) if (v && v.data) {
+      for (const c of Array.isArray(v.data.circuits) ? v.data.circuits : []) nettoyerCircuitV12(c);
+      for (const e of Array.isArray(v.data.elec) ? v.data.elec : []) nettoyerTaille(e);
+    }
+    return p;
+  },
 };
+/* taille d'un symbole (v12) : 0,5 à 3 ; 1 = taille normale (champ retiré) */
+function nettoyerTaille(e) {
+  if (!e || typeof e !== 'object' || !('sc' in e)) return e;
+  if (!(isNum(e.sc) && e.sc >= 0.5 && e.sc <= 3) || e.sc === 1) delete e.sc;
+  else e.sc = Math.round(e.sc * 100) / 100;
+  return e;
+}
 /* donnée de calcul enregistrée : { v (nombre), st ('verifiee' exige src, 'saisie', 'estimee'), src } */
 function cleanDonnee(d, ok) {
   if (!d || typeof d !== 'object' || !isNum(d.v) || (ok && !ok(d.v))) return null;
@@ -544,7 +569,7 @@ function saveBlobLocal(blob, filename) {
   } catch (e) { return false; }
 }
 
-export { DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
+export { DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, nettoyerTaille, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
   deletedPlans, getDownloads, lastVer, listProjects, loadProject, localIndex, lsDel, lsGet, lsSet, maybeVersion,
   migratePlan, newPlan, notifySaveFail, openPlan, openProjects, openSample, openVersions, planProblems, pruneVersions,
   saveBlobLocal, saveNow, scheduleSave, setLocalIndex, setSave, slug, syncFromLocal, versionJson, versionsOf,

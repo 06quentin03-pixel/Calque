@@ -107,6 +107,17 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Import DXF essayé sur deux vrais plans : unité fausse du fichier écartée, reconnaissance indépendante du cadrage, porte près d'un angle, petits vides ignorés (2 tests).
 - ⬜ Suite envisagée, par ordre de valeur : (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
+## Module « Plans électriques » (13 novembre 2026) ✅ (à essayer sur iPad, puis à fusionner)
+Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : `docs/MODULE_ELECTRIQUE.md`.
+- ✅ Moteur de câblage (conducteurs par tronçon, navettes, retours, commandes, fil pilote, volets, triphasé) (`js/cablage.js`, 5 tests).
+- ✅ Calques (masquer, verrouiller, couleur, opacité, nom) et vues « Plans électriques » prédéfinies et enregistrées (`js/calques.js`, `js/calquesui.js`).
+- ✅ Gestionnaire de circuits, affichage d'un ou plusieurs circuits, mise en évidence (`js/circuitsui.js`).
+- ✅ Outil « Câbler » et raccordement automatique proposés puis validés ; routage qui évite de croiser les gaines (`js/cablerui.js`).
+- ✅ Contrôles de câblage (erreur, avertissement, suggestion) dans le moteur de règles ; nomenclature du tableau (`js/nomenclature.js`).
+- ✅ Matériel et quantitatif reliés au plan ; exports SVG, plans électriques du dossier PDF avec légendes (`js/svgexport.js`).
+- ✅ Format v12 avec migration ; plan d'exemple complété ; 7 tests d'écran (`tests/planselec.test.mjs`).
+- ⬜ Pistes suivantes, par valeur : itinéraire d'un étage à l'autre en un geste ; câblage en boîtes de dérivation (au lieu de l'étoile) au choix ; reconnaissance des symboles d'un plan importé (DXF : blocs nommés) ; comparaison de deux plans (au-delà des variantes) ; liste des réservations et passages techniques à transmettre au gros œuvre.
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).
