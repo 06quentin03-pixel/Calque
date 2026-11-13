@@ -161,3 +161,11 @@ Contrôles complémentaires (scripts, hors dépôt) :
 ## 13 novembre 2026 — Import DXF essayé sur de vrais plans
 - Unité du fichier écartée si invraisemblable (pouces / pieds proposés d'après les cotes), reconnaissance des murs indépendante du cadrage, porte au bout d'un mur, petits vides non équipés, fenêtre d'import corrigée.
 - Tests : 156/156.
+
+## 13 novembre 2026 — Module « Plans électriques »
+- Branche : `claude/calque-electrical-plans-module-tbt1ea` (partie de `main` après la fusion n°10).
+- Étapes : audit et architecture (`docs/MODULE_ELECTRIQUE.md`) → moteur de câblage → format v12 → calques et vues → rendu du câblage → gestionnaire de circuits → outil Câbler et propositions validées → règles de câblage, nomenclature du tableau → matériel et quantitatif reliés au plan → exports SVG et chapitre « Plans électriques » → plan d'exemple → tests et captures.
+- Tests : 169/169 (`node --test tests/*.test.mjs`).
+- Captures vérifiées : 1180 × 820, 820 × 1180, 390 × 844 (pastille, fenêtre des calques, gestionnaire de circuits, fenêtre d'export) ; barre d'outils entière sans défilement en 1180 × 820, 1024 × 768 et portrait.
+- Mesures : câblage des 35 circuits du plan d'exemple en 40 ms (puis mémorisé) ; 12 pages de plans électriques du dossier en 0,2 s.
+- À essayer sur l'iPad : voir `NEXT_SESSION.md`.

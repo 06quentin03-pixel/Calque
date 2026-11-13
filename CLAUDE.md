@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -47,7 +47,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 11) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 12) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Photos du chantier (phase 7) : base IndexedDB à part `calque-photos` (`js/photos.js`), jamais dans le plan ; incluses dans la sauvegarde complète.
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
@@ -64,6 +64,9 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Export DXF (`js/dxf.js`) : `DxfCtx` enregistre le dessin du moteur 2D ; `drawSceneIn` annonce le calque de chaque étape par `c.calque(nom)` (sans effet sur un vrai canvas). Tout nouveau dessin du plan doit rester compatible avec ce contexte (pas de `drawImage` indispensable, pas de dégradé).
 - Quantitatif et chiffrage (`js/quantitatif.js`, `js/quantitatifui.js`) : aucun prix fourni par Calque ; total « partiel » tant qu'une ligne est sans prix.
 - Annuler/rétablir : `packPlan`/`unpackPlan`, états découpés en blocs partagés entre étapes (150 étapes, environ 30 millions de caractères au maximum).
+- Plans électriques (13 novembre 2026, `docs/MODULE_ELECTRIQUE.md`) : moteur de câblage `cablage.js` (sans écran), calques et vues `calques.js` (sans écran) + `calquesui.js`, gestionnaire de circuits `circuitsui.js`, outil « Câbler » et propositions de raccordement `cablerui.js`, nomenclature du tableau `nomenclature.js`, export SVG `svgexport.js`.
+  - Tout objet du plan appartient à un calque (`calqueDeElec`, `calqueDeGaine`) ; un nouveau type d'objet doit être rangé dans un calque et respecter le verrouillage dans `hitTest` et l'outil Groupe.
+  - Dessin du câblage : point d'extension `EXT.cablage` (au-dessus des gaines, sous les appareils).
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

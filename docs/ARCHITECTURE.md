@@ -79,6 +79,13 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `quantitatif.js` | Quantitatif (appareillage, protections, matériel ; par pièce, par circuit), chiffrage (prix et temps saisis, total partiel), CSV, nettoyage de `chiffrage` (migration v11) | oui |
 | `quantitatifui.js` | Onglet « Quantitatif » du Tableau électrique : saisie des prix sans reconstruire le tableau (`quantPatch`), « mes prix », export CSV | non |
 | `multi.js` | Sélection multiple (outil « Groupe ») : rectangle, déplacement, rotation, copie (même niveau ou autre niveau), suppression, hauteur et circuit des appareils | non |
+| `cablage.js` | Moteur de câblage : réseaux logiques par circuit, conducteurs de chaque tronçon (désignation 3G2,5…), longueurs par fonction, quantités de fils et de câbles, contrôles de câblage (erreur / avertissement / suggestion), nettoyage v12 des circuits | oui |
+| `calques.js` | Calques (appartenance des objets, visibilité, verrouillage, couleur, opacité), vues « Plans électriques » prédéfinies et enregistrées, `avecVue` pour les exports, nettoyage v12 | oui |
+| `calquesui.js` | Pastille « Calques et vues », fenêtre des calques et des vues | non |
+| `circuitsui.js` | Gestionnaire de circuits (inspecteur) : liste, affichage d'un ou plusieurs circuits, éditeur complet, champs v12 de l'éditeur du tableau | non |
+| `cablerui.js` | Dessin du câblage et de la mise en évidence d'un circuit, outil « Câbler », propositions de raccordement à valider | non |
+| `nomenclature.js` | Nomenclature du tableau (appareils modulaires regroupés, repères, coffret) | oui |
+| `svgexport.js` | Contexte SVG (hérite de `PdfCtx`) pour l'export vectoriel du plan | oui |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
@@ -121,18 +128,18 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 11) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 12) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
 | `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) |
 | `openings[]` | Ouvertures : `id`, `wall`, `t` (position du milieu le long du mur depuis l'angle `a`), `w` (largeur), `kind` (`door`, `window`, `gap`, `closet`), `type`, `side`, `hinge`, `leaves`, `h`, `sill` (allège) |
 | `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif), `comp` (composant personnalisé, v3) |
-| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6), `lum` (luminaire, v7 : `ph` photométrie du plan, `flux` en lm et `p` en W, données `{ v, st, src }`) |
+| `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6), `sc` (taille du symbole, 0,5 à 3, v12), `lum` (luminaire, v7 : `ph` photométrie du plan, `flux` en lm et `p` en W, données `{ v, st, src }`) |
 | `rooms[]` | Étiquettes des pièces : `id`, `lv`, `name`, `x`, `y`, `tint` (couleur). Le contour de la pièce est calculé depuis les murs |
 | `dims[]` | Cotes libres : `id`, `lv`, `ax`, `ay`, `bx`, `by` |
 | `texts[]` | Textes : `id`, `lv`, `x`, `y`, `text`, `size` (`s`, `m`, `l`), `rot` |
-| `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl`, `calc` (données de calcul, facultatif, v5 : `p` puissance en W, `cos`, `len` longueur en m, `dcab` diamètre extérieur du câble en mm (v6) — chacune `{ v, st, src }` ; `mat` `cu`/`al` ; `phase` `L1`/`L2`/`L3`/`tri`) |
+| `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl`, `col` (couleur choisie, v12), `courbe` (`B`/`C`/`D`, v12), `cond` (`h07vu`/`r2v`/`souple`, v12), `calc` (données de calcul, facultatif, v5 : `p` puissance en W, `cos`, `len` longueur en m, `dcab` diamètre extérieur du câble en mm (v6) — chacune `{ v, st, src }` ; `mat` `cu`/`al` ; `phase` `L1`/`L2`/`L3`/`tri`) |
 | `rcds[]` | Interrupteurs différentiels : `id`, `type` (`AC`, `A`…), `cal` (calibre en A) |
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
 | `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]`. Gaine électrique (v6, facultatifs) : `cid` (circuit principal), `cids[]` (autres circuits), `kind` (`icta`, `irl`, `goulotte`, `cdc`), `pose` (`sol`, `plafond`, `hauteur`), `z` (hauteur du parcours en cm, pose `hauteur`), `lw`, `lh` (largeur et hauteur en mm, goulotte et chemin de câbles) |
@@ -146,6 +153,8 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `chantier` | Suivi de chantier (v9) : `poses` (`app` : { id du symbole: date }, `circ` : { id du circuit: date }), `reserves[]` (`id`, `n`, `lv`, `x`, `y`, `titre`, `detail`, `statut` `ouverte`/`en_cours`/`levee`, `cree`, `maj`, `leve`, `echeance`, `ref` { t: `elec`, id }), `photos[]` (`id`, `lv`, `x`, `y`, `at`, `legende`, `aFaire`, `reserve`, `w`, `h` ; l'image est dans IndexedDB `calque-photos`, magasin `photos`, clé `id`), `notes[]` (annotations : `id`, `lv`, `pts` à plat en cm, `col`, `ep` en cm, `at`), `journal[]` (`at`, `k`, `txt`) |
 | `variantes` | Variantes (v10, facultatif) : `active` (variante dans le plan), `principale`, `liste[]` (`id`, `nom`, `gamme` `eco`/`std`/`haut`/`autre`, `note`, `cree`, `maj`, `data` : `elec`, `circuits`, `rcds`, `links`, `ducts`, `etudes`, `install` des variantes non affichées ; `vide` si une variante a perdu ses données) |
 | `chiffrage` | Chiffrage (v11) : `prix` { clé de ligne du quantitatif : `{ v, st, src }` } (prix unitaire HT), `temps` { clé : `{ v, st, src }` } (minutes de pose par unité), `tauxH` (€ HT / h) et `tva` (%) facultatifs ; tout est saisi par l'utilisateur |
+| `calques` | Personnalisation des calques (v12) : `{ [calque]: { nom, col, op, lock } }` (voir `calques.js`) |
+| `vues[]` | Vues enregistrées (v12) : `id`, `nom`, `off[]` (calques masqués), `fade[]` (estompés), `circ` (couleurs des circuits), `circs[]` (circuits affichés) |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.

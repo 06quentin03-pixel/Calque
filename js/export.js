@@ -469,7 +469,7 @@ function renderExport() {
   const prevBox = $('#expPrev') || h('div', { class: 'exp-prev', id: 'expPrev' }, h('canvas', { id: 'expCv' }));
   prevBox.classList.toggle('chk', o.fmt === 'png' && o.bg === 'transparent');
   body.replaceChildren(...[
-    segCtl([{ v: 'png', n: 'Image PNG' }, { v: 'pdf', n: 'PDF à l’échelle' }, { v: 'dxf', n: 'DXF (AutoCAD)' }, { v: 'svg', n: 'SVG' }], o.fmt, (v) => set('fmt', v)),
+    (() => { const g = segCtl([{ v: 'png', n: 'Image PNG' }, { v: 'pdf', n: 'PDF à l’échelle' }, { v: 'dxf', n: 'DXF (AutoCAD)' }, { v: 'svg', n: 'SVG' }], o.fmt, (v) => set('fmt', v)); g.classList.add('exp-fmt'); return g; })(),
     sec('Plan', h('div', { class: 'chips' }, expChip('Affichage actuel', !o.vue, () => set('vue', '')), VUES.map((v) => expChip(v.n, o.vue === v.id, () => set('vue', v.id))))),
     prevBox,
     lvChips ? sec('Niveau', h('div', { class: 'chips' }, lvChips)) : null,

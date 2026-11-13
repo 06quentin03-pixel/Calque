@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 9 novembre 2026, mission « développement autonome » (après la phase 7).
+Mise à jour : 13 novembre 2026, module « Plans électriques » (après la mission « développement autonome »).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -72,6 +72,14 @@ Calque est une application web hors ligne (PWA, iPad) pour dessiner des plans, i
 - **Raccordement automatique** : `raccorderCircuit(plan, cid, opts)` dans `itineraire.js` (sans écran, ne modifie pas le plan) ; écran : `raccorderAuto` (`routeui.js`), `creerGaineElec` (`reseaux.js`), boutons dans `metres.js` et l'inspecteur.
 - **Disjoncteur d'abonné** : `agcpOf(kva, reseau)` et `KVA_PALIERS` dans `elecdonnees.js` (valeurs usuelles, « estimées »).
 
+## Module « Plans électriques » (13 novembre 2026, branche `claude/calque-electrical-plans-module-tbt1ea`)
+Détail : `docs/MODULE_ELECTRIQUE.md`. Format des plans **v12**.
+- **Moteur de câblage** `js/cablage.js` (sans écran) : conducteurs de chaque tronçon de gaine par circuit (`cablagePlan`, mémorisé), désignations, longueurs, quantités (`quantitesConducteurs`, utilisées par `materiel.js` et `quantitatif.js`), contrôles (`controlesCablage`, repris par `regles.js`, règles `cb_…`).
+- **Calques et vues** `js/calques.js` (sans écran) + `js/calquesui.js` : 12 calques, 8 vues prédéfinies, vues du plan ; visibilité intégrée à `elecVisible` / `ductVisible` / `linkVisible`, rendu (`rendu2d.js`), sélection (`hitTest`, outil Groupe).
+- **Gestionnaire de circuits** `js/circuitsui.js` (sélections `{ t: 'circuits' }` et `{ t: 'circuit', id }` par `EXT.obj` / `EXT.insp`), filtre de plusieurs circuits `S.filt.circs` (`circsFiltre` dans `reseaux.js`).
+- **Outil « Câbler »** et propositions de raccordement `js/cablerui.js` (outils `cabler` et `propose`, dessin `EXT.cablage`).
+- **Nomenclature du tableau** `js/nomenclature.js` ; **export SVG** `js/svgexport.js` ; chapitre `plans_elec` du dossier.
+
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).
 | Tableau | État |
@@ -91,7 +99,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **156/156 réussis** (13 novembre 2026).
+- `node --test tests/*.test.mjs` : **169/169 réussis** (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
 - Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (6 tests), `multi` (4 tests), `dxfimport` (3 tests), `routage` (5 tests), `dxfmurs` (4 tests), `ifc` (7 tests), `assistant` (2 tests), `equipement` (4 tests), `sauvegarde` (5 tests), `affectation` (4 tests), `regeneration` (3 tests), `mesure` (2 tests), `migrations` (2 tests : v1 → v11 sans perte, v2 à v10), `fondtraits` (2 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
@@ -111,3 +119,4 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - `main` : version utilisée tous les jours (GitHub Pages).
 - `claude/layer-modification-prompt-feasibility-nw7oa4` : branche de développement des phases 1 à 7 (fusionnée).
 - `claude/ecstatic-sagan-juah82` : branche de la mission « développement autonome » (partie de `main` après la fusion n°6).
+- `claude/calque-electrical-plans-module-tbt1ea` : module « Plans électriques » (partie de `main` après la fusion n°10), à fusionner après les essais iPad.
