@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 13 novembre 2026 (module « Plans électriques », branche `claude/calque-electrical-plans-module-tbt1ea`).
+Mise à jour : 13 novembre 2026 (onglet « Schémas » et demandes sur les gaines, branche `claude/calque-electrical-plans-module-tbt1ea`, après la fusion n°11).
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (169/169 le 13 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (175/175 le 13 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue avec les pistes du ROADMAP (section « Module Plans électriques »), une à la fois, testée, avec le plan
@@ -29,6 +29,16 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais de l'onglet « Schémas » (13 novembre 2026)
+Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), onglet **Schémas**, en paysage puis en portrait :
+1. Parcourir les folios (barre du haut) : démarrage direct, inverseur, télérupteur, va-et-vient, distribution ; zoomer à deux doigts.
+2. Toucher la bobine KM1 : son panneau montre ses bornes (potentiels) et ses contacts avec leur position ; toucher un contact : « Appareil » ramène à la bobine.
+3. « + Folio », puis **Symboles** › Commande › Bobine de contacteur : toucher la feuille au Pencil (KM… automatique) ; poser un contact à fermeture (il prend le même repère) ; **Fil** : toucher une borne orange puis une autre.
+4. Déplacer un symbole au Pencil : les fils suivent. Annuler.
+5. **Listes** : nomenclature, borniers, fils, contrôles. **Modèles** : ajouter « Démarrage direct » une seconde fois (repères renumérotés). **Depuis le tableau** : folios de distribution.
+6. **Exporter** › Dossier PDF (Partager › Fichiers), puis SVG et DXF du folio ; ouvrir le PDF dans Fichiers.
+7. En mode Apple Pencil : le doigt déplace la feuille, le stylet dessine.
 
 ## Essais des demandes sur les gaines (13 novembre 2026)
 Sur le plan d'exemple : local technique (en haut à gauche de l'atelier), boîte de dérivation murale et gaine dans le mur

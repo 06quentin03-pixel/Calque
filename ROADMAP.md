@@ -119,6 +119,13 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Format v12 avec migration ; plan d'exemple complété ; 7 tests d'écran (`tests/planselec.test.mjs`).
 - ⬜ Pistes suivantes, par valeur : itinéraire d'un étage à l'autre en un geste ; câblage en boîtes de dérivation (au lieu de l'étoile) au choix ; reconnaissance des symboles d'un plan importé (DXF : blocs nommés) ; comparaison de deux plans (au-delà des variantes) ; liste des réservations et passages techniques à transmettre au gros œuvre.
 
+## Onglet « Schémas » (13 novembre 2026) ✅ (à essayer sur iPad, puis à fusionner)
+- ✅ Folios A3, cartouche, colonnes ; 45 symboles CEI simplifiés ; fils d'équerre, jonctions, insertion dans un fil ; Pencil, doigt, pincement.
+- ✅ Repères, numéros de contacts, équipotentielles et numéros de fils, potentiels et renvois entre folios, renvois croisés.
+- ✅ Nomenclature, borniers, liste des fils, contrôles ; modèles (démarrage direct, inverseur, télérupteur, va-et-vient) ; import du tableau du plan.
+- ✅ Exports : dossier PDF, SVG et DXF du folio ; format v14 ; plan d'exemple ; `tests/schemas.test.mjs`.
+- ⬜ Pistes : plus de modèles (étoile-triangle, pompe de relevage, éclairage de secours), symboles personnalisés, câbles (W1…) et leurs conducteurs, liste des câbles, renvoi automatique des potentiels en tête de folio, schémas d'armoire en vue de face.
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

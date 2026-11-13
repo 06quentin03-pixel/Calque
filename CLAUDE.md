@@ -47,7 +47,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 13) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 14) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Photos du chantier (phase 7) : base IndexedDB à part `calque-photos` (`js/photos.js`), jamais dans le plan ; incluses dans la sauvegarde complète.
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
@@ -67,6 +67,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Plans électriques (13 novembre 2026, `docs/MODULE_ELECTRIQUE.md`) : moteur de câblage `cablage.js` (sans écran), calques et vues `calques.js` (sans écran) + `calquesui.js`, gestionnaire de circuits `circuitsui.js`, outil « Câbler » et propositions de raccordement `cablerui.js`, nomenclature du tableau `nomenclature.js`, export SVG `svgexport.js`.
   - Tout objet du plan appartient à un calque (`calqueDeElec`, `calqueDeGaine`) ; un nouveau type d'objet doit être rangé dans un calque et respecter le verrouillage dans `hitTest` et l'outil Groupe.
   - Dessin du câblage : point d'extension `EXT.cablage` (au-dessus des gaines, sous les appareils).
+- Schémas électriques (onglet « Schémas », format v14, `P.schemas`) : bibliothèque `schemasymboles.js` et moteur `schema.js` (sans écran : équipotentielles, repères, renvois, nomenclature, borniers, liste des fils, modèles, import du tableau, dessin d'un folio pour l'écran, le PDF, le SVG et le DXF), écran `schemaui.js`. Unités : millimètres sur un folio A3 ; bornes des symboles sur la grille de 5 mm (un test le vérifie).
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

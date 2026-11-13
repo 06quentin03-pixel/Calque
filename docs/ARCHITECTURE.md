@@ -86,6 +86,9 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `cablerui.js` | Dessin du câblage et de la mise en évidence d'un circuit, outil « Câbler », propositions de raccordement à valider | non |
 | `nomenclature.js` | Nomenclature du tableau (appareils modulaires regroupés, repères, coffret) | oui |
 | `svgexport.js` | Contexte SVG (hérite de `PdfCtx`) pour l'export vectoriel du plan | oui |
+| `schemasymboles.js` | Symboles des schémas électriques (inspirés de la CEI 60617) : bornes, boîte, rôle (bobine, contact, borne, potentiel, renvoi), préfixe de repère, dessin en mm ; rotation et miroir | oui |
+| `schema.js` | Moteur des schémas : folios, équipotentielles et numéros de fils, repères, numéros de contacts, renvois croisés, nomenclature, borniers, liste des fils, contrôles, insertion dans un fil, modèles, import du tableau, dessin d'un folio, nettoyage v14 | oui |
+| `schemaui.js` | Onglet « Schémas » : feuille, gestes (Pencil, doigt, pincement), outils, bibliothèque, panneau de propriétés, listes, exports PDF / SVG / DXF | non |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |
@@ -128,7 +131,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 13) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 14) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -155,6 +158,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `chiffrage` | Chiffrage (v11) : `prix` { clé de ligne du quantitatif : `{ v, st, src }` } (prix unitaire HT), `temps` { clé : `{ v, st, src }` } (minutes de pose par unité), `tauxH` (€ HT / h) et `tva` (%) facultatifs ; tout est saisi par l'utilisateur |
 | `calques` | Personnalisation des calques (v12) : `{ [calque]: { nom, col, op, lock } }` (voir `calques.js`) |
 | `vues[]` | Vues enregistrées (v12) : `id`, `nom`, `off[]` (calques masqués), `fade[]` (estompés), `circ` (couleurs des circuits), `circs[]` (circuits affichés) |
+| `schemas` | Schémas électriques (v14) : `folios[]` { `id`, `titre`, `type` (`developpe`, `distribution`, `bornier`, `principe`, `libre`), `syms[]` { `id`, `t`, `x`, `y` (mm), `rot`, `mir`, `rep`, `des`, `ref` (saisie), `num` (borne, potentiel, renvoi) }, `fils[]` { `id`, `pts[]`, `num` }, `textes[]` { `id`, `x`, `y`, `s`, `taille`, `rot`, `gras`, `align` } } |
 | `install` | Installation : `kva` (puissance souscrite), `parafoudre`, `row` (modules par rangée du coffret), `reseau` (`mono`/`tri`, facultatif, v5), `ks` (coefficient de simultanéité `{ v, st, src }`, facultatif, v5), `reserve` (réserve de câble à commander en %, `{ v, st, src }`, facultatif, v6) |
 
 Donnée de calcul `{ v, st, src }` : valeur, statut (`verifiee` — source obligatoire —, `saisie`, `estimee`) et origine. Une donnée absente n'est jamais remplacée : elle est signalée « manquante » dans la fiche de calcul.
