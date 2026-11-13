@@ -732,7 +732,7 @@ function duct3(G, d, E, Lh, id, o) {
     if (e.type === TRAVERSEE || def.fullH) continue; // le passage et la GTL sont traversés : pas de descente
     if (def.wall) { const f = itemToWorld(e, 0, side + 1); P3[idx] = [f.x, y, f.y]; drops.push([P3[idx], E + (e.h != null ? e.h : def.h || 110)]); }
     else if (def.floor) drops.push([P3[idx], E + 2]);
-    else if (d.pose === 'sol' || d.pose === 'hauteur') drops.push([P3[idx], E + Lh - 1]); // appareil au plafond, gaine plus bas : remontée
+    else if (d.pose === 'sol' || d.pose === 'hauteur' || d.pose === 'cloison') drops.push([P3[idx], E + Lh - 1]); // appareil au plafond, gaine plus bas : remontée
   }
   if (rect) {
     for (let i = 1; i < P3.length; i++) {
@@ -1188,7 +1188,7 @@ function v3RefInfo(ref) {
     const cs = circuitsDe(d).map((cid) => circById(cid)).filter(Boolean);
     return { title: nomChemin(d), rows: [['Longueur (horizontale)', fmtLenU(ductLen(d))],
       ['Taille', tailleChemin(d) || (rect ? 'non indiquée (dessin indicatif 60 × 40 mm)' : '—')],
-      ['Pose', d.pose && POSES[d.pose] ? POSES[d.pose].n + (d.pose === 'hauteur' && d.z != null ? ` (${fmtLenU(d.z)})` : '') : `non précisée (affichée ${v3o().route !== 'sol' ? 'au plafond' : 'au sol'})`],
+      ['Pose', d.pose && POSES[d.pose] ? POSES[d.pose].n + ((d.pose === 'hauteur' || d.pose === 'cloison') && d.z != null ? ` (${fmtLenU(d.z)})` : '') : `non précisée (affichée ${v3o().route !== 'sol' ? 'au plafond' : 'au sol'})`],
       cs.length ? ['Circuits', cs.map((c) => `${nums.get(c.id) || '?'} · ${c.name}`).join(', ')] : null, ['Niveau', lvName]] };
   }
   if (ref.t === 'circuit') {
@@ -1239,8 +1239,8 @@ function v3Edit(ref) {
     const k = kindOf(d);
     out.push(h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((t) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(k === t), onclick: () => {
       d.kind = t; if (TYPES_CHEMIN[t].forme === 'rect') delete d.dia; else { delete d.lw; delete d.lh; if (!d.dia) d.dia = 20; } commit(); } }, TYPES_CHEMIN[t].court))));
-    out.push(segCtl(Object.keys(POSES).map((v) => ({ v, n: POSES[v].court })), d.pose || null, (v) => { d.pose = v; if (v === 'hauteur' && d.z == null) d.z = 30; if (v !== 'hauteur') delete d.z; commit(); }));
-    if (d.pose === 'hauteur') out.push(numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; commit(); }, { id: 'v3-dz', min: 0, max: 600 }));
+    out.push(segCtl(Object.keys(POSES).map((v) => ({ v, n: POSES[v].court })), d.pose || null, (v) => { d.pose = v; if ((v === 'hauteur' || v === 'cloison') && d.z == null) d.z = 30; if (v !== 'hauteur') delete d.z; commit(); }));
+    if (d.pose === 'hauteur' || d.pose === 'cloison') out.push(numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; commit(); }, { id: 'v3-dz', min: 0, max: 600 }));
     if (k && TYPES_CHEMIN[k].forme === 'rect') out.push(h('div', { class: 'row' }, numField('Largeur', d.lw, 'mm', (v) => { d.lw = v; commit(); }, { id: 'v3-dlw', min: 5, max: 1000 }), numField('Hauteur', d.lh, 'mm', (v) => { d.lh = v; commit(); }, { id: 'v3-dlh', min: 5, max: 500 })));
     else if (k) out.push(h('div', { class: 'chips' }, TYPES_CHEMIN[k].dias.map((v) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.dia === v), onclick: () => { d.dia = v; commit(); } }, 'Ø' + v))));
     out.push(btns(btn('Supprimer', () => { P.ducts = P.ducts.filter((x) => x.id !== d.id); touch(); v3Select(0); commit(); }, 'sm danger', 'del')));

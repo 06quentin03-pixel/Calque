@@ -169,3 +169,9 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Captures vérifiées : 1180 × 820, 820 × 1180, 390 × 844 (pastille, fenêtre des calques, gestionnaire de circuits, fenêtre d'export) ; barre d'outils entière sans défilement en 1180 × 820, 1024 × 768 et portrait.
 - Mesures : câblage des 35 circuits du plan d'exemple en 40 ms (puis mémorisé) ; 12 pages de plans électriques du dossier en 0,2 s.
 - À essayer sur l'iPad : voir `NEXT_SESSION.md`.
+
+## 13 novembre 2026 — Demandes sur les gaines (après la fusion n°11)
+- Branche `claude/calque-electrical-plans-module-tbt1ea`, avancée sur `main` après la fusion n°11.
+- Réponses de l'utilisateur : pose « dans la cloison » ; interrupteur dans le menu Affichage ; longueur saisie = le tracé s'allonge.
+- Fait : pose « cloison », interrupteur « Gaines et chemins de câbles », sortie de câble radiateur, boîte de dérivation murale, longueur du tracé ; format v13.
+- Tests : 171/171. Captures vérifiées en 1180 × 820 (menu Affichage, symboles et gaine dans le mur du plan d'exemple).

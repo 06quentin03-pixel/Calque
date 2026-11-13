@@ -8,11 +8,11 @@ import { ROOT, fresh, wait, boot, canvasBox } from './outils.mjs';
 const B = await import(path.join(ROOT, 'js', 'bibliotheque.js'));
 const SY = await import(path.join(ROOT, 'js', 'symboles.js'));
 
-test('bibliothèque : les 71 meubles et les 177 symboles sont tous rangés, rien n’est perdu', () => {
+test('bibliothèque : les 71 meubles et les 179 symboles sont tous rangés, rien n’est perdu', () => {
   assert.equal(SY.FURN.length, 71, 'catalogue de mobilier intact');
-  assert.equal(SY.ELEC.length, 177, 'catalogue électrique intact (176 + passage entre étages, phase 4)');
+  assert.equal(SY.ELEC.length, 179, 'catalogue électrique intact (176 + passage entre étages, phase 4 + boîte de dérivation murale et sortie de câble radiateur, novembre 2026)');
   const all = B.allEntries();
-  assert.equal(all.length, 248);
+  assert.equal(all.length, 250);
   for (const f of SY.FURN) assert.ok(all.some((x) => x.src === 'furn' && x.key === f.k), `meuble ${f.k} rangé`);
   for (const e of SY.ELEC) assert.ok(all.some((x) => x.src === 'elec' && x.key === e.t), `symbole ${e.t} rangé`);
   /* chaque élément a un emplacement principal hors « Tertiaire » */

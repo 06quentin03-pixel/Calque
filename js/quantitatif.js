@@ -16,7 +16,7 @@ import { conducteurs, lignesCircuits, listeMateriel } from './materiel.js';
 
 const HORS_PIECE = 'Hors pièce';
 /* symboles comptés ailleurs (boîtes, percements) : pas dans l'appareillage */
-const HORS_APPAREILLAGE = new Set([TRAVERSEE, 'derivation']);
+const HORS_APPAREILLAGE = new Set([TRAVERSEE, 'derivation', 'derivation_mur']);
 
 /* ---------- nettoyage (migration v10 → v11, ouverture d'un plan) : rien n'est deviné ---------- */
 function donnee(d, ok) {

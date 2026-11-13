@@ -10,6 +10,7 @@ import { FONT_LABEL, TINTS, TINT_NAMES } from './rendu2d.js';
 import { DOMAINES, LIB_EXTRA, allEntries, entriesOf, pathOf, searchEntries } from './bibliotheque.js';
 import { AUTONOMOUS, CK, CMDS, SOCKETS, SPOTLIKE, accepts, circById, circNumbers, circStats, circuitColor, cleanLinks,
   defaultKindFor, elecPower, fmtCount, orderCircuits, rcdCircuits, roomAt } from './electricite.js';
+import { calqueVisible, setCalqueVisible } from './calques.js';
 import { DUCT_DIAS, afterFilter, closeDimEdit, ductHintMsg, ductPts, ductVisible, finishDuct, fold, inspDuct,
   networkSummary, startDuctFrom, traverseeSection, ventSection } from './reseaux.js';
 import { CLOSET_MODELS, DOOR_MODELS, GAP_MODELS, WIN_MODELS, commit, cv, lockedWallPoint, makeItemFromDef, newOpening,
@@ -441,7 +442,7 @@ function inspElec(e) {
       CMDS.has(e.type) ? linksSection(e) : null,
       sec('Pose',
         fixedPose ? kv([['Hauteur de pose', fixedPose]]) : numField('Hauteur de pose (axe)', e.h != null ? e.h : def.h || 0, 'cm', (v) => { e.h = v; commit(); }, { id: 'f-eh', min: 0, max: 600 }),
-        ['rad_elec', 'seche_serv_e', 'spot', 'led', 'rail_spot', 'plancher', 'soufflant_sdb'].includes(e.type) ? numField(SPOTLIKE.has(e.type) ? 'Puissance (spots : 1 point par 300 VA)' : 'Puissance', elecPower(e), SPOTLIKE.has(e.type) ? 'VA' : 'W', (v) => { e.p = v; commit(); }, { id: 'f-ep', min: 1, max: 10000 }) : null),
+        ['rad_elec', 'sortie_rad', 'seche_serv_e', 'spot', 'led', 'rail_spot', 'plancher', 'soufflant_sdb'].includes(e.type) ? numField(SPOTLIKE.has(e.type) ? 'Puissance (spots : 1 point par 300 VA)' : 'Puissance', elecPower(e), SPOTLIKE.has(e.type) ? 'VA' : 'W', (v) => { e.p = v; commit(); }, { id: 'f-ep', min: 1, max: 10000 }) : null),
       sec('Orientation', btns(btn('90°', () => rotateSel(-90), 'sm', 'rotL'), btn('90°', () => rotateSel(90), 'sm', 'rotR'))),
       sec('Taille du symbole', chipRow([0.75, 1, 1.25, 1.5, 2], e.sc || 1, (v) => { if (v === 1) delete e.sc; else e.sc = v; commit(); }, (v) => Math.round(v * 100) + ' %')),
       def.cat !== 'ventilation' ? sec('Gaine', btns(btn('Tracer une gaine d’ici', () => startDuctFrom(e, 'elec'), 'sm', 'duct'), EXT.cabler ? btn('Câbler depuis ici', () => EXT.cabler(e), 'sm') : null), ductsOf(e).length ? h('p', { class: 'note' }, `${ductsOf(e).length} conduit${ductsOf(e).length > 1 ? 's' : ''} raccordé${ductsOf(e).length > 1 ? 's' : ''} à ce symbole.`) : null) : null,
@@ -641,7 +642,7 @@ function setTool(t) {
   closeDimEdit();
   if (ui.duct) { if (ui.duct.pts.length >= 2) finishDuct(); ui.duct = null; }
   if (t === 'duct' && !S.layers.elec) { S.layers.elec = true; saveSettings(); }
-  if (t === 'duct' && !ductVisible({ sys: S.ductSys })) { const fam = S.ductSys === 'vmc' ? 'ventilation' : 'gaines'; S.filt.off = S.filt.off.filter((x) => x !== fam); if (S.ductSys === 'elec') S.filt.circ = null; afterFilter(); }
+  if (t === 'duct' && !ductVisible({ sys: S.ductSys })) { const fam = S.ductSys === 'vmc' ? 'ventilation' : 'gaines'; S.filt.off = S.filt.off.filter((x) => x !== fam); setCalqueVisible(S.ductSys === 'vmc' ? 'specialises' : 'gaines', true); if (S.ductSys === 'elec') S.filt.circ = null; afterFilter(); }
   ui.tool = t;
   if (t !== 'place') ui.place = null;
   ui.linkSrc = null;
@@ -733,7 +734,7 @@ function updateHint() {
     const dr = ui.duct, sys = dr ? dr.sys : S.ductSys;
     const dias = DUCT_DIAS[sys];
     kids = [h('b', null, 'Conduit'),
-      segCtl([{ v: 'vmc', n: 'VMC' }, { v: 'elec', n: 'Gaine élec' }], sys, (v) => { S.ductSys = v; ui.ductDia = null; if (ui.duct) ui.duct.sys = v; saveSettings(); if (!ductVisible({ sys: v })) { S.filt.off = S.filt.off.filter((x) => x !== (v === 'vmc' ? 'ventilation' : 'gaines')); if (v === 'elec') S.filt.circ = null; afterFilter(); } updateHint(); requestRender(); }),
+      segCtl([{ v: 'vmc', n: 'VMC' }, { v: 'elec', n: 'Gaine élec' }], sys, (v) => { S.ductSys = v; ui.ductDia = null; if (ui.duct) ui.duct.sys = v; saveSettings(); if (!ductVisible({ sys: v })) { S.filt.off = S.filt.off.filter((x) => x !== (v === 'vmc' ? 'ventilation' : 'gaines')); setCalqueVisible(v === 'vmc' ? 'specialises' : 'gaines', true); if (v === 'elec') S.filt.circ = null; afterFilter(); } updateHint(); requestRender(); }),
       sys === 'elec' ? segCtl(Object.keys(TYPES_CHEMIN).map((k) => ({ v: k, n: TYPES_CHEMIN[k].court })), S.ductKind, (v) => { S.ductKind = S.ductKind === v ? null : v; saveSettings(); updateHint(); }) : null,
       sys === 'elec' && S.ductKind && TYPES_CHEMIN[S.ductKind].forme === 'rect' ? null : segCtl([{ v: 0, n: 'Ø auto' }, ...dias.map((v) => ({ v, n: 'Ø' + v }))], ui.ductDia && dias.includes(ui.ductDia) ? ui.ductDia : 0, (v) => { ui.ductDia = v || null; updateHint(); requestRender(); }),
       h('span', { class: 'msg' }, ductHintMsg()),
@@ -872,6 +873,14 @@ function toggleRow(label, get, set) {
   b.addEventListener('click', () => { set(!get()); saveSettings(); b.setAttribute('aria-checked', String(!!get())); refreshUI(); });
   return b;
 }
+/* gaines électriques affichées : calques Gaines et Chemins de câbles, et famille « Gaines électriques » des filtres */
+function gainesAffichees() { return S.layers.elec !== false && calqueVisible('gaines') && calqueVisible('chemins') && !S.filt.off.includes('gaines'); }
+function afficherGaines(v) {
+  setCalqueVisible('gaines', v); setCalqueVisible('chemins', v);
+  if (v) { S.filt.off = S.filt.off.filter((x) => x !== 'gaines'); S.layers.elec = true; }
+  else if (ui.sel && ui.sel.t === 'duct') { ui.sel = null; }
+  afterFilter();
+}
 function renderViewPop() {
   const L = S.layers;
   $('#viewPop').replaceChildren(h('div', { class: 'menu' },
@@ -881,6 +890,7 @@ function renderViewPop() {
     toggleRow('Surfaces', () => L.areas, (v) => (L.areas = v)),
     toggleRow('Mobilier', () => L.furn, (v) => (L.furn = v)),
     toggleRow('Électricité', () => L.elec, (v) => (L.elec = v)),
+    toggleRow('Gaines et chemins de câbles', gainesAffichees, (v) => { afficherGaines(v); }),
     toggleRow('Liaisons des commandes', () => L.links !== false, (v) => (L.links = v)),
     toggleRow('Couleurs des circuits', () => L.circ !== false, (v) => (L.circ = v)),
     toggleRow('Niveau inférieur en transparence', () => L.ghost, (v) => (L.ghost = v)),

@@ -2,7 +2,7 @@
    (portes, fenêtres, murs, zones interdites, conduits de VMC). JavaScript pur, sans accès à l'écran : testable avec Node.
    Les conflits sont des points d'attention de Calque, pas des règles de la norme : ils ne disent jamais « conforme ». */
 import { isNum } from './noyau.js';
-import { TRAVERSEE, ancrage, cheminCircuit, circuitsDe, grapheGaines, hauteurParcours, isElecDuct, plusCourts, pointsGaine, tableauDu } from './cheminement.js';
+import { DERIVATIONS, poseAHauteur, TRAVERSEE, ancrage, cheminCircuit, circuitsDe, grapheGaines, hauteurParcours, isElecDuct, plusCourts, pointsGaine, tableauDu } from './cheminement.js';
 
 /* ---------------- géométrie du niveau ---------------- */
 function obstacles(plan, lv) {
@@ -54,17 +54,23 @@ function conflitsGaine(plan, d, O) {
   const add = (sev, kind, msg, p) => out.push({ sev, kind, msg, p: { x: Math.round(p.x), y: Math.round(p.y) } });
   for (let i = 1; i < pts.length; i++) {
     const p = pts[i - 1], q = pts[i];
+    if (d.pose === 'cloison') {
+      const m = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+      const dedans = O.walls.some((W) => { const u = (m.x - W.A.x) * W.d.x + (m.y - W.A.y) * W.d.y, v = -(m.x - W.A.x) * W.d.y + (m.y - W.A.y) * W.d.x; return u >= -W.th / 2 && u <= W.L + W.th / 2 && Math.abs(v) <= W.th / 2 + 30; }); // 30 cm : point de raccordement d'un appareil mural, devant le mur
+      if (!dedans && Math.hypot(q.x - p.x, q.y - p.y) > 5) add('info', 'hors_cloison', 'Pose « dans la cloison » : ce tronçon n’est pas dans l’épaisseur d’un mur ou d’une cloison (vérifiez le tracé ou la pose).', m);
+    }
     for (const W of O.walls) {
       const x = inter(p, q, W.A, W.B); if (!x) continue;
       const at = { x: p.x + x.t * (q.x - p.x), y: p.y + x.t * (q.y - p.y) };
+      if (d.pose === 'cloison' && (x.u * W.L <= W.th / 2 + 3 || x.u * W.L >= W.L - W.th / 2 - 3)) continue; // angle de cloison : pas un percement
       const o = openingAt(W, x.u * W.L);
       if (o && (o.kind === 'door' || o.kind === 'gap')) {
         const top = isNum(o.h) ? o.h : 215;
-        if (d.pose === 'hauteur') { if (zr < top) add('warn', 'porte', `La gaine coupe le passage de la ${OUV_NOM[o.kind]} (posée à ${Math.round(zr)} cm, sous le haut de l’ouverture à ${Math.round(top)} cm).`, at); }
+        if (poseAHauteur(d.pose)) { if (zr < top) add('warn', 'porte', `La gaine coupe le passage de la ${OUV_NOM[o.kind]} (posée à ${Math.round(zr)} cm, sous le haut de l’ouverture à ${Math.round(top)} cm).`, at); }
         else if (!d.pose) add('info', 'porte', `La gaine passe par une ${OUV_NOM[o.kind]} : précisez sa pose (sol ou plafond) pour vérifier qu’elle ne gêne pas le passage.`, at);
       } else if (o && o.kind === 'window') {
         const s0 = isNum(o.sill) ? o.sill : 90, s1 = s0 + (isNum(o.h) ? o.h : 125);
-        if (d.pose === 'hauteur' && zr >= s0 && zr <= s1) add('warn', 'fenetre', `La gaine traverse la fenêtre (posée à ${Math.round(zr)} cm, fenêtre de ${Math.round(s0)} à ${Math.round(s1)} cm).`, at);
+        if (poseAHauteur(d.pose) && zr >= s0 && zr <= s1) add('warn', 'fenetre', `La gaine traverse la fenêtre (posée à ${Math.round(zr)} cm, fenêtre de ${Math.round(s0)} à ${Math.round(s1)} cm).`, at);
         else add('info', W.w.kind === 'cloison' ? 'cloison' : 'mur', `Traversée de mur sous ou au-dessus d’une fenêtre : percement à prévoir.`, at);
       } else if (W.w.kind === 'cloison') add('info', 'cloison', 'Traversée de cloison : percement à prévoir.', at);
       else add('info', 'mur', 'Traversée de mur : percement ou réservation à prévoir (vérifiez s’il est porteur).', at);
@@ -132,7 +138,7 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
       const u = (p.x - W.A.x) * W.d.x + (p.y - W.A.y) * W.d.y, v = -(p.x - W.A.x) * W.d.y + (p.y - W.A.y) * W.d.x;
       if (u < -W.th / 2 || u > W.L + W.th / 2 || Math.abs(v) > W.th / 2 + cs * 0.5) continue;
       const o = openingAt(W, u);
-      if (o && (o.kind === 'door' || o.kind === 'gap')) { if (pose === 'hauteur') { extra[k] = Infinity; break; } continue; }
+      if (o && (o.kind === 'door' || o.kind === 'gap')) { if (poseAHauteur(pose)) { extra[k] = Infinity; break; } continue; }
       const c = W.w.kind === 'cloison' ? COUT.cloison : COUT.mur;
       if (c > extra[k]) { extra[k] = c; kindAt[k] = W.w.kind === 'cloison' ? 2 : 1; }
     }
@@ -213,7 +219,7 @@ function raccorderCircuit(plan, cid, opts = {}) {
     if (!reste.length) break;
     const G = grapheGaines(tmp), sp = G.nodes.has('e:' + T.id) ? plusCourts(G, 'e:' + T.id, cid) : { D: new Map() };
     /* un passage entre étages dont le jumeau est raccordé est lui aussi un point de départ, sur son niveau */
-    const relies = (plan.elec || []).filter((x) => x.id === T.id || (sp.D.has('e:' + x.id) && (x.cid === cid || x.type === TRAVERSEE || x.type === 'derivation')) || (x.type === TRAVERSEE && x.to && sp.D.has('e:' + x.to)));
+    const relies = (plan.elec || []).filter((x) => x.id === T.id || (sp.D.has('e:' + x.id) && (x.cid === cid || x.type === TRAVERSEE || DERIVATIONS.has(x.type))) || (x.type === TRAVERSEE && x.to && sp.D.has('e:' + x.to)));
     const troncs = tmp.ducts.filter((d) => isElecDuct(d) && !String(d.id).startsWith('~auto') && !circuitsDe(d).length && sp.D.has(`v:${d.id}:0`)).map((d) => ({ d, pts: pointsGaine(tmp, d) }));
     let best = null;
     for (const e of reste) {
@@ -247,7 +253,7 @@ function raccorderCircuit(plan, cid, opts = {}) {
     const g = { id: '~auto' + (n++), lv: best.e.lv, sys: 'elec', pts: res.pts, a: best.pique ? null : best.from.id, b: best.e.id, cid, len: res.len };
     if (best.pique) { g.pts[0] = dep; g.pique = true; }
     if (opts.kind) g.kind = opts.kind;
-    if (opts.pose) { g.pose = opts.pose; if (opts.pose === 'hauteur' && isNum(opts.z)) g.z = opts.z; }
+    if (opts.pose) { g.pose = opts.pose; if (poseAHauteur(opts.pose) && isNum(opts.z)) g.z = opts.z; }
     tmp.ducts.push(g); out.gaines.push(g);
   }
   return out;

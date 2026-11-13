@@ -133,3 +133,8 @@ Ajouter une ligne à chaque décision importante (date, décision, raison).
 - **Routage proposé puis validé** : l'outil Câbler et le raccordement automatique affichent leurs tracés sans toucher au plan ; la création est une seule étape d'« Annuler ». Croiser une gaine existante coûte l'équivalent de 50 cm (`COUT.croise`).
 - **Règles de câblage** : ce sont des constats de conception (points d'attention ou contrôles de Calque non rattachés à un extrait Legrand) : au mieux « vérification nécessaire » ; « non conforme » seulement pour une règle de Calque (fils isolés sur chemin de câbles, triphasé sur installation monophasée).
 - **SVG** : même principe que le DXF (contexte qui hérite de `PdfCtx`), chaque élément porte le nom de son calque dans l'attribut `class` (pas de groupes, pour ne jamais mal imbriquer les découpes).
+
+## 13 novembre 2026 — gaines (demandes de l'utilisateur)
+- **Pose « cloison »** : même calcul que « à une hauteur donnée » (`poseAHauteur`), parcours à `z` ; les croisements à moins d'une demi-épaisseur du bout d'un mur sont des angles (pas des percements) ; un tronçon dont le milieu est à plus de 30 cm de l'axe de tout mur est signalé (les points de raccordement des appareils muraux sont devant le mur).
+- **Format v13** plutôt qu'une simple valeur de plus : une ancienne version de Calque ne connaît ni la pose ni les deux symboles ; le numéro de version lui fait afficher « plan d'une version plus récente » au lieu de les perdre en silence.
+- **Longueur saisie** : on garde le bout raccordé ; le bout libre suit le prolongement du dernier tronçon (`tracerALongueur`) ; rien n'est modifié si les deux bouts sont raccordés.

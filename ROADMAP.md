@@ -107,7 +107,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Import DXF essayé sur deux vrais plans : unité fausse du fichier écartée, reconnaissance indépendante du cadrage, porte près d'un angle, petits vides ignorés (2 tests).
 - ⬜ Suite envisagée, par ordre de valeur : (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
-## Module « Plans électriques » (13 novembre 2026) ✅ (à essayer sur iPad, puis à fusionner)
+## Module « Plans électriques » (13 novembre 2026) ✅ (fusionné, demande n°11)
+- ✅ Demandes de l'utilisateur (après la fusion) : gaine encastrée dans la cloison, interrupteur « Gaines » dans Affichage, sortie de câble radiateur, boîte de dérivation murale, longueur du tracé d'une gaine (format v13, `tests/gaines.test.mjs`).
 Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : `docs/MODULE_ELECTRIQUE.md`.
 - ✅ Moteur de câblage (conducteurs par tronçon, navettes, retours, commandes, fil pilote, volets, triphasé) (`js/cablage.js`, 5 tests).
 - ✅ Calques (masquer, verrouiller, couleur, opacité, nom) et vues « Plans électriques » prédéfinies et enregistrées (`js/calques.js`, `js/calquesui.js`).

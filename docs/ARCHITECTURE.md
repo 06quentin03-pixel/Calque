@@ -128,7 +128,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 12) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 13) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -142,7 +142,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `circuits[]` | Circuits du tableau : `id`, `kind`, `name`, `cal` (calibre en A), `sec` (section en mm²), `rcd` (différentiel), `dda`, `ctrl`, `col` (couleur choisie, v12), `courbe` (`B`/`C`/`D`, v12), `cond` (`h07vu`/`r2v`/`souple`, v12), `calc` (données de calcul, facultatif, v5 : `p` puissance en W, `cos`, `len` longueur en m, `dcab` diamètre extérieur du câble en mm (v6) — chacune `{ v, st, src }` ; `mat` `cu`/`al` ; `phase` `L1`/`L2`/`L3`/`tri`) |
 | `rcds[]` | Interrupteurs différentiels : `id`, `type` (`AC`, `A`…), `cal` (calibre en A) |
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
-| `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]`. Gaine électrique (v6, facultatifs) : `cid` (circuit principal), `cids[]` (autres circuits), `kind` (`icta`, `irl`, `goulotte`, `cdc`), `pose` (`sol`, `plafond`, `hauteur`), `z` (hauteur du parcours en cm, pose `hauteur`), `lw`, `lh` (largeur et hauteur en mm, goulotte et chemin de câbles) |
+| `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]`. Gaine électrique (v6, facultatifs) : `cid` (circuit principal), `cids[]` (autres circuits), `kind` (`icta`, `irl`, `goulotte`, `cdc`), `pose` (`sol`, `plafond`, `hauteur`, `cloison` (v13 : encastrée dans la cloison)), `z` (hauteur du parcours en cm, poses `hauteur` et `cloison`), `lw`, `lh` (largeur et hauteur en mm, goulotte et chemin de câbles) |
 | `zones[]` | Zones interdites aux cheminements (v6) : `id`, `lv`, `pts[]` (contour), `name` |
 | `photometries[]` | Photométries des luminaires (v7), lues dans des fichiers IES / LDT : `id`, `name`, `fab`, `file`, `fmt` (`ies`/`ldt`), `flux` et `p` (`{ v, st, src }`), `fluxLampes`, `C[]` et `G[]` (angles en degrés), `I[][]` (intensités en cd, une ligne par angle C) |
 | `etudes[]` | Études d'éclairage par pièce (v7) : `id`, `lv`, `room` (étiquette de la pièce), `E` (éclairement visé, lx), `hu` (plan utile, cm), `mf`, `u` (données `{ v, st, src }`, facultatives), `hlum` (hauteur des luminaires, cm, facultative), `lums[]` (jusqu'à 3 : `type`, `ph`, `flux`, `p`), `ids[]` (luminaires posés par la dernière implantation) |

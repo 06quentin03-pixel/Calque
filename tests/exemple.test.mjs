@@ -42,7 +42,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 12);
+  assert.equal(r.v, 13);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -112,9 +112,11 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       col: P.circuits.filter((c) => c.col).length, courbes: [...new Set(P.circuits.map((c) => c.courbe))], conds: [...new Set(P.circuits.map((c) => c.cond).filter(Boolean))],
       tele: P.circuits.some((c) => c.ctrl === 'telerupteur'), sc: P.elec.filter((e) => e.sc).length, fns: [...fns], des: [...des],
       nom: No.nomenclatureTableau(P, El.circNumbers(), El.rcdNumbers(), El.panelLayout()).lignes.length, svg: svg.n,
-      cablageRegles: rap.resultats.filter((x) => x.id.startsWith('cb_')).length, global: rap.global, vueOk: K.appliquerVue('vu-ex-atelier') };
+      cablageRegles: rap.resultats.filter((x) => x.id.startsWith('cb_')).length, global: rap.global, vueOk: K.appliquerVue('vu-ex-atelier'),
+      demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
+        return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 12);
+  assert.equal(r.v, 13);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
@@ -123,7 +125,9 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
   for (const f of ['L', 'N', 'PE', 'R', 'NAV', 'CMD', 'FP', 'L1', 'L2', 'L3']) assert.ok(r.fns.includes(f), 'conducteur ' + f);
   for (const d of ['3G1,5', '3G2,5', '5G2,5']) assert.ok(r.des.includes(d), d);
   assert.ok(r.nom >= 8); assert.ok(r.svg > 500);
-  assert.ok(r.cablageRegles >= 1, 'contrôles de câblage dans le rapport'); assert.notEqual(r.global, 'conforme', 'jamais de conformité globale');
+  assert.ok(r.cablageRegles >= 1, 'contrôles de câblage dans le rapport');
+  /* demandes du 13 novembre : gaine dans la cloison, boîte de dérivation murale, sortie de câble radiateur raccordée */
+  assert.deepEqual(r.demandes, { cloison: true, mur: true, sortie: true, raccordee: true }); assert.notEqual(r.global, 'conforme', 'jamais de conformité globale');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

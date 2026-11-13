@@ -146,6 +146,14 @@ const MIGRATIONS = {
     }
     return p;
   },
+  /* v12 → v13 : pose de gaine « encastrée dans la cloison » (`pose: 'cloison'`, hauteur `z`), symboles « boîte de
+     dérivation murale » (`derivation_mur`) et « sortie de câble radiateur » (`sortie_rad`). Les plans v12 n'en ont pas :
+     rien à convertir ; les gaines sont revérifiées (valeur invalide retirée, rien de deviné). Le numéro de version
+     prévient une ancienne version de Calque qu'elle ne connaît pas ces symboles. */
+  12(p) {
+    for (const d of Array.isArray(p.ducts) ? p.ducts : []) nettoyerGaine(d);
+    return p;
+  },
 };
 /* taille d'un symbole (v12) : 0,5 à 3 ; 1 = taille normale (champ retiré) */
 function nettoyerTaille(e) {

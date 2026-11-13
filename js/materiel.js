@@ -111,7 +111,7 @@ function listeMateriel(plan) {
   const elec = (plan.elec || []);
   const murales = elec.filter((e) => e.cid && (ELEC_BY.get(e.type) || {}).wall).length;
   const plafond = elec.filter((e) => e.cid && e.type === 'pl').length;
-  const deriv = elec.filter((e) => e.type === 'derivation').length;
+  const deriv = elec.filter((e) => e.type === 'derivation' || e.type === 'derivation_mur').length;
   const passages = elec.filter((e) => e.type === TRAVERSEE).length;
   if (murales) add('Boîtes', 'Boîtes d’encastrement (appareils muraux)', murales, 'u', '1 par symbole mural relié à un circuit (à adapter : boîtes doubles ou triples, cloison ou maçonnerie)');
   if (plafond) add('Boîtes', 'Boîtiers DCL de plafond', plafond, 'u', '1 par point lumineux au plafond');

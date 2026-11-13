@@ -1,5 +1,15 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-13 — Demandes de l'utilisateur sur les gaines (après la fusion n°11)
+- **Gaine encastrée dans la cloison** : nouvelle pose « Cloison » (fiche de la gaine, 3D, outil Câbler, raccordement automatique), à la hauteur indiquée. Les verticales jusqu'aux appareils sont comptées ; un angle de mur n'est pas compté comme un percement ; un tronçon tracé hors de l'épaisseur des murs est signalé (point d'attention) ; l'itinéraire ne passe pas par une porte.
+- **Masquer les gaines** : interrupteur « Gaines et chemins de câbles » dans le menu Affichage. L'outil Conduit les fait réapparaître.
+- **Sortie de câble radiateur** (famille Chauffage) : rattachée au circuit de chauffage, puissance du radiateur à saisir, fil pilote compté par le moteur de câblage.
+- **Boîte de dérivation murale** (famille Tableau et énergie) : au mur, hauteur réglable (220 cm proposés) ; comme la boîte de plafond, c'est un point de passage des circuits (sans circuit propre), comptée dans le matériel.
+- **Longueur d'une gaine** : champ « Longueur horizontale du tracé » dans la fiche ; le bout libre avance ou recule dans le prolongement du tracé (coudes retirés si on raccourcit au-delà) ; si les deux bouts sont libres, on choisit celui qui bouge ; une gaine raccordée aux deux bouts l'explique.
+- **Format des plans v13** (pose « cloison », nouveaux symboles) avec migration et copie de sécurité.
+- Plan d'exemple : boîte de dérivation murale et gaine dans le mur du local technique jusqu'à une sortie de câble radiateur.
+- Service Worker : cache `calque-v43`. Tests : **171/171** (nouveau : `tests/gaines.test.mjs`, 2 tests).
+
 ## 2026-11-13 — Module « Plans électriques » : câblage, calques, circuits, tableau, exports
 Évolution majeure demandée par l'utilisateur, intégrée à Calque sans rien reconstruire (audit et architecture : `docs/MODULE_ELECTRIQUE.md`). Branche `claude/calque-electrical-plans-module-tbt1ea`.
 - **Moteur de câblage** (`js/cablage.js`, sans écran) : pour chaque circuit, l'arbre des gaines du tableau à chaque point, et **les conducteurs de chaque tronçon** : phase, neutre, terre, retours de lampe, navettes des va-et-vient (et permutateurs), fil de commande des télérupteurs, fil pilote du chauffage, montée et descente des volets, triphasé. Désignation « 3G1,5 », « 5G2,5 », « 2 × 1,5 » ; longueurs par fonction de conducteur. Valeurs **estimées** (schéma de câblage usuel).

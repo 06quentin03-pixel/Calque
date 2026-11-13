@@ -20,7 +20,7 @@ const AUTONOMOUS = new Set(['daaf', 'det_co', 'det_gaz', 'det_fuite', 'det_chale
 const COMM_OUTLETS = new Set(['tv', 'rj45', 'rj45_2', 'sat', 'fibre', 'hdmi', 'rj45_tv']);
 const LIGHT_ACC = new Set(['baes', 'extracteur', 'ventilo', 'transfo', 'pc_rasoir']); // rattachés à l'éclairage de la pièce
 const LINK_TARGETS = new Set([...LIGHTS, 'pc_cmd', 'extracteur', 'ventilo']);
-const NO_CIRCUIT = new Set(['daaf', 'camera', 'thermostat', 'derivation', 'traversee', 'compteur', 'db', 'tableau', 'tv', 'rj45', 'rj45_2', 'sat', 'fibre', 'tel', 'hdmi', 'hp', 'wifi', 'terre', 'les', 'gtl', 'ccpi', 'panneau_pv', 'batterie', 'groupe', 'inverseur', 'det_co', 'det_gaz', 'det_fuite', 'arret_urg', 'camera_dome', 'nvr', 'rj45_tv', 'antenne', 'parabole', 'box', 'baie', 'repart_tv', 'telerupteur', 'minuterie', 'contacteur_hc', 'parafoudre', 'delesteur', 'gest_energie', 'sous_compteur', 'sonde_ext', 'prog_fp', 'vmc_insuff', 'entree_air', 'sortie_toit', 'prise_air_neuf', 'plenum', 'capteur_vent', 'det_chaleur', 'declencheur', 'ev_gaz']);
+const NO_CIRCUIT = new Set(['daaf', 'camera', 'thermostat', 'derivation', 'derivation_mur', 'traversee', 'compteur', 'db', 'tableau', 'tv', 'rj45', 'rj45_2', 'sat', 'fibre', 'tel', 'hdmi', 'hp', 'wifi', 'terre', 'les', 'gtl', 'ccpi', 'panneau_pv', 'batterie', 'groupe', 'inverseur', 'det_co', 'det_gaz', 'det_fuite', 'arret_urg', 'camera_dome', 'nvr', 'rj45_tv', 'antenne', 'parabole', 'box', 'baie', 'repart_tv', 'telerupteur', 'minuterie', 'contacteur_hc', 'parafoudre', 'delesteur', 'gest_energie', 'sous_compteur', 'sonde_ext', 'prog_fp', 'vmc_insuff', 'entree_air', 'sortie_toit', 'prise_air_neuf', 'plenum', 'capteur_vent', 'det_chaleur', 'declencheur', 'ev_gaz']);
 const SEC_MAX = { 1.5: 16, 2.5: 20, 4: 25, 6: 32, 10: 40, 16: 63 };
 const CALS = [2, 10, 16, 20, 25, 32, 40];
 const SECS = [1.5, 2.5, 4, 6, 10, 16];
@@ -58,7 +58,7 @@ const ACCEPT = {
   prises_cuisine: (t) => t in SOCKETS,
   cuisson: (t) => t === 'pc32' || t === 'sortie',
   chauffe_eau: (t) => t === 'sortie' || t === 'ce_elec' || t === 'ballon_thermo',
-  chauffage: (t) => t === 'rad_elec' || t === 'seche_serv_e' || t === 'thermostat' || t === 'plancher' || t === 'soufflant_sdb',
+  chauffage: (t) => t === 'rad_elec' || t === 'sortie_rad' || t === 'seche_serv_e' || t === 'thermostat' || t === 'plancher' || t === 'soufflant_sdb',
   pac: (t) => t === 'pac' || t === 'clim' || t === 'pac_int' || t === 'sortie',
   vmc: (t) => t === 'vmc' || t === 'vmc_groupe' || t === 'vmc_df' || t === 'extracteur' || t === 'sortie',
   volets: (t) => t === 'cmd_vr' || t === 'cmd_vr_c' || t === 'volet_mot' || t === 'velux_mot' || t === 'volet_bat' || t === 'sortie',
@@ -80,7 +80,7 @@ function defaultKindFor(t) {
   if (t === 'pc32') return 'cuisson';
   if (t === 'pc20') return 'specialise';
   if (t === 'ce_elec' || t === 'ballon_thermo') return 'chauffe_eau';
-  if (t === 'rad_elec' || t === 'seche_serv_e' || t === 'thermostat' || t === 'plancher' || t === 'soufflant_sdb') return 'chauffage';
+  if (t === 'rad_elec' || t === 'sortie_rad' || t === 'seche_serv_e' || t === 'thermostat' || t === 'plancher' || t === 'soufflant_sdb') return 'chauffage';
   if (t === 'pac' || t === 'clim' || t === 'pac_int') return 'pac';
   if (t === 'vmc' || t === 'vmc_groupe' || t === 'vmc_df') return 'vmc';
   if (t === 'cmd_vr' || t === 'cmd_vr_c' || t === 'volet_mot' || t === 'velux_mot' || t === 'volet_bat') return 'volets';

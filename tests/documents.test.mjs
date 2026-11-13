@@ -140,19 +140,19 @@ test('migration v7 → v8 : informations du dossier vides, copie de sécurité',
     const z = S.migratePlan(JSON.parse(JSON.stringify(y.plan)));
     return { ver: S.PLAN_VERSION, has: Object.keys(S.MIGRATIONS).map(Number), x, y, z };
   }, [v7, bad]);
-  assert.equal(m.ver, 12); // format actuel
+  assert.equal(m.ver, 13); // format actuel
   for (let v = 1; v < m.ver; v++) assert.ok(m.has.includes(v), `migration ${v} → ${v + 1}`);
-  assert.equal(m.x.from, 7); assert.equal(m.x.plan.v, 12);
+  assert.equal(m.x.from, 7); assert.equal(m.x.plan.v, 13);
   assert.deepEqual(m.x.plan.doc, { revisions: [] }, 'aucun indice inventé');
   assert.deepEqual(m.y.plan.doc, { revisions: [{ i: 'B', date: 10, objet: 'ok' }] }, 'valeurs invalides retirées');
   assert.deepEqual(m.z.plan, m.y.plan, 'migration sans effet sur un plan à jour');
   await wait(page, 800);
   const vers = await idb(page, 'versions');
-  const v = vers.find((x) => x.pid === 'pD7' && /avant mise à jour du format \(v7 → v12\)/.test(x.why));
+  const v = vers.find((x) => x.pid === 'pD7' && /avant mise à jour du format \(v7 → v13\)/.test(x.why));
   assert.ok(v, 'copie de sécurité avant mise à jour du format');
   assert.equal(JSON.parse((await idb(page, 'vdata', v.k)).json).v, 7, 'la copie est le plan d’origine');
   const cur = await page.evaluate(async () => { const P = (await import('./js/noyau.js')).P; return { v: P.v, n: P.circuits.length, doc: P.doc }; });
-  assert.equal(cur.v, 12); assert.equal(cur.n, 2, 'rien de perdu'); assert.deepEqual(cur.doc, { revisions: [] });
+  assert.equal(cur.v, 13); assert.equal(cur.n, 2, 'rien de perdu'); assert.deepEqual(cur.doc, { revisions: [] });
   assert.deepEqual(errors, []);
   await ctx.close();
 });

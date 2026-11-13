@@ -30,6 +30,14 @@ compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull reques
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
 
+## Essais des demandes sur les gaines (13 novembre 2026)
+Sur le plan d'exemple : local technique (en haut à gauche de l'atelier), boîte de dérivation murale et gaine dans le mur
+jusqu'à la sortie de câble radiateur.
+1. Toucher une gaine › Pose › « Cloison » : hauteur du parcours, longueur totale avec les verticales.
+2. Toucher une gaine dont un bout est libre › « Longueur horizontale du tracé » › taper 3,50 m (350) : le tracé s'allonge ; Annuler.
+3. Menu Affichage (icône des couches) › « Gaines et chemins de câbles » : les gaines disparaissent et reviennent.
+4. Bibliothèque › Électricité › Chauffage › « Sortie de câble radiateur » ; Tableau et énergie › « Boîte de dérivation murale » : poser au mur au Pencil, régler la hauteur et la puissance.
+
 ## Essais à faire sur l'iPad (ce que les tests automatiques ne couvrent pas)
 Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait, au doigt et au Pencil :
 1. **Pastille « Calques et vues »** (en haut à droite du plan) : choisir « Câblage », « Éclairage », « Implantation »,
