@@ -241,7 +241,7 @@ EXT.cabler = demarrerCablage;
 async function proposerRaccordement(cids, suivi) {
   const tmp = Object.assign({}, P, { ducts: P.ducts.slice() });
   const prop = { gaines: [], echecs: [], len: 0, circuits: 0 };
-  const pose = S.ductPose === 'hauteur' && !Number.isFinite(S.ductZ) ? null : S.ductPose || null;
+  const pose = (S.ductPose === 'hauteur' || S.ductPose === 'cloison') && !Number.isFinite(S.ductZ) ? null : S.ductPose || null;
   for (let i = 0; i < cids.length; i++) {
     if (suivi) { suivi(i, cids.length); await new Promise((r) => setTimeout(r, 0)); }
     const r = raccorderCircuit(tmp, cids[i], { pose });

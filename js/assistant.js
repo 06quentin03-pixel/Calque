@@ -26,7 +26,7 @@ function avancement(plan, ctx) {
   const fonds = (plan.fonds || []).filter((f) => !f.cal);
   if (fonds.length) add('fond', 'Mettre le fond de plan à l’échelle', 'attention', `${pl(fonds.length, 'fond')} de plan sans échelle réglée : les longueurs dessinées par-dessus seraient fausses.`, 'fond');
   /* 2. implantation électrique */
-  const T = tableauDu(plan), app = elec.filter((e) => !['tableau', 'traversee', 'derivation'].includes(e.type));
+  const T = tableauDu(plan), app = elec.filter((e) => !['tableau', 'traversee', 'derivation', 'derivation_mur'].includes(e.type));
   if (!murs) add('elec', 'Implanter l’électricité', 'attente', 'Après le dessin du bâtiment.');
   else if (!app.length) add('elec', 'Implanter l’électricité', 'afaire', 'Aucun appareil : posez les prises, interrupteurs, points lumineux et le tableau (outil Électricité).', 'elec');
   else add('elec', 'Implanter l’électricité', T ? 'fait' : 'attention', `${pl(app.length, 'appareil')} posé${app.length > 1 ? 's' : ''}.${T ? '' : ' Le tableau électrique n’est pas posé sur le plan : il sert de départ aux circuits et aux longueurs.'}`, T ? null : 'elec');

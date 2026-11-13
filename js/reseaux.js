@@ -16,6 +16,7 @@ import { v3Refresh } from './vue3d.js';
 import { conflitsSection } from './routeui.js';
 import { remplissageGaines } from './materiel.js';
 import { calqueDeElec, calqueDeGaine, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
+import { DERIVATIONS, poseAHauteur, tracerALongueur } from './cheminement.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -438,11 +439,11 @@ function finishDuct() {
   const d = { id: uid('k'), lv: ui.lv, sys: dr.sys, pts, a: dr.a || null, b: dr.b || null };
   if (d.sys === 'elec') {
     const ends = [d.b, d.a].map((id) => id && IDX.elec.get(id)).filter(Boolean);
-    const pick = ends.find((e) => e.cid && !['tableau', 'tab_div', 'derivation', 'gtl'].includes(e.type)) || ends.find((e) => e.cid);
+    const pick = ends.find((e) => e.cid && !['tableau', 'tab_div', 'gtl'].includes(e.type) && !DERIVATIONS.has(e.type)) || ends.find((e) => e.cid);
     if (pick) d.cid = pick.cid;
     /* type et pose : ceux que l'utilisateur a choisis en dernier (rien n'est deviné : sans choix, « non précisé ») */
     if (S.ductKind && TYPES_CHEMIN[S.ductKind]) d.kind = S.ductKind;
-    if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (d.pose === 'hauteur' && isNum(S.ductZ)) d.z = S.ductZ; else if (d.pose === 'hauteur') delete d.pose; }
+    if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (poseAHauteur(d.pose) && isNum(S.ductZ)) d.z = S.ductZ; else if (poseAHauteur(d.pose)) delete d.pose; }
   } else d.mat = 'souple';
   d.dia = ui.ductDia || autoDuctDia(d);
   if (ui.ductDia) d.diaSet = 1;
@@ -459,7 +460,7 @@ function creerGaineElec(g) {
   const d = { id: uid('k'), lv: g.lv, sys: 'elec', pts: g.pts.map((p) => ({ x: p.x, y: p.y })), a: g.a || null, b: g.b || null };
   if (g.cid) d.cid = g.cid;
   if (S.ductKind && TYPES_CHEMIN[S.ductKind]) d.kind = S.ductKind;
-  if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (d.pose === 'hauteur' && isNum(S.ductZ)) d.z = S.ductZ; else if (d.pose === 'hauteur') delete d.pose; }
+  if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (poseAHauteur(d.pose) && isNum(S.ductZ)) d.z = S.ductZ; else if (poseAHauteur(d.pose)) delete d.pose; }
   d.dia = autoDuctDia(d);
   if (d.kind && TYPES_CHEMIN[d.kind].forme === 'rect') { delete d.dia; if (isNum(S.ductLw) && isNum(S.ductLh)) { d.lw = S.ductLw; d.lh = S.ductLh; } }
   P.ducts.push(d); IDX.ducts.set(d.id, d);
@@ -686,8 +687,8 @@ function inspGaine(d) {
       h('p', { class: 'note' }, 'Gaine ICTA : Ø16 pour du 1,5 mm², Ø20 pour du 2,5 mm², Ø25 pour du 6 mm², Ø32 pour du 10 mm² (habitudes de pose, à vérifier).'));
   const zr = hauteurParcours(P, d);
   const pose = sec('Pose',
-    segCtl(Object.keys(POSES).map((k) => ({ v: k, n: POSES[k].court })), d.pose, (v) => { d.pose = v; if (v === 'hauteur' && !isNum(d.z)) d.z = isNum(S.ductZ) ? S.ductZ : 30; if (v !== 'hauteur') delete d.z; rememberGaine(d); commit(); }),
-    d.pose === 'hauteur' ? numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; rememberGaine(d); commit(); }, { id: 'f-dz', min: 0, max: 600 }) : null,
+    segCtl(Object.keys(POSES).map((k) => ({ v: k, n: POSES[k].court })), d.pose, (v) => { d.pose = v; if (poseAHauteur(v) && !isNum(d.z)) d.z = isNum(S.ductZ) ? S.ductZ : 30; if (!poseAHauteur(v)) delete d.z; rememberGaine(d); commit(); }),
+    poseAHauteur(d.pose) ? numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; rememberGaine(d); commit(); }, { id: 'f-dz', min: 0, max: 600 }) : null,
     h('p', { class: 'note' }, d.pose ? POSES[d.pose].note + (zr != null ? ` Parcours à ${fmtIn(zr)} cm du sol fini.` : '') : 'Pose non précisée : les verticales jusqu’aux appareils ne sont pas comptées.'));
   /* circuits */
   const sel = h('select', { class: 'txt', id: 'f-dcirc', 'aria-label': 'Circuit' }, h('option', { value: '' }, 'Aucun circuit'),
@@ -712,6 +713,7 @@ function inspGaine(d) {
     body(
       kv([['Départ', ductEndName(d.a)], ['Arrivée', ductEndName(d.b)], ['Longueur horizontale', fmtLenU(lg.horiz)], ['Verticales', vtxt], ['Longueur totale', fmtLenU(lg.total)], ['Coudes', String(Math.max(0, pts.length - 2))]]),
       lg.inconnu ? h('p', { class: 'note', style: 'color:var(--bad)' }, `${lg.inconnu} verticale${lg.inconnu > 1 ? 's' : ''} non comptée${lg.inconnu > 1 ? 's' : ''} : ${d.pose ? 'hauteur du symbole inconnue' : 'indiquez la pose de la gaine'}.`) : null,
+      longueurTraceSection(d),
       sec('Type de cheminement', h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((k) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.kind === k), onclick: () => setKind(k) }, TYPES_CHEMIN[k].court))),
         h('p', { class: 'note' }, t ? t.note : 'Type non précisé : choisissez-le (il sera repris pour les gaines suivantes).')),
       sec(t && t.forme === 'rect' ? 'Dimensions' : 'Diamètre', taille),
@@ -720,6 +722,26 @@ function inspGaine(d) {
       sec(null, btns(btn('Inverser le sens', () => reverseDuct(d), '', 'swap'), btn('Supprimer', deleteSel, 'danger', 'del'))),
     ),
   ];
+}
+/* longueur du tracé saisie : le bout libre de la gaine avance ou recule (comme la longueur d'un mur).
+   Un bout raccordé à un appareil ne bouge jamais ; si les deux sont raccordés, la longueur ne peut pas changer. */
+function bouLibre(d, k) { const e = d[k] && IDX.elec.get(d[k]); return !e || e.lv !== d.lv; }
+function longueurTraceSection(d) {
+  const libreA = bouLibre(d, 'a'), libreB = bouLibre(d, 'b');
+  const pts = ductPts(d);
+  let L = 0; for (let i = 1; i < pts.length; i++) L += vdist(pts[i - 1], pts[i]);
+  if (!libreA && !libreB) return sec('Longueur du tracé', kv([['Longueur horizontale', fmtLenU(L)]]),
+    h('p', { class: 'note' }, 'Les deux bouts sont raccordés à des appareils : déplacez un appareil ou un coude pour changer la longueur.'));
+  const bout = libreB && libreA ? (ui.gaineBout === 'a' ? 'a' : 'b') : libreB ? 'b' : 'a';
+  const champ = numField('Longueur horizontale du tracé', Math.round(L * 10) / 10, 'cm', (v) => {
+    const np = tracerALongueur(pts, v, bout === 'a');
+    if (!np) { toast('Longueur impossible pour ce tracé.'); renderInspector(); return; }
+    d.pts = np; commit();
+    toast(`Gaine ${v > L ? 'allongée' : 'raccourcie'} : ${fmtLenU(v)}${bout === 'a' ? ' (le départ a bougé)' : ''}.`);
+  }, { id: 'f-dlen', min: 1, max: 100000 });
+  return sec('Longueur du tracé', champ,
+    libreA && libreB ? segCtl([{ v: 'b', n: 'Le bout d’arrivée bouge' }, { v: 'a', n: 'Le départ bouge' }], bout, (v) => { ui.gaineBout = v; renderInspector(); }) : null,
+    h('p', { class: 'note' }, `Tapez la longueur voulue : ${bout === 'b' ? 'le bout d’arrivée' : 'le départ'} avance ou recule dans le prolongement du tracé${libreA !== libreB ? ' (l’autre bout est raccordé à un appareil et ne bouge pas)' : ''}. Les verticales jusqu’aux appareils s’ajoutent à cette longueur.`));
 }
 /* remplissage d'une gaine (toujours « vérification nécessaire ») */
 function remplissageLigne(d) {

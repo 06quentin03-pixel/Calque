@@ -1,5 +1,29 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-13 — Onglet « Schémas » : éditeur de schémas électriques
+Demande de l'utilisateur : une seconde application dans Calque, pour dessiner des schémas électriques simples à industriels, indépendants du plan du bâtiment. Choix de l'utilisateur : onglet du projet ; schémas développés, distribution, borniers et armoires, schémas de principe ; folios et renvois, repères automatiques, nomenclature automatique, exports PDF, DXF, SVG ; indépendant avec import du tableau.
+- **Onglet « Schémas »** à côté de Plan, 3D, Tableau et Chantier : folios A3 paysage avec cadre, colonnes numérotées et cartouche (projet, client, affaire, date, indice, folio n / N).
+- **Bibliothèque de 45 symboles** inspirés de la CEI 60617 (dessin simplifié de Calque) : disjoncteurs 1 à 4 pôles, disjoncteur moteur, interrupteurs différentiels, sectionneurs, fusibles, relais thermique, parafoudre ; bobines de contacteur, relais, temporisation, télérupteur, minuterie ; contacts NO, NF, temporisés, thermique, pôles de puissance ; boutons, arrêt d'urgence, interrupteur, va-et-vient, fin de course, détecteur, voyant, sonnerie ; moteurs, lampe, chauffage, prise, transformateur, alimentation, variateur, compteur, terre ; automate (entrées, sorties) ; bornes de bornier, étiquettes de potentiel, renvois de folio. Recherche, catégories, récents.
+- **Dessin** au Pencil, au doigt ou à la souris : poser (grille de 5 mm, rotation, miroir), un symbole posé sur un fil s'y insère ; fils d'équerre accrochés aux bornes et aux autres fils (jonctions dessinées) ; déplacer (les fils raccordés suivent), décaler un tronçon, raccrocher un bout ; sélection par rectangle ; textes ; dupliquer ; Annuler / Rétablir et enregistrement comme le reste du projet. En mode Apple Pencil, le doigt déplace la feuille ; deux doigts zooment.
+- **Calculé automatiquement** : repères (Q1, KM1, S2, X1…), un contact prend le repère de la dernière bobine ; numéros des bornes des contacts (13-14, 21-22…) ; équipotentielles et numéros de fils (folio × 100 + rang, ou nom de potentiel L1, N, 24V… reliant tous les folios) ; renvois croisés bobine ↔ contacts en « folio.colonne » ; renvois de folio.
+- **Listes** : nomenclature (repère, appareil, désignation, composition, référence saisie, folios, quantités), borniers, liste des fils de borne à borne, contrôles du schéma (bobines en double, contacts sans appareil, bornes en double, renvois sans correspondant, symboles non raccordés).
+- **Modèles** : démarrage direct d'un moteur (puissance, commande, auto-maintien, bornier), inverseur de sens de marche (verrouillage électrique), télérupteur, va-et-vient ; repères renumérotés s'ils sont déjà pris dans le projet.
+- **Depuis le tableau du plan** : folios de distribution modifiables (différentiels, un disjoncteur 1P+N par circuit avec repère, calibre, section et désignation).
+- **Exports** : dossier PDF (folios, nomenclature, borniers, liste des fils), folio en SVG et en DXF en vraie grandeur (millimètres, un calque par nature d'élément).
+- **Format des plans v14** (`schemas`) avec migration et copie de sécurité. Sur iPad, l'onglet « Tableau électrique » s'affiche « Tableau » pour faire de la place.
+- Plan d'exemple : les quatre modèles et la distribution de son tableau.
+- Service Worker : cache `calque-v44`. Tests : **175/175** (nouveau : `tests/schemas.test.mjs`, 4 tests).
+
+## 2026-11-13 — Demandes de l'utilisateur sur les gaines (après la fusion n°11)
+- **Gaine encastrée dans la cloison** : nouvelle pose « Cloison » (fiche de la gaine, 3D, outil Câbler, raccordement automatique), à la hauteur indiquée. Les verticales jusqu'aux appareils sont comptées ; un angle de mur n'est pas compté comme un percement ; un tronçon tracé hors de l'épaisseur des murs est signalé (point d'attention) ; l'itinéraire ne passe pas par une porte.
+- **Masquer les gaines** : interrupteur « Gaines et chemins de câbles » dans le menu Affichage. L'outil Conduit les fait réapparaître.
+- **Sortie de câble radiateur** (famille Chauffage) : rattachée au circuit de chauffage, puissance du radiateur à saisir, fil pilote compté par le moteur de câblage.
+- **Boîte de dérivation murale** (famille Tableau et énergie) : au mur, hauteur réglable (220 cm proposés) ; comme la boîte de plafond, c'est un point de passage des circuits (sans circuit propre), comptée dans le matériel.
+- **Longueur d'une gaine** : champ « Longueur horizontale du tracé » dans la fiche ; le bout libre avance ou recule dans le prolongement du tracé (coudes retirés si on raccourcit au-delà) ; si les deux bouts sont libres, on choisit celui qui bouge ; une gaine raccordée aux deux bouts l'explique.
+- **Format des plans v13** (pose « cloison », nouveaux symboles) avec migration et copie de sécurité.
+- Plan d'exemple : boîte de dérivation murale et gaine dans le mur du local technique jusqu'à une sortie de câble radiateur.
+- Service Worker : cache `calque-v43`. Tests : **171/171** (nouveau : `tests/gaines.test.mjs`, 2 tests).
+
 ## 2026-11-13 — Module « Plans électriques » : câblage, calques, circuits, tableau, exports
 Évolution majeure demandée par l'utilisateur, intégrée à Calque sans rien reconstruire (audit et architecture : `docs/MODULE_ELECTRIQUE.md`). Branche `claude/calque-electrical-plans-module-tbt1ea`.
 - **Moteur de câblage** (`js/cablage.js`, sans écran) : pour chaque circuit, l'arbre des gaines du tableau à chaque point, et **les conducteurs de chaque tronçon** : phase, neutre, terre, retours de lampe, navettes des va-et-vient (et permutateurs), fil de commande des télérupteurs, fil pilote du chauffage, montée et descente des volets, triphasé. Désignation « 3G1,5 », « 5G2,5 », « 2 × 1,5 » ; longueurs par fonction de conducteur. Valeurs **estimées** (schéma de câblage usuel).

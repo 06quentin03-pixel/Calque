@@ -10,13 +10,15 @@ import { P, blankPlan, inPoly, projSeg, setP, touch, uid, vdot, vsub } from './n
 import { geo, syncRooms } from './geometrie.js';
 import { addWall, clampOpening } from './mutations.js';
 import { ELEC_BY, FURN_BY } from './symboles.js';
-import { generateFromPlan } from './electricite.js';
+import { generateFromPlan, circNumbers } from './electricite.js';
 import { makeElecFromDef, makeItemFromDef, newOpening } from './interaction.js';
 import { copyWalls } from './interface.js';
 import { articlesFor } from './technique.js';
 import { REGLES_VERSION } from './regles.js';
 import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
 import { dupliquer, initialiser } from './variantes.js';
+import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
+import { agcpLabel } from './elecdonnees.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -302,6 +304,7 @@ function samplePlan() {
   variantesExemple();
   chiffrageExemple();
   plansElectriquesExemple();
+  schemasExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
 }
@@ -329,6 +332,13 @@ function plansElectriquesExemple() {
     for (const l of P.links.filter((k) => k.a === im.id)) P.links.push({ id: uid('k'), lv: 'L1', a: vv.id, b: l.b });
     vers('L1', { x: 1700, y: im.y }, vv, { pose: 'sol' });
   }
+  /* local technique : boîte de dérivation murale reliée par le plafond, puis gaine encastrée dans le mur (le long de son axe)
+     jusqu'à une sortie de câble radiateur (puissance d'exemple saisie) sur le circuit de chauffage des locaux */
+  const ch = P.circuits.find((c) => c.kind === 'chauffage' && P.elec.some((e) => e.cid === c.id && e.x >= X0 && e.x <= X1));
+  const dm = sym('L0', 'derivation_mur', X0 + 15, 150, 270, { h: 220 });
+  const sr = sym('L0', 'sortie_rad', X0 + 15, 70, 270, Object.assign({ h: 20, p: 1000 }, ch ? { cid: ch.id } : {}));
+  gaine('L0', [{ x: 1500, y: 300 }, { x: 1500, y: 150 }, { x: X0 + 28, y: 150 }], { b: dm.id }); // piquée sur la gaine IRL des locaux
+  gaine('L0', [{ x: X0 + 28, y: dm.y }, { x: X0, y: dm.y }, { x: X0, y: sr.y }, { x: X0 + 28, y: sr.y }], { a: dm.id, b: sr.id, pose: 'cloison', z: 20, dia: 20, cid: ch ? ch.id : undefined });
   const eclAtelier = P.circuits.filter((c) => c.kind === 'eclairage' && P.elec.some((e) => e.cid === c.id && e.type === 'reglette')).map((c) => c.id);
   P.vues = [{ id: 'vu-ex-atelier', nom: 'Atelier : éclairage câblé', off: ['mobilier', 'prises', 'specialises', 'faibles', 'annotations', 'cotations'], fade: ['archi'], circs: eclAtelier }];
 }
@@ -397,6 +407,15 @@ function chiffrageExemple() {
   for (const [k, v] of Object.entries(prix)) c.prix[k] = { v, st: 'saisie', src };
   for (const [k, v] of Object.entries(temps)) c.temps[k] = { v, st: 'saisie', src };
   P.chiffrage = c;
+}
+
+/* onglet « Schémas » : les modèles de Calque (démarrage direct, inverseur, télérupteur, va-et-vient) et la distribution
+   créée depuis le tableau du plan. Aucune référence de matériel : elles restent à saisir. */
+function schemasExemple() {
+  const sch = schemasDe(P);
+  for (const m of ['demarrage', 'inversion', 'telerupteur', 'vaetvient']) appliquerModele(sch, m);
+  const inst = P.install || {};
+  depuisTableau(sch, P, { reperes: circNumbers(), arrivee: `Arrivée : disjoncteur de branchement ${agcpLabel(inst.kva, inst.reseau)} (${inst.kva} kVA, valeurs estimées)` });
 }
 
 export { NOM_EXEMPLE, samplePlan };

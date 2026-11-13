@@ -20,7 +20,10 @@ const POSES = {
   sol: { n: 'Dans le sol', court: 'Sol', note: 'Dans la dalle ou le plancher : la gaine remonte jusqu’à chaque appareil.' },
   plafond: { n: 'Au plafond', court: 'Plafond', note: 'Dans le faux plafond ou les combles : la gaine redescend jusqu’à chaque appareil.' },
   hauteur: { n: 'À une hauteur donnée', court: 'Hauteur', note: 'En apparent ou en plinthe, à la hauteur indiquée au-dessus du sol fini.' },
+  cloison: { n: 'Encastrée dans la cloison', court: 'Cloison', note: 'Dans l’épaisseur d’un mur ou d’une cloison, à la hauteur indiquée : la gaine suit la cloison sans la traverser (les angles de mur ne comptent pas comme des percements).' },
 };
+/* poses dont le parcours horizontal est à une hauteur saisie (z, en cm au-dessus du sol fini) */
+const poseAHauteur = (pose) => pose === 'hauteur' || pose === 'cloison';
 const POSE_IDS = Object.keys(POSES);
 const RESERVE_DEFAUT = { v: 10, st: 'estimee', src: 'Valeur par défaut de Calque : chutes, raccordements et lovage dans les boîtes' };
 /* symboles « passage » : le câble les traverse sans s'y raccorder (pas de hauteur propre) */
@@ -80,7 +83,7 @@ function hauteurParcours(plan, d) {
   if (!isElecDuct(d)) return null;
   if (d.pose === 'sol') return 0;
   if (d.pose === 'plafond') return hauteurNiveau(niveau(plan, d.lv));
-  if (d.pose === 'hauteur' && isNum(d.z)) return d.z;
+  if (poseAHauteur(d.pose) && isNum(d.z)) return d.z;
   return null;
 }
 /* index des symboles par identifiant (on peut passer celui de l'application pour éviter de le reconstruire) */
@@ -131,7 +134,9 @@ function jumelle(plan, e, idx) {
    passages entre étages (différence d'altitude entre les parcours des deux niveaux). Distances en cm. */
 const TOL_JONCTION = 3; // cm : une extrémité libre à moins de 3 cm d'une autre gaine s'y raccorde
 /* symboles que le câble d'un autre circuit peut traverser (boîte, passage, gaine technique, tableau) */
-const PASSIFS = new Set(['tableau', 'tab_div', 'derivation', 'gtl', TRAVERSEE]);
+/* boîtes de dérivation (au plafond ou murale) : points de connexion, sans circuit propre */
+const DERIVATIONS = new Set(['derivation', 'derivation_mur']);
+const PASSIFS = new Set(['tableau', 'tab_div', ...DERIVATIONS, 'gtl', TRAVERSEE]);
 const GCACHE = new WeakMap();
 function signature(plan) {
   return JSON.stringify([(plan.circuits || []).map((c) => c.id), (plan.ducts || []).filter(isElecDuct), (plan.elec || []).map((e) => [e.id, e.lv, e.type, e.x, e.y, e.rot, e.h, e.to, e.cid]), (plan.levels || []).map((l) => [l.id, l.elev, l.h])]);
@@ -298,6 +303,30 @@ function longueurDuPlan(plan, cid) {
   return { L: { v: Math.round(ch.Lmax) / 100, st: 'estimee', src }, ch };
 }
 
+/* ---------------- longueur d'un tracé saisie ----------------
+   Nouveaux points d'une polyligne de longueur L (cm), en gardant le bout de départ : le dernier tronçon s'allonge dans
+   son prolongement, ou le tracé est raccourci en retirant ce qui dépasse (coudes compris). depuisFin : on garde le bout
+   d'arrivée et c'est le départ qui bouge. Renvoie null si le tracé n'a pas de longueur ou si L n'est pas valide. */
+function tracerALongueur(pts, L, depuisFin) {
+  if (!Array.isArray(pts) || pts.length < 2 || !(L > 0)) return null;
+  const P0 = depuisFin ? pts.slice().reverse() : pts.slice();
+  const out = [{ x: P0[0].x, y: P0[0].y }];
+  let reste = L;
+  for (let i = 1; i < P0.length; i++) {
+    const a = P0[i - 1], b = P0[i], l = dist(a, b);
+    if (l < 1e-9) continue;
+    const dernier = i === P0.length - 1;
+    if (reste <= l + 1e-9 || dernier) {
+      const k = reste / l; // > 1 sur le dernier tronçon : prolongement
+      out.push({ x: Math.round((a.x + (b.x - a.x) * k) * 10) / 10, y: Math.round((a.y + (b.y - a.y) * k) * 10) / 10 });
+      reste = 0; break;
+    }
+    out.push({ x: b.x, y: b.y }); reste -= l;
+  }
+  if (out.length < 2 || longueurPolyligne(out) < 0.5) return null;
+  return depuisFin ? out.reverse() : out;
+}
+
 /* ---------------- nettoyage (migration et import) ---------------- */
 /* champs v6 d'une gaine électrique : kind, pose, z (cm), lw / lh (mm), cids. Valeur invalide → retirée (rien de deviné). */
 function nettoyerGaine(d) {
@@ -305,6 +334,7 @@ function nettoyerGaine(d) {
   if ('kind' in d && !KINDS.includes(d.kind)) delete d.kind;
   if ('pose' in d && !POSE_IDS.includes(d.pose)) delete d.pose;
   if ('z' in d && !(isNum(d.z) && d.z >= 0 && d.z <= 2000)) delete d.z;
+  if ('z' in d && !poseAHauteur(d.pose)) delete d.z; // hauteur seulement pour une pose « à une hauteur » ou « dans la cloison »
   for (const k of ['lw', 'lh']) if (k in d && !(isNum(d[k]) && d[k] > 0 && d[k] <= 2000)) delete d[k];
   if ('cids' in d) {
     const l = Array.isArray(d.cids) ? [...new Set(d.cids.filter((x) => typeof x === 'string' && x && x !== d.cid))] : [];
@@ -323,6 +353,7 @@ function nettoyerZone(z) {
   return o;
 }
 
+export { DERIVATIONS, poseAHauteur, tracerALongueur };
 export { KINDS, PASSIFS, aCommander, cheminCircuit, grapheGaines, gainePourCircuit, longueurDuPlan, plusCourts, reserveDe, tableauDu, POSES, POSE_IDS, RESERVE_DEFAUT, TRAVERSEE, TYPES_CHEMIN, altNiveau, ancrage, circuitsDe, hauteurNiveau,
   hauteurParcours, hauteurSymbole, indexElec, isElecDuct, jumelle, kindOf, longueurGaine, longueurPolyligne, niveau,
   nettoyerGaine, nettoyerZone, nomChemin, pointsGaine, sectionNominale, tailleChemin, typeChemin };

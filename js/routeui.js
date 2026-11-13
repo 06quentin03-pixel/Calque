@@ -111,7 +111,7 @@ function departPour(e) {
   const cands = [];
   if (T.lv === e.lv) cands.push(T);
   const G = grapheGaines(P), sp = G.nodes.has('e:' + T.id) ? plusCourts(G, 'e:' + T.id, e.cid) : { D: new Map() };
-  for (const x of P.elec) if (x.lv === e.lv && x.id !== e.id && x.id !== T.id && sp.D.has('e:' + x.id) && (x.cid === e.cid || x.type === TRAVERSEE || x.type === 'derivation')) cands.push(x);
+  for (const x of P.elec) if (x.lv === e.lv && x.id !== e.id && x.id !== T.id && sp.D.has('e:' + x.id) && (x.cid === e.cid || x.type === TRAVERSEE || x.type === 'derivation' || x.type === 'derivation_mur')) cands.push(x);
   if (!cands.length) return { raison: 'Aucun point de ce niveau n’est raccordé au tableau : posez un passage entre étages relié au niveau du tableau, et raccordez-le.' };
   const a = ancrage(e);
   cands.sort((p, q) => Math.hypot(ancrage(p).x - a.x, ancrage(p).y - a.y) - Math.hypot(ancrage(q).x - a.x, ancrage(q).y - a.y));
@@ -157,7 +157,7 @@ EXT.overlay.push((c, px) => {
    suivi(i, n) est appelé avant chaque circuit (affichage de l'avancement). Renvoie { gaines, points, echecs, len }. */
 async function raccorderAuto(cids, suivi) {
   const bilan = { gaines: 0, echecs: [], len: 0, circuits: 0 };
-  const pose = S.ductPose === 'hauteur' && !Number.isFinite(S.ductZ) ? null : S.ductPose || null;
+  const pose = (S.ductPose === 'hauteur' || S.ductPose === 'cloison') && !Number.isFinite(S.ductZ) ? null : S.ductPose || null;
   for (let i = 0; i < cids.length; i++) {
     if (suivi) { suivi(i, cids.length); await new Promise((r) => setTimeout(r, 0)); }
     const r = raccorderCircuit(P, cids[i], { pose });

@@ -105,7 +105,7 @@ for (const d of [40, 63, 90]) add('conduits', `tpc-${d}`, `Gaine TPC Ø${d}`, { 
 /* boîtes et coffrets */
 add('boites', 'be-67-40', 'Boîte d’encastrement Ø67 profondeur 40 mm', { appareil: 'boîte', dia: 67, prof: 40 });
 add('boites', 'be-67-50', 'Boîte d’encastrement Ø67 profondeur 50 mm', { appareil: 'boîte', dia: 67, prof: 50 });
-add('boites', 'bd', 'Boîte de dérivation', { appareil: 'boîte de dérivation' }, ['derivation']);
+add('boites', 'bd', 'Boîte de dérivation', { appareil: 'boîte de dérivation' }, ['derivation', 'derivation_mur']);
 for (const r of [1, 2, 3, 4]) add('boites', `cof-${r}r13`, `Coffret ${r} rangée${r > 1 ? 's' : ''} de 13 modules`, { appareil: 'coffret', rangees: r, modules: 13 }, ['tableau', 'tab_div']);
 add('boites', 'gtl-250', 'Gaine technique logement (GTL) 250 mm', { appareil: 'GTL', larg: 250 }, ['gtl']);
 

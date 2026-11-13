@@ -68,13 +68,14 @@ class SvgCtx extends PdfCtx {
   fillText(s, x, y) { this._texte(s, x, y, false); }
   strokeText(s, x, y) { this._texte(s, x, y, true); }
   /* fichier SVG : viewBox en centimètres du plan ; taille d'impression au 1:100 (1 m du plan = 1 cm) ; titre facultatif */
-  svg(box, titre) {
+  /* unite : 'cm' (plan : impression au 1:100) ou 'mm' (schéma : vraie grandeur) */
+  svg(box, titre, unite) {
     const out = this.el.slice();
     /* groupes de découpe encore ouverts (dessin interrompu) */
     const reste = this.ouverts + this.st.reduce((s, x) => s + (typeof x[x.length - 1] === 'number' ? x[x.length - 1] : 0), 0);
     for (let i = 0; i < reste; i++) out.push('</g>');
     const W = box.x1 - box.x0, H = box.y1 - box.y0;
-    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${r2(box.x0)} ${r2(box.y0)} ${r2(W)} ${r2(H)}" width="${r2(W / 10)}mm" height="${r2(H / 10)}mm">\n${titre ? `<title>${esc(titre)}</title>\n` : ''}<rect x="${r2(box.x0)}" y="${r2(box.y0)}" width="${r2(W)}" height="${r2(H)}" fill="#ffffff"/>\n${out.join('\n')}\n</svg>\n`;
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${r2(box.x0)} ${r2(box.y0)} ${r2(W)} ${r2(H)}" width="${r2(unite === 'mm' ? W : W / 10)}mm" height="${r2(unite === 'mm' ? H : H / 10)}mm">\n${titre ? `<title>${esc(titre)}</title>\n` : ''}<rect x="${r2(box.x0)}" y="${r2(box.y0)}" width="${r2(W)}" height="${r2(H)}" fill="#ffffff"/>\n${out.join('\n')}\n</svg>\n`;
   }
 }
 

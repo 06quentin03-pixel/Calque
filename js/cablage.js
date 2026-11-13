@@ -48,7 +48,7 @@ const PERMUT = new Set(['permut']);
 const BP = new Set(['bp', 'bp_voy', 'bouton_scen']);
 const DETECT = new Set(['det_pres', 'det_plaf', 'int_crep']);
 const MULTI = { int_d: 2, vv_double: 2, int_triple: 3 };
-const RADIATEURS = new Set(['rad_elec', 'seche_serv_e', 'soufflant_sdb']);
+const RADIATEURS = new Set(['rad_elec', 'sortie_rad', 'seche_serv_e', 'soufflant_sdb']);
 const MOTEURS_VOLET = new Set(['volet_mot', 'velux_mot', 'volet_bat']);
 const CMD_VOLET = new Set(['cmd_vr']);
 const TRI_TYPES = new Set(['pc_tri']);
@@ -66,7 +66,7 @@ function estTri(plan, c) {
    Renvoie { reseaux: [{ fn, ends: Set(ids ou ROOT), groupe }], notes: [], anomalies: [] }.
    Les anomalies sont des constats de conception (pas des règles de la norme). */
 function reseauxCircuit(plan, c) {
-  const membres = (plan.elec || []).filter((e) => e.cid === c.id && e.type !== TRAVERSEE && e.type !== 'derivation');
+  const membres = (plan.elec || []).filter((e) => e.cid === c.id && e.type !== TRAVERSEE && e.type !== 'derivation' && e.type !== 'derivation_mur');
   const R = [], notes = [], anomalies = [];
   const net = (fn, ends, groupe) => { const s = new Set(ends); if (s.size >= 2) R.push({ fn, ends: s, groupe: groupe || null }); };
   const ids = (l) => l.map((e) => e.id);

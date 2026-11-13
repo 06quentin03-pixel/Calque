@@ -140,7 +140,7 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 12;
+const PLAN_VERSION = 14;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
@@ -151,6 +151,7 @@ function blankPlan(name) {
     chantier: { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] },
     chiffrage: { prix: {}, temps: {} },
     calques: {}, vues: [],
+    schemas: { folios: [] },
   };
 }
 function normalizePlan(p) {
@@ -168,6 +169,7 @@ function normalizePlan(p) {
   for (const k of ['prix', 'temps']) if (!o.chiffrage[k] || typeof o.chiffrage[k] !== 'object' || Array.isArray(o.chiffrage[k])) o.chiffrage[k] = {};
   if (!o.calques || typeof o.calques !== 'object' || Array.isArray(o.calques)) o.calques = {};
   if (!Array.isArray(o.vues)) o.vues = [];
+  if (!o.schemas || typeof o.schemas !== 'object' || Array.isArray(o.schemas) || !Array.isArray(o.schemas.folios)) o.schemas = { folios: [] };
   if (!o.levels.length) o.levels = blankPlan().levels;
   return o;
 }

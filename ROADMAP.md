@@ -107,7 +107,8 @@ Travail continu, sans validation par phase (demande de l'utilisateur du 9 novemb
 - ✅ Import DXF essayé sur deux vrais plans : unité fausse du fichier écartée, reconnaissance indépendante du cadrage, porte près d'un angle, petits vides ignorés (2 tests).
 - ⬜ Suite envisagée, par ordre de valeur : (murs), routage automatique de tous les circuits, détection des murs sur un fond de plan.
 
-## Module « Plans électriques » (13 novembre 2026) ✅ (à essayer sur iPad, puis à fusionner)
+## Module « Plans électriques » (13 novembre 2026) ✅ (fusionné, demande n°11)
+- ✅ Demandes de l'utilisateur (après la fusion) : gaine encastrée dans la cloison, interrupteur « Gaines » dans Affichage, sortie de câble radiateur, boîte de dérivation murale, longueur du tracé d'une gaine (format v13, `tests/gaines.test.mjs`).
 Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : `docs/MODULE_ELECTRIQUE.md`.
 - ✅ Moteur de câblage (conducteurs par tronçon, navettes, retours, commandes, fil pilote, volets, triphasé) (`js/cablage.js`, 5 tests).
 - ✅ Calques (masquer, verrouiller, couleur, opacité, nom) et vues « Plans électriques » prédéfinies et enregistrées (`js/calques.js`, `js/calquesui.js`).
@@ -117,6 +118,13 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Matériel et quantitatif reliés au plan ; exports SVG, plans électriques du dossier PDF avec légendes (`js/svgexport.js`).
 - ✅ Format v12 avec migration ; plan d'exemple complété ; 7 tests d'écran (`tests/planselec.test.mjs`).
 - ⬜ Pistes suivantes, par valeur : itinéraire d'un étage à l'autre en un geste ; câblage en boîtes de dérivation (au lieu de l'étoile) au choix ; reconnaissance des symboles d'un plan importé (DXF : blocs nommés) ; comparaison de deux plans (au-delà des variantes) ; liste des réservations et passages techniques à transmettre au gros œuvre.
+
+## Onglet « Schémas » (13 novembre 2026) ✅ (à essayer sur iPad, puis à fusionner)
+- ✅ Folios A3, cartouche, colonnes ; 45 symboles CEI simplifiés ; fils d'équerre, jonctions, insertion dans un fil ; Pencil, doigt, pincement.
+- ✅ Repères, numéros de contacts, équipotentielles et numéros de fils, potentiels et renvois entre folios, renvois croisés.
+- ✅ Nomenclature, borniers, liste des fils, contrôles ; modèles (démarrage direct, inverseur, télérupteur, va-et-vient) ; import du tableau du plan.
+- ✅ Exports : dossier PDF, SVG et DXF du folio ; format v14 ; plan d'exemple ; `tests/schemas.test.mjs`.
+- ⬜ Pistes : plus de modèles (étoile-triangle, pompe de relevage, éclairage de secours), symboles personnalisés, câbles (W1…) et leurs conducteurs, liste des câbles, renvoi automatique des potentiels en tête de folio, schémas d'armoire en vue de face.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

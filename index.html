@@ -55,6 +55,25 @@
 .seg.exp-fmt button { flex: 1 1 auto; }
 .qt-voir { float: right; margin: 0 0 4px 8px; min-height: 32px; }
 .ci-fil { display: inline-block; width: 10px; height: 10px; border-radius: 5px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.2); }
+
+/* ---- schémas électriques (onglet « Schémas ») ---- */
+.sch-work { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 8px; min-width: 0; min-height: 0; }
+.sch-bar { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sch-folios { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; flex: 1 1 auto; min-width: 0; padding: 2px; }
+.sch-folios::-webkit-scrollbar { display: none; }
+.sch-folios .chip { flex: none; height: 36px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sch-acts { display: flex; gap: 4px; flex: none; }
+.sch-acts .btn { min-height: 36px; }
+.sch-stage { background: #E9ECE7; touch-action: none; }
+.sch-stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.sch-lib { display: flex; flex-direction: column; min-height: 0; }
+.sch-lib .grid-cat { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); }
+.sch-lib .card { min-height: 112px; }
+.sch-tab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.sch-tab th, .sch-tab td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.sch-tab th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
+.sch-net { display: inline-block; min-width: 34px; padding: 1px 6px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--rule); font-family: var(--f-num); font-size: 12px; font-weight: 650; }
+@media (max-width: 760px) { .sch-bar { flex-wrap: wrap; } .sch-acts { width: 100%; overflow-x: auto; } }
 </style></head><body>
 <title>Calque Plans</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -452,7 +471,9 @@ button.ev-chk:hover { background: var(--panel-2); }
 .ev-dot.warnd { background: var(--warn); }
 .li.vchk { font-size: 12.5px; line-height: 1.3; align-items: start; }
 .li.vchk .ev-dot { margin-top: 4px; }
-@media (max-width: 1099px) { .vt-long { display: none; } }
+@media (max-width: 1199px) { .vt-long { display: none; } } /* « Tableau » au lieu de « Tableau électrique » : place pour l'onglet Schémas */
+/* cinq onglets (Schémas ajouté) : le nom du plan reste lisible en iPad portrait */
+@media (max-width: 1099px) and (min-width: 761px) { .vtabs button { padding: 0 6px; font-size: 12px; } }
 .fpill .fp-main > span:not(.fp-ic) { white-space: nowrap; flex: none; }
 .ib.info { display: none; }
 @media (max-width: 1099px) { .ib.info { display: grid; } }
@@ -655,7 +676,7 @@ button.ev-chk:hover { background: var(--panel-2); }
       <b>CALQUE</b>
     </div>
     <button class="proj" id="btnProj" title="Mes plans"><span id="projName">Plan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
-    <div class="seg vtabs" role="group" aria-label="Vue"><button type="button" class="vtab" data-view="plan" aria-pressed="true">Plan</button><button type="button" class="vtab" data-view="3d" aria-pressed="false">3D</button><button type="button" class="vtab" data-view="elec" aria-pressed="false">Tableau<span class="vt-long"> électrique</span></button><button type="button" class="vtab" data-view="chantier" aria-pressed="false">Chantier</button></div>
+    <div class="seg vtabs" role="group" aria-label="Vue"><button type="button" class="vtab" data-view="plan" aria-pressed="true">Plan</button><button type="button" class="vtab" data-view="3d" aria-pressed="false">3D</button><button type="button" class="vtab" data-view="elec" aria-pressed="false">Tableau<span class="vt-long"> électrique</span></button><button type="button" class="vtab" data-view="chantier" aria-pressed="false">Chantier</button><button type="button" class="vtab" data-view="schema" aria-pressed="false">Schémas</button></div>
     <div class="levels" id="levels" role="toolbar" aria-label="Niveaux"></div>
     <div class="spacer"></div>
     <span class="save" id="saveState" data-s="ok"><i></i><b id="saveTxt">Enregistré</b></span>
@@ -730,6 +751,19 @@ button.ev-chk:hover { background: var(--panel-2); }
     <div class="v3-msg" id="v3msg" hidden><h3>3D indisponible</h3><p>Ce navigateur ne permet pas l’affichage 3D (WebGL 2). Sur iPad, mettez à jour iPadOS ou ouvrez Calque dans Safari.</p></div>
   </section>
 
+  <!-- schémas électriques : feuilles (folios) indépendantes du bâtiment (js/schemaui.js) -->
+  <div class="main sch" id="schemaView" hidden>
+    <nav class="toolbar" id="schTools" aria-label="Outils du schéma"></nav>
+    <section class="sch-work">
+      <div class="sch-bar" id="schBar"></div>
+      <div class="stage sch-stage" id="schStage">
+        <canvas id="schCv" aria-label="Schéma électrique" tabindex="0"></canvas>
+        <div class="hint" id="schHint" hidden></div>
+        <div class="zoom"><button class="ib" id="schZOut" aria-label="Dézoomer" title="Dézoomer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12"/></svg></button><button class="ib" id="schZFit" aria-label="Voir tout le folio" title="Voir tout le folio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg></button><button class="ib" id="schZIn" aria-label="Zoomer" title="Zoomer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg></button></div>
+      </div>
+    </section>
+    <aside class="insp" id="schInsp" aria-label="Propriétés du schéma"></aside>
+  </div>
   <div class="ev" id="elecView" hidden>
     <aside class="ev-side" id="evSide" aria-label="Circuits du tableau"></aside>
     <section class="ev-work">
