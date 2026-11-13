@@ -1537,7 +1537,7 @@ function v3Key3(e) {
   return false;
 }
 
-export { stairFootprint, tremieHoles };
+export { tremieHoles };
 export { CAM, CAT3, EL3, F3, FS_MAIN, FS_PICK, FS_SH, G3, GB, K3, LDIR, PT3, R3, TINT3, V3, V3DEF, VS_MAIN, VS_SH,
   build3D, camEye, camRay, camTo, camVP, circlePts, cleanRing, clipConvex, clipHalf, closet3, curLevel3, duct3, earcut,
   elec3, elecAccent, f3Def, fitCam3, floorCol3, furn3, glProgram, glowC, hexRGB, isConvex, itemHeight3, kBase,

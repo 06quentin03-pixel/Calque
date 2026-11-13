@@ -1216,7 +1216,6 @@ function updateStatus() {
   $('#lvArea').textContent = g.rooms.length ? 'Σ ' + fmtArea(tot) : '';
 }
 
-export { placeFromCatalog };
 export { CLOSET_MODELS, DOOR_MODELS, GAP_MODELS, K_screen, OPENING_ART, OPENING_MODELS, OPENING_NAMES, SCENE,
   SCENE_SLOW_MS, SCR, TAP, TOOLS, WIN_MODELS, clearWallLen, commit, commitLeger, contentBBox, coteLine, ctx, cv, downState, drag,
   drawOverlay, drawSelShape, drawSnapMarker, drawWallTags, evPos, finishChain, fitView, focusField, gest, gridSnapItem,
