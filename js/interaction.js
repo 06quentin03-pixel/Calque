@@ -1,6 +1,6 @@
 /* Calque — module « interaction » : interaction : vue, sélection, outils, aimantation, Apple Pencil.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, C, DEG, EXT, IDX, isNum, NF0, P, S, bboxOf, clamp, fmtArea, fmtLen, fmtLenU, inPoly, levelOf, levelsSorted, lineX,
+import { $, C, DEG, EXT, IDX, isNum, NF0, P, S, estExterieure, bboxOf, clamp, fmtArea, fmtLen, fmtLenU, inPoly, levelOf, levelsSorted, lineX,
   nodeOf, projSeg, saveSettings, setGEO, setP, snapTo, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
   vnorm, vperp, vsub } from './noyau.js';
 import { geo, roomOfLabel, syncRooms } from './geometrie.js';
@@ -13,7 +13,7 @@ import { calqueDeElec, calqueDeGaine, calqueVerrouille, calqueVisible } from './
 import { DEBUG, FONT_LABEL, K_, V, drawScene, pathPoly, setRC, setScreen, setWorld, textBox, w2s } from './rendu2d.js';
 import { CMDS, LINK_TARGETS, linkAnchor, toggleLink } from './electricite.js';
 import { closeDimEdit, dimHitAt, drawDuctDraft, ductAt, ductHandleDrag, ductHandles, ductLen, ductPts, ductTap,
-  elecVisible, openDimEdit, snapDuctPoint, syncDucts, updateFilterUI } from './reseaux.js';
+  elecVisible, openDimEdit, snapDuctPoint, syncDucts, updateFilterUI, creerColonne } from './reseaux.js';
 import { renderElecView } from './tableau.js';
 import { closePops, fmtIn, parseNum, renderInspector, renderLevels, setTool, toast, updateHint, wallMovingEnds } from './interface.js';
 import { scheduleSave } from './stockage.js';
@@ -885,6 +885,10 @@ function placeFromCatalog(wp) {
     placeElecAt(e, wp);
     P.elec.push(e); IDX.elec.set(e.id, e);
     ui.sel = { t: 'elec', id: e.id };
+    /* tableau posé sur un plan à plusieurs étages : sa colonne de passage est créée d'office (retirable dans son panneau) */
+    if (e.type === 'tableau' && P.levels.length > 1 && !P.elec.some((x) => x.type === 'traversee' && x.col && x.tab && x.tab !== e.id && IDX.elec.get(x.tab))) {
+      const r = creerColonne(e); toast(`Colonne de passage créée à l’aplomb du tableau sur ${r.membres.length} niveaux (panneau du tableau pour la retirer).`);
+    }
     commit();
   } else {
     const it = makeItemFromDef(pl.def, ui.lv);
@@ -1208,7 +1212,7 @@ function updateStatus() {
   const xy = $('#xy');
   if (ui.mouse) xy.textContent = 'x ' + fmtLen(ui.mouse.x) + '  y ' + fmtLen(ui.mouse.y); else xy.textContent = '';
   const g = geo(ui.lv);
-  const tot = g.rooms.reduce((s, r) => s + r.area, 0);
+  const tot = g.rooms.reduce((s, r) => s + (estExterieure(r.label) ? 0 : r.area), 0);
   $('#lvArea').textContent = g.rooms.length ? 'Σ ' + fmtArea(tot) : '';
 }
 

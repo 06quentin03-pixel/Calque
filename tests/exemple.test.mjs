@@ -35,14 +35,17 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
       relu: await (async () => { const E = await import('./js/export.js'), I = await import('./js/dxfimport.js'); const R = I.lireDxf(E.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).texte); const em = I.empriseDxf(R, null); return { unite: R.unite, traits: R.traits.length, textes: R.textes.length, larg: em.x1 - em.x0 }; })(),
       auto: await (async () => { const It = await import('./js/itineraire.js'); const q = JSON.parse(JSON.stringify(P)); q.ducts = q.ducts.filter((d) => d.sys !== 'elec'); const c = q.circuits.find((x) => q.elec.filter((e) => e.cid === x.id && e.lv === 'L0').length >= 4); const r = It.raccorderCircuit(q, c.id, {}); return { gaines: r.gaines.length, echecs: r.echecs.length, points: q.elec.filter((e) => e.cid === c.id).length }; })(),
       assistant: await (async () => { const a = (await import('./js/assistantui.js')).avancementDuPlan(); return { n: a.etapes.length, faites: a.faites, suivante: a.suivante, etats: Object.fromEntries(a.etapes.map((e) => [e.id, e.etat])) }; })(),
-      equip: await (async () => { const G = await import('./js/geometrie.js'), E = await import('./js/equipement.js'); const m = []; for (const L of P.levels) for (const r of G.geo(L.id).rooms) if (r.label && E.equiperPiece(P, { lv: L.id, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 1e4 }).poses.length) m.push(r.label.name); return m; })(),
+      equip: await (async () => { const G = await import('./js/geometrie.js'), E = await import('./js/equipement.js'); const m = []; for (const L of P.levels) for (const r of G.geo(L.id).rooms) if (r.label && E.equiperPiece(P, { lv: L.id, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 1e4, ext: N.horsHabitation(r.label) }).poses.length) m.push(r.label.name); return m; })(),
+      v15: { escQ: P.items.some((x) => x.type === 'esc_quart'), balcon: P.rooms.some((x) => x.ext === 'balcon' && x.lv === 'L1'), vide: P.rooms.some((x) => x.sol === 'vide'),
+        colonne: P.elec.filter((x) => x.type === 'traversee' && x.col && x.tab).map((x) => x.lv).sort(), parColonne: P.ducts.filter((d) => d.sys === 'elec' && P.elec.some((x) => x.col && (x.id === d.a || x.id === d.b))).length,
+        conds: P.ducts.filter((d) => d.conds).map((d) => Object.values(d.conds)[0].t).sort(), gc: P.walls.filter((w) => w.lv === 'L1' && w.h === 100).length },
       chapQt: dos.chapitres.some((c) => c.id === 'quantitatif'),
       ch: P.chantier, chap7: dos.chapitres.some((c) => c.id === 'chantier'),
       va: P.variantes && { n: P.variantes.liste.length, gammes: P.variantes.liste.map((e) => e.gamme), principale: P.variantes.principale === P.variantes.active, data: P.variantes.liste.filter((e) => e.data).length }, chapVar: dos.chapitres.some((c) => c.id === 'variantes'),
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 14);
+  assert.equal(r.v, 15);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -83,6 +86,10 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.assistant.n >= 9 && r.assistant.faites >= 4 && r.assistant.suivante); assert.equal(r.assistant.etats.chiffrage, 'afaire'); assert.equal(r.assistant.etats.chantier, 'attention');
   // équipement minimal : une pièce de l'exemple (le local technique) montre ce qui manque, à poser depuis son inspecteur
   assert.deepEqual(r.equip, ['Local technique']);
+  // demandes du 13 novembre 2026 (v15) : escalier en L, balcon de l'étage seul, vide sur entrée, colonne du tableau utilisée, conducteurs choisis
+  assert.ok(r.v15.escQ && r.v15.balcon && r.v15.vide, JSON.stringify(r.v15));
+  assert.deepEqual(r.v15.colonne, ['L0', 'L1']); assert.ok(r.v15.parColonne >= 1, 'gaines de l’étage raccordées à la colonne');
+  assert.deepEqual(r.v15.conds, ['h07vu', 'r2v']); assert.ok(r.v15.gc >= 7, 'garde-corps du balcon et du vide');
   // import DXF : le fichier exporté du plan d'exemple se relit (unité centimètres, même emprise à quelques cm près)
   assert.equal(r.relu.unite, 5); assert.ok(r.relu.traits > 1000 && r.relu.textes > 100 && r.relu.larg > 7000 && r.relu.larg < 8500, JSON.stringify(r.relu));
   // quantitatif et chiffrage : toutes les catégories, par pièce et par circuit ; prix d'exemple fictifs « saisie » avec origine,
@@ -116,7 +123,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 14);
+  assert.equal(r.v, 15);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);

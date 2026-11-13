@@ -91,7 +91,7 @@ test('écran : onglet Schémas, folio vide, bibliothèque, pose avec repère, fi
   const { ctx, page, errors } = await fresh();
   await seedPlan(ctx, { v: 13, id: 'pS', name: 'Schémas', levels: [{ id: 'L0', name: 'RDC', elev: 0, h: 250, slab: 20 }], nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [], circuits: [], rcds: [], links: [], ducts: [], install: { kva: 9 }, doc: { revisions: [] }, calques: {}, vues: [] });
   await boot(page);
-  let e = await etat(page); assert.equal(e.v, 14); assert.deepEqual(e.sch, { folios: [] });
+  let e = await etat(page); assert.equal(e.v, 15); assert.deepEqual(e.sch, { folios: [] });
   await page.click('.vtab[data-view=schema]'); await wait(page, 300);
   assert.equal(await page.isVisible('#schemaView'), true); assert.equal(await page.isVisible('#main'), false);
   await page.click('#schInsp >> text=Folio vide'); await wait(page, 300);

@@ -220,8 +220,17 @@ function arbre(plan, cid) {
   return { G, src, prev: sp.prev, D: sp.D };
 }
 
-/* type de conducteur d'un tronçon : celui du circuit, sinon déduit du cheminement (estimation) */
+/* choix fait pour un circuit dans une gaine (format v15, champ `conds` de la gaine) :
+   { t: 'h07vu' | 'r2v' | 'souple', n (câble seulement : nombre de conducteurs du câble choisi, facultatif) } */
+const NB_CABLE = [2, 3, 4, 5, 7, 12]; // nombres de conducteurs proposés pour un câble choisi (usuels, au choix)
+function choixGaine(d, cid) {
+  const x = d && d.conds && typeof d.conds === 'object' ? d.conds[cid] : null;
+  return x && CONDUCTEURS[x.t] ? x : null;
+}
+/* type de conducteur d'un tronçon : choix fait dans la gaine, sinon celui du circuit, sinon déduit du cheminement */
 function condTroncon(c, d) {
+  const g = choixGaine(d, c.id);
+  if (g) return { id: g.t, st: 'saisie', n: !CONDUCTEURS[g.t].fils && isNum(g.n) ? g.n : null, gaine: true };
   if (c.cond && CONDUCTEURS[c.cond]) return { id: c.cond, st: 'saisie' };
   const k = d ? kindOf(d) : null;
   if (k === 'cdc') return { id: 'r2v', st: 'estimee' };
@@ -229,6 +238,13 @@ function condTroncon(c, d) {
   return { id: null, st: 'estimee' }; // type de cheminement non précisé : « fil ou câble » (rien de deviné)
 }
 
+/* libellé de ce qui est posé : « 3 fils H07V-U 1,5 mm² » (fils, seulement les conducteurs utiles) ou « R2V 3G1,5 » */
+function libelleTroncon(cond, n, des, sec, desCable) {
+  if (!cond) return des;
+  const C = CONDUCTEURS[cond];
+  if (C.fils) return `${n} fil${n > 1 ? 's' : ''} ${C.court} ${fmtSec(sec)} mm²`;
+  return `${C.court} ${desCable || des}`;
+}
 /* désignation d'un ensemble de conducteurs : « 3G2,5 » (avec terre) ou « 2 × 1,5 » */
 function designation(compo, sec) {
   const n = compo.reduce((s, x) => s + x.n, 0);
@@ -286,15 +302,24 @@ function cablageCircuit(plan, c) {
     const did = ed.duct || (na && na.duct) || (nb && nb.duct) || null;
     const d = did ? A.G.ducts.get(did) : null;
     const cond = condTroncon(c, d);
+    const des = designation(compo, out.sec);
+    /* câble de N conducteurs choisi dans la gaine : conducteurs de réserve, ou anomalie s'il en manque */
+    let desCable = null;
+    if (cond.n) {
+      const pe = compo.some((x) => x.fn === 'PE');
+      desCable = pe ? `${cond.n}G${fmtSec(out.sec)}` : `${cond.n} × ${fmtSec(out.sec)}`;
+      if (cond.n < n) anomalies.push({ id: 'cb_cable_petit', niveau: 'erreur', msg: `Câble choisi (${desCable}) trop petit dans une gaine : ${n} conducteurs sont nécessaires (${libelleCompo(compo)}).`, refs: [], duct: d && d.id });
+    }
     const tr = { edge: eid, a: na ? { x: na.x, y: na.y } : null, b: nb ? { x: nb.x, y: nb.y } : null, lv: na ? na.lv : null, duct: ed.duct || null, kind: ed.kind,
-      h: ed.h, v: ed.v, compo, n, des: designation(compo, out.sec), cond: cond.id, condSt: cond.st };
+      h: ed.h, v: ed.v, compo, n, des, cond: cond.id, condSt: cond.st, condGaine: !!cond.gaine, desCable,
+      reserve: cond.n && cond.n > n ? cond.n - n : 0, libelle: libelleTroncon(cond.id, n, des, out.sec, desCable) };
     out.troncons.push(tr);
     out.maxConducteurs = Math.max(out.maxConducteurs, n);
     const L = ed.h + ed.v;
     for (const x of compo) out.longueurs[x.fn] = (out.longueurs[x.fn] || 0) + L * x.n;
     if (!cond.id || CONDUCTEURS[cond.id].fils) { for (const x of compo) out.fils[x.fn] = (out.fils[x.fn] || 0) + L * x.n; }
-    else { const k = `${CONDUCTEURS[cond.id].court} ${tr.des}`; out.cables[k] = (out.cables[k] || 0) + L; }
-    if (cond.id === 'h07vu' && d && kindOf(d) === 'cdc' && c.cond === 'h07vu')
+    else { const k = `${CONDUCTEURS[cond.id].court} ${desCable || tr.des}`; out.cables[k] = (out.cables[k] || 0) + L; }
+    if (cond.id === 'h07vu' && d && kindOf(d) === 'cdc' && cond.st === 'saisie')
       anomalies.push({ id: 'cb_fils_cdc', niveau: 'erreur', msg: 'Fils isolés (H07V-U) sur un chemin de câbles : un câble à gaine (par exemple U-1000 R2V) est attendu hors conduit.', refs: [], duct: d.id });
   }
   /* désignation principale : celle du tronçon qui part du tableau (le plus fréquent en longueur sinon) */
@@ -327,7 +352,7 @@ function cablagePlan(plan) {
     circuits.set(c.id, cab);
     for (const t of cab.troncons) {
       if (!parArete.has(t.edge)) parArete.set(t.edge, { a: t.a, b: t.b, lv: t.lv, duct: t.duct, kind: t.kind, h: t.h, liste: [] });
-      parArete.get(t.edge).liste.push({ cid: c.id, compo: t.compo, n: t.n, des: t.des, cond: t.cond });
+      parArete.get(t.edge).liste.push({ cid: c.id, compo: t.compo, n: t.n, des: t.des, cond: t.cond, libelle: t.libelle });
       if (t.duct) {
         const g = parGaine.get(t.duct) || { max: 0, circuits: new Set() };
         g.circuits.add(c.id); parGaine.set(t.duct, g);
@@ -413,5 +438,19 @@ function nettoyerCircuitV12(c) {
   return c;
 }
 
+/* nettoyage (migration v15) : choix des conducteurs par circuit dans une gaine (`conds` { cid: { t, n } }) */
+function nettoyerConds(d) {
+  if (!d || typeof d !== 'object' || !('conds' in d)) return d;
+  const o = {};
+  if (d.sys === 'elec' && d.conds && typeof d.conds === 'object' && !Array.isArray(d.conds)) for (const [cid, x] of Object.entries(d.conds)) {
+    if (!cid || !x || typeof x !== 'object' || !COND_IDS.includes(x.t)) continue;
+    const y = { t: x.t };
+    if (!CONDUCTEURS[x.t].fils && isNum(x.n) && Number.isInteger(x.n) && x.n >= 2 && x.n <= 24) y.n = x.n;
+    o[cid] = y;
+  }
+  if (Object.keys(o).length) d.conds = o; else delete d.conds;
+  return d;
+}
+export { NB_CABLE, choixGaine, libelleTroncon, nettoyerConds };
 export { COND_IDS, CONDUCTEURS, COURBES, FONCTIONS, NIVEAUX, ROOT, cablageCircuit, cablagePlan, circuitsDe, compoDe, controlesCablage, designation, estTri,
   libelleCompo, nettoyerCircuitV12, quantitesConducteurs, reseauxCircuit, resumeCircuit };

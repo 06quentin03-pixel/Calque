@@ -1,6 +1,6 @@
 /* Calque — module « export » : export : PDF intégré, image PNG, partage.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, NF1, NFc, P, S, clamp, fmtArea, fmtLenU, levelOf, levelsSorted, saveSettings, ui, uid } from './noyau.js';
+import { $, $$, NF1, NFc, P, S, estExterieure, clamp, fmtArea, fmtLenU, levelOf, levelsSorted, saveSettings, ui, uid } from './noyau.js';
 import { geo } from './geometrie.js';
 import { snapshot } from './historique.js';
 import { ELEC } from './symboles.js';
@@ -132,7 +132,7 @@ function drawScaleBar(c, x, y, s, L, fs) {
 }
 const fmtReal = (cm) => (cm >= 100 ? NFc.format(cm / 100) + ' m' : NFc.format(cm) + ' cm');
 const fmtDate = () => new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long' }).format(new Date());
-function levelsArea(lvs) { let s = 0; for (const L of lvs) for (const r of geo(L.id).rooms) s += r.area; return s; }
+function levelsArea(lvs) { let s = 0; for (const L of lvs) for (const r of geo(L.id).rooms) if (!estExterieure(r.label)) s += r.area; return s; }
 
 /* ---------------- image PNG ---------------- */
 function composePNG(o, maxPx) {

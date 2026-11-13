@@ -1,6 +1,6 @@
 /* Calque — module « rendu2d » : rendu 2D du plan (canvas).
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { C, DEG, EXT, IDX, P, S, bboxOf, clamp, fmtArea, fmtLen, inPoly, labelPoint, levelAbove, levelBelow, ui, vadd,
+import { C, DEG, EXT, IDX, P, S, estExterieure, bboxOf, clamp, fmtArea, fmtLen, inPoly, labelPoint, levelAbove, levelBelow, ui, vadd,
   vdist, vlen, vmid, vmul, vnorm, vperp, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToWorld } from './mutations.js';
@@ -57,6 +57,18 @@ const TINTS = ['', 't1', 't2', 't3', 't4', 't5', 't6'];
 const TINT_NAMES = ['Aucune', 'Sable', 'Sauge', 'Ciel', 'Rose', 'Lavande', 'Ardoise'];
 
 /* ---------------- scène ---------------- */
+/* lattes d'une terrasse ou d'un balcon : traits parallèles découpés par le contour (segments simples, compatibles DXF) */
+function lattes(c, r, pas, col) {
+  const rings = [r.poly, ...(r.holes || [])], bb = bboxOf(r.poly);
+  c.save(); c.strokeStyle = col; c.globalAlpha *= 0.35; c.lineWidth = 0.8 * RC.px; c.beginPath();
+  for (let y = Math.ceil(bb.y0 / pas) * pas; y < bb.y1; y += pas) {
+    const xs = [];
+    for (const g of rings) for (let i = 0; i < g.length; i++) { const a = g[i], b = g[(i + 1) % g.length]; if ((a.y <= y) !== (b.y <= y)) xs.push(a.x + ((y - a.y) / (b.y - a.y)) * (b.x - a.x)); }
+    xs.sort((p, q) => p - q);
+    for (let k = 0; k + 1 < xs.length; k += 2) { c.moveTo(xs[k], y); c.lineTo(xs[k + 1], y); }
+  }
+  c.stroke(); c.restore();
+}
 function drawScene(lv, opts) {
   opts = opts || {};
   VIEW = opts.export || RC !== SCR || DEBUG.includes('nocull') ? null : viewRect();
@@ -84,8 +96,11 @@ function drawSceneIn(lv, opts) {
       if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
       c.beginPath(); pathPoly(c, r.poly); for (const h of r.holes) pathPoly(c, h);
       const tint = r.label && r.label.tint ? Cc[TINTS[r.label.tint]] : null;
-      c.fillStyle = Cc.room; c.fill('evenodd');
+      const vide = r.label && r.label.sol === 'vide', ext = estExterieure(r.label);
+      c.fillStyle = vide ? Cc.paper : ext ? Cc.tone : Cc.room; c.fill('evenodd');
       if (tint) { c.fillStyle = tint; c.fill('evenodd'); }
+      if (ext) lattes(c, r, 30, Cc.ink2);
+      if (vide) { c.save(); c.setLineDash([8 * RC.px, 6 * RC.px]); c.strokeStyle = Cc.ink2; c.lineWidth = 1 * RC.px; c.beginPath(); pathPoly(c, r.poly); c.stroke(); c.restore(); }
     }
     alpha(1);
   }
@@ -119,6 +134,14 @@ function drawSceneIn(lv, opts) {
     lay('ELEC_LIAISONS');
     if (S.layers.links !== false) drawLinks(lv, opts);
     lay('ELEC_APPAREILS');
+    /* colonnes de passage : contour de la gaine technique, à l'aplomb du tableau */
+    for (const e of P.elec) {
+      if (e.lv !== lv || e.type !== 'traversee' || !e.col || !elecVisible(e)) continue;
+      const w = e.w || 30, d = e.d || 20; if (VIEW && !inView(e.x, e.y, Math.max(w, d))) continue;
+      const pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => itemToWorld(e, (a * w) / 2, (b * d) / 2));
+      c.save(); c.setLineDash([6 * RC.px, 4 * RC.px]); c.strokeStyle = K.elec; c.lineWidth = 1.2 * RC.px; c.beginPath(); pathPoly(c, pts); c.stroke();
+      c.beginPath(); c.moveTo(pts[0].x, pts[0].y); c.lineTo(pts[2].x, pts[2].y); c.moveTo(pts[1].x, pts[1].y); c.lineTo(pts[3].x, pts[3].y); c.stroke(); c.restore();
+    }
     for (const e of P.elec) {
       if (e.lv !== lv || !elecVisible(e)) continue;
       if (VIEW && !inView(e.x, e.y, elecSize(K) * 1.6 * (e.sc || 1))) continue;

@@ -125,6 +125,15 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Nomenclature, borniers, liste des fils, contrôles ; modèles (démarrage direct, inverseur, télérupteur, va-et-vient) ; import du tableau du plan.
 - ✅ Exports : dossier PDF, SVG et DXF du folio ; format v14 ; plan d'exemple ; `tests/schemas.test.mjs`.
 - ⬜ Pistes : plus de modèles (étoile-triangle, pompe de relevage, éclairage de secours), symboles personnalisés, câbles (W1…) et leurs conducteurs, liste des câbles, renvoi automatique des potentiels en tête de folio, schémas d'armoire en vue de face.
+- ✅ Mode « Tester » (simulation des contacts : auto-maintien, verrouillages, télérupteur, minuterie, protections, relais thermique ; fils sous tension en couleur) — `js/simulation.js`.
+- ⬜ Pistes du mode test : temporisations réelles (compte à rebours), entrées et sorties d'automate, chronogramme.
+
+## Demandes du 13 novembre 2026 ✅ (à essayer sur iPad, puis à fusionner)
+- ✅ Trémie à la forme de l'escalier (L, U, hélice), escalier sans trémie, sol de pièce supprimé.
+- ✅ Terrasse et balcon d'un seul niveau, garde-corps.
+- ✅ Colonne de passage du tableau sur tous les niveaux, utilisée par les longueurs et le raccordement automatique.
+- ✅ Conducteurs choisis gaine par gaine : fils, câble à la taille juste, câble avec réserve, câble souple.
+- ⬜ Pistes : terrasse sans murs (contour dessiné librement), colonne étendue automatiquement à un nouvel étage, choix des conducteurs aussi depuis la fiche de la gaine.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 13 novembre 2026, module « Plans électriques » (après la mission « développement autonome »).
+Mise à jour : 13 novembre 2026, demandes sur les escaliers, terrasses, colonne du tableau, câbles et test des schémas (format v15).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -83,6 +83,14 @@ Détail : `docs/MODULE_ELECTRIQUE.md`. **Fusionné dans `main` (demande n°11).*
 ## Onglet « Schémas » (13 novembre 2026)
 Éditeur de schémas électriques indépendant du bâtiment, rangé dans le projet (`P.schemas`, format **v14**) : `js/schemasymboles.js`, `js/schema.js` (sans écran), `js/schemaui.js`. Folios A3 avec cartouche, 45 symboles, fils d'équerre, repères et numéros de fils automatiques, renvois croisés, nomenclature, borniers, liste des fils, contrôles, 4 modèles, import du tableau, exports PDF / SVG / DXF. Tests : `tests/schemas.test.mjs`.
 
+## Demandes du 13 novembre 2026 (format v15, branche `claude/elegant-ritchie-zjivgm`)
+- Trémie à la forme réelle de l'escalier (`stairZones` dans `symboles.js`, `tremieHoles` dans `vue3d.js`), réglage `tremie: 'aucune'` ; sol d'une pièce supprimé (`sol: 'vide'` sur l'étiquette).
+- Terrasse et balcon d'un seul niveau (`ext` sur l'étiquette, `PIECES_EXT` / `estExterieure` dans `noyau.js`) : hors surface habitable et hors contrôles de pièces ; garde-corps de 100 cm.
+- Colonne de passage du tableau (`colonneTableau`, `membresColonne`, `tailleColonne` dans `cheminement.js` ; passages `traversee` avec `col`, `tab`, `w`, `d`) : un seul nœud du réseau des gaines, relié directement au tableau ; créée en posant le tableau, suit le tableau (`syncDucts`).
+- Conducteurs choisis gaine par gaine (`conds` de la gaine, `choixGaine`, `libelleTroncon`, anomalie `cb_cable_petit` dans `cablage.js`).
+- Mode « Tester » des schémas : `js/simulation.js` (sans écran), dessin des contacts dans leur position (`dessinerSymbole(c, o, coul, etat)`), couleurs des potentiels (`SIM_COUL` dans `schema.js`). L'état du test n'est jamais enregistré dans le plan.
+- Tests : `tests/demandes.test.mjs`.
+
 ## Tableaux NF C 15-100 (`js/normes.js`)
 Source fournie par l'utilisateur : Legrand, « NF C 15-100 — Révision 23 août 2024 — Points clés & solutions Legrand » (réf. MM224003).
 | Tableau | État |
@@ -102,7 +110,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
 ## Tests
-- `node --test tests/*.test.mjs` : **175/175 réussis** (onglet Schémas : `schemas` (4 tests)) ; avant : **171/171 réussis** (13 novembre 2026, après les demandes sur les gaines : `gaines` (2 tests)) ; avant : 169/169 (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
+- `node --test tests/*.test.mjs` : **187/187 réussis** (13 novembre 2026, demandes v15 : `demandes` (12 tests)) ; avant : **175/175 réussis** (onglet Schémas : `schemas` (4 tests)) ; avant : **171/171 réussis** (13 novembre 2026, après les demandes sur les gaines : `gaines` (2 tests)) ; avant : 169/169 (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
 - Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (6 tests), `multi` (4 tests), `dxfimport` (3 tests), `routage` (5 tests), `dxfmurs` (4 tests), `ifc` (7 tests), `assistant` (2 tests), `equipement` (4 tests), `sauvegarde` (5 tests), `affectation` (4 tests), `regeneration` (3 tests), `mesure` (2 tests), `migrations` (2 tests : v1 → v11 sans perte, v2 à v10), `fondtraits` (2 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 

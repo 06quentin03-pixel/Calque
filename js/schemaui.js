@@ -7,6 +7,7 @@
 import { $, EXT, P, S, clamp, saveSettings, ui } from './noyau.js';
 import { CATEGORIES, SYMBOLES, SYM_BY, boiteDe, bornesDe, dessinerSymbole } from './schemasymboles.js';
 import * as SC from './schema.js';
+import * as SIM from './simulation.js';
 import { commit } from './interaction.js';
 import { body, btn, btns, closeModal, h, inspHead, kv, openModal, sec, textField, toast } from './interface.js';
 import { circNumbers } from './electricite.js';
@@ -54,7 +55,10 @@ function peindre() {
   const S0 = sch(), app = SC.appareils(S0), eq = SC.equipotentielles(S0);
   /* grille de 5 mm (repère de pose), discrète */
   if (v.s >= 2.2) { ctx.fillStyle = '#C9D0C9'; const z = SC.ZONE; for (let x = z.x0 + 5; x < z.x1; x += 5) for (let y = z.y0 + 5; y < z.y1; y += 5) ctx.fillRect(x - 0.12, y - 0.12, 0.24, 0.24); }
-  SC.dessinerFolio(ctx, S0, SU.fi, { cartouche: cartouche(), sel: SU.sel, app, eq, exporter: true });
+  const sim = SU.test && SU.simR ? Object.assign({}, SU.simR, { actifs: new Set(Object.keys(SU.simE.man).filter((k) => SU.simE.man[k])) }) : null;
+  SC.dessinerFolio(ctx, S0, SU.fi, { cartouche: cartouche(), sel: SU.test ? null : SU.sel, app, eq, exporter: true, sim });
+  /* mode test : symboles que l'on peut actionner (cadre vert discret) */
+  if (SU.test) { ctx.strokeStyle = 'rgba(30,143,78,.55)'; ctx.lineWidth = 0.3; ctx.setLineDash([1, 0.8]); for (const s of f.syms) if (SIM.actionnable(s)) { const b = boiteDe(s); ctx.strokeRect(b.x0 - 1.5, b.y0 - 1.5, b.x1 - b.x0 + 3, b.y1 - b.y0 + 3); } ctx.setLineDash([]); }
   /* bornes : visibles pendant le tracé des fils et la pose */
   if (SU.tool === 'fil' || SU.tool === 'place') { ctx.fillStyle = 'rgba(210,79,26,.55)'; for (const s of f.syms) for (const b of bornesDe(s)) { ctx.beginPath(); ctx.arc(b.x, b.y, 0.8, 0, Math.PI * 2); ctx.fill(); } }
   /* fil en cours */
@@ -158,7 +162,51 @@ function survol(w) {
 }
 
 /* ---------------- outils ---------------- */
+/* ---------------- mode « Tester » : on actionne boutons, interrupteurs et protections ; le schéma n'est pas modifié ---------------- */
+function recalculer() { SU.simR = SIM.simuler(sch(), SU.simE); SU.simE = SU.simR.etat; }
+function basculerTest(v) {
+  if (SU.fil) finirFil();
+  SU.test = v == null ? !SU.test : !!v;
+  if (SU.test) { SU.tool = 'select'; SU.sel.clear(); SU.simE = SIM.etatInitial(); recalculer(); } else SU.simR = null;
+  majTout();
+}
+function testDown(w, p, e) {
+  const f = folio(), tol = Math.max(1.2, 11 / SU.V.s);
+  const s = f.syms.slice().reverse().find((x) => { const b = boiteDe(x); return SIM.actionnable(x) && w.x >= b.x0 - tol * 0.5 && w.x <= b.x1 + tol * 0.5 && w.y >= b.y0 - tol * 0.5 && w.y <= b.y1 + tol * 0.5; });
+  if (!s) return panGeste(p);
+  /* bouton-poussoir : appuyé tant que le doigt (ou le Pencil) reste posé */
+  if (SIM.POUSSOIRS.has(s.t)) {
+    SU.simE = SIM.actionner(sch(), SU.simE, s, true); recalculer(); majInsp(); dessiner();
+    return { move() { }, up() { SU.simE = SIM.actionner(sch(), SU.simE, s, false); recalculer(); majInsp(); dessiner(); } };
+  }
+  return { move() { }, up() { SU.simE = SIM.actionner(sch(), SU.simE, s, true); recalculer(); majInsp(); dessiner(); } };
+}
+function testInsp() {
+  const R0 = SU.simR; if (!R0) return [];
+  const S0 = sch(), f = folio();
+  const ici = R0.charges.filter((x) => x.fi === SU.fi), ailleurs = R0.charges.filter((x) => x.fi !== SU.fi && x.on);
+  const ligne = (x) => h('div', { class: 'li sim-li' + (x.on ? ' on' : '') }, h('span', { class: 'sim-dot' }), h('span', null, `${x.rep || x.d.n}${x.s.des ? ' · ' + x.s.des : ''}`), h('span', { class: 'v' }, x.lib));
+  const man = Object.keys(SU.simE.man).filter((k) => SU.simE.man[k]);
+  const libAction = (k) => {
+    if (k.startsWith('F:')) return `${k.slice(2)} : relais thermique déclenché`;
+    for (const g of S0.folios) { const s = g.syms.find((x) => x.id === k); if (s) { const d = SYM_BY.get(s.t); return `${s.rep || d.n} : ${SIM.PROTECTIONS.has(s.t) ? 'ouvert' : SIM.POUSSOIRS.has(s.t) ? 'appuyé' : s.t === 'vv' ? 'position 2' : s.t === 'au' ? 'enfoncé' : 'actionné'}`; } }
+    return k;
+  };
+  const tempo = R0.charges.some((x) => x.s.t === 'minuterie');
+  return [inspHead('Mode test', `Folio ${SU.fi + 1} · ${f ? f.titre : ''}`), body(
+    h('p', { class: 'note' }, 'Touchez un interrupteur, un va-et-vient, une protection ou un relais thermique pour changer sa position. Gardez le doigt (ou le Pencil) sur un bouton-poussoir pour l’appuyer. Le schéma n’est pas modifié.'),
+    h('div', { class: 'sim-leg' }, [['phase', 'Phase'], ['neutre', 'Neutre'], ['dc+', '+ continu'], ['dc-', '− continu'], ['court', 'Court-circuit']].map(([k, n]) => h('span', null, h('i', { style: `background:${SC.SIM_COUL[k]}` }), n))),
+    R0.alertes.length ? sec('Constats', h('div', { class: 'ev-list' }, R0.alertes.map((a) => h('div', { class: 'ev-chk ' + (a.niveau === 'erreur' ? 'err' : a.niveau === 'avertissement' ? 'warn' : 'info') }, h('span', { class: 'ic' }, a.niveau === 'info' ? 'i' : '!'), h('span', { class: 'tx' }, a.msg))))) : null,
+    sec('Sur ce folio', ici.length ? h('div', { class: 'list' }, ici.map(ligne)) : h('p', { class: 'note' }, 'Aucun récepteur (bobine, lampe, moteur…) sur ce folio.')),
+    ailleurs.length ? sec('En marche sur d’autres folios', h('div', { class: 'list' }, ailleurs.map(ligne))) : null,
+    sec('Actions en cours', man.length ? h('div', { class: 'list' }, man.map((k) => h('div', { class: 'li' }, h('span', null, libAction(k))))) : h('p', { class: 'note' }, 'Tout est au repos.')),
+    sec(null, btns(btn('Tout remettre au repos', () => { SU.simE = SIM.etatInitial(); recalculer(); majInsp(); dessiner(); }, 'sm'),
+      tempo ? btn('Fin de temporisation', () => { SU.simE = SIM.finTempo(S0, SU.simE); recalculer(); majInsp(); dessiner(); }, 'sm') : null,
+      btn('Quitter le test', () => basculerTest(false), 'pri sm'))),
+    h('p', { class: 'note' }, 'Aide à la compréhension du schéma dessiné (logique des contacts) : ce n’est ni un calcul électrique ni une vérification de la norme.'))];
+}
 function outilDown(w, p, e) {
+  if (SU.test) return testDown(w, p, e);
   const tap = (fn) => { let bouge = false; const pan = panGeste(p); return { move(w2, p2) { if (!bouge && Math.hypot(p2.x - p.x, p2.y - p.y) < seuil(e)) return; bouge = true; pan.move(w2, p2); }, up(w2, p2) { if (!bouge) fn(w2, p2); } }; };
   if (SU.tool === 'place') return tap((w2) => poser(grille(w2)));
   if (SU.tool === 'fil') return tap((w2) => filTap(w2));
@@ -264,6 +312,7 @@ function finirFil() {
   majHint(); dessiner();
 }
 function setOutil(t, place) {
+  if (SU.test) { SU.test = false; SU.simR = null; majBarre(); }
   if (SU.fil && t !== 'fil') finirFil();
   SU.tool = t; SU.place = place || null; SU.ghostOk = false;
   if (t !== 'select') SU.sel.clear();
@@ -298,6 +347,7 @@ function dupliquerSel() {
   SU.sel = nv; commit(); majInsp(); dessiner();
 }
 EXT.toucheSchema = (e, k) => {
+  if (SU.test) { if (k === 'escape') basculerTest(false); return; } // mode test : le schéma n'est pas modifiable
   if (k === 'escape') { if (SU.fil) { SU.fil = null; majHint(); dessiner(); } else if (SU.tool !== 'select') setOutil('select'); else { SU.sel.clear(); majInsp(); dessiner(); } return; }
   if (k === 'delete' || k === 'backspace') { e.preventDefault(); supprimerSel(); return; }
   if (k === 'enter' && SU.fil) { finirFil(); return; }
@@ -338,12 +388,13 @@ function majBarre() {
   const chips = fs.map((f, i) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(i === SU.fi), title: f.titre, onclick: () => { if (i === SU.fi) { SU.inspOuvert = !SU.inspOuvert; SU.sel.clear(); majInsp(); dessiner(); } else allerFolio(i); } }, `${i + 1} · ${f.titre}`));
   chips.push(h('button', { type: 'button', class: 'chip', id: 'schNouveau', title: 'Nouveau folio', onclick: () => ajouterFolio() }, '+ Folio'));
   bar.replaceChildren(h('div', { class: 'sch-folios' }, chips),
-    h('div', { class: 'sch-acts' }, btn('Modèles', ouvrirModeles, 'sm'), btn('Depuis le tableau', importerTableau, 'sm'), btn('Listes', () => ouvrirListes('nom'), 'sm'), btn('Exporter', ouvrirExport, 'sm pri')));
+    h('div', { class: 'sch-acts' }, h('button', { type: 'button', class: 'btn sm' + (SU.test ? ' pri' : ''), id: 'schTester', 'aria-pressed': String(!!SU.test), title: 'Tester le fonctionnement du schéma', onclick: () => basculerTest() }, SU.test ? 'Tester : actif' : 'Tester'), btn('Modèles', ouvrirModeles, 'sm'), btn('Depuis le tableau', importerTableau, 'sm'), btn('Listes', () => ouvrirListes('nom'), 'sm'), btn('Exporter', ouvrirExport, 'sm pri')));
 }
 function majHint() {
   const el = $('#schHint'); if (!el) return;
   let k = null;
-  if (SU.tool === 'fil') k = [h('b', null, 'Fil'), h('span', { class: 'msg' }, SU.fil ? 'Touchez le point suivant : le fil se termine sur une borne ou un autre fil.' : 'Touchez une borne (point orange) ou un fil pour commencer.'),
+  if (SU.test) k = [h('b', null, 'Tester'), h('span', { class: 'msg' }, 'Touchez les commandes encadrées en vert ; fils sous tension en couleur. État : touchez le nom du folio.'), btn('Repos', () => { SU.simE = SIM.etatInitial(); recalculer(); majInsp(); dessiner(); }, 'sm'), btn('Quitter', () => basculerTest(false), 'pri sm')];
+  else if (SU.tool === 'fil') k = [h('b', null, 'Fil'), h('span', { class: 'msg' }, SU.fil ? 'Touchez le point suivant : le fil se termine sur une borne ou un autre fil.' : 'Touchez une borne (point orange) ou un fil pour commencer.'),
     SU.fil ? btn('Terminer le fil', finirFil, 'sm') : null, btn('Fermer', () => setOutil('select'), 'pri sm')];
   else if (SU.tool === 'place' && SU.place) k = [h('b', null, SYM_BY.get(SU.place).n), h('span', { class: 'msg' }, 'Touchez la feuille pour le poser (plusieurs fois si besoin). Posé sur un fil, il s’y insère.'),
     btn('Tourner', () => tourner(90), 'sm'), btn('Autre symbole', ouvrirBibliotheque, 'sm'), btn('Terminer', () => setOutil('select'), 'pri sm')];
@@ -391,6 +442,7 @@ function majInsp() {
   const ae = document.activeElement, focusId = ae && box.contains(ae) ? ae.id : null;
   const f = folio(); let parts;
   if (!f) parts = videInsp();
+  else if (SU.test) parts = testInsp();
   else if (SU.sel.size === 1) { const o = objetParId([...SU.sel][0]); parts = !o ? folioInsp(f) : o.t ? symInsp(o) : o.pts ? filInsp(o) : texteInsp(o); }
   else if (SU.sel.size > 1) parts = [inspHead(`${SU.sel.size} éléments`, 'Sélection'), body(sec(null, btns(btn('Tourner', () => tourner(90), 'sm'), btn('Dupliquer', dupliquerSel, 'sm'), btn('Supprimer', supprimerSel, 'sm danger'))), h('p', { class: 'note' }, 'Faites glisser un élément pour déplacer toute la sélection (les fils raccordés suivent).'))];
   else parts = folioInsp(f);
@@ -578,7 +630,8 @@ function ouvrirExport() {
 /* ---------------- affichage de l'onglet ---------------- */
 function majTout() { majOutils(); majBarre(); majHint(); majInsp(); requestAnimationFrame(() => { redim(); peindre(); }); }
 EXT.view.push((v) => { if (v === 'schema') { if (SU.fi >= sch().folios.length) SU.fi = 0; majTout(); } });
-on(EV.PLAN_OUVERT, () => { SU.fi = 0; SU.sel.clear(); SU.fil = null; SU.ajuste = true; if (actif()) majTout(); });
-on(EV.PLAN_CHANGE, (x) => { if (!actif() || (x && x.leger)) return; if (SU.fi >= sch().folios.length) SU.fi = Math.max(0, sch().folios.length - 1); for (const id of [...SU.sel]) if (!objetParId(id)) SU.sel.delete(id); majBarre(); majInsp(); dessiner(); });
+on(EV.PLAN_OUVERT, () => { SU.test = false; SU.simR = null; SU.fi = 0; SU.sel.clear(); SU.fil = null; SU.ajuste = true; if (actif()) majTout(); });
+on(EV.PLAN_CHANGE, (x) => { if (!actif() || (x && x.leger)) return; if (SU.test) recalculer(); if (SU.fi >= sch().folios.length) SU.fi = Math.max(0, sch().folios.length - 1); for (const id of [...SU.sel]) if (!objetParId(id)) SU.sel.delete(id); majBarre(); majInsp(); dessiner(); });
 
+export { basculerTest };
 export { SU as ETAT_SCHEMA, ajouterFolio, allerFolio, dossierPdf, dxfFolio, filTap, finirFil, importerTableau, majTout, ouvrirListes, poser, setOutil, supprimerSel, svgFolio };

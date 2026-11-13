@@ -18,8 +18,8 @@ import { V } from './rendu2d.js';
 import { body, btn, btns, chipRow, h, inspHead, kv, renderInspector, sec, segCtl, textField, toast, updateHint } from './interface.js';
 import { ficheButton } from './fiche.js';
 import { entreesDuPlan, ficheCircuit, fmt } from './calcul.js';
-import { CONDUCTEURS, COURBES, FONCTIONS, NIVEAUX, cablagePlan, controlesCablage, libelleCompo, resumeCircuit } from './cablage.js';
-import { aCommander, cheminCircuit, reserveDe } from './cheminement.js';
+import { CONDUCTEURS, COURBES, FONCTIONS, NB_CABLE, NIVEAUX, cablagePlan, choixGaine, controlesCablage, libelleCompo, resumeCircuit } from './cablage.js';
+import { aCommander, cheminCircuit, nomChemin, reserveDe } from './cheminement.js';
 import { demarrerCablage, proposerRaccordement } from './cablerui.js';
 import { majPastille } from './calquesui.js';
 
@@ -172,7 +172,37 @@ function conducteursSection(c) {
     h('table', { class: 'ci-cond' }, [...parDes.entries()].sort((a, b) => b[1] - a[1]).map(([k, cm]) => h('tr', null, h('td', null, k), h('td', null, m(cm))))),
     h('table', { class: 'ci-cond', style: 'margin-top:6px' }, lignes.map(([fn, cm]) => h('tr', null, h('td', null, h('i', { class: 'ci-fil', style: `background:${FONCTIONS[fn].col}` }), `${FONCTIONS[fn].n} (${FONCTIONS[fn].coul})`), h('td', null, m(cm))))),
     cab.notes.length ? h('p', { class: 'note' }, cab.notes.join(' ')) : null,
-    h('p', { class: 'note' }, `Schéma de câblage usuel en suivant les gaines (${des.join(', ')}) : estimation à adapter au schéma réel.`));
+    h('p', { class: 'note' }, `Schéma de câblage usuel en suivant les gaines (${des.join(', ')}) : estimation à adapter au schéma réel.`),
+    choixParGaine(c, cab));
+}
+/* choix des conducteurs gaine par gaine (format v15) : fils isolés (seulement les conducteurs utiles, sans câble 3G ou
+   5G imposé), câble à la taille juste, ou câble d'un nombre de conducteurs choisi (avec réserve) */
+function choixParGaine(c, cab) {
+  const parGaine = new Map();
+  for (const t of cab.troncons) {
+    if (!t.duct) continue;
+    const g = parGaine.get(t.duct) || { n: 0, cm: 0, compo: t.compo, libelle: t.libelle, des: t.des };
+    if (t.n > g.n) { g.n = t.n; g.compo = t.compo; g.libelle = t.libelle; g.des = t.des; }
+    g.cm += t.h + t.v; parGaine.set(t.duct, g);
+  }
+  if (!parGaine.size) return null;
+  const rows = [...parGaine.entries()].map(([did, g]) => {
+    const d = IDX.ducts.get(did); if (!d) return null;
+    const cur = choixGaine(d, c.id), val = cur ? cur.t + (cur.n ? ':' + cur.n : '') : '';
+    const opts = [['', 'Automatique (' + (c.cond && CONDUCTEURS[c.cond] ? CONDUCTEURS[c.cond].court : 'selon la gaine') + ')'], ['h07vu', `Fils H07V-U : ${g.n} fil${g.n > 1 ? 's' : ''}`], ['r2v', `Câble R2V à la taille juste (${g.des})`]];
+    for (const n of NB_CABLE) if (n > g.n) opts.push(['r2v:' + n, `Câble R2V ${n} conducteurs (${n - g.n} de réserve)`]);
+    if (cur && cur.n && cur.n < g.n) opts.push([val, `Câble R2V ${cur.n} conducteurs (trop petit)`]);
+    opts.push(['souple', 'Câble souple H07RN-F']);
+    const sel = h('select', { class: 'txt', 'data-gaine': did, 'aria-label': 'Conducteurs dans ' + nomChemin(d) }, opts.map(([v, n]) => h('option', { value: v, selected: v === val }, n)));
+    sel.addEventListener('change', () => {
+      const v = sel.value, conds = Object.assign({}, d.conds || {});
+      if (!v) delete conds[c.id]; else { const [t, n] = v.split(':'); conds[c.id] = n ? { t, n: +n } : { t }; }
+      if (Object.keys(conds).length) d.conds = conds; else delete d.conds;
+      commit();
+    });
+    return h('div', { class: 'ci-gaine' }, h('div', null, h('b', null, nomChemin(d)), h('small', null, ` · ${m(g.cm)} · ${libelleCompo(g.compo)} · posé : ${g.libelle}`)), sel);
+  }).filter(Boolean);
+  return h('div', { class: 'ci-gaines' }, h('p', { class: 'note' }, 'Choisissez ce qui passe dans chaque gaine. « Fils » : seulement les conducteurs utiles (pas de 3G ou de 5G imposé). Un câble trop petit est signalé.'), ...rows);
 }
 function equipementsSection(c) {
   const ms = circMembers(c.id);

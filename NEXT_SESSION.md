@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (175/175 le 13 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (187/187 le 13 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue avec les pistes du ROADMAP (section « Module Plans électriques »), une à la fois, testée, avec le plan
@@ -29,6 +29,14 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais des demandes du 13 novembre 2026 (branche `claude/elegant-ritchie-zjivgm`, format v15)
+Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :
+1. Vue 3D, niveau Étage : l'escalier en L de la maison ne découpe que ses marches dans le sol des combles ; le « Vide sur entrée » n'a pas de sol ; le balcon n'existe qu'à l'étage.
+2. Plan, niveau Étage : toucher le Balcon › « Type de pièce » (terrasse, balcon), garde-corps ; la surface habitable ne le compte pas.
+3. Plan, rez-de-chaussée : toucher le tableau › « Colonne de passage » (2 niveaux) ; déplacer le tableau : la colonne suit.
+4. Pastille « Circuits » › un circuit de l'étage › « Conducteurs » : choisir « Fils » ou un câble pour chaque gaine ; le libellé sur le plan change.
+5. Onglet Schémas › « Tester » : garder le doigt sur S2 (Marche), lâcher (auto-maintien), toucher S1, ouvrir Q1, déclencher F1 ; télérupteur et va-et-vient sur les autres folios.
 
 ## Essais de l'onglet « Schémas » (13 novembre 2026)
 Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), onglet **Schémas**, en paysage puis en portrait :

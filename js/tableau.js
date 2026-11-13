@@ -1,7 +1,7 @@
 /* Calque — module « tableau » : onglet « Tableau électrique » : schéma unifilaire, coffret.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { nomenclatureTableau } from './nomenclature.js';
-import { $, $$, EXT, IDX, NF0, NF1, P, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul } from './noyau.js';
+import { $, $$, EXT, IDX, NF0, NF1, P, estExterieure, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { ELEC_BY } from './symboles.js';
 import { FONT_UI, V } from './rendu2d.js';
@@ -271,7 +271,8 @@ function evSelect(sel) {
   renderElecView();
   if (ui.evSel) { const el = document.querySelector(`#evSide [data-key="${ui.evSel.t}:${ui.evSel.id}"]`); if (el) el.scrollIntoView({ block: 'nearest' }); }
 }
-function totalSurface() { let s = 0; for (const L of P.levels) for (const r of geo(L.id).rooms) s += r.area; return s; }
+/* surface habitable : sans les terrasses ni les balcons */
+function totalSurface() { let s = 0; for (const L of P.levels) for (const r of geo(L.id).rooms) if (!estExterieure(r.label)) s += r.area; return s; }
 function renderEvSide() {
   const box = $('#evSide');
   const ae = document.activeElement, focusId = ae && box.contains(ae) ? ae.id : null;

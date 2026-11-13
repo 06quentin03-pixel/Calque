@@ -1,6 +1,6 @@
 /* Calque — module « stockage » : enregistrement : IndexedDB, versions, sauvegarde, import / export du fichier.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
-import { $, $$, NF1, P, PLAN_VERSION, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
+import { $, $$, NF1, P, PIECES_EXT, PLAN_VERSION, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
 import { syncRooms } from './geometrie.js';
 import { historyReset, snapshot } from './historique.js';
 import { fitView, refreshUI } from './interaction.js';
@@ -17,7 +17,7 @@ import { nettoyerChantier } from './chantier.js';
 import { nettoyerVariantes } from './variantes.js';
 import { nettoyerChiffrage } from './quantitatif.js';
 import { nettoyerCalques, nettoyerVues } from './calques.js';
-import { nettoyerCircuitV12 } from './cablage.js';
+import { nettoyerCircuitV12, nettoyerConds } from './cablage.js';
 import { nettoyerSchemas } from './schema.js';
 
 
@@ -161,7 +161,36 @@ const MIGRATIONS = {
     p.schemas = nettoyerSchemas(p.schemas);
     return p;
   },
+  /* v14 → v15 (demandes du 13 novembre 2026) : trémie d'un escalier (`tremie: 'aucune'` : l'étage du dessus garde son
+     sol), type et sol d'une pièce (`ext` : terrasse ou balcon d'un seul niveau ; `sol: 'vide'` : sol supprimé),
+     colonne de passage d'un tableau (passages `traversee` avec `col`, `tab`, taille `w` × `d`), choix des conducteurs
+     par circuit dans une gaine (`conds`). Les plans v14 n'en ont pas : rien n'est deviné, valeurs invalides retirées. */
+  14(p) {
+    nettoyerV15(p);
+    const l = p.variantes && Array.isArray(p.variantes.liste) ? p.variantes.liste : [];
+    for (const v of l) if (v && v.data) nettoyerV15(v.data);
+    return p;
+  },
 };
+function nettoyerV15(p) {
+  for (const it of Array.isArray(p.items) ? p.items : []) if (it && 'tremie' in it && it.tremie !== 'aucune') delete it.tremie;
+  for (const r of Array.isArray(p.rooms) ? p.rooms : []) {
+    if (!r || typeof r !== 'object') continue;
+    if ('ext' in r && !PIECES_EXT[r.ext]) delete r.ext;
+    if ('sol' in r && r.sol !== 'vide') delete r.sol;
+  }
+  for (const e of Array.isArray(p.elec) ? p.elec : []) {
+    if (!e || typeof e !== 'object') continue;
+    const okCol = e.type === 'traversee' && typeof e.col === 'string' && e.col && e.col.length <= 64;
+    if (!okCol) for (const k of ['col', 'tab', 'w', 'd']) delete e[k];
+    else {
+      if ('tab' in e && !(typeof e.tab === 'string' && e.tab)) delete e.tab;
+      for (const k of ['w', 'd']) if (k in e && !(isNum(e[k]) && e[k] >= 5 && e[k] <= 300)) delete e[k];
+    }
+  }
+  for (const d of Array.isArray(p.ducts) ? p.ducts : []) nettoyerConds(d);
+  return p;
+}
 /* taille d'un symbole (v12) : 0,5 à 3 ; 1 = taille normale (champ retiré) */
 function nettoyerTaille(e) {
   if (!e || typeof e !== 'object' || !('sc' in e)) return e;

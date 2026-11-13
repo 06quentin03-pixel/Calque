@@ -122,6 +122,34 @@ function longueurGaine(plan, d, idx) {
 
 /* ---------------- passages entre étages ----------------
    Un passage est un symbole « traversee » posé sur chaque niveau ; les deux se désignent l'un l'autre par `to`. */
+/* colonne de passage (format v15) : un passage `traversee` par niveau, au même endroit, partageant `col` ;
+   `tab` désigne le tableau d'où part la colonne, `w` × `d` sa taille en cm (celle du tableau). Tous les niveaux de la
+   colonne forment un seul passage, relié directement au tableau : les câbles montent dans la colonne. */
+function membresColonne(plan, e, idx) {
+  if (!e || e.type !== TRAVERSEE || !e.col) return [];
+  return (plan.elec || []).filter((x) => x.type === TRAVERSEE && x.col === e.col);
+}
+/* taille estimée d'une colonne : largeur du tableau (modules par rangée × 1,8 cm + 7 cm de bords), 20 cm de profondeur.
+   Valeurs de Calque (estimées, modifiables dans le panneau du passage) : ce n'est pas une cote de la norme. */
+function tailleColonne(plan) {
+  const row = plan.install && isNum(plan.install.row) && plan.install.row > 0 ? plan.install.row : 13;
+  return { w: Math.round(row * 1.8 + 7), d: 20, st: 'estimee' };
+}
+/* membres d'une colonne de passage pour le tableau T : un passage par niveau, à l'aplomb du tableau.
+   Ne modifie pas le plan : renvoie { col, membres (objets à garder : existants mis à jour ou nouveaux), nouveaux, retires }. */
+function colonneTableau(plan, T, nouvelId) {
+  const exist = (plan.elec || []).filter((x) => x.type === TRAVERSEE && x.col && x.tab === T.id);
+  const col = exist.length ? exist[0].col : 'col' + T.id;
+  const a = ancrage(T), t = tailleColonne(plan), membres = [], nouveaux = [];
+  for (const L of plan.levels || []) {
+    let m = exist.find((x) => x.lv === L.id);
+    const pos = { x: Math.round(a.x * 10) / 10, y: Math.round(a.y * 10) / 10, rot: T.rot || 0 };
+    if (!m) { m = Object.assign({ id: nouvelId(), lv: L.id, type: TRAVERSEE, h: null, col, tab: T.id, w: t.w, d: t.d }, pos); nouveaux.push(m); }
+    else Object.assign(m, pos);
+    membres.push(m);
+  }
+  return { col, membres, nouveaux, retires: exist.filter((x) => !membres.includes(x)) };
+}
 function jumelle(plan, e, idx) {
   if (!e || e.type !== TRAVERSEE || !e.to) return null;
   const t = indexElec(plan, idx).get(e.to);
@@ -139,7 +167,7 @@ const DERIVATIONS = new Set(['derivation', 'derivation_mur']);
 const PASSIFS = new Set(['tableau', 'tab_div', ...DERIVATIONS, 'gtl', TRAVERSEE]);
 const GCACHE = new WeakMap();
 function signature(plan) {
-  return JSON.stringify([(plan.circuits || []).map((c) => c.id), (plan.ducts || []).filter(isElecDuct), (plan.elec || []).map((e) => [e.id, e.lv, e.type, e.x, e.y, e.rot, e.h, e.to, e.cid]), (plan.levels || []).map((l) => [l.id, l.elev, l.h])]);
+  return JSON.stringify([(plan.circuits || []).map((c) => c.id), (plan.ducts || []).filter(isElecDuct), (plan.elec || []).map((e) => [e.id, e.lv, e.type, e.x, e.y, e.rot, e.h, e.to, e.cid, e.col, e.tab]), (plan.levels || []).map((l) => [l.id, l.elev, l.h])]);
 }
 function grapheGaines(plan) {
   const sig = signature(plan), hit = GCACHE.get(plan);
@@ -167,7 +195,7 @@ function grapheGaines(plan) {
       const se = node('e:' + e.id, { lv: e.lv, x: pts[k].x, y: pts[k].y, Z: hs && !hs.libre ? base + hs.z : null, sym: e.id });
       if (hs && hs.libre) {
         const tw = jumelle(plan, e, E);
-        const hk = tw ? [e.id, tw.id].sort().join('|') : e.id;
+        const hk = e.type === TRAVERSEE && e.col ? 'col:' + e.col : tw ? [e.id, tw.id].sort().join('|') : e.id;
         if (!hubs.has(hk)) hubs.set(hk, []);
         hubs.get(hk).push({ id: ids[k], Z, p: pts[k] });
         edge(ids[k], se, 0, 0, { kind: 'sym' });
@@ -180,6 +208,20 @@ function grapheGaines(plan) {
     const u = l[i], w = l[j];
     if (u.Z == null || w.Z == null) edge(u.id, w.id, dist(u.p, w.p), 0, { kind: 'pass', inc: 1 });
     else edge(u.id, w.id, dist(u.p, w.p), Math.abs(u.Z - w.Z), { kind: 'pass' });
+  }
+  /* colonne partant d'un tableau : chaque extrémité raccordée à la colonne est reliée au tableau lui-même
+     (montée dans la colonne : différence d'altitude entre le tableau et le parcours de la gaine) */
+  const colTab = new Map();
+  for (const e of plan.elec || []) if (e.type === TRAVERSEE && e.col && e.tab && !colTab.has(e.col)) { const T = E.get(e.tab); if (T && T.type !== TRAVERSEE) colTab.set(e.col, T); }
+  for (const [col, T] of colTab) {
+    const l = hubs.get('col:' + col); if (!l) continue;
+    const L = niveau(plan, T.lv), hs = hauteurSymbole(plan, T), a = ancrage(T);
+    const ZT = hs && !hs.libre ? altNiveau(L) + hs.z : null;
+    const tid = node('e:' + T.id, { lv: T.lv, x: a.x, y: a.y, Z: ZT, sym: T.id });
+    for (const u of l) {
+      if (ZT == null || u.Z == null) edge(tid, u.id, dist(a, u.p), 0, { kind: 'pass', inc: 1 });
+      else edge(tid, u.id, dist(a, u.p), Math.abs(ZT - u.Z), { kind: 'pass' });
+    }
   }
   /* jonctions : extrémité libre posée sur un sommet ou un tronçon d'une autre gaine du même niveau */
   for (const lst of vertsByLv.values()) {
@@ -353,7 +395,7 @@ function nettoyerZone(z) {
   return o;
 }
 
-export { DERIVATIONS, poseAHauteur, tracerALongueur };
+export { DERIVATIONS, colonneTableau, membresColonne, poseAHauteur, tailleColonne, tracerALongueur };
 export { KINDS, PASSIFS, aCommander, cheminCircuit, grapheGaines, gainePourCircuit, longueurDuPlan, plusCourts, reserveDe, tableauDu, POSES, POSE_IDS, RESERVE_DEFAUT, TRAVERSEE, TYPES_CHEMIN, altNiveau, ancrage, circuitsDe, hauteurNiveau,
   hauteurParcours, hauteurSymbole, indexElec, isElecDuct, jumelle, kindOf, longueurGaine, longueurPolyligne, niveau,
   nettoyerGaine, nettoyerZone, nomChemin, pointsGaine, sectionNominale, tailleChemin, typeChemin };
