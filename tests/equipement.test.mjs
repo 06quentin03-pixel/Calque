@@ -17,6 +17,10 @@ test('besoins d’une pièce : une seule définition, celle du contrôle de Calq
   assert.deepEqual(m('Cuisine', 12, [{ type: 'pc_pt' }, { type: 'pc2' }, { type: 'pc32' }, { type: 'spot' }]), [['pc_pt', 3]]);
   assert.deepEqual(m('Séjour', 30, [{ type: 'pc3' }, { type: 'pc2' }, { type: 'pl' }]), [['pc', 2]]);
   assert.deepEqual(m('Dressing', 3, []), []);
+  /* vide fermé de moins de 1 m² au nom automatique (creux entre deux parois d'un plan importé) : rien n'y est demandé ;
+     nommé, il redevient une pièce */
+  assert.deepEqual(m('Pièce 3', 0.25, []), []); assert.equal(besoinsPiece('Pièce 3', 0.25).vide, true);
+  assert.deepEqual(m('Pièce 3', 1.2, []).map((x) => x[0]), ['pl', 'int_s']); assert.deepEqual(m('WC', 0.9, []).map((x) => x[0]), ['pl', 'int_s']);
 });
 
 /* pièce 6 × 4,5 m (murs de 20 cm), porte au milieu du mur du haut, fenêtre au milieu du mur de droite, baignoire en bas à gauche */

@@ -151,3 +151,13 @@ Contrôles complémentaires (scripts, hors dépôt) :
 - Équipement minimal d'une pièce ; relier les appareils sans circuit ; outil Mesurer ; rappel de sauvegarde ; sauvegarde et import par morceaux (iPad, photos) ; accrochage au fond DXF ; corrections (gaines après régénération, suppression d'un circuit, conseil risqué, barre d'outils, échelle des fonds DXF) ; migrations v1 → v11 vérifiées sans perte ; import IFC essayé sur la maquette Allplan de l'utilisateur.
 - Tests : 152/152. Demande de fusion n°8 fusionnée à la demande de l'utilisateur.
 
+
+## 12 novembre 2026 — Mission (suite, après la fusion n°9)
+- Essais iPad des demandes n°7 à n°9 : « tout va bien » (réponse de l'utilisateur en début de session).
+- Quantitatif : saisie légère (`commitLeger`), ≈ 35 ms → ≈ 1 ms par saisie sur 100 logements.
+- Import IFC éprouvé sur six vraies maquettes Revit / ArchiCAD : murs en facettes, portes et fenêtres sans réservation, morceaux de mur empilés, murs en hauteur, nom des pièces.
+- Tests : 155/155.
+
+## 13 novembre 2026 — Import DXF essayé sur de vrais plans
+- Unité du fichier écartée si invraisemblable (pouces / pieds proposés d'après les cotes), reconnaissance des murs indépendante du cadrage, porte au bout d'un mur, petits vides non équipés, fenêtre d'import corrigée.
+- Tests : 156/156.

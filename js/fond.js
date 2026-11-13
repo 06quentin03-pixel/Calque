@@ -100,11 +100,15 @@ function pickFond() {
   fileIn.click();
 }
 /* ---- plan d'architecte en DXF : dessiné en image, à l'échelle exacte du fichier ---- */
-const DXF = { R: null, nom: '', u: 5, uFichier: 0, calques: null, murs: false };
+const DXF = { R: null, nom: '', u: 5, uFichier: 0, uDouteuse: 0, imperial: false, calques: null, murs: false };
 /* murs et ouvertures proposés d'après les traits doubles du DXF, posés sur le niveau affiché (sans enregistrer l'étape) */
 function dxfMurs(R, calques, placer, cm) {
-  const { segments, arcs } = segmentsDuDxf(R, calques, placer, cm);
-  const r = reconnaitreMurs(segments, arcs);
+  /* reconnaissance dans le repère du fichier (comme l'accrochage, traitsDuFond), puis déplacement sur le plan :
+     le résultat ne dépend pas de l'endroit où l'écran était centré au moment de l'import */
+  const { segments, arcs } = segmentsDuDxf(R, calques, (X, Y) => ({ x: X * cm, y: -Y * cm }), cm);
+  const r = reconnaitreMurs(segments, arcs), o0 = placer(0, 0), dep = (p) => ({ x: p.x + o0.x, y: p.y + o0.y });
+  for (const m of r.murs) { m.a = dep(m.a); m.b = dep(m.b); }
+  for (const o of r.ouvertures) Object.assign(o, dep(o));
   let nm = 0, no = 0;
   for (const m of r.murs) nm += addWall(ui.lv, m.a, m.b, { th: m.th, kind: m.kind }).length;
   touch();
@@ -138,6 +142,8 @@ function dxfImage(maxSide) {
   const kd = dessinerDxf(c, R, z, cvs.width, cvs.height, { calques: DXF.calques, trait: maxSide > 2000 ? 2 : 1 });
   return { cvs, em, W, H, k, z, kd };
 }
+/* nom de calque affiché : sans le préfixe d'une référence externe (« xref-Plan-08$0$A-WALL » → « A-WALL ») */
+const nomCourt = (n) => (n ? n.replace(/^.*\$0\$/, '') || n : '(sans nom)');
 function dxfModal() {
   const R = DXF.R, noms = [...R.calques.entries()].filter(([, c]) => c.n > 0).sort((a, b) => b[1].n - a[1].n);
   const em = empriseDxf(R, DXF.calques), cm = UNITES[DXF.u].cm;
@@ -149,9 +155,9 @@ function dxfModal() {
   return [
     h('p', null, h('b', null, DXF.nom), ` · ${R.traits.length} traits, ${R.textes.length} textes, ${noms.length} calques`),
     prev,
-    sec('Unité du dessin', h('div', { class: 'seg', role: 'group' }, [4, 5, 6].map((u) => h('button', { type: 'button', 'aria-pressed': String(DXF.u === u), onclick: () => { DXF.u = u; redo(); } }, UNITES[u].n[0].toUpperCase() + UNITES[u].n.slice(1)))),
-      h('p', { class: 'note', id: 'dxfTaille' }, em ? `Avec cette unité, le dessin mesure ${m(em.x1 - em.x0)} sur ${m(em.y1 - em.y0)}. ${DXF.uFichier === DXF.u ? 'Unité indiquée par le fichier.' : DXF.uFichier ? `Attention : le fichier indique des ${UNITES[DXF.uFichier].n} ; unité changée par vous, à vérifier.` : 'Le fichier n’indique pas son unité : choisie d’après la taille du dessin, à vérifier (mesurez une pièce connue après l’import).'}${em.isoles ? ' Des objets isolés très éloignés du dessin ont été écartés.' : ''}` : 'Aucun trait dans les calques choisis.')),
-    sec('Calques à garder', h('div', { class: 'chips', id: 'dxfCalques' }, noms.slice(0, 60).map(([n, c]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(DXF.calques.has(n)), title: `${c.n} objets`, onclick: () => { if (DXF.calques.has(n)) DXF.calques.delete(n); else DXF.calques.add(n); redo(); } }, n || '(sans nom)'))),
+    sec('Unité du dessin', h('div', { class: 'seg', role: 'group' }, (DXF.imperial ? [4, 5, 6, 1, 2] : [4, 5, 6]).map((u) => h('button', { type: 'button', 'aria-pressed': String(DXF.u === u), onclick: () => { DXF.u = u; redo(); } }, UNITES[u].n[0].toUpperCase() + UNITES[u].n.slice(1)))),
+      h('p', { class: 'note', id: 'dxfTaille' }, em ? `Avec cette unité, le dessin mesure ${m(em.x1 - em.x0)} sur ${m(em.y1 - em.y0)}. ${DXF.uFichier === DXF.u ? 'Unité indiquée par le fichier.' : DXF.uDouteuse ? `Attention : le fichier indique des ${UNITES[DXF.uDouteuse].n}, ce qui donnerait un dessin de ${new Intl.NumberFormat('fr-FR', { maximumSignificantDigits: 2 }).format(Math.max(em.x1 - em.x0, em.y1 - em.y0) * UNITES[DXF.uDouteuse].cm / 100)} m : cette indication est sans doute fausse. Unité ${DXF.imperial ? 'proposée d’après les cotes en pieds et pouces écrites dans le dessin' : 'proposée d’après la taille du dessin'} : à vérifier (mesurez une pièce connue après l’import).` : DXF.uFichier ? `Attention : le fichier indique des ${UNITES[DXF.uFichier].n} ; unité changée par vous, à vérifier.` : 'Le fichier n’indique pas son unité : choisie d’après la taille du dessin, à vérifier (mesurez une pièce connue après l’import).'}${em.isoles ? ' Des objets isolés très éloignés du dessin ont été écartés.' : ''}` : 'Aucun trait dans les calques choisis.')),
+    sec('Calques à garder', h('div', { class: 'chips', id: 'dxfCalques' }, noms.slice(0, 60).map(([n, c]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(DXF.calques.has(n)), title: `${n} · ${c.n} objets`, 'aria-label': n || '(sans nom)', onclick: () => { if (DXF.calques.has(n)) DXF.calques.delete(n); else DXF.calques.add(n); redo(); } }, nomCourt(n)))),
       h('p', { class: 'note' }, 'Touchez un calque pour le retirer du fond (mobilier, cotes, hachures…) : le plan sera plus lisible pour redessiner par-dessus.')),
     sec('Murs', h('div', { class: 'chips' }, h('button', { type: 'button', class: 'chip', id: 'dxfMursChip', 'aria-pressed': String(DXF.murs), onclick: () => { DXF.murs = !DXF.murs; redo(); } }, 'Créer aussi les murs (proposition)')),
       h('p', { class: 'note' }, DXF.murs ? 'Calque cherchera les murs dessinés par deux traits parallèles (4 à 50 cm d’écart) dans les calques gardés, avec leur épaisseur, et proposera les portes (arc de débattement) et les fenêtres. Meilleur résultat en ne gardant que le calque des murs et celui des menuiseries. Les pièces prennent le nom écrit dans le dessin si le calque des textes est gardé. C’est une proposition à vérifier et à corriger ; « Annuler » retire tout.' : 'Sans cette option, le dessin sert seulement de fond pour redessiner par-dessus.')),
@@ -217,7 +223,7 @@ async function importDxf(file) {
   DXF.R = R; DXF.nom = file.name;
   DXF.calques = new Set([...R.calques.entries()].filter(([, c]) => c.n > 0 && !c.masque).map(([n]) => n));
   if (!DXF.calques.size) DXF.calques = new Set([...R.calques.keys()]);
-  const u = uniteProbable(R, empriseDxf(R, DXF.calques)); DXF.u = u.u === 1 || u.u === 2 ? 5 : u.u; DXF.uFichier = u.sure ? u.u : 0;
+  const u = uniteProbable(R, empriseDxf(R, DXF.calques)); DXF.u = u.u; DXF.uFichier = u.sure ? u.u : 0; DXF.uDouteuse = u.douteuse || 0; DXF.imperial = !!u.imperial || u.u === 1 || u.u === 2;
   openModal('Importer un plan DXF', ...dxfModal()); document.getElementById('modal').classList.add('wide');
   return true;
 }

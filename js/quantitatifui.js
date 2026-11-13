@@ -4,7 +4,7 @@
    Aucun prix n'est fourni par Calque : une ligne sans prix reste « non chiffrée », le total est alors « partiel ». */
 import { P, ui } from './noyau.js';
 import { geo } from './geometrie.js';
-import { commit } from './interaction.js';
+import { commit, commitLeger } from './interaction.js';
 import { btn, btns, h, parseNum, segCtl, toast } from './interface.js';
 import { badgeDonnee } from './fiche.js';
 import { articleView } from './technique.js';
@@ -30,20 +30,28 @@ const chiff = () => P.chiffrage || (P.chiffrage = { prix: {}, temps: {} });
 /* saisie d'un prix ou d'un temps : '' efface ; la valeur est aussi gardée dans « mes prix » (sur l'appareil) */
 function saisir(champ, cle, input) {
   const box = chiff()[champ] || (chiff()[champ] = {}), txt = input.value.trim();
-  if (txt === '') { if (!box[cle]) return; delete box[cle]; commit(); return; }
+  if (txt === '') { if (!box[cle]) return; delete box[cle]; valider(); return; }
   const v = parseNum(txt);
   if (!Number.isFinite(v) || v < 0 || v >= (champ === 'prix' ? 1e7 : 1e5)) { toast('Saisissez un nombre positif.'); input.value = enSaisie(box[cle] ? box[cle].v : null); return; }
   if (box[cle] && Math.abs(box[cle].v - v) < 1e-9) return;
   box[cle] = { v, st: 'saisie' };
   setPrix(cle, champ === 'prix' ? 'pu' : 'tps', v);
-  commit();
+  valider();
+}
+/* une saisie ne change que le chiffrage : les quantités affichées restent justes, seuls les totaux sont recalculés
+   (sur un très gros plan, tout recalculer et redessiner à chaque prix rendait la saisie lente). Si le tableau affiché
+   n'est plus le bon, on revient à la modification ordinaire. */
+function valider() {
+  const e = ETAT, parent = e && e.root.parentElement;
+  if (!e || !e.root.isConnected || !parent || e.mode !== 'global') { commit(); return; }
+  commitLeger(() => { if (!quantPatch(parent, e.q)) { const sc = parent.scrollTop; parent.replaceChildren(quantView()); parent.scrollTop = sc; } });
 }
 function saisirParam(k, input, max) {
   const c = chiff(), txt = input.value.trim();
-  if (txt === '') { if (c[k]) { delete c[k]; commit(); } return; }
+  if (txt === '') { if (c[k]) { delete c[k]; valider(); } return; }
   const v = parseNum(txt);
   if (!Number.isFinite(v) || v < 0 || v > max) { toast(`Saisissez une valeur entre 0 et ${max}.`); input.value = enSaisie(c[k] ? c[k].v : null); return; }
-  c[k] = { v, st: 'saisie' }; commit();
+  c[k] = { v, st: 'saisie' }; valider();
 }
 const champ = (attrs) => { const i = h('input', Object.assign({ class: 'num qt-in', type: 'text', inputmode: 'decimal', autocomplete: 'off', enterkeyhint: 'done' }, attrs)); i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); i.blur(); } }); return i; };
 
@@ -147,17 +155,18 @@ function quantView() {
       h('div', { class: 'qt-param' }, h('label', { for: 'qtTaux' }, 'Taux horaire HT'), tauxIn, h('span', null, '€ / h')),
       h('div', { class: 'qt-param' }, h('label', { for: 'qtTva' }, 'TVA'), tvaIn, h('span', null, '%')),
       h('p', { class: 'note' }, 'Valeurs saisies par vous (aucun taux par défaut). Sans TVA saisie, seul le total hors taxes est affiché. Document estimatif : ce n’est pas un devis contractuel.')));
-  ETAT = { root, sum, refs, mode, sig: signature(q, mode), nrep: rep.length };
+  ETAT = { root, sum, refs, mode, q, sig: signature(q, mode), nrep: rep.length };
   return root;
 }
 const signature = (q, mode) => mode + '|' + q.lignes.map((l) => l.cle + ':' + l.qte).join(',');
 
 /* après une saisie : met à jour les totaux en place si le tableau affiché est encore le bon ; renvoie false sinon */
-function quantPatch(parent) {
+function quantPatch(parent, qConnu) {
   const e = ETAT;
   if (!e || e.mode !== 'global' || (ui.qtTab || 'global') !== 'global' || e.root.parentElement !== parent) return false;
-  const q = quantitatifDuPlan(), ch = chiffrer(q, P.chiffrage);
+  const q = qConnu || quantitatifDuPlan(), ch = chiffrer(q, P.chiffrage);
   if (signature(q, 'global') !== e.sig || reprises(ch).length !== e.nrep) return false;
+  e.q = q;
   e.sum.replaceChildren(...boites(ch));
   for (const l of ch.lignes) {
     const r = e.refs.get(l.cle); if (!r) return false;

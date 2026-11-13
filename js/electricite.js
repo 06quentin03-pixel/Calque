@@ -487,6 +487,7 @@ function nfcChecks() {
       const lights = inside.filter((e) => LIGHTS.has(e.type)).length;
       /* besoins : une seule définition, partagée avec l'équipement automatique (equipement.js) */
       const bp = besoinsPiece(name, area), need = bp.socles, why = bp.pourquoi;
+      if (bp.vide) continue; // vide de moins de 1 m² sans nom (gaine, creux entre parois) : pas une pièce
       if (need) {
         if (socles < need) addR('cq_socles_piece', 'err', G3, `${name} : ${socles} socle${socles > 1 ? 's' : ''} de prise, ${need} requis (${why}).`, ref);
         else addR('cq_socles_piece', 'ok', G3, `${name} : ${socles} socles de prise (${need} requis).`, ref);

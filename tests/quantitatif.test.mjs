@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { HORS_PIECE, chiffrer, csvQuantitatif, nettoyerChiffrage, pieceDe, quantitatif, totalGroupe } from '../js/quantitatif.js';
-import { fresh, boot, seedPlan, storedPlan, wait } from './outils.mjs';
+import { fresh, boot, seedPlan, storedPlan, wait, bigPlan } from './outils.mjs';
 
 const carre = (x, y, c) => [{ x, y }, { x: x + c, y }, { x: x + c, y: y + c }, { x, y: y + c }];
 const PIECES = { L0: [{ nom: 'Séjour', poly: carre(0, 0, 400), holes: [] }, { nom: 'Cuisine', poly: carre(420, 0, 300), holes: [] }] };
@@ -141,6 +141,44 @@ test('mes prix : repris dans un autre plan seulement à la demande', async () =>
   const c = await page.evaluate(async () => (await import('./js/noyau.js')).P.chiffrage.prix['app:pc']);
   assert.equal(c.st, 'saisie'); assert.match(c.src, /Mes prix/);
   assert.equal(await page.locator('#qtRoot >> text=Reprendre mes prix').count(), 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('très gros plan : la saisie d’un prix ne recalcule que les totaux (annuler et enregistrement gardés)', async () => {
+  const { ctx, page, errors } = await fresh();
+  await seedPlan(ctx, bigPlan(10, 'pQBIG'));
+  await boot(page);
+  await page.click('text=Tableau électrique'); await page.click('#evBar >> text=Quantitatif');
+  await wait(page, 300);
+  const r = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), E = await import('./js/evenements.js');
+    const evts = []; E.on(E.EV.PLAN_CHANGE, (d) => evts.push(d));
+    const inp = document.querySelector('.qt-table input[data-k="prix|app:pc"]');
+    const a = performance.now();
+    for (let i = 1; i <= 10; i++) { inp.value = String(i); inp.dispatchEvent(new Event('change')); }
+    const ms = performance.now() - a;
+    return { ms, n: N.P.elec.length, evts, prix: N.P.chiffrage.prix['app:pc'], tot: document.querySelector('tr[data-cle="app:pc"] .qt-tot').textContent.replace(/\s/g, ' '),
+      boite: document.querySelector('#qtRoot .ev-sumbox').textContent, undo: document.getElementById('btnUndo').disabled };
+  });
+  assert.equal(r.n, 600);
+  assert.deepEqual(r.prix, { v: 10, st: 'saisie' });
+  assert.equal(r.tot, '3 000,00 €', '300 prises × 10 €');
+  assert.match(r.boite, /^1 \/ \d+/);
+  assert.equal(r.undo, false, 'chaque saisie est une étape d’annulation');
+  assert.equal(r.evts.length, 10); assert.ok(r.evts.every((d) => d.cause === 'modification' && d.leger === true));
+  assert.ok(r.ms < 150, `10 saisies en ${Math.round(r.ms)} ms (≈ 350 ms quand tout était recalculé)`);
+  /* annuler : l'étape précédente revient, à l'écran aussi */
+  await page.click('#btnUndo'); await wait(page, 200);
+  assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).P.chiffrage.prix['app:pc'].v), 9);
+  assert.equal(await page.locator('.qt-table input[data-k="prix|app:pc"]').inputValue(), '9');
+  assert.equal((await page.locator('tr[data-cle="app:pc"] .qt-tot').textContent()).replace(/\s/g, ' '), '2 700,00 €');
+  /* une modification du plan faite ailleurs est bien reprise au retour dans l'onglet */
+  await page.evaluate(async () => { const N = await import('./js/noyau.js'), I = await import('./js/interaction.js'); N.P.elec.pop(); I.commit(); });
+  await page.locator('.qt-table input[data-k="prix|app:pc"]').fill('2'); await page.keyboard.press('Enter'); await wait(page, 100);
+  assert.equal((await page.locator('tr[data-cle="app:pc"] .qt-tot').textContent()).replace(/\s/g, ' '), '598,00 €', '299 prises × 2 €');
+  await page.evaluate(async () => { await (await import('./js/stockage.js')).saveNow(); });
+  assert.deepEqual((await storedPlan(page, 'pQBIG')).chiffrage.prix, { 'app:pc': { v: 2, st: 'saisie' } });
   assert.deepEqual(errors, []);
   await ctx.close();
 });
