@@ -183,6 +183,12 @@ test('sans écran : composition d’un seul tronçon, les tronçons voisins alig
   /* les deux tronçons n'ont plus la même composition : ce ne sont plus « le même mur » */
   assert.deepEqual(K.tronconsDuMur(p, p.walls[0]).map((w) => w.id), ['w0']);
   assert.deepEqual(K.tronconsDuMur(p, p.walls[0], false).map((w) => w.id).sort(), ['w0', 'w1']);
+  /* sans composition : tronçon voisin aligné d'une autre épaisseur, élargi « vers un côté » : il n'est plus tordu */
+  const q = plan(); q.walls[1].th = 25;
+  const m = K.changerEpaisseur(q, q.walls[0], 30, 'c2');
+  assert.deepEqual(m.map((w) => w.id), ['w0']); assert.equal(m.centre, true);
+  assert.deepEqual(['a', 'e', 'b'].map((id) => q.nodes.find((x) => x.id === id).y), [0, 0, 0]);
+  assert.equal(q.walls[0].th, 30); assert.equal(q.walls[1].th, 25);
 });
 
 test('écran : « Ce tronçon seulement » ou « Tout le mur », copier et coller une composition', async () => {
@@ -207,6 +213,12 @@ test('écran : « Ce tronçon seulement » ou « Tout le mur », copier et colle
   await page.locator('#insp .seg button', { hasText: /Tout le mur/ }).click(); await wait(page, 150);
   await page.fill('#f-cm-e0', '1,5'); await page.press('#f-cm-e0', 'Enter'); await wait(page, 200);
   r = await murs(); assert.ok(r[0].startsWith('enduit_platre1.5') && r[1] === r[0], JSON.stringify(r));
+  /* « Tout le mur » ne vaut que pour le mur choisi : sur w0, retour à « Ce tronçon » */
+  await sel('w0'); await wait(page, 150);
+  assert.equal(await page.locator('#insp .seg button[aria-pressed="true"]', { hasText: 'Ce tronçon' }).count(), 1);
+  /* sens « Vers … » avec un voisin aligné non modifié : le panneau prévient que le mur s'élargit des deux côtés */
+  await page.locator('#insp .seg button', { hasText: /^Vers / }).first().click(); await wait(page, 150);
+  assert.match(await page.locator('#insp').innerText(), /s’élargira quand même des deux côtés/);
   /* « Ce tronçon seulement » : plaque hydrofuge sur w1 seulement */
   await sel('w1'); await wait(page, 150);
   await page.locator('#insp .seg button', { hasText: 'Ce tronçon' }).click(); await wait(page, 150);
@@ -215,6 +227,10 @@ test('écran : « Ce tronçon seulement » ou « Tout le mur », copier et colle
   /* annuler revient à la composition commune */
   await page.evaluate(async () => (await import('./js/interaction.js')).undo()); await wait(page, 150);
   r = await murs(); assert.equal(r[1], r[0]);
+  /* copie abîmée dans les réglages de l'appareil : couches invalides retirées, pas de bouton si rien n'est valable */
+  await page.evaluate(async () => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.S.compoCopie = { couches: [{ m: 'bidon', e: 'x' }] }; F.renderInspector(); });
+  await wait(page, 100);
+  assert.equal(await page.locator('#insp button', { hasText: 'Coller la composition' }).count(), 0);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

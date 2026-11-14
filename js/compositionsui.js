@@ -7,7 +7,7 @@ import { clampOpening } from './mutations.js';
 import { commit } from './interaction.js';
 import { btn, btns, chipRow, confirmBtn, h, kv, numField, renderInspector, sec, segCtl, textField, toast, wallSideName } from './interface.js';
 import { CATS, COMPOSITIONS, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, changerEpaisseur, compoNiveau, copierCouches, courtCouche,
-  couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux, tronconsDuMur } from './compositions.js';
+  couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nettoyerCouches, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux, tronconsDuMur } from './compositions.js';
 
 import { LAMBDA } from './thermique.js';
 
@@ -85,13 +85,19 @@ function choixTypes(usage, onPick) {
 
 /* ---------------- mur ou cloison ---------------- */
 const regeo = () => { setGEO({}); for (const o of P.openings) clampOpening(o); };
-/* portée d'une modification de composition (pendant la session) : false = ce tronçon seulement (par défaut), true = tout
-   le mur (tronçons alignés et reliés de même composition). Ex. : une cloison de couloir coupée par la cloison entre la
-   salle de bain et la cuisine forme deux tronçons ; la plaque hydrofuge ne va que sur celui de la salle de bain. */
-const PORTEE = { tout: false };
-/* nouvelle composition : le mur s'élargit dans le sens choisi (sensElargissement) ; tronçons alignés compris si PORTEE.tout */
+/* portée d'une modification de composition : « Ce tronçon » (par défaut) ou « Tout le mur » = tronçons alignés et reliés
+   de même composition (choix valable pour le mur sélectionné seulement, pendant la session). Ex. : une cloison de couloir
+   coupée par la cloison entre la salle de bain et la cuisine forme deux tronçons ; la plaque hydrofuge ne va que sur celui de la salle de bain. */
+const PORTEE = { id: null }; // id du mur pour lequel « Tout le mur » est choisi (revient à « Ce tronçon » sur un autre mur)
+const toutLeMur = (w) => PORTEE.id === w.id;
+/* le mur s'élargira des deux côtés malgré le sens choisi : un tronçon voisin aligné n'est pas modifié avec lui */
+function elargiAuCentre(w) {
+  const tous = tronconsDuMur(P, w, false).length;
+  return tous > (aCouches(w) && !toutLeMur(w) ? 1 : tronconsDuMur(P, w, true).length);
+}
+/* nouvelle composition : le mur s'élargit dans le sens choisi (sensElargissement) ; tronçons alignés compris si « Tout le mur » */
 function appliquerMur(w, couches, nom) {
-  const avant = w.th, l = changerEpaisseur(P, w, null, sensDe(w), couches, nom, { seul: !PORTEE.tout });
+  const avant = w.th, l = changerEpaisseur(P, w, null, sensDe(w), couches, nom, { seul: !toutLeMur(w) });
   regeo(); commit();
   if (l.centre && couches && Math.abs(epaisseur(couches) - avant) > 0.01) toast('Les tronçons voisins alignés ne bougent pas : ce tronçon s’élargit des deux côtés.');
 }
@@ -99,8 +105,8 @@ function porteeSection(w) {
   const n = tronconsDuMur(P, w, true).length;
   if (n < 2) return null;
   return h('div', { class: 'fld' }, h('span', null, 'Modifier la composition de'),
-    segCtl([{ v: 'troncon', n: 'Ce tronçon' }, { v: 'tout', n: `Tout le mur (${n})` }], PORTEE.tout ? 'tout' : 'troncon', (v) => { PORTEE.tout = v === 'tout'; renderInspector(); }),
-    h('p', { class: 'note' }, PORTEE.tout ? `Les ${n} tronçons alignés et reliés qui ont la même composition sont modifiés ensemble.`
+    segCtl([{ v: 'troncon', n: 'Ce tronçon' }, { v: 'tout', n: `Tout le mur (${n})` }], toutLeMur(w) ? 'tout' : 'troncon', (v) => { PORTEE.id = v === 'tout' ? w.id : null; renderInspector(); }),
+    h('p', { class: 'note' }, toutLeMur(w) ? `Les ${n} tronçons alignés et reliés qui ont la même composition sont modifiés ensemble.`
       : 'Seul le tronçon sélectionné (en surbrillance) est modifié : les tronçons voisins alignés gardent leur composition.'));
 }
 /* composition copiée (réglage enregistré S.compoCopie), couches vues depuis la pièce comme « Appliquer aux autres » */
@@ -109,21 +115,27 @@ function copierCompo(w, g) {
   saveSettings(); toast('Composition copiée : touchez un autre mur ou une autre cloison, puis « Coller la composition ».'); renderInspector();
 }
 function boutonColler(w, g) {
-  const c = S.compoCopie;
-  if (!c || !aCouches(c)) return null;
-  return btn(`Coller la composition : ${c.cn || fmt(epaisseur(c.couches)) + ' cm'}`, () => {
-    appliquerMur(w, exterieurCote1(g) ? copierCouches(c.couches).reverse() : c.couches, c.cn || null);
+  /* relue depuis les réglages de l'appareil : couches vérifiées comme à l'ouverture d'un plan */
+  const c = S.compoCopie, l = c && typeof c === 'object' ? nettoyerCouches(c.couches) : null;
+  if (!l) return null;
+  const cn = typeof c.cn === 'string' && c.cn.trim() ? c.cn.trim().slice(0, 80) : null;
+  return btn(`Coller la composition : ${cn || fmt(epaisseur(l)) + ' cm'}`, () => {
+    appliquerMur(w, exterieurCote1(g) ? l.slice().reverse() : l, cn);
     toast('Composition collée. « Inverser les côtés » si les couches sont du mauvais côté.');
   }, 'sm');
 }
 /* sens d'élargissement choisi pour un mur (pendant la session) : 'centre', 'c1' (vers le côté 1), 'c2' (vers le côté 2) */
 const SENS = new Map();
 const sensDe = (w) => SENS.get(w.id) || 'centre';
-function epaissir(w, v) { changerEpaisseur(P, w, v, sensDe(w)); regeo(); commit(); }
+function epaissir(w, v) {
+  const l = changerEpaisseur(P, w, v, sensDe(w)); regeo(); commit();
+  if (l.centre) toast('Un tronçon voisin aligné n’a pas la même épaisseur : ce mur s’élargit des deux côtés pour ne pas le tordre.');
+}
 function sensElargissement(w, g) {
   const c1 = wallSideName(g, 1), c2 = wallSideName(g, -1), s = sensDe(w);
   return h('div', { class: 'fld' }, h('span', null, 'Quand l’épaisseur change, le mur s’élargit'),
     segCtl([{ v: 'centre', n: 'Des deux côtés' }, { v: 'c1', n: 'Vers ' + c1 }, { v: 'c2', n: 'Vers ' + c2 }], s, (v) => { SENS.set(w.id, v); renderInspector(); }),
+    s !== 'centre' && elargiAuCentre(w) ? h('p', { class: 'note' }, 'Un tronçon voisin aligné ne change pas avec ce mur : pour ne pas le tordre, le mur s’élargira quand même des deux côtés.') : null,
     h('p', { class: 'note' }, s === 'centre' ? 'Les deux faces s’écartent de la même valeur.'
       : `La face côté ${s === 'c1' ? c2 : c1} ne bouge pas. Les angles du mur se déplacent : les murs adjacents s’allongent ou raccourcissent pour suivre, leurs portes et fenêtres restent en place, les appareils posés sur la face qui bouge la suivent.`));
 }

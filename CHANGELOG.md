@@ -2,11 +2,12 @@
 
 ## 2026-11-14 (soir) — Composition par tronçon et copier-coller d'une composition
 Branche `claude/wall-composition-per-room-877z62`, partie de `main` après la fusion n°14. Demande de l'utilisateur : la plaque hydrofuge de la salle de bain se retrouvait aussi côté cuisine, parce que la cloison du couloir (coupée par la cloison salle de bain / cuisine) était traitée comme un seul mur.
-- **« Modifier la composition de : Ce tronçon / Tout le mur (n) »** (panneau du mur › Composition), affiché quand le mur a plusieurs tronçons alignés de même composition. Par défaut, **seul le tronçon touché** est modifié (avant : tous les tronçons alignés). Le choix est gardé pendant la session.
-- Quand un tronçon voisin aligné n'est pas modifié, les angles communs ne bougent plus (le voisin restait tordu) : si l'épaisseur change, le tronçon s'élargit des deux côtés, avec un message.
-- **« Copier la composition »** puis, sur un autre mur ou une autre cloison, **« Coller la composition : … »** (couches gardées du côté de la pièce, comme « Appliquer aux autres » ; « Inverser les côtés » au besoin). La composition copiée est gardée dans les réglages de l'appareil.
+- **« Modifier la composition de : Ce tronçon / Tout le mur (n) »** (panneau du mur › Composition), affiché quand le mur a plusieurs tronçons alignés de même composition. Par défaut, **seul le tronçon touché** est modifié (avant : tous les tronçons alignés). « Tout le mur » ne vaut que pour le mur sélectionné : sur un autre mur, on revient à « Ce tronçon ».
+- Quand un tronçon voisin aligné n'est pas modifié, les angles communs ne bougent plus (le voisin restait tordu) : si l'épaisseur change, le tronçon s'élargit des deux côtés, avec un message (aussi pour un mur sans composition dont le voisin aligné a une autre épaisseur) ; le panneau « Quand l'épaisseur change » le signale à l'avance.
+- **« Copier la composition »** puis, sur un autre mur ou une autre cloison, **« Coller la composition : … »** (couches gardées du côté de la pièce, comme « Appliquer aux autres » ; « Inverser les côtés » au besoin). La composition copiée est gardée dans les réglages de l'appareil et revérifiée avant d'être collée.
 - Moteur : `tronconsDuMur` et option `{ seul }` de `changerEpaisseur` (`js/compositions.js`). Aucun changement du format des plans.
 - Plan d'exemple : cloisons de la salle de bain en plaque hydrofuge du côté de la salle de bain seulement, tronçon par tronçon.
+- Audit avant fusion : portée « Tout le mur » limitée au mur choisi, avertissement du sens d'élargissement, copie revérifiée, captures 1180 × 820, 820 × 1180 et 390 × 844.
 - Service Worker : cache `calque-v49`. Tests : **197/197** (2 nouveaux tests dans `tests/compositions.test.mjs`, plan d'exemple vérifié).
 
 ## 2026-11-14 (fin) — Onglet « Calculs » : tous les calculs de Calque expliqués
