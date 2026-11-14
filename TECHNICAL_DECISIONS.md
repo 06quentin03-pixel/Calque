@@ -1,4 +1,10 @@
 
+## 14 novembre 2026 — déperditions thermiques (format v17)
+- **Méthode simplifiée** inspirée de la NF EN 12831 (parois U·A·ΔT·b, ponts thermiques ΔU forfaitaire, air 0,34·n·V·ΔT), Rsi/Rse conventionnels de l'EN ISO 6946. Présentée comme une aide au dimensionnement, jamais comme une étude réglementaire.
+- **Valeurs estimées affichées comme telles** : λ des matériaux (ordres de grandeur, λ équivalent pour les blocs creux), coefficients b, 19 °C (22 °C en salle de bain), 0,5 vol/h, ΔU 0,1, Uw 1,5 / Ud 2,0. La température extérieure de base n'est **jamais** estimée : sans elle, résultat par degré (W/K) et statut « partiel ».
+- Dimensions : longueur d'axe des murs × hauteur ; plancher et plafond à la surface de la pièce ; pertes entre pièces seulement si la voisine est plus froide ; terre-plein traité par un coefficient b (calcul EN ISO 13370 non fait).
+- **Élargissement d'un mur** : le mur entier (tronçons alignés, même épaisseur, même composition) ; les angles bougent, les ouvertures des murs voisins sont recalées (`t`) pour rester en place ; le sens choisi est gardé pour la session seulement.
+
 ## 14 novembre 2026 — composition des murs (format v16)
 - **Couches rangées sur le mur** (`w.couches`, du côté 1 = normale +n vers le côté 2) et sur le niveau (`L.sol`, `L.plafond`) ; aucune seconde copie : `w.th` est recalculé par `appliquerAuMur`, l'ancien champ reste la référence pour toute la géométrie (aucun moteur ne lit les couches pour dessiner les murs en 3D).
 - **Épaisseurs proposées** : dimensions nominales courantes, marquées comme telles ; aucune donnée thermique ni référence de fabricant.

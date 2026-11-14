@@ -142,6 +142,12 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Dessin des couches sur le plan et dans les exports, surfaces des matériaux estimées.
 - ⬜ Pistes : couches visibles dans la vue 3D (coupe), plancher ou plafond propre à une pièce, matériaux dans le quantitatif et le chiffrage, boîtes d'encastrement adaptées à la cloison (plaque ou maçonnerie).
 
+## Suite du 14 novembre 2026 ✅ (à essayer sur iPad)
+- ✅ Déperditions thermiques des murs, des pièces et des niveaux, comparées au chauffage posé.
+- ✅ Gaine dans la laine de verre du faux plafond (couche choisie).
+- ✅ Grande fenêtre « Ajouter un niveau » (avec « tous les murs »), sens d'élargissement d'un mur.
+- ⬜ Pistes : calcul du terre-plein selon l'EN ISO 13370, ponts thermiques linéiques, puissance de relance, export du bilan thermique dans le dossier PDF, choix d'un radiateur proposé.
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

@@ -1,13 +1,15 @@
 /* Calque — module « compositionsui » : écran de la composition des murs, des cloisons, du plancher et du plafond
    (sections de l'inspecteur d'un mur, d'un niveau et d'une gaine). Calculs dans compositions.js (sans écran).
    Les épaisseurs proposées sont des dimensions nominales courantes, présentées comme telles (à vérifier). */
-import { P, S, estExterieure, saveSettings, setGEO } from './noyau.js';
+import { P, S, estExterieure, isNum, saveSettings, setGEO } from './noyau.js';
 import { geo } from './geometrie.js';
 import { clampOpening } from './mutations.js';
 import { commit } from './interaction.js';
 import { btn, btns, chipRow, confirmBtn, h, kv, numField, renderInspector, sec, segCtl, textField, toast, wallSideName } from './interface.js';
-import { CATS, COMPOSITIONS, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, compoNiveau, copierCouches, courtCouche,
-  couchesOrientees, epaisseur, logementGaine, matDe, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux } from './compositions.js';
+import { CATS, COMPOSITIONS, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, changerEpaisseur, compoNiveau, copierCouches, courtCouche,
+  couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux } from './compositions.js';
+
+import { LAMBDA } from './thermique.js';
 
 const fmt = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 const ETATS = { ok: ['ok', 'Place suffisante'], noyee: ['warn', 'Gaine noyée'], insuffisant: ['bad', 'Épaisseur insuffisante'], saignee: ['warn', 'Saignée à prévoir'], inconnu: ['', 'Non vérifié'] };
@@ -54,9 +56,21 @@ function editeurCouches(couches, usage, set, prefix) {
           off(btn('↓', () => maj((x) => { if (i < x.length - 1) [x[i + 1], x[i]] = [x[i], x[i + 1]]; }), 'sm'), i === l.length - 1),
           off(btn('✕', () => maj((x) => x.splice(i, 1)), 'sm danger'), false))),
       m.passage ? h('p', { class: 'note' }, m.passage === 'libre' ? `Passage des gaines jusqu’à Ø${Math.floor(c.e * 10)}.` : 'Gaines noyées à la coulée.') : null,
-      m.eps.length ? chipRow(m.eps, c.e, (v) => maj((x) => { x[i].e = v; }), (v) => fmt(v)) : null);
+      m.eps.length ? chipRow(m.eps, c.e, (v) => maj((x) => { x[i].e = v; }), (v) => fmt(v)) : null,
+      champThermique(c, i, maj, prefix));
   }),
   btns(btn('Ajouter une couche', () => maj((x) => x.push({ m: usage === 'sol' ? 'chape' : usage === 'plafond' ? 'plaque' : 'plaque', e: usage === 'sol' ? 5 : 1.25 })), 'sm', 'plus')));
+}
+/* conductivité λ (ou résistance R d'un vide) d'une couche : estimée par Calque tant qu'elle n'est pas saisie */
+function champThermique(c, i, maj, prefix) {
+  const t = LAMBDA[c.m] || {}, parR = isNum(c.r) || (!isNum(c.l) && isNum(t.r));
+  const v = parR ? (isNum(c.r) ? c.r : t.r) : isNum(c.l) ? c.l : t.l;
+  const saisi = isNum(c.l) || isNum(c.r);
+  return h('div', { class: 'compo-th' },
+    numField(parR ? 'Résistance R' : 'Conductivité λ', isNum(v) ? v : null, parR ? 'm²·K/W' : 'W/m·K',
+      (x) => maj((y) => { if (parR) { y[i].r = x; delete y[i].l; } else { y[i].l = x; delete y[i].r; } }), { id: `${prefix}-l${i}`, min: 0.001, max: parR ? 50 : 400, fmt: (x) => (isNum(x) ? String(Math.round(x * 1000) / 1000).replace('.', ',') : '') }),
+    h('p', { class: 'note' }, saisi ? 'Saisie (fiche du fabricant).' : isNum(v) ? 'Estimée par Calque : remplacez-la par la valeur du fabricant.' : 'Manquante : saisissez-la pour calculer les déperditions.'),
+    saisi ? btns(btn('Revenir à la valeur estimée', () => maj((y) => { delete y[i].l; delete y[i].r; }), 'sm')) : null);
 }
 /* compositions types d'un usage */
 function choixTypes(usage, onPick) {
@@ -71,7 +85,19 @@ function choixTypes(usage, onPick) {
 
 /* ---------------- mur ou cloison ---------------- */
 const regeo = () => { setGEO({}); for (const o of P.openings) clampOpening(o); };
-function appliquerMur(w, couches, nom) { appliquerAuMur(w, couches, nom); regeo(); commit(); }
+/* nouvelle composition : le mur s'élargit dans le sens choisi (sensElargissement) ; tronçons alignés du même mur compris */
+function appliquerMur(w, couches, nom) { changerEpaisseur(P, w, null, sensDe(w), couches, nom); regeo(); commit(); }
+/* sens d'élargissement choisi pour un mur (pendant la session) : 'centre', 'c1' (vers le côté 1), 'c2' (vers le côté 2) */
+const SENS = new Map();
+const sensDe = (w) => SENS.get(w.id) || 'centre';
+function epaissir(w, v) { changerEpaisseur(P, w, v, sensDe(w)); regeo(); commit(); }
+function sensElargissement(w, g) {
+  const c1 = wallSideName(g, 1), c2 = wallSideName(g, -1), s = sensDe(w);
+  return h('div', { class: 'fld' }, h('span', null, 'Quand l’épaisseur change, le mur s’élargit'),
+    segCtl([{ v: 'centre', n: 'Des deux côtés' }, { v: 'c1', n: 'Vers ' + c1 }, { v: 'c2', n: 'Vers ' + c2 }], s, (v) => { SENS.set(w.id, v); renderInspector(); }),
+    h('p', { class: 'note' }, s === 'centre' ? 'Les deux faces s’écartent de la même valeur.'
+      : `La face côté ${s === 'c1' ? c2 : c1} ne bouge pas. Les angles du mur se déplacent : les murs adjacents s’allongent ou raccourcissent pour suivre, leurs portes et fenêtres restent en place, les appareils posés sur la face qui bouge la suivent.`));
+}
 function exterieurCote1(g) { return wallSideName(g, 1) === 'extérieur' && wallSideName(g, -1) !== 'extérieur'; }
 /* section « Composition » de l'inspecteur d'un mur */
 function compoMurSection(w, g) {
@@ -117,8 +143,8 @@ function confirmBtnSimple(label, confirmLabel, action) {
   return b;
 }
 /* épaisseur d'un mur composé : calculée (le champ libre est remplacé) */
-function epaisseurComposee(w) {
-  return sec('Épaisseur', h('p', { class: 'note' }, `${fmt(w.th)} cm : somme des couches de la composition (modifiez une couche pour la changer).`));
+function epaisseurComposee(w, g) {
+  return sec('Épaisseur', h('p', { class: 'note' }, `${fmt(w.th)} cm : somme des couches de la composition (modifiez une couche pour la changer).`), g ? sensElargissement(w, g) : null);
 }
 /* propriétés d'un nouveau mur : composition choisie pour les prochains murs ou cloisons */
 function compoNouveauMur(pr) {
@@ -161,10 +187,14 @@ function compoNiveauSection(lvl) {
 function logementSection(d) {
   if (!(d.pose === 'cloison' || d.pose === 'sol' || d.pose === 'plafond')) return null;
   const l = logementGaine(P, d);
+  const L = P.levels.find((x) => x.id === d.lv), cp = d.pose !== 'cloison' ? compoNiveau(L, d.pose === 'sol' ? 'sol' : 'plafond') : null;
+  const choix = cp ? couchesPassage(cp.couches) : [];
   const peutPlacer = d.pose === 'cloison' && l.some((x) => x.wall && P.walls.some((w) => w.id === x.wall && aCouches(w) && w.couches.some((c) => matDe(c).passage === 'libre')));
   return sec('Logement dans les couches',
     l.length ? l.map((x) => h('div', { class: 'compo-ok' }, h('span', { class: 'pill ' + ETATS[x.statut][0] }, ETATS[x.statut][1]), h('span', { class: 'note' }, x.msg)))
       : h('p', { class: 'note' }, 'Aucun tronçon dans l’épaisseur d’un mur : tracez la gaine le long de l’axe du mur.'),
+    choix.length > 1 ? h('div', { class: 'fld' }, h('span', null, `Couche ${d.pose === 'sol' ? 'du plancher' : 'du plafond'} où passe la gaine`),
+      segCtl([{ v: null, n: 'Automatique' }, ...choix.map((x) => ({ v: x.c.m, n: courtCouche(x.c) }))], d.couche || null, (v) => { if (v) d.couche = v; else delete d.couche; commit(); })) : null,
     peutPlacer ? btns(btn('Placer dans la couche de passage (laine, vide technique)', () => {
       const n = placerDansCouche(P, d);
       if (!n) { toast('Aucun tronçon à déplacer.'); return; }
@@ -173,4 +203,5 @@ function logementSection(d) {
     h('p', { class: 'note' }, 'Contrôle géométrique de Calque (épaisseur de la couche et diamètre de la gaine), sans valeur réglementaire. Les compositions se règlent en touchant un mur, ou le niveau (plancher et plafond).'));
 }
 
+export { epaissir, sensElargissement };
 export { compoMurSection, compoNiveauSection, compoNouveauMur, epaisseurComposee, logementSection, nomCompoNouveauMur, oublierCompoNouveauMur };

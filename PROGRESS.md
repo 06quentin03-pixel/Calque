@@ -1,3 +1,8 @@
+## 14 novembre 2026 (suite) — Déperditions, faux plafond, ajout d'un niveau, sens d'élargissement
+- Déperditions des murs, pièces et niveaux (`js/thermique.js`, `js/thermiqueui.js`), couche choisie pour une gaine au plafond, grande fenêtre « Ajouter un niveau », élargissement d'un mur vers un côté (`changerEpaisseur`).
+- Défaut corrigé : la fenêtre « Ajouter un niveau » ouverte depuis le panneau du niveau s'affichait écrasée au bas de l'écran.
+- Format v17. Tests : 193/193 (`tests/thermique.test.mjs`).
+
 ## 14 novembre 2026 — Composition des murs, cloisons, planchers et plafonds
 - Couches des murs et cloisons, plancher et plafond des niveaux, gaines logées dans la laine ou le vide technique, dessin des couches, surfaces des matériaux (`js/compositions.js`, `js/compositionsui.js`).
 - Format v16 avec migration et copie de sécurité. Plan d'exemple complété (maison, atelier, plancher, plafonds, gaine dans la laine).

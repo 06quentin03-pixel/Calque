@@ -348,12 +348,29 @@ function compositionsExemple() {
   const L0 = P.levels.find((l) => l.id === 'L0'), L1 = P.levels.find((l) => l.id === 'L1');
   if (L0) {
     appliquerAuNiveau(L0, 'sol', [c('carrelage', 1), c('chape', 5), c('pu', 4), c('dalle', 10)], 'Dalle sur terre-plein isolée (exemple)');
-    appliquerAuNiveau(L0, 'plafond', [c('plenum', 10), c('plaque', 1.25)], 'Faux plafond sur fourrures, plénum de 10 (exemple)');
+    appliquerAuNiveau(L0, 'plafond', [c('plenum', 10), c('laine_verre', 10), c('plaque', 1.25)], 'Faux plafond avec laine de verre 10, plénum de 10 (exemple)');
   }
   if (L1) appliquerAuNiveau(L1, 'plafond', [c('laine_verre', 30), c('vide_tech', 2.7), c('plaque', 1.25)], 'Plafond sous combles, laine de verre 30 (exemple)');
   touch();
   const g = P.ducts.find((d) => d.pose === 'cloison');
   if (g) placerDansCouche(P, g);
+  /* gaine du faux plafond passée dans la laine de verre (format v17) */
+  const gp = P.ducts.find((d) => d.lv === 'L0' && d.sys === 'elec' && d.pose === 'plafond' && (d.dia == null || d.dia <= 100));
+  if (gp) gp.couche = 'laine_verre';
+  thermiqueExemple();
+}
+/* déperditions (format v17) : valeurs d'EXEMPLE saisies (température extérieure, fenêtres, pièces), le reste estimé */
+function thermiqueExemple() {
+  P.install.text = d(-7, 'Valeur d’exemple : à remplacer par la température de base de votre commune');
+  const L0 = P.levels.find((l) => l.id === 'L0'), L1 = P.levels.find((l) => l.id === 'L1');
+  if (L0) L0.dessous = 'terreplein';
+  if (L1) L1.dessus = 'combles';
+  for (const o of P.openings) if (o.kind === 'window' && P.walls.some((w) => w.id === o.wall && w.lv === 'L0' && (P.nodes.find((n) => n.id === w.a) || {}).x <= 1000)) o.uw = 1.3; // fenêtres de la maison (exemple)
+  const sdb = P.rooms.find((r) => r.lv === 'L0' && /Salle de bain/.test(r.name)); if (sdb) sdb.ti = 22;
+  const nc = P.rooms.find((r) => r.lv === 'L0' && /Buanderie|Cellier|Garage/.test(r.name)); if (nc) nc.nc = true;
+  /* radiateur de la chambre (puissance d'exemple saisie), comparé aux déperditions de la pièce */
+  const sej = P.rooms.find((r) => r.lv === 'L0' && r.name === 'Chambre');
+  if (sej) for (const e of P.elec.filter((x) => x.lv === 'L0' && x.type === 'rad_elec')) { const gr = geo('L0').rooms.find((q) => q.label === sej); if (gr && inPoly(e, gr.loop)) e.p = 1000; }
 }
 /* module « Plans électriques » (format v12) : personnalisation des calques, vue enregistrée, couleur, courbe et type de
    conducteur de circuits, taille de symboles, télérupteur et fil pilote pour montrer le moteur de câblage.

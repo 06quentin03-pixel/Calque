@@ -47,7 +47,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 16) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 17) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Photos du chantier (phase 7) : base IndexedDB à part `calque-photos` (`js/photos.js`), jamais dans le plan ; incluses dans la sauvegarde complète.
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
@@ -69,6 +69,8 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
   - Dessin du câblage : point d'extension `EXT.cablage` (au-dessus des gaines, sous les appareils).
 - Schémas électriques (onglet « Schémas », format v14, `P.schemas`) : bibliothèque `schemasymboles.js` et moteur `schema.js` (sans écran : équipotentielles, repères, renvois, nomenclature, borniers, liste des fils, modèles, import du tableau, dessin d'un folio pour l'écran, le PDF, le SVG et le DXF), écran `schemaui.js`. Unités : millimètres sur un folio A3 ; bornes des symboles sur la grille de 5 mm (un test le vérifie).
 - Composition des murs, cloisons, planchers et plafonds (format v16) : moteur `compositions.js` (sans écran : matériaux, compositions types, bandes d'un mur, logement et placement des gaines, surfaces), écran `compositionsui.js`. `w.th` = somme des couches (`appliquerAuMur`) ; dessin `drawCouches` (`rendu2d.js`, sans découpage, compatible PDF/SVG/DXF).
+- Déperditions thermiques (format v17) : moteur `thermique.js` (sans écran : U des parois, déperditions d'un mur, d'une pièce, bilan d'un niveau ; méthode simplifiée, jamais présentée comme réglementaire), écran `thermiqueui.js`. Les pièces sont fournies par l'appelant (`geo(lv).rooms`).
+- Épaisseur d'un mur : `changerEpaisseur` (`compositions.js`) élargit le mur entier (tronçons alignés) au centre ou vers un côté, en déplaçant ses angles.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

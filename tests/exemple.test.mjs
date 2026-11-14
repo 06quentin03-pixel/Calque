@@ -45,7 +45,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 16);
+  assert.equal(r.v, 17);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -123,7 +123,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 16);
+  assert.equal(r.v, 17);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
@@ -147,6 +147,19 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
   assert.ok(cp.epOk, 'épaisseur des murs = somme des couches'); assert.ok(cp.exemple, 'compositions marquées « exemple »');
   assert.ok(cp.sol); assert.equal(cp.plafonds, 2);
   assert.deepEqual(cp.loge, ['ok'], 'gaine du local technique logée dans la laine de verre');
+  /* suite du 14 novembre (format v17) : gaine dans la laine du faux plafond, déperditions des pièces de la maison */
+  const th = await page.evaluate(async () => { const N = await import('./js/noyau.js'), K = await import('./js/compositions.js'), T = await import('./js/thermique.js'), G = await import('./js/geometrie.js');
+    const P = N.P, gp = P.ducts.find((d) => d.couche);
+    const toutes = new Map(P.levels.map((l) => [l.id, G.geo(l.id).rooms]));
+    const ch = toutes.get('L0').find((r) => r.label && r.label.name === 'Chambre');
+    const D = T.deperditionsPiece(P, ch, { toutes, pieces: toutes.get('L0') });
+    const B = T.bilanThermique(P, 'L0', { toutes, te: T.tExt(P) });
+    return { couche: gp && gp.couche, loge: gp && K.logementGaine(P, gp)[0].msg, te: P.install.text.v, uw: P.openings.filter((o) => o.uw).length,
+      sdb: (P.rooms.find((r) => r.name === 'Salle de bain') || {}).ti, nc: P.rooms.some((r) => r.nc), total: D.total, pose: T.chauffagePose(P, ch).p, n: B.lignes.length };
+  });
+  assert.equal(th.couche, 'laine_verre'); assert.match(th.loge, /Laine de verre/);
+  assert.equal(th.te, -7); assert.ok(th.uw >= 3); assert.equal(th.sdb, 22); assert.ok(th.nc);
+  assert.ok(th.total > 300 && th.total < 5000, 'déperdition de la chambre : ' + th.total); assert.equal(th.pose, 1000); assert.ok(th.n >= 6);
   /* onglet « Schémas » : modèles et distribution importée du tableau, sans erreur de schéma */
   const sc = await page.evaluate(async () => { const N = await import('./js/noyau.js'), S = await import('./js/schema.js'); const s = N.P.schemas;
     return { n: s.folios.length, types: [...new Set(s.folios.map((f) => f.type))].sort(), err: S.controlesSchema(s).filter((x) => x.niveau === 'erreur').length, nom: S.nomenclature(s).lignes.length, bor: S.borniers(s).map((b) => b.rep), disj: s.folios.filter((f) => f.type === 'distribution').reduce((t, f) => t + f.syms.filter((y) => y.t === 'disj2').length, 0), circ: N.P.circuits.length }; });

@@ -1,5 +1,5 @@
 // Demande de l'utilisateur (14 novembre 2026) : composition des murs, cloisons, planchers et plafonds couche par couche
-// (plaque de plâtre, laine de verre, parpaing, brique…) et gaines logées dans la laine ou le vide technique ; migration v15 → v16.
+// (plaque de plâtre, laine de verre, parpaing, brique…) et gaines logées dans la laine ou le vide technique ; migration v15 → v17.
 // Lancer :  node --test tests/compositions.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -83,14 +83,14 @@ test('sans écran : épaisseur, couches d’un mur, logement des gaines, placeme
   assert.deepEqual(m.levels[0], { id: 'L0', sol: { couches: [{ m: 'dalle', e: 12 }], cn: 'D' } });
 });
 
-test('écran : migration v15 → v16, composition d’un mur et du niveau, dessin des couches, gaine placée dans la laine', async () => {
+test('écran : migration v15 → v17, composition d’un mur et du niveau, dessin des couches, gaine placée dans la laine', async () => {
   const { ctx, page, errors } = await fresh();
   const p0 = plan(15); p0.walls[0].couches = [{ m: 'bidon', e: 3 }]; // valeur invalide : retirée à la migration
   await seedPlan(ctx, p0); await boot(page);
   let r = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, c: N.P.walls[0].couches || null, th: N.P.walls.map((w) => w.th) }; });
-  assert.equal(r.v, 16); assert.equal(r.c, null); assert.deepEqual(r.th, [20, 20, 20, 20, 20, 20, 7], 'épaisseurs inchangées');
+  assert.equal(r.v, 17); assert.equal(r.c, null); assert.deepEqual(r.th, [20, 20, 20, 20, 20, 20, 7], 'épaisseurs inchangées');
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
-  assert.ok(vers.some((w) => /\(v15 → v16\)/.test(w)), 'copie de sécurité');
+  assert.ok(vers.some((w) => /\(v15 → v17\)/.test(w)), 'copie de sécurité');
   /* inspecteur du mur w0 : composition type « Parpaing de 20 + doublage sur ossature » */
   const sel = (t, id) => page.evaluate(async ([t, id]) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = id ? { t, id } : null; N.ui.inspOpen = true; F.renderInspector(); }, [t, id]);
   await sel('wall', 'w0'); await wait(page, 150);

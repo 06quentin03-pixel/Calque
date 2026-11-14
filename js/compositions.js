@@ -15,6 +15,7 @@
    il ne dit rien de la conformité à la norme. */
 import { isNum } from './noyau.js';
 import { isElecDuct, pointsGaine } from './cheminement.js';
+import { ELEC_BY } from './symboles.js';
 
 const ORIGINE = 'Épaisseur nominale courante du commerce, proposée par Calque (à vérifier sur le matériel choisi)';
 
@@ -84,6 +85,7 @@ const COMPOSITIONS = [
   { id: 'shour', usage: 'sol', n: 'Poutrelles et hourdis (carrelage, chape, ravoirage, compression)', couches: [c_('carrelage', 1), c_('chape', 5), c_('ravoirage', 4), c_('compression', 4), c_('hourdis', 16)] },
   { id: 'sbois', usage: 'sol', n: 'Plancher bois (parquet sur solives)', couches: [c_('parquet', 1.4), c_('plancher_bois', 2.2), c_('laine_verre', 10), c_('plancher_bois', 15)] },
   { id: 'pfp', usage: 'plafond', n: 'Faux plafond plaque sur fourrures (plénum 10)', couches: [c_('plenum', 10), c_('plaque', 1.25)] },
+  { id: 'pfpl', usage: 'plafond', n: 'Faux plafond avec laine de verre (plénum 10, laine 10, plaque)', couches: [c_('plenum', 10), c_('laine_verre', 10), c_('plaque', 1.25)] },
   { id: 'pcomb', usage: 'plafond', n: 'Plafond sous combles (laine de verre 30 sur plaque)', couches: [c_('laine_verre', 30), c_('vide_tech', 2.7), c_('plaque', 1.25)] },
   { id: 'pdal', usage: 'plafond', n: 'Plafond enduit sous dalle', couches: [c_('enduit_platre', 1)] },
 ];
@@ -96,7 +98,7 @@ const nomCouche = (c) => (c && c.m === 'autre' && c.n ? c.n : matDe(c).n);
 const courtCouche = (c) => (c && c.m === 'autre' && c.n ? c.n : matDe(c).court);
 function epaisseur(couches) { return Array.isArray(couches) ? r2(couches.reduce((s, c) => s + (isNum(c.e) ? c.e : 0), 0)) : 0; }
 const aCouches = (o) => !!(o && Array.isArray(o.couches) && o.couches.length);
-const clone = (couches) => couches.map((c) => Object.assign({ m: c.m, e: c.e }, c.m === 'autre' && c.n ? { n: c.n } : {}));
+const clone = (couches) => couches.map((c) => Object.assign({ m: c.m, e: c.e }, c.m === 'autre' && c.n ? { n: c.n } : {}, isNum(c.l) ? { l: c.l } : isNum(c.r) ? { r: c.r } : {}));
 /* composition d'un niveau : 'sol' (plancher) ou 'plafond' */
 const compoNiveau = (L, k) => (L && L[k] && aCouches(L[k]) ? L[k] : null);
 
@@ -171,8 +173,9 @@ function logementGaine(plan, d) {
     const quoi = d.pose === 'sol' ? 'du plancher' : 'du plafond';
     if (!cp) return [statutDans(null, dia, quoi)];
     const P = couchesPassage(cp.couches);
-    /* la couche de passage la plus favorable : logée d'abord, puis noyée */
-    const best = P.find((x) => x.passage === 'libre' && (dia == null || dia <= x.dmax)) || P.find((x) => x.passage === 'noyee') || P[0];
+    /* couche choisie sur la gaine (d.couche, format v17), sinon la plus favorable : logée d'abord, puis noyée */
+    const choisie = d.couche ? P.find((x) => x.c.m === d.couche) : null;
+    const best = choisie || P.find((x) => x.passage === 'libre' && (dia == null || dia <= x.dmax)) || P.find((x) => x.passage === 'noyee') || P[0];
     return [best ? statutDans(best, dia, quoi) : statutDans({ c: cp.couches[0] }, dia, quoi)].map((s) => Object.assign(s, { niveau: k }));
   }
   if (d.pose !== 'cloison') return [];
@@ -239,6 +242,66 @@ function appliquerAuNiveau(L, k, couches, nom) {
 /* composition type, couches du côté 1 vers le côté 2 : inversée si la pièce est du côté 2 (exterieurCote1) */
 function couchesOrientees(compo, exterieurCote1) { const l = clone(compo.couches); return exterieurCote1 ? l.reverse() : l; }
 
+/* ---------------- épaisseur d'un mur, élargi dans un sens choisi ----------------
+   sens : 'centre' (les deux faces bougent), 'c1' (la face du côté 2 reste en place, le mur grandit vers le côté 1),
+   'c2' (la face du côté 1 reste en place). Le mur entier est traité : tronçons alignés et reliés de même épaisseur et de
+   même composition. Ses angles sont déplacés : les murs adjacents s'allongent ou raccourcissent pour suivre ; les
+   ouvertures de ces murs gardent leur place ; les appareils muraux posés sur une face qui bouge la suivent.
+   couches (facultatif) : nouvelle composition (null = la retirer, undefined = inchangée). Renvoie les murs modifiés. */
+function changerEpaisseur(plan, w, th, sens, couches, nom) {
+  const nodes = new Map((plan.nodes || []).map((n) => [n.id, n]));
+  const A = nodes.get(w.a), B = nodes.get(w.b); if (!A || !B) return [];
+  const L = Math.hypot(B.x - A.x, B.y - A.y); if (L < 0.5) return [];
+  const d = { x: (B.x - A.x) / L, y: (B.y - A.y) / L }, n = { x: -d.y, y: d.x };
+  const cle = (x) => JSON.stringify(x.couches || null);
+  const dirDe = (x) => { const a = nodes.get(x.a), b = nodes.get(x.b); if (!a || !b) return null; const l = Math.hypot(b.x - a.x, b.y - a.y); return l < 0.5 ? null : { x: (b.x - a.x) / l, y: (b.y - a.y) / l }; };
+  const aligne = (x) => { const e = dirDe(x); if (!e || Math.abs(e.x * d.y - e.y * d.x) > 0.01) return false; const a = nodes.get(x.a); return Math.abs((a.x - A.x) * n.x + (a.y - A.y) * n.y) < 0.5; };
+  /* tronçons du même mur (alignés, reliés, même épaisseur, même composition) */
+  const lv = (plan.walls || []).filter((x) => x.lv === w.lv);
+  const chaine = new Set([w]); let pile = [w];
+  while (pile.length) {
+    const x = pile.pop();
+    for (const y of lv) if (!chaine.has(y) && (y.a === x.a || y.a === x.b || y.b === x.a || y.b === x.b) && Math.abs((y.th || 0) - (w.th || 0)) < 0.01 && cle(y) === cle(w) && y.kind === w.kind && aligne(y)) { chaine.add(y); pile.push(y); }
+  }
+  const ancien = w.th || 10;
+  const futur = couches === undefined ? th : couches ? epaisseur(couches) : th;
+  const D = futur - ancien;
+  const dec = sens === 'c1' ? D / 2 : sens === 'c2' ? -D / 2 : 0; // déplacement de l'axe le long de +n
+  const f1 = sens === 'c1' ? D : sens === 'c2' ? 0 : D / 2, f2 = sens === 'c2' ? D : sens === 'c1' ? 0 : D / 2; // déplacement des faces vers l'extérieur du mur
+  /* appareils muraux sur une face qui bouge (avant de déplacer les angles) */
+  const muraux = [];
+  if (f1 || f2) for (const x of chaine) {
+    const a = nodes.get(x.a), b = nodes.get(x.b), e = dirDe(x); if (!e) continue;
+    const m = { x: -e.y, y: e.x }, sg = m.x * n.x + m.y * n.y > 0 ? 1 : -1, l = Math.hypot(b.x - a.x, b.y - a.y);
+    for (const el of plan.elec || []) {
+      if (el.lv !== w.lv || muraux.includes(el)) continue;
+      const def = ELEC_BY.get(el.type); if (!def || !def.wall) continue;
+      const u = (el.x - a.x) * e.x + (el.y - a.y) * e.y, v = ((el.x - a.x) * m.x + (el.y - a.y) * m.y) * sg; // v > 0 : côté 1 du mur w
+      if (u < -1 || u > l + 1 || Math.abs(v) < ancien / 2 - 3 || Math.abs(v) > ancien / 2 + 6) continue;
+      const k = v > 0 ? f1 : -f2;
+      if (k) { el.x = Math.round((el.x + n.x * k) * 10) / 10; el.y = Math.round((el.y + n.y * k) * 10) / 10; muraux.push(el); }
+    }
+  }
+  if (dec) {
+    const ids = new Set(); for (const x of chaine) { ids.add(x.a); ids.add(x.b); }
+    const mv = { x: n.x * dec, y: n.y * dec };
+    /* ouvertures des murs voisins dont le départ (angle a) bouge : gardent leur place */
+    const ch = new Set(chaine);
+    for (const x of lv) {
+      if (ch.has(x) || !ids.has(x.a)) continue;
+      const e = dirDe(x); if (!e) continue;
+      const s = mv.x * e.x + mv.y * e.y;
+      for (const o of plan.openings || []) if (o.wall === x.id && isNum(o.t)) o.t = Math.round((o.t - s) * 10) / 10;
+    }
+    for (const id of ids) { const p = nodes.get(id); p.x = Math.round((p.x + mv.x) * 10) / 10; p.y = Math.round((p.y + mv.y) * 10) / 10; }
+  }
+  for (const x of chaine) {
+    if (couches !== undefined) appliquerAuMur(x, couches, nom);
+    if (!couches) x.th = Math.round(futur * 100) / 100;
+  }
+  return [...chaine];
+}
+
 /* ---------------- quantités (estimation) ---------------- */
 /* surfaces par matériau d'un niveau, en m² : murs (longueur d'axe × hauteur, ouvertures déduites) ; plancher et plafond
    (surface des pièces, fournie par l'appelant). Estimation de Calque : jonctions et retours non comptés. */
@@ -265,6 +328,9 @@ function nettoyerCouches(a) {
     if (!c || typeof c !== 'object' || !MATERIAUX[c.m] || !(isNum(c.e) && c.e >= 0.1 && c.e <= 200)) continue;
     const o = { m: c.m, e: r2(c.e) };
     if (c.m === 'autre' && typeof c.n === 'string' && c.n.trim()) o.n = c.n.trim().slice(0, 60);
+    /* v17 : conductivité λ (W/m·K) ou résistance R (m²·K/W) saisies (fiche du fabricant) */
+    if (isNum(c.l) && c.l > 0.001 && c.l <= 400) o.l = c.l;
+    else if (isNum(c.r) && c.r > 0 && c.r <= 50) o.r = c.r;
     l.push(o);
   }
   return l.length ? l : null;
@@ -291,6 +357,7 @@ function nettoyerV16(p) {
   return p;
 }
 
+export { changerEpaisseur };
 export { CATS, COMPOSITIONS, COMPO_BY, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, bandes, clone as copierCouches, compoNiveau,
   coucheA, couchesOrientees, couchesPassage, courtCouche, decalagePassage, epaisseur, logementGaine, matDe, nettoyerCouches, nettoyerMurV16,
   nettoyerNiveauV16, nettoyerV16, nomCouche, placerDansCouche, resumePassage, statutDans, surfacesMateriaux };

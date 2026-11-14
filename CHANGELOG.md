@@ -1,5 +1,20 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-14 (suite) — Déperditions thermiques, gaine dans la laine du faux plafond, ajout d'un niveau, sens d'élargissement d'un mur
+Même branche `claude/loving-thompson-b92t8x`.
+- **Déperditions thermiques** (nouveaux modules `js/thermique.js`, sans écran, et `js/thermiqueui.js`) :
+  - Mur : coefficient U et résistance R couche par couche (Rsi, λ et R de chaque couche, Rse), déperdition de chaque côté chauffé (mur net et ouvertures), en W/K et en W.
+  - Pièce : température intérieure, pièce chauffée ou non, renouvellement d'air ; déperditions par les parois (murs, fenêtres, portes, plancher, plafond), les ponts thermiques et l'air ; W, W/m², W/m³ ; comparaison avec le chauffage posé dans la pièce (« Il manque … W »).
+  - Niveau : température extérieure de base, ponts thermiques, ce qu'il y a sous le plancher et au-dessus du plafond (terre-plein, vide sanitaire, combles…), bilan des pièces chauffées. Fenêtre ou porte : coefficient Uw / Ud.
+  - Chaque couche : λ (ou R d'un vide) estimé par Calque, remplaçable par la valeur du fabricant.
+  - Méthode simplifiée (inspirée de la NF EN 12831), présentée comme une aide au dimensionnement, pas comme une étude réglementaire. Valeurs « saisies » ou « estimées » affichées ; une donnée manquante (température extérieure, composition, λ) rend le résultat « partiel » et est nommée.
+- **Gaine dans la laine de verre du faux plafond** : composition type « Faux plafond avec laine de verre » ; dans le panneau d'une gaine posée au plafond ou au sol, choix de la couche où elle passe (plénum, laine de verre…).
+- **« Ajouter un niveau »** : grande fenêtre au milieu de l'écran (au lieu d'un petit menu collé au bas de l'écran, presque invisible depuis le panneau du niveau), avec un nouveau choix « Étage avec tous les murs » (murs et cloisons).
+- **Sens d'élargissement d'un mur** : « Des deux côtés », « Vers [pièce] », « Vers extérieur ». La face opposée ne bouge pas ; les angles du mur se déplacent, les murs adjacents s'allongent ou raccourcissent pour suivre, leurs portes et fenêtres restent en place, les appareils posés sur la face qui bouge la suivent. Vaut aussi pour un changement de composition ; les tronçons alignés du même mur sont traités ensemble.
+- **Format des plans v17** (`l`, `r` des couches ; `install.text`, `install.dupt` ; `ti`, `nc`, `ach` des pièces ; `dessous`, `dessus`, `bsol`, `bplaf` des niveaux ; `uw` des ouvertures ; `couche` des gaines) avec migration et copie de sécurité.
+- Plan d'exemple : température extérieure −7 °C (exemple), faux plafond du rez-de-chaussée avec laine de verre et gaine dedans, fenêtres de la maison Uw 1,3, salle de bain à 22 °C, buanderie non chauffée, radiateur de 1 000 W dans la chambre.
+- Service Worker : cache `calque-v47`. Tests : **193/193** (nouveau : `tests/thermique.test.mjs`, 3 tests).
+
 ## 2026-11-14 — Demande de l'utilisateur : composition des murs, cloisons, planchers et plafonds
 Branche `claude/loving-thompson-b92t8x`, partie de `main` après la fusion n°13.
 - **Composition d'un mur ou d'une cloison couche par couche** (panneau du mur › « Composition ») : compositions types (cloison 72/48, 98/48, 95/70, brique plâtrière, carreau de plâtre ; parpaing de 15 ou 20 avec doublage sur ossature ou collé, brique, béton cellulaire, béton banché, ossature bois…) puis chaque couche modifiable : matériau (plaque de plâtre, laine de verre, laine de roche, fibre de bois, PSE, PU, vide technique, parpaing, brique, béton…), épaisseur (saisie ou épaisseurs courantes), ordre, ajout, suppression, « Inverser les côtés ». L'épaisseur du mur devient la somme des couches. « Appliquer aux autres murs du niveau » (doublage toujours du côté de la pièce) et « Utiliser pour les prochains murs / cloisons » (bandeau de l'outil Mur).
