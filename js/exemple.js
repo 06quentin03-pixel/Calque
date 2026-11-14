@@ -342,6 +342,18 @@ function compositionsExemple() {
   poser('L0', (w) => maison(w) && w.kind === 'cloison', [c('plaque', 1.25), c('laine_verre', 4.5), c('plaque', 1.25)], 'Cloison plaque + laine de verre 45 (exemple)');
   const bp = P.walls.find((w) => { if (w.lv !== 'L0' || w.kind !== 'cloison') return false; const a = P.nodes.find((x) => x.id === w.a), b = P.nodes.find((x) => x.id === w.b); return a && b && a.x === 830 && b.x === 830; });
   if (bp) appliquerAuMur(bp, [c('enduit_platre', 1), c('brique_platriere', 5), c('enduit_platre', 1)], 'Brique plâtrière de 5 enduite (exemple)');
+  /* plaque hydrofuge côté salle de bain, tronçon par tronçon (demande du 14 novembre 2026) : les tronçons voisins alignés
+     (côté cuisine, couloir…) gardent la plaque ordinaire */
+  const gl = geo('L0');
+  for (const w of P.walls.filter((x) => x.lv === 'L0' && x.kind === 'cloison' && maison(x) && x.couches && x.couches[0].m === 'plaque')) {
+    const wg = gl.walls.get(w.id); if (!wg) continue;
+    const s1 = /Salle de bain/.test(wallSideName(wg, 1)), s2 = /Salle de bain/.test(wallSideName(wg, -1));
+    if (!s1 && !s2) continue;
+    const l = w.couches.map((k) => ({ m: k.m, e: k.e }));
+    if (s1) l[0].m = 'plaque_h';
+    if (s2) l[l.length - 1].m = 'plaque_h';
+    appliquerAuMur(w, l, 'Cloison plaque + laine de verre 45, hydrofuge côté salle de bain (exemple)');
+  }
   /* atelier : murs de 30 cm en parpaing de 15 avec doublage sur ossature (vide technique et laine de verre) */
   poser('L0', (w) => !maison(w) && w.kind === 'mur' && Math.abs(w.th - 30) < 0.01, [c('plaque', 1.25), c('vide_tech', 4.5), c('laine_verre', 7.5), c('parpaing', 15), c('enduit_ext', 1.75)], 'Parpaing de 15 + doublage sur ossature (exemple)');
   /* plancher et plafonds du rez-de-chaussée, plafond de l'étage (combles) */

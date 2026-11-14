@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 14 novembre 2026, composition des murs, déperditions thermiques (format v17).
+Mise à jour : 14 novembre 2026, composition des murs (par tronçon, copier-coller), déperditions thermiques (format v17).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -141,3 +141,4 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Pistes : couches visibles dans la vue 3D, composition par pièce (plancher différent d'une pièce à l'autre), lignes du quantitatif pour les matériaux.
 - Suite (même branche) : déperditions thermiques des murs, pièces et niveaux (`thermique.js`, `thermiqueui.js`), gaine dans une couche choisie du faux plafond, grande fenêtre « Ajouter un niveau », élargissement d'un mur vers un côté. Format **v17**. Tests : **193/193**.
 - Onglet « Calculs » (`formules.js`, `calculsui.js`) : 21 calculs expliqués et essayables. Tests : **195/195**.
+- Branche `claude/wall-composition-per-room-877z62` : composition d'un seul tronçon de mur (par défaut) ou du mur entier, copier-coller d'une composition. Sans changement de format. Tests : **197/197**.
