@@ -15,6 +15,7 @@ import { openFiche } from './fiche.js';
 import { OPENING_NAMES, SCR, commit, openingModels, refreshUI, requestRender, wallHeightOf } from './interaction.js';
 import { goToRef, setView } from './tableau.js';
 import { ICON, btn, btns, fmtIn, h, ico, kv, numField, openingSizeText, sec, segCtl, toast } from './interface.js';
+import { aCouches, courtCouche } from './compositions.js';
 import { slug } from './stockage.js';
 import { openFileModal, parseColor } from './export.js';
 
@@ -1218,7 +1219,8 @@ function v3RefInfo(ref) {
   }
   if (ref.t === 'wall') {
     const w = IDX.walls.get(ref.id); if (!w) return null;
-    return { title: w.kind === 'cloison' ? 'Cloison' : 'Mur porteur', rows: [['Longueur', fmtLenU(wallLength(w))], ['Épaisseur', `${fmtIn(w.th || 10)} cm`], ['Hauteur', fmtLenU(wallHeightOf(w))], ['Niveau', lvName]] };
+    return { title: w.kind === 'cloison' ? 'Cloison' : 'Mur porteur', rows: [['Longueur', fmtLenU(wallLength(w))], ['Épaisseur', `${fmtIn(w.th || 10)} cm`], ['Hauteur', fmtLenU(wallHeightOf(w))],
+      aCouches(w) ? ['Composition', w.couches.map((c) => `${courtCouche(c)} ${fmtIn(c.e)}`).join(' · ')] : null, ['Niveau', lvName]].filter(Boolean) };
   }
   if (ref.t === 'room') {
     const lb = IDX.rooms.get(ref.id); if (!lb) return null; const r = roomOfLabel(lb);

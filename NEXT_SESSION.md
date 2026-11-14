@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 13 novembre 2026 (onglet « Schémas » et demandes sur les gaines, branche `claude/calque-electrical-plans-module-tbt1ea`, après la fusion n°11).
+Mise à jour : 14 novembre 2026 (composition des murs, cloisons, planchers et plafonds, branche `claude/loving-thompson-b92t8x`).
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (187/187 le 13 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (195/195 le 14 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue avec les pistes du ROADMAP (section « Module Plans électriques »), une à la fois, testée, avec le plan
@@ -29,6 +29,36 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais de l'onglet « Calculs » (14 novembre 2026)
+1. Toucher l'onglet **Calculs** (en haut, après Schémas) : lire une fiche (formule, lettres, données).
+2. « Chute de tension » : passer la longueur à 40 m, la section à 1,5 mm², puis « Triphasé » : le résultat suit.
+3. Rechercher « lux », puis toucher la famille « Thermique ».
+4. Dites-moi si une explication n'est pas claire ou s'il manque un calcul.
+
+## Essais de la suite du 14 novembre 2026 (format v17)
+Sur le plan d'exemple, en paysage puis en portrait :
+1. Toucher la Chambre (maison) › « Thermique (déperditions) » : environ 600 W, détail mur par mur, « Puissance posée suffisante » (radiateur de 1 000 W). Changer la température (puce 21 °C).
+2. Toucher un mur extérieur de la maison › « Thermique » : U, résistance de chaque couche, déperdition vers l'extérieur. Dans la composition, remplacer le λ de la laine (ex. 0,032) : U baisse.
+3. Toucher une fenêtre › « Coefficient Uw ».
+4. Toucher le vide du plan › « Thermique » : température extérieure (−7 °C d'exemple : mettez celle de votre commune), sous le plancher / au-dessus du plafond, bilan du niveau.
+5. Toucher une gaine posée « Plafond » au rez-de-chaussée › « Couche du plafond où passe la gaine » : Plénum ou Laine de verre.
+6. Panneau du niveau › « Ajouter un niveau » : grande fenêtre ; essayer « Étage avec tous les murs », puis Annuler.
+7. Toucher un mur extérieur › « Quand l'épaisseur change, le mur s'élargit » › « Vers extérieur », puis puce 30 cm : la face intérieure ne bouge pas, les murs voisins suivent. Annuler.
+
+## Essais de la composition des murs (14 novembre 2026, branche `claude/loving-thompson-b92t8x`, format v16)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/loving-thompson-b92t8x` › Create › Merge). Vos plans passent en v16 avec une copie de sécurité ; aucune
+épaisseur de mur n'est modifiée. Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :
+1. Zoomer sur un mur de la maison : les couches sont dessinées (plaque, laine de verre jaune ondulée, brique, enduit).
+2. Toucher un mur › « Composition » : changer l'épaisseur de la laine (puces 4,5 / 6 / 7,5…), monter ou descendre une couche,
+   « Inverser les côtés » ; l'épaisseur du mur suit. Annuler.
+3. Toucher une cloison › choisir « Brique de 10 enduite » ; « Appliquer aux … autres cloisons du niveau » (toucher deux fois).
+4. « Utiliser pour les prochaines cloisons », puis outil Mur › Cloison : le bandeau affiche la composition ; tracer une cloison.
+5. Local technique (atelier, en haut à gauche) : toucher la gaine dans le mur › « Logement dans les couches » : « Place
+   suffisante … Laine de verre ». Tracer une autre gaine « Cloison » sur l'axe d'un mur › « Placer dans la couche de passage ».
+6. Toucher le vide du plan (panneau du niveau) › « Plancher, plafond et matériaux » : plancher, faux plafond, surfaces estimées.
+7. Menu Affichage › « Composition des murs (couches) » : les couches disparaissent et reviennent. Export PDF : couches visibles.
 
 ## Essais des demandes du 13 novembre 2026 (branche `claude/elegant-ritchie-zjivgm`, format v15)
 Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :

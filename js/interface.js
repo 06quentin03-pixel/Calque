@@ -30,6 +30,9 @@ import { equipementNiveauSection, equipementSection } from './equipementui.js';
 import { TYPES_CHEMIN } from './cheminement.js';
 import { itineraireSection, startZone } from './routeui.js';
 import { eclairageSection, lumSection } from './eclairageui.js';
+import { aCouches, appliquerAuMur, compoNiveau } from './compositions.js';
+import { compoMurSection, compoNiveauSection, epaissir, epaisseurComposee, nomCompoNouveauMur, oublierCompoNouveauMur, sensElargissement } from './compositionsui.js';
+import { thermiqueMurSection, thermiqueNiveauSection, thermiqueOuvertureSection, thermiquePieceSection } from './thermiqueui.js';
 
 /* ============================================================
    CALQUE — interface : inspecteur, catalogues, niveaux,
@@ -87,12 +90,13 @@ const ico = (k) => { const s = document.createElement('span'); s.innerHTML = ICO
 /* ---------------- champs ---------------- */
 function numField(label, value, unit, onSet, o = {}) {
   const id = o.id || 'f-' + label.normalize('NFD').replace(/[^\w]+/g, '').toLowerCase();
-  const input = h('input', { class: 'num', id, type: 'text', inputmode: 'decimal', value: fmtIn(value), 'aria-label': label, autocomplete: 'off', enterkeyhint: 'done' });
+  const fv = o.fmt || fmtIn; // o.fmt : affichage avec plus de décimales (épaisseur d'une couche : 1,25 cm)
+  const input = h('input', { class: 'num', id, type: 'text', inputmode: 'decimal', value: fv(value), 'aria-label': label, autocomplete: 'off', enterkeyhint: 'done' });
   input.addEventListener('change', () => {
     const v = parseNum(input.value);
     if (!isNum(v) || (o.min != null && v < o.min) || (o.max != null && v > o.max)) {
       toast(o.err || (o.min != null ? `Saisissez une valeur entre ${o.min} et ${o.max}.` : 'Saisissez un nombre.'));
-      input.value = fmtIn(value); return;
+      input.value = fv(value); return;
     }
     onSet(v);
   });
@@ -236,7 +240,8 @@ function inspWall(w) {
     body(
       sec('Type', segCtl([{ v: 'mur', n: 'Mur porteur' }, { v: 'cloison', n: 'Cloison' }], w.kind, (v) => {
         if (v === w.kind) return;
-        if (v === 'cloison' && Math.abs(w.th - S.thMur) < 0.01) w.th = S.thCloison;
+        if (aCouches(w)) { /* composition gardée : l'épaisseur reste celle des couches */ }
+        else if (v === 'cloison' && Math.abs(w.th - S.thMur) < 0.01) w.th = S.thCloison;
         else if (v === 'mur' && Math.abs(w.th - S.thCloison) < 0.01) w.th = S.thMur;
         w.kind = v; setGEO({}); for (const o of P.openings) clampOpening(o); commit();
       })),
@@ -249,9 +254,12 @@ function inspWall(w) {
         h('div', { class: 'fld' }, h('span', null, 'Extrémité déplacée quand une longueur change'),
           segCtl([{ v: 'auto', n: 'Auto' }, { v: 'a', n: 'Bout A' }, { v: 'b', n: 'Bout B' }, { v: 'mid', n: 'Les deux' }], S.wallEnd || 'auto', (v) => { S.wallEnd = v; saveSettings(); renderInspector(); requestRender(); })),
         h('p', { class: 'note' }, 'Les murs d’équerre reliés à l’extrémité suivent, pour garder les angles droits.')),
-      sec('Épaisseur',
-        numField('Épaisseur', w.th, 'cm', (v) => { w.th = v; setGEO({}); for (const o of P.openings) clampOpening(o); commit(); }, { id: 'f-th', min: 1, max: 200 }),
-        chipRow([5, 7, 10, 15, 20, 25, 30, 40], w.th, (v) => { w.th = v; setGEO({}); for (const o of P.openings) clampOpening(o); commit(); }, (v) => v + ' cm')),
+      aCouches(w) ? epaisseurComposee(w, g) : sec('Épaisseur',
+        numField('Épaisseur', w.th, 'cm', (v) => epaissir(w, v), { id: 'f-th', min: 1, max: 200 }),
+        chipRow([5, 7, 10, 15, 20, 25, 30, 40], w.th, (v) => epaissir(w, v), (v) => v + ' cm'),
+        sensElargissement(w, g)),
+      compoMurSection(w, g),
+      thermiqueMurSection(w),
       sec('Hauteur', numField('Hauteur du mur', w.h || lvl.h, 'cm', (v) => { w.h = v; commit(); }, { id: 'f-wh', min: 10, max: 3000 })),
       sec('Ouvertures', btns(btn('Porte', () => addOpeningOnWall(w, 'door'), '', 'door'), btn('Fenêtre', () => addOpeningOnWall(w, 'window'), '', 'win'),
         btn('Ouverture libre', () => addOpeningOnWall(w, 'gap'), '', 'gap'), btn('Porte de placard', () => addOpeningOnWall(w, 'closet'), '', 'closet'))),
@@ -371,6 +379,7 @@ function inspOpening(o) {
         chipRow(widths, o.w, (v) => { o.w = v; clampOpening(o); commit(); }),
         !isDoor ? numField('Allège (hauteur d’appui)', o.sill || 0, 'cm', (v) => { o.sill = v; commit(); }, { id: 'f-sill', min: 0, max: 400 }) : null),
       openingPositionSec(o, wg),
+      thermiqueOuvertureSection(o),
       sec('Sens d’ouverture', btns(
         hasHinge ? btn(isDoor ? 'Inverser la charnière' : 'Inverser le côté des paumelles', () => { o.hinge = o.hinge ? 0 : 1; commit(); }, 'sm', 'swap') : null,
         btn(isDoor ? 'Ouvrir de l’autre côté' : 'Changer de côté', () => { o.side = -(o.side || 1); commit(); }, 'sm', 'flip'))),
@@ -513,6 +522,7 @@ function inspRoom(lbl) {
         onclick: () => { lbl.tint = i; commit(); },
       })))),
       typePieceSection(lbl, r),
+      thermiquePieceSection(lbl, r),
       equipementSection(lbl),
       eclairageSection(lbl),
       sec(null, btns(btn('Recentrer l’étiquette', () => { const p = labelPoint(r.poly); lbl.x = Math.round(p.x); lbl.y = Math.round(p.y); commit(); }, 'sm', 'center'))),
@@ -594,8 +604,11 @@ function inspLevel() {
     sec('Niveau',
       textField('Nom', lvl.name, (v) => { lvl.name = v.trim() || lvl.name; commit(); }, { id: 'f-lvname' }),
       row(numField('Hauteur sous plafond', lvl.h, 'cm', (v) => { lvl.h = v; commit(); }, { id: 'f-lvh', min: 100, max: 1000 }),
-        numField('Épaisseur plancher', lvl.slab, 'cm', (v) => { lvl.slab = v; commit(); }, { id: 'f-lvs', min: 0, max: 100 })),
+        compoNiveau(lvl, 'sol') ? h('div', { class: 'fld' }, h('span', null, 'Épaisseur plancher'), h('p', { class: 'note' }, `${fmtIn(lvl.slab)} cm (somme des couches du plancher)`))
+          : numField('Épaisseur plancher', lvl.slab, 'cm', (v) => { lvl.slab = v; commit(); }, { id: 'f-lvs', min: 0, max: 100 })),
       numField('Altitude du sol fini', lvl.elev, 'cm', (v) => { lvl.elev = v; commit(); }, { id: 'f-lve', min: -5000, max: 10000 })),
+    compoNiveauSection(lvl),
+    thermiqueNiveauSection(lvl),
     fondSection(),
     equipementNiveauSection(ui.lv),
   ].filter(Boolean);
@@ -693,7 +706,7 @@ let hintKey = '';
 function updateHint() {
   const el = $('#hint');
   const t = ui.tool;
-  const key = [t, ui.wallKind, ui.doorKind, !!ui.chain, ui.chain && ui.chain.stack.length > 0, ui.place && ui.place.def.t, S.thMur, S.thCloison, ui.hl, ui.linkSrc, ui.hl && circById(ui.hl) && circById(ui.hl).name, ui.duct ? ui.duct.pts.length + ui.duct.sys : '', S.ductSys, S.ductKind, ui.ductDia, ...EXT.hintKey.map((f) => f())].join('|');
+  const key = [t, ui.wallKind, ui.doorKind, !!ui.chain, ui.chain && ui.chain.stack.length > 0, ui.place && ui.place.def.t, S.thMur, S.thCloison, ui.hl, ui.linkSrc, ui.hl && circById(ui.hl) && circById(ui.hl).name, ui.duct ? ui.duct.pts.length + ui.duct.sys : '', S.ductSys, S.ductKind, ui.ductDia, nomCompoNouveauMur('mur'), nomCompoNouveauMur('cloison'), ...EXT.hintKey.map((f) => f())].join('|');
   if (key === hintKey && !el.hidden === (t !== 'select')) return;
   hintKey = key;
   if (t === 'select') {
@@ -717,7 +730,10 @@ function updateHint() {
     saveSettings(); updateHint(); requestRender();
   });
   thIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); thIn.blur(); } });
-  const thGrp = h('span', { class: 'grp' }, h('span', { class: 'msg' }, 'Épaisseur'), thIn, h('span', { class: 'msg' }, 'cm'));
+  const nomCompo = nomCompoNouveauMur(ui.wallKind);
+  const thGrp = nomCompo ? h('span', { class: 'grp' }, h('span', { class: 'msg', title: 'Composition des prochains murs (touchez un mur › Composition pour la changer)' }, 'Composition : ' + nomCompo),
+    btn('Sans', () => { oublierCompoNouveauMur(ui.wallKind); updateHint(); }, 'sm'))
+    : h('span', { class: 'grp' }, h('span', { class: 'msg' }, 'Épaisseur'), thIn, h('span', { class: 'msg' }, 'cm'));
   let kids = [];
   if (t === 'wall') {
     const len = h('input', { class: 'txt', id: 'hLen', type: 'text', inputmode: 'decimal', placeholder: 'Longueur', value: ui.wallLenTxt || '', 'aria-label': 'Longueur du mur en cm, dans l’axe', autocomplete: 'off', enterkeyhint: 'go', style: 'width:84px' });
@@ -924,6 +940,7 @@ function renderViewPop() {
     toggleRow('Mobilier', () => L.furn, (v) => (L.furn = v)),
     toggleRow('Électricité', () => L.elec, (v) => (L.elec = v)),
     toggleRow('Gaines et chemins de câbles', gainesAffichees, (v) => { afficherGaines(v); }),
+    toggleRow('Composition des murs (couches)', () => L.compo !== false, (v) => (L.compo = v)),
     toggleRow('Liaisons des commandes', () => L.links !== false, (v) => (L.links = v)),
     toggleRow('Couleurs des circuits', () => L.circ !== false, (v) => (L.circ = v)),
     toggleRow('Niveau inférieur en transparence', () => L.ghost, (v) => (L.ghost = v)),
@@ -968,14 +985,19 @@ function renderMenuPop() {
     menuItem('help', 'Gestes et raccourcis', openHelp),
   ));
 }
-function openLevelPop(anchor) {
-  const pop = $('#lvlPop');
-  pop.replaceChildren(h('div', { class: 'menu' },
-    h('h4', null, 'Ajouter un niveau'),
-    menuItem('plus', 'Étage vide au-dessus', () => addLevel('empty')),
-    menuItem('dup', 'Étage avec les murs porteurs copiés', () => addLevel('copy')),
-    menuItem('down', 'Sous-sol', () => addLevel('below'))));
-  showPop(pop, anchor || $('.lvl.add'));
+/* fenêtre « Ajouter un niveau » : grande fenêtre (et non un petit menu), lisible sur l'iPad */
+function openLevelPop() {
+  const L = levelsSorted(), haut = L[L.length - 1];
+  const nMurs = P.walls.filter((w) => w.lv === haut.id && w.kind === 'mur').length, nTous = P.walls.filter((w) => w.lv === haut.id).length;
+  const carte = (icon, titre, desc, fn) => h('button', { type: 'button', class: 'choix-niv', onclick: () => { closeModal(); fn(); } },
+    h('span', { class: 'ci' }, ico(icon)), h('span', { class: 'ct' }, h('b', null, titre), h('span', null, desc)));
+  openModal('Ajouter un niveau', h('div', { class: 'choix-nivs' },
+    carte('plus', 'Étage vide au-dessus', `Un nouvel étage sans murs, au-dessus de « ${haut.name} ».`, () => addLevel('empty')),
+    carte('dup', 'Étage avec les murs porteurs', `Copie les ${nMurs} mur${nMurs > 1 ? 's' : ''} porteur${nMurs > 1 ? 's' : ''} de « ${haut.name} » et leurs fenêtres. Les cloisons ne sont pas copiées.`, () => addLevel('copy')),
+    carte('dup', 'Étage avec tous les murs', `Copie les ${nTous} murs et cloisons de « ${haut.name} » et leurs fenêtres.`, () => addLevel('copyall')),
+    carte('down', 'Sous-sol', `Un niveau vide sous « ${L[0].name} ».`, () => addLevel('below'))),
+    h('p', { class: 'note' }, 'Le nouvel étage prend la composition des murs copiés. Hauteurs et noms se modifient ensuite dans le panneau du niveau.'));
+  $('#modal').classList.add('wide');
 }
 
 /* ---------------- niveaux ---------------- */
@@ -1015,22 +1037,24 @@ function addLevel(mode) {
     lvl = { id: uid('L'), name: floorName(), elev: t.elev + (t.h || 250) + (t.slab || 20), h: 250, slab: 20 };
   }
   P.levels.push(lvl); touch();
-  if (mode === 'copy') copyWalls(L[L.length - 1].id, lvl.id);
+  if (mode === 'copy' || mode === 'copyall') copyWalls(L[L.length - 1].id, lvl.id, mode === 'copyall');
   ui.lv = lvl.id; ui.sel = null;
   commit();
-  toast(mode === 'copy' ? `« ${lvl.name} » créé avec les murs porteurs et leurs fenêtres.` : `« ${lvl.name} » ajouté.`);
+  toast(mode === 'copy' ? `« ${lvl.name} » créé avec les murs porteurs et leurs fenêtres.` : mode === 'copyall' ? `« ${lvl.name} » créé avec tous les murs et leurs fenêtres.` : `« ${lvl.name} » ajouté.`);
 }
-function copyWalls(src, dst) {
+function copyWalls(src, dst, tous) {
   const map = new Map();
-  for (const w of P.walls.filter((x) => x.lv === src && x.kind === 'mur')) {
+  for (const w of P.walls.filter((x) => x.lv === src && (tous || x.kind === 'mur'))) {
     for (const nid of [w.a, w.b]) if (!map.has(nid)) { const n = nodeOf(nid); const m = { id: uid('n'), lv: dst, x: n.x, y: n.y }; P.nodes.push(m); map.set(nid, m.id); }
     const nw = { id: uid('w'), lv: dst, a: map.get(w.a), b: map.get(w.b), th: w.th, kind: w.kind };
+    if (aCouches(w)) appliquerAuMur(nw, w.couches, w.cn);
+    if (w.h) nw.h = w.h;
     P.walls.push(nw);
     for (const o of P.openings.filter((x) => x.wall === w.id && x.kind === 'window')) P.openings.push(Object.assign({}, o, { id: uid('o'), wall: nw.id }));
   }
   touch();
   // fusionner les nœuds colinéaires créés par les cloisons absentes
-  for (const n of P.nodes.filter((x) => x.lv === dst)) if (wallsAt(n.id).length === 2) mergeAtNode(n.id, true);
+  if (!tous) for (const n of P.nodes.filter((x) => x.lv === dst)) if (wallsAt(n.id).length === 2) mergeAtNode(n.id, true);
   touch();
 }
 function deleteLevel(id) {

@@ -21,6 +21,7 @@ import { v3Refresh } from './vue3d.js';
 import { applyComp, upsertPlanComp } from './composants.js';
 import { tailleChemin } from './cheminement.js';
 import { zoneAt } from './routeui.js';
+import { compoNouveauMur } from './compositionsui.js';
 
 /* ============================================================
    CALQUE — interaction : vue, sélection, outils, aimantation
@@ -698,7 +699,7 @@ function wallHeightSetting() { const v = parseNum(ui.wallHTxt); return v >= 10 &
 function wallProps() {
   const pr = { th: ui.wallKind === 'cloison' ? S.thCloison : S.thMur, kind: ui.wallKind };
   const hh = wallHeightSetting(); if (hh) pr.h = hh;
-  return pr;
+  return compoNouveauMur(pr);
 }
 function wallClick(pt, sp) {
   const dbl = sp ? isDoubleTap(sp, 'wall') : false;
