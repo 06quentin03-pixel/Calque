@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (195/195 le 14 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (197/197 le 14 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
 
 Ensuite, continue avec les pistes du ROADMAP (section « Module Plans électriques »), une à la fois, testée, avec le plan
@@ -29,6 +29,15 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais de la composition par tronçon (14 novembre 2026, branche `claude/wall-composition-per-room-877z62`)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/wall-composition-per-room-877z62` › Create › Merge). Pas de changement de format : vos plans ne sont pas modifiés.
+Sur le plan d'exemple :
+1. Zoomer sur la salle de bain : ses cloisons ont la plaque hydrofuge (vert pâle « Plâtre H ») de son côté seulement.
+2. Toucher une cloison faite de plusieurs tronçons alignés › Composition › « Ce tronçon » (choisi par défaut) : changer le
+   matériau d'une plaque en « Plaque de plâtre hydrofuge » : seul le tronçon en surbrillance change. Annuler, puis « Tout le mur ».
+3. « Copier la composition » sur un mur, toucher un autre mur › « Coller la composition : … ». « Inverser les côtés » si besoin.
 
 ## Essais de l'onglet « Calculs » (14 novembre 2026)
 1. Toucher l'onglet **Calculs** (en haut, après Schémas) : lire une fiche (formule, lettres, données).

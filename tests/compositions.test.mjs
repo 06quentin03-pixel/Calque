@@ -164,3 +164,57 @@ test('écran : prochains murs tracés avec la composition choisie, copie vers un
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+/* demande du 14 novembre 2026 : composition par tronçon (plaque hydrofuge côté salle de bain, pas côté cuisine) et
+   copier-coller de la composition d'un mur ou d'une cloison */
+test('sans écran : composition d’un seul tronçon, les tronçons voisins alignés ne bougent pas', async () => {
+  const K = await imp('compositions.js');
+  const p = plan(), base = K.COMPO_BY.get('mb30').couches;
+  assert.deepEqual(K.tronconsDuMur(p, p.walls[0]).map((w) => w.id), ['w0', 'w1'], 'mur du haut : deux tronçons (cloison en e)');
+  K.changerEpaisseur(p, p.walls[0], null, 'centre', base, 'B30');
+  assert.ok(p.walls[1].couches, 'sans option : tout le mur (comportement d’avant)');
+  /* seulement w0 : plaque hydrofuge à la place de l'enduit côté 1, w1 garde sa composition */
+  const hyd = base.map((c, i) => (i === 0 ? { m: 'plaque_h', e: 1.25 } : c));
+  const l = K.changerEpaisseur(p, p.walls[0], null, 'c1', hyd, 'H', { seul: true });
+  assert.deepEqual(l.map((w) => w.id), ['w0']); assert.equal(l.centre, true, 'angle partagé avec w1 : élargi des deux côtés');
+  assert.equal(p.walls[0].couches[0].m, 'plaque_h'); assert.equal(p.walls[1].couches[0].m, 'enduit_platre');
+  assert.deepEqual(['a', 'e', 'b'].map((id) => p.nodes.find((x) => x.id === id).y), [0, 0, 0], 'les angles ne bougent pas : w1 reste droit');
+  assert.equal(p.walls[0].th, K.epaisseur(hyd));
+  /* les deux tronçons n'ont plus la même composition : ce ne sont plus « le même mur » */
+  assert.deepEqual(K.tronconsDuMur(p, p.walls[0]).map((w) => w.id), ['w0']);
+  assert.deepEqual(K.tronconsDuMur(p, p.walls[0], false).map((w) => w.id).sort(), ['w0', 'w1']);
+});
+
+test('écran : « Ce tronçon seulement » ou « Tout le mur », copier et coller une composition', async () => {
+  const { ctx, page, errors } = await fresh();
+  await seedPlan(ctx, plan()); await boot(page);
+  const sel = (id) => page.evaluate(async (id) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = { t: 'wall', id }; N.ui.inspOpen = true; F.renderInspector(); }, id);
+  const murs = () => page.evaluate(async () => (await import('./js/noyau.js')).P.walls.slice(0, 2).map((w) => (w.couches ? w.couches.map((c) => c.m + c.e).join(' ') : null)));
+  await sel('w0'); await wait(page, 150);
+  assert.match(await page.locator('#insp').innerText(), /Ce tronçon[\s\S]*Tout le mur \(2\)/);
+  /* par défaut : seul le tronçon touché reçoit la composition */
+  await page.locator('#insp .li', { hasText: 'Brique de 30' }).click(); await wait(page, 200);
+  let r = await murs();
+  assert.ok(r[0] && r[1] === null, JSON.stringify(r));
+  /* copier sur w0, coller sur w1 */
+  await page.locator('#insp button', { hasText: 'Copier la composition' }).click(); await wait(page, 100);
+  await sel('w1'); await wait(page, 150);
+  await page.locator('#insp button', { hasText: /Coller la composition : Brique de 30/ }).click(); await wait(page, 200);
+  r = await murs(); assert.equal(r[1], r[0], 'composition collée');
+  assert.match(await page.evaluate(async () => (await import('./js/noyau.js')).P.walls[1].cn), /Brique de 30/);
+  /* « Tout le mur » : les deux tronçons changent ensemble */
+  await sel('w1'); await wait(page, 150);
+  await page.locator('#insp .seg button', { hasText: /Tout le mur/ }).click(); await wait(page, 150);
+  await page.fill('#f-cm-e0', '1,5'); await page.press('#f-cm-e0', 'Enter'); await wait(page, 200);
+  r = await murs(); assert.ok(r[0].startsWith('enduit_platre1.5') && r[1] === r[0], JSON.stringify(r));
+  /* « Ce tronçon seulement » : plaque hydrofuge sur w1 seulement */
+  await sel('w1'); await wait(page, 150);
+  await page.locator('#insp .seg button', { hasText: 'Ce tronçon' }).click(); await wait(page, 150);
+  await page.locator('#insp .compo-row select[aria-label="Matériau de la couche"]').first().selectOption('plaque_h'); await wait(page, 200);
+  r = await murs(); assert.ok(r[1].startsWith('plaque_h') && r[0].startsWith('enduit_platre'), JSON.stringify(r));
+  /* annuler revient à la composition commune */
+  await page.evaluate(async () => (await import('./js/interaction.js')).undo()); await wait(page, 150);
+  r = await murs(); assert.equal(r[1], r[0]);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

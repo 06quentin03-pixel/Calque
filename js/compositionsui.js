@@ -7,7 +7,7 @@ import { clampOpening } from './mutations.js';
 import { commit } from './interaction.js';
 import { btn, btns, chipRow, confirmBtn, h, kv, numField, renderInspector, sec, segCtl, textField, toast, wallSideName } from './interface.js';
 import { CATS, COMPOSITIONS, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, changerEpaisseur, compoNiveau, copierCouches, courtCouche,
-  couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux } from './compositions.js';
+  couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux, tronconsDuMur } from './compositions.js';
 
 import { LAMBDA } from './thermique.js';
 
@@ -85,8 +85,37 @@ function choixTypes(usage, onPick) {
 
 /* ---------------- mur ou cloison ---------------- */
 const regeo = () => { setGEO({}); for (const o of P.openings) clampOpening(o); };
-/* nouvelle composition : le mur s'élargit dans le sens choisi (sensElargissement) ; tronçons alignés du même mur compris */
-function appliquerMur(w, couches, nom) { changerEpaisseur(P, w, null, sensDe(w), couches, nom); regeo(); commit(); }
+/* portée d'une modification de composition (pendant la session) : false = ce tronçon seulement (par défaut), true = tout
+   le mur (tronçons alignés et reliés de même composition). Ex. : une cloison de couloir coupée par la cloison entre la
+   salle de bain et la cuisine forme deux tronçons ; la plaque hydrofuge ne va que sur celui de la salle de bain. */
+const PORTEE = { tout: false };
+/* nouvelle composition : le mur s'élargit dans le sens choisi (sensElargissement) ; tronçons alignés compris si PORTEE.tout */
+function appliquerMur(w, couches, nom) {
+  const avant = w.th, l = changerEpaisseur(P, w, null, sensDe(w), couches, nom, { seul: !PORTEE.tout });
+  regeo(); commit();
+  if (l.centre && couches && Math.abs(epaisseur(couches) - avant) > 0.01) toast('Les tronçons voisins alignés ne bougent pas : ce tronçon s’élargit des deux côtés.');
+}
+function porteeSection(w) {
+  const n = tronconsDuMur(P, w, true).length;
+  if (n < 2) return null;
+  return h('div', { class: 'fld' }, h('span', null, 'Modifier la composition de'),
+    segCtl([{ v: 'troncon', n: 'Ce tronçon' }, { v: 'tout', n: `Tout le mur (${n})` }], PORTEE.tout ? 'tout' : 'troncon', (v) => { PORTEE.tout = v === 'tout'; renderInspector(); }),
+    h('p', { class: 'note' }, PORTEE.tout ? `Les ${n} tronçons alignés et reliés qui ont la même composition sont modifiés ensemble.`
+      : 'Seul le tronçon sélectionné (en surbrillance) est modifié : les tronçons voisins alignés gardent leur composition.'));
+}
+/* composition copiée (réglage enregistré S.compoCopie), couches vues depuis la pièce comme « Appliquer aux autres » */
+function copierCompo(w, g) {
+  S.compoCopie = Object.assign({ couches: copierCouches(exterieurCote1(g) ? copierCouches(w.couches).reverse() : w.couches) }, w.cn ? { cn: w.cn } : {});
+  saveSettings(); toast('Composition copiée : touchez un autre mur ou une autre cloison, puis « Coller la composition ».'); renderInspector();
+}
+function boutonColler(w, g) {
+  const c = S.compoCopie;
+  if (!c || !aCouches(c)) return null;
+  return btn(`Coller la composition : ${c.cn || fmt(epaisseur(c.couches)) + ' cm'}`, () => {
+    appliquerMur(w, exterieurCote1(g) ? copierCouches(c.couches).reverse() : c.couches, c.cn || null);
+    toast('Composition collée. « Inverser les côtés » si les couches sont du mauvais côté.');
+  }, 'sm');
+}
 /* sens d'élargissement choisi pour un mur (pendant la session) : 'centre', 'c1' (vers le côté 1), 'c2' (vers le côté 2) */
 const SENS = new Map();
 const sensDe = (w) => SENS.get(w.id) || 'centre';
@@ -105,8 +134,9 @@ function compoMurSection(w, g) {
   const c1 = wallSideName(g, 1), c2 = wallSideName(g, -1);
   if (!aCouches(w)) {
     const def = S.compo && S.compo[usage];
-    return sec('Composition',
+    return sec('Composition', porteeSection(w),
       h('p', { class: 'note' }, 'Composition non renseignée. Choisissez une composition type (plaque de plâtre, laine de verre, parpaing, brique…) : l’épaisseur du mur devient celle des couches.'),
+      btns(boutonColler(w, g)),
       def && aCouches(def) ? btns(btn(`Comme les prochains ${usage === 'mur' ? 'murs' : 'cloisons'} : ${def.cn || fmt(epaisseur(def.couches)) + ' cm'}`, () => appliquerMur(w, exterieurCote1(g) ? copierCouches(def.couches).reverse() : def.couches, def.cn), 'sm')) : null,
       choixTypes(usage, (c) => appliquerMur(w, couchesOrientees(c, exterieurCote1(g)), c.n)),
       btns(btn('Composer couche par couche', () => appliquerMur(w, [{ m: usage === 'mur' ? 'parpaing' : 'brique_platriere', e: Math.round(w.th * 100) / 100 }], null), 'sm')));
@@ -116,8 +146,10 @@ function compoMurSection(w, g) {
   const autres = P.walls.filter((x) => x.lv === w.lv && x.id !== w.id && x.kind === w.kind);
   return sec('Composition',
     w.cn ? h('p', { class: 'note' }, h('b', null, w.cn)) : null,
+    porteeSection(w),
     barre(w.couches, 'Côté 1 : ' + c1, 'Côté 2 : ' + c2),
     kv([['Épaisseur totale', fmt(epaisseur(w.couches)) + ' cm'], ['Passage des gaines', pass ? pass.txt : '—']]),
+    btns(btn('Copier la composition', () => copierCompo(w, g), 'sm', 'dup'), boutonColler(w, g)),
     editeurCouches(w.couches, usage, (x) => appliquerMur(w, x, w.cn), 'f-cm'),
     gaines.length ? h('div', null, h('p', { class: 'note' }, 'Gaines encastrées dans ce ' + (usage === 'mur' ? 'mur' : 'cloison') + ' :'),
       gaines.map((x) => h('div', { class: 'compo-ok' }, h('span', { class: 'pill ' + ETATS[x.statut][0] }, ETATS[x.statut][1]), h('span', { class: 'note' }, x.msg)))) : null,

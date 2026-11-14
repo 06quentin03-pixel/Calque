@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -70,7 +70,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Schémas électriques (onglet « Schémas », format v14, `P.schemas`) : bibliothèque `schemasymboles.js` et moteur `schema.js` (sans écran : équipotentielles, repères, renvois, nomenclature, borniers, liste des fils, modèles, import du tableau, dessin d'un folio pour l'écran, le PDF, le SVG et le DXF), écran `schemaui.js`. Unités : millimètres sur un folio A3 ; bornes des symboles sur la grille de 5 mm (un test le vérifie).
 - Composition des murs, cloisons, planchers et plafonds (format v16) : moteur `compositions.js` (sans écran : matériaux, compositions types, bandes d'un mur, logement et placement des gaines, surfaces), écran `compositionsui.js`. `w.th` = somme des couches (`appliquerAuMur`) ; dessin `drawCouches` (`rendu2d.js`, sans découpage, compatible PDF/SVG/DXF).
 - Déperditions thermiques (format v17) : moteur `thermique.js` (sans écran : U des parois, déperditions d'un mur, d'une pièce, bilan d'un niveau ; méthode simplifiée, jamais présentée comme réglementaire), écran `thermiqueui.js`. Les pièces sont fournies par l'appelant (`geo(lv).rooms`).
-- Épaisseur d'un mur : `changerEpaisseur` (`compositions.js`) élargit le mur entier (tronçons alignés) au centre ou vers un côté, en déplaçant ses angles.
+- Épaisseur d'un mur : `changerEpaisseur` (`compositions.js`) élargit le mur entier (tronçons alignés, `tronconsDuMur`) au centre ou vers un côté, en déplaçant ses angles. Option `{ seul: true }` : un seul tronçon (choix « Ce tronçon », par défaut pour une composition) ; un voisin aligné non modifié bloque le déplacement des angles (élargissement au centre).
 - Onglet « Calculs » : catalogue `formules.js` (sans écran) et écran `calculsui.js`. **Tout nouveau calcul ajouté à Calque doit y avoir sa fiche**, avec un exemple calculé par la fonction du moteur (jamais recopié à la main) ; `tests/calculs.test.mjs` vérifie chaque fiche.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 

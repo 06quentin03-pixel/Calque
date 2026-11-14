@@ -1,3 +1,8 @@
+## 14 novembre 2026 (soir) — Composition par tronçon, copier-coller d'une composition
+- Choix « Ce tronçon / Tout le mur », tronçon seul par défaut ; « Copier la composition » / « Coller la composition » (`js/compositions.js`, `js/compositionsui.js`).
+- Défaut corrigé au passage : un tronçon aligné de composition différente pouvait être tordu quand on élargissait son voisin vers un côté.
+- Vérifications : captures en 1180 × 820 et 820 × 1180 (libellé raccourci pour le portrait). Tests : 197/197.
+
 ## 14 novembre 2026 (fin) — Onglet « Calculs »
 - 21 calculs expliqués (formule, lettres, données, essai en direct), exemples calculés par les moteurs (`js/formules.js`, `js/calculsui.js`).
 - Défaut trouvé pendant les essais : avec six onglets, le nom du plan devenait trop étroit en iPad portrait et paysage ; onglets resserrés.
