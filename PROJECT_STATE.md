@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 13 novembre 2026, demandes sur les escaliers, terrasses, colonne du tableau, câbles et test des schémas (format v15).
+Mise à jour : 14 novembre 2026, composition des murs, cloisons, planchers et plafonds (format v16).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -131,3 +131,12 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - `claude/layer-modification-prompt-feasibility-nw7oa4` : branche de développement des phases 1 à 7 (fusionnée).
 - `claude/ecstatic-sagan-juah82` : branche de la mission « développement autonome » (partie de `main` après la fusion n°6).
 - `claude/calque-electrical-plans-module-tbt1ea` : module « Plans électriques » (partie de `main` après la fusion n°10), à fusionner après les essais iPad.
+
+
+## 14 novembre 2026 — Composition des murs, cloisons, planchers et plafonds (branche `claude/loving-thompson-b92t8x`)
+- Murs et cloisons couche par couche (`couches`, `cn`), plancher et plafond par niveau (`sol`, `plafond`) : compositions types et couches modifiables ; épaisseur du mur = somme des couches.
+- Gaines « Cloison », « Sol », « Plafond » : logement dans les couches (contrôle géométrique de Calque) et « Placer dans la couche de passage ».
+- Dessin des couches sur le plan et dans les exports ; surfaces des matériaux estimées par niveau.
+- Format **v16**. Tests : **190/190**. Essais iPad : voir `NEXT_SESSION.md`.
+- Pistes : couches visibles dans la vue 3D, composition par pièce (plancher différent d'une pièce à l'autre), lignes du quantitatif pour les matériaux.
+

@@ -232,6 +232,24 @@ button { cursor: pointer; }
 .pill.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
 .pill.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 16%, transparent); }
 .pill.bad { color: var(--bad); background: color-mix(in srgb, var(--bad) 14%, transparent); }
+/* composition des murs, planchers et plafonds (compositionsui.js) */
+.compo-bar-w { margin: 4px 0 8px; }
+.compo-sides { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--c-ink2); margin-bottom: 3px; }
+.compo-bar { display: flex; height: 30px; border: 1px solid var(--c-ink2); border-radius: 4px; overflow: hidden; }
+.compo-bar > span { display: block; line-height: 30px; text-align: center; text-overflow: ellipsis; padding: 0 2px; min-width: 3px; font-size: 10px; font-weight: 700; color: #2a2a2a; overflow: hidden; white-space: nowrap; border-right: 1px solid rgba(0,0,0,.25); }
+.compo-bar > span:last-child { border-right: 0; }
+.compo-list { display: flex; flex-direction: column; gap: 8px; margin: 6px 0; }
+.compo-row { border: 1px solid var(--line, rgba(0,0,0,.12)); border-radius: 8px; padding: 6px 8px; }
+.compo-top { display: flex; align-items: center; gap: 6px; }
+.compo-top select { flex: 1 1 auto; min-width: 0; }
+.compo-top .fld { flex: 1 1 auto; min-width: 0; }
+.compo-top + .compo-top { margin-top: 6px; align-items: flex-end; }
+.compo-sw { width: 14px; height: 28px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25); flex: 0 0 auto; }
+.compo-mv { display: flex; gap: 4px; flex: 0 0 auto; }
+.compo-mv .btn { min-width: 36px; padding: 0 8px; justify-content: center; }
+.compo-ok { display: flex; gap: 8px; align-items: flex-start; margin: 4px 0; }
+.compo-ok .pill { flex: 0 0 auto; }
+.compo-niv { margin-bottom: 10px; }
 /* bibliothèque technique : désignations lisibles sur chantier, badge de fiabilité */
 .badge { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 12px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid transparent; }
 .badge.b-verifiee { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); border-color: color-mix(in srgb, var(--ok) 40%, transparent); }

@@ -133,9 +133,9 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 |---|---|
 | `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 14) |
 | `id`, `name` | Identifiant et nom du plan |
-| `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) |
+| `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) ; v16 : `sol`, `plafond` = `{ couches, cn }` (plancher du dessus vers le dessous ; plafond du dessus vers le parement) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
-| `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) |
+| `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) ; v16 : `couches` [{ `m` (matériau de `MATERIAUX`, `compositions.js`), `e` (cm), `n` (nom si `autre`) }] du côté 1 (normale +n) vers le côté 2, `cn` (nom de la composition) ; `th` = somme des couches |
 | `openings[]` | Ouvertures : `id`, `wall`, `t` (position du milieu le long du mur depuis l'angle `a`), `w` (largeur), `kind` (`door`, `window`, `gap`, `closet`), `type`, `side`, `hinge`, `leaves`, `h`, `sill` (allège) |
 | `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif), `comp` (composant personnalisé, v3) |
 | `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6), `sc` (taille du symbole, 0,5 à 3, v12), `lum` (luminaire, v7 : `ph` photométrie du plan, `flux` en lm et `p` en W, données `{ v, st, src }`) |

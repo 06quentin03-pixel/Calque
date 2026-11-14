@@ -1,5 +1,17 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-14 — Demande de l'utilisateur : composition des murs, cloisons, planchers et plafonds
+Branche `claude/loving-thompson-b92t8x`, partie de `main` après la fusion n°13.
+- **Composition d'un mur ou d'une cloison couche par couche** (panneau du mur › « Composition ») : compositions types (cloison 72/48, 98/48, 95/70, brique plâtrière, carreau de plâtre ; parpaing de 15 ou 20 avec doublage sur ossature ou collé, brique, béton cellulaire, béton banché, ossature bois…) puis chaque couche modifiable : matériau (plaque de plâtre, laine de verre, laine de roche, fibre de bois, PSE, PU, vide technique, parpaing, brique, béton…), épaisseur (saisie ou épaisseurs courantes), ordre, ajout, suppression, « Inverser les côtés ». L'épaisseur du mur devient la somme des couches. « Appliquer aux autres murs du niveau » (doublage toujours du côté de la pièce) et « Utiliser pour les prochains murs / cloisons » (bandeau de l'outil Mur).
+- **Plancher et plafond de chaque niveau** (panneau du niveau › « Plancher, plafond et matériaux ») : dalle sur terre-plein, poutrelles et hourdis, plancher bois ; faux plafond avec plénum, plafond sous combles. L'épaisseur du plancher suit les couches.
+- **Gaines dans la laine de verre** : panneau d'une gaine posée « Cloison », « Sol » ou « Plafond » › « Logement dans les couches » : place suffisante, épaisseur insuffisante, gaine noyée (chape, dalle) ou saignée à prévoir ; bouton « Placer dans la couche de passage » qui déplace la gaine dans la laine ou le vide technique du mur (coudes compris). Contrôle géométrique de Calque, sans valeur réglementaire.
+- **Dessin des couches sur le plan** (couleur par matériau, trait ondulé dans les isolants), repris par les exports PDF, SVG et DXF ; interrupteur « Composition des murs (couches) » dans le menu Affichage. Fiche 3D d'un mur : sa composition.
+- **Surfaces des matériaux** (estimées) par niveau : murs (longueur × hauteur, ouvertures déduites), plancher et plafond.
+- Épaisseurs proposées : dimensions nominales courantes du commerce, présentées comme telles (à vérifier) ; aucune référence de fabricant.
+- **Format des plans v16** (`couches`, `cn` des murs ; `sol`, `plafond` des niveaux) avec migration et copie de sécurité ; aucune épaisseur existante n'est modifiée.
+- Plan d'exemple : murs de la maison (brique de 10 + laine de verre 7,5), cloisons (plaque + laine de verre 45, une en brique plâtrière), murs de l'atelier (parpaing de 15 + doublage sur ossature), plancher et faux plafond du rez-de-chaussée, plafond des combles ; la gaine du local technique est logée dans la laine de verre.
+- Nouveaux modules : `js/compositions.js` (sans écran), `js/compositionsui.js`. Service Worker : cache `calque-v46`. Tests : **190/190** (nouveau : `tests/compositions.test.mjs`, 3 tests).
+
 ## 2026-11-13 — Demandes de l'utilisateur : escaliers, terrasses, colonne du tableau, câbles et fils, test des schémas
 Branche `claude/elegant-ritchie-zjivgm`, partie de `main` après la fusion n°12.
 - **Trémie à la forme réelle de l'escalier** : un escalier en L (quart tournant) ou en U (demi-tournant) ne découpe plus que ses volées et son palier à l'étage du dessus ; le reste du rectangle garde son sol (vue 3D). Nouveau réglage de l'escalier « Trémie à l'étage du dessus : forme de l'escalier / aucune ».

@@ -72,9 +72,9 @@ test('écran : longueur de la gaine, pose « Cloison », interrupteur « Gaines 
   const { ctx, page, errors } = await fresh();
   await seedPlan(ctx, planV12()); await boot(page);
   const r0 = await page.evaluate(async () => (await import('./js/noyau.js')).P.v);
-  assert.equal(r0, 15);
+  assert.equal(r0, 16);
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
-  assert.ok(vers.some((w) => /\(v12 → v15\)/.test(w)), 'copie de sécurité avant mise à jour du format');
+  assert.ok(vers.some((w) => /\(v12 → v16\)/.test(w)), 'copie de sécurité avant mise à jour du format');
   const sel = (id) => page.evaluate(async (id) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = { t: 'duct', id }; N.ui.inspOpen = true; F.renderInspector(); }, id);
   /* gaine libre au bout : 167,4 + 150 = 317,4 cm → 500 cm, le dernier tronçon s'allonge */
   await sel('g1'); await wait(page, 150);

@@ -19,6 +19,7 @@ import { nettoyerChiffrage } from './quantitatif.js';
 import { nettoyerCalques, nettoyerVues } from './calques.js';
 import { nettoyerCircuitV12, nettoyerConds } from './cablage.js';
 import { nettoyerSchemas } from './schema.js';
+import { nettoyerV16 } from './compositions.js';
 
 
 /* ---------------- sauvegarde ----------------
@@ -170,6 +171,12 @@ const MIGRATIONS = {
     const l = p.variantes && Array.isArray(p.variantes.liste) ? p.variantes.liste : [];
     for (const v of l) if (v && v.data) nettoyerV15(v.data);
     return p;
+  },
+  /* v15 → v16 (demande du 14 novembre 2026) : composition des murs et des cloisons couche par couche (`couches` [{ m, e }],
+     nom `cn`), du plancher (`sol`) et du plafond (`plafond`) de chaque niveau (js/compositions.js). Les plans v15 n'en ont
+     pas : rien n'est deviné (épaisseurs et murs inchangés) ; valeurs invalides retirées. */
+  15(p) {
+    return nettoyerV16(p);
   },
 };
 function nettoyerV15(p) {

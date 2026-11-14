@@ -117,7 +117,7 @@ function fmtArea(cm2) { return NF2.format(cm2 / 10000) + ' m²'; }
 /* ---------- réglages (par appareil) ---------- */
 const S = {
   grid: 5, ortho: true, magnet: true, unit: 'm', dimMode: 'faces',
-  layers: { grid: true, dims: true, areas: true, furn: true, elec: true, ghost: true, names: true },
+  layers: { grid: true, dims: true, areas: true, furn: true, elec: true, ghost: true, names: true, compo: true },
   thMur: 20, thCloison: 7, wallEnd: 'auto',
   filt: { off: [], circ: null }, ductSys: 'vmc', ductKind: null, ductPose: null, // dernier type et dernière pose de gaine choisis
   pencil: false, pencilSeen: false, // Apple Pencil : le stylet dessine, le doigt déplace le plan (activé au premier usage du stylet)
@@ -140,7 +140,7 @@ const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: ne
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 15;
+const PLAN_VERSION = 16;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',

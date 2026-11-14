@@ -10,6 +10,7 @@ import { DIMHIT, drawDuctLabels, drawDucts, elecVisible, linkVisible, setDIMHIT 
 import { SCR } from './interaction.js';
 import { mkPath } from './export.js';
 import { calqueDeElec, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
+import { aCouches, bandes, matDe } from './compositions.js';
 
 /* ============================================================
    CALQUE — rendu canvas
@@ -242,6 +243,7 @@ function drawWalls(g) {
   for (const hb of g.hubs) { if (VIEW && !bbInView(bbOf(hb, hb.pts))) continue; const p = hb.mur ? pm : pc; p.moveTo(hb.pts[0].x, hb.pts[0].y); for (let i = 1; i < hb.pts.length; i++) p.lineTo(hb.pts[i].x, hb.pts[i].y); p.closePath(); }
   c.fillStyle = RC.C.wall; c.fill(pm);
   c.fillStyle = RC.C.part; c.fill(pc);
+  if (S.layers.compo !== false) drawCouches(g);
   c.beginPath();
   for (const wg of g.walls.values()) {
     if (!wallInView(wg)) continue;
@@ -252,6 +254,40 @@ function drawWalls(g) {
     if (h1.cap) { c.moveTo(h1.N.x, h1.N.y); c.lineTo(h1.P.x, h1.P.y); }
   }
   c.strokeStyle = RC.C.ink; c.lineWidth = 1.2 * px; c.lineJoin = 'miter'; c.stroke();
+}
+
+/* composition des murs (js/compositions.js) : une bande colorée par couche, entre les deux bouts du mur (jonctions
+   comprises), et un trait fin entre deux couches. Sans découpage (clip) : compatible avec les contextes PDF, SVG et DXF. */
+function drawCouches(g) {
+  const c = RC.ctx, px = RC.px;
+  const lerp = (a, b, f) => ({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+  const traits = [];
+  for (const wg of g.walls.values()) {
+    if (!aCouches(wg.w) || !wallInView(wg)) continue;
+    const { h0, h1 } = wg, th = wg.th;
+    /* côté 1 (+n) : h0.P et h1.N ; côté 2 : h0.N et h1.P */
+    const E0 = (o) => lerp(h0.N, h0.P, (o + th / 2) / th), E1 = (o) => lerp(h1.P, h1.N, (o + th / 2) / th);
+    for (const b of bandes(wg.w)) {
+      const m = matDe(b.c);
+      const q = [E0(b.o0), E0(b.o1), E1(b.o1), E1(b.o0)];
+      c.beginPath(); c.moveTo(q[0].x, q[0].y); for (let i = 1; i < 4; i++) c.lineTo(q[i].x, q[i].y); c.closePath();
+      c.fillStyle = m.coul || RC.C.room; c.fill();
+      if (m.cat === 'isolant' && b.e * RC.s > 6) { // laine ou isolant : trait ondulé au milieu de la couche (s'il est lisible)
+        const o = (b.o0 + b.o1) / 2, A = E0(o), B = E1(o), L = Math.hypot(B.x - A.x, B.y - A.y);
+        if (L > 1) {
+          const ux = (B.x - A.x) / L, uy = (B.y - A.y) / L, a = (b.o1 - b.o0) * 0.32, pas = Math.max(b.e, 3);
+          c.beginPath(); c.moveTo(A.x, A.y);
+          for (let s = pas / 2, k = 1; s < L; s += pas / 2, k = -k) c.lineTo(A.x + ux * s - uy * a * k, A.y + uy * s + ux * a * k);
+          c.lineTo(B.x, B.y);
+          c.strokeStyle = 'rgba(120,90,20,.55)'; c.lineWidth = 0.8 * px; c.stroke();
+        }
+      }
+      if (b.o0 > -th / 2 + 1e-6) traits.push([E0(b.o0), E1(b.o0)]);
+    }
+  }
+  if (!traits.length) return;
+  c.beginPath(); for (const [a, b] of traits) { c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); }
+  c.strokeStyle = RC.C.ink2; c.lineWidth = 0.6 * px; c.stroke();
 }
 
 function drawOpenings(g) {

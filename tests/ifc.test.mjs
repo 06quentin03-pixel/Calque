@@ -116,7 +116,7 @@ test('import IFC dans l’application : nouveau plan avec 2 niveaux, murs, porte
       ep: [...new Set(P.walls.map((w) => w.th + ' ' + w.kind))].sort(), op: P.openings.map((o) => [o.kind, o.w, o.h, o.sill]),
       pieces: P.levels.map((l) => G.geo(l.id).rooms.map((x) => [x.label.name, Math.round(x.area / 1000) / 10]).sort()), plans: (await St.listProjects()).map((x) => x.name).sort(), toast: document.getElementById('toast').textContent };
   });
-  assert.equal(r.nom, 'Maison test'); assert.equal(r.v, 15); assert.notEqual(r.id, 'pAvant');
+  assert.equal(r.nom, 'Maison test'); assert.equal(r.v, 16); assert.notEqual(r.id, 'pAvant');
   assert.deepEqual(r.niveaux, [['Rez-de-chaussée', 0, 250, 30], ['Étage', 280, 250, 20]]);
   assert.ok(r.murs[0] >= 5 && r.murs[1] >= 5); assert.deepEqual(r.ep, ['20 mur', '7 cloison']);
   assert.deepEqual(r.op, [['door', 90, 210, 0], ['window', 120, 125, 95]]);

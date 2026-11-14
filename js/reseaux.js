@@ -1,5 +1,6 @@
 /* Calque — module « reseaux » : réseaux : filtres, conduits VMC et gaines, cotes modifiables.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
+import { logementSection } from './compositionsui.js';
 import { $, C, EXT, IDX, NF2, P, S, bboxOf, clamp, fmtLenU, inPoly, isNum, projSeg, saveSettings, snapTo, ui, uid, vadd,
   vang, vdir, vdist, vlen, vmid, vmul, vperp, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
@@ -697,6 +698,7 @@ function inspGaine(d) {
     segCtl(Object.keys(POSES).map((k) => ({ v: k, n: POSES[k].court })), d.pose, (v) => { d.pose = v; if (poseAHauteur(v) && !isNum(d.z)) d.z = isNum(S.ductZ) ? S.ductZ : 30; if (!poseAHauteur(v)) delete d.z; rememberGaine(d); commit(); }),
     poseAHauteur(d.pose) ? numField('Hauteur du parcours', d.z, 'cm', (v) => { d.z = v; rememberGaine(d); commit(); }, { id: 'f-dz', min: 0, max: 600 }) : null,
     h('p', { class: 'note' }, d.pose ? POSES[d.pose].note + (zr != null ? ` Parcours à ${fmtIn(zr)} cm du sol fini.` : '') : 'Pose non précisée : les verticales jusqu’aux appareils ne sont pas comptées.'));
+  const loge = logementSection(d);
   /* circuits */
   const sel = h('select', { class: 'txt', id: 'f-dcirc', 'aria-label': 'Circuit' }, h('option', { value: '' }, 'Aucun circuit'),
     P.circuits.map((c) => h('option', { value: c.id, selected: c.id === d.cid }, `${nums.get(c.id)} · ${c.name}`)));
@@ -724,7 +726,7 @@ function inspGaine(d) {
       sec('Type de cheminement', h('div', { class: 'chips' }, Object.keys(TYPES_CHEMIN).map((k) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(d.kind === k), onclick: () => setKind(k) }, TYPES_CHEMIN[k].court))),
         h('p', { class: 'note' }, t ? t.note : 'Type non précisé : choisissez-le (il sera repris pour les gaines suivantes).')),
       sec(t && t.forme === 'rect' ? 'Dimensions' : 'Diamètre', taille),
-      pose, circ, remplissageLigne(d), conflitsSection(d),
+      pose, loge, circ, remplissageLigne(d), conflitsSection(d),
       h('p', { class: 'note' }, 'Faites glisser un point rond pour déplacer un coude, ou un petit point au milieu d’un tronçon pour en ajouter un. Double-touchez un coude pour le retirer.'),
       sec(null, btns(btn('Inverser le sens', () => reverseDuct(d), '', 'swap'), btn('Supprimer', deleteSel, 'danger', 'del'))),
     ),

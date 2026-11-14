@@ -12,7 +12,8 @@ import { addWall, clampOpening } from './mutations.js';
 import { ELEC_BY, FURN_BY } from './symboles.js';
 import { generateFromPlan, circNumbers } from './electricite.js';
 import { makeElecFromDef, makeItemFromDef, newOpening } from './interaction.js';
-import { copyWalls } from './interface.js';
+import { copyWalls, wallSideName } from './interface.js';
+import { appliquerAuMur, appliquerAuNiveau, placerDansCouche } from './compositions.js';
 import { articlesFor } from './technique.js';
 import { REGLES_VERSION } from './regles.js';
 import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
@@ -318,8 +319,41 @@ function samplePlan() {
   plansElectriquesExemple();
   schemasExemple();
   demandesExemple();
+  compositionsExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
+}
+/* composition des murs, des planchers et des plafonds (format v16, demande du 14 novembre 2026). Couches et épaisseurs
+   d'EXEMPLE (saisies, nom suivi de « exemple ») choisies pour garder les épaisseurs des murs du plan ; la gaine encastrée du
+   local technique est placée dans la laine de verre du doublage. */
+function compositionsExemple() {
+  const c = (m, e) => ({ m, e });
+  const poser = (lv, filtre, couches, nom) => {
+    const g = geo(lv);
+    for (const w of P.walls.filter((x) => x.lv === lv && filtre(x))) {
+      const wg = g.walls.get(w.id); if (!wg) continue;
+      const ext1 = wallSideName(wg, 1) === 'extérieur' && wallSideName(wg, -1) !== 'extérieur'; // couches données de la pièce vers l'extérieur
+      appliquerAuMur(w, ext1 ? couches.slice().reverse() : couches, nom);
+    }
+  };
+  const maison = (w) => { const n = P.nodes.find((x) => x.id === w.a); return n && n.x <= 1000 && n.y <= 800; };
+  /* maison : murs de 20 cm (brique de 10 doublée), cloisons de 7 cm (plaque + laine de verre ; une en brique plâtrière) */
+  poser('L0', (w) => maison(w) && w.kind === 'mur', [c('plaque', 1.25), c('laine_verre', 7.5), c('brique', 10), c('enduit_ext', 1.25)], 'Brique de 10 + doublage laine de verre 7,5 (exemple)');
+  poser('L0', (w) => maison(w) && w.kind === 'cloison', [c('plaque', 1.25), c('laine_verre', 4.5), c('plaque', 1.25)], 'Cloison plaque + laine de verre 45 (exemple)');
+  const bp = P.walls.find((w) => { if (w.lv !== 'L0' || w.kind !== 'cloison') return false; const a = P.nodes.find((x) => x.id === w.a), b = P.nodes.find((x) => x.id === w.b); return a && b && a.x === 830 && b.x === 830; });
+  if (bp) appliquerAuMur(bp, [c('enduit_platre', 1), c('brique_platriere', 5), c('enduit_platre', 1)], 'Brique plâtrière de 5 enduite (exemple)');
+  /* atelier : murs de 30 cm en parpaing de 15 avec doublage sur ossature (vide technique et laine de verre) */
+  poser('L0', (w) => !maison(w) && w.kind === 'mur' && Math.abs(w.th - 30) < 0.01, [c('plaque', 1.25), c('vide_tech', 4.5), c('laine_verre', 7.5), c('parpaing', 15), c('enduit_ext', 1.75)], 'Parpaing de 15 + doublage sur ossature (exemple)');
+  /* plancher et plafonds du rez-de-chaussée, plafond de l'étage (combles) */
+  const L0 = P.levels.find((l) => l.id === 'L0'), L1 = P.levels.find((l) => l.id === 'L1');
+  if (L0) {
+    appliquerAuNiveau(L0, 'sol', [c('carrelage', 1), c('chape', 5), c('pu', 4), c('dalle', 10)], 'Dalle sur terre-plein isolée (exemple)');
+    appliquerAuNiveau(L0, 'plafond', [c('plenum', 10), c('plaque', 1.25)], 'Faux plafond sur fourrures, plénum de 10 (exemple)');
+  }
+  if (L1) appliquerAuNiveau(L1, 'plafond', [c('laine_verre', 30), c('vide_tech', 2.7), c('plaque', 1.25)], 'Plafond sous combles, laine de verre 30 (exemple)');
+  touch();
+  const g = P.ducts.find((d) => d.pose === 'cloison');
+  if (g) placerDansCouche(P, g);
 }
 /* module « Plans électriques » (format v12) : personnalisation des calques, vue enregistrée, couleur, courbe et type de
    conducteur de circuits, taille de symboles, télérupteur et fil pilote pour montrer le moteur de câblage.

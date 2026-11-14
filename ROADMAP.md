@@ -135,6 +135,13 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Conducteurs choisis gaine par gaine : fils, câble à la taille juste, câble avec réserve, câble souple.
 - ⬜ Pistes : terrasse sans murs (contour dessiné librement), colonne étendue automatiquement à un nouvel étage, choix des conducteurs aussi depuis la fiche de la gaine.
 
+## Demande du 14 novembre 2026 : composition des murs ✅ (à essayer sur iPad, puis à fusionner)
+- ✅ Murs et cloisons couche par couche (plaque de plâtre, laine de verre, parpaing, brique…), compositions types, épaisseur calculée.
+- ✅ Plancher et plafond de chaque niveau (dalle, hourdis, plancher bois, faux plafond, combles).
+- ✅ Gaines logées dans la laine ou le vide technique (contrôle et placement automatique), gaines noyées dans la chape.
+- ✅ Dessin des couches sur le plan et dans les exports, surfaces des matériaux estimées.
+- ⬜ Pistes : couches visibles dans la vue 3D (coupe), plancher ou plafond propre à une pièce, matériaux dans le quantitatif et le chiffrage, boîtes d'encastrement adaptées à la cloison (plaque ou maçonnerie).
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).
