@@ -1,5 +1,13 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-14 (fin) — Onglet « Calculs » : tous les calculs de Calque expliqués
+Même branche `claude/loving-thompson-b92t8x`. Demande de l'utilisateur : comprendre à quoi correspond chaque calcul et sa formule.
+- **Nouvel onglet « Calculs »** (à droite de « Schémas ») : 21 fiches réparties en 7 familles (électricité d'un circuit, installation et tableau, gaines et câbles, éclairage, bâtiment et matériaux, thermique, chiffrage). Chaque fiche dit à quoi sert le calcul, donne la formule, le sens de chaque lettre avec son unité, d'où viennent les données (valeurs estimées, extrait Legrand, saisies) et où le trouver dans l'application.
+- **« Essayer avec vos valeurs »** : chaque fiche se recalcule en direct, étape par étape, avec les nombres tapés ; « Revenir à l'exemple ». Les exemples sont calculés par les moteurs de Calque eux-mêmes (`calcul.js`, `cheminement.js`, `eclairage.js`, `thermique.js`, `quantitatif.js`…) : l'explication ne peut pas contredire le calcul réel. Recherche et filtre par famille.
+- Nouveaux modules : `js/formules.js` (catalogue, sans écran) et `js/calculsui.js` (écran). Aucun changement du format des plans (l'onglet ne lit ni ne modifie le plan).
+- Barre du haut : onglets resserrés pour garder le nom du plan lisible avec six onglets (iPad paysage et portrait).
+- Service Worker : cache `calque-v48`. Tests : **195/195** (nouveau : `tests/calculs.test.mjs`, 2 tests).
+
 ## 2026-11-14 (suite) — Déperditions thermiques, gaine dans la laine du faux plafond, ajout d'un niveau, sens d'élargissement d'un mur
 Même branche `claude/loving-thompson-b92t8x`.
 - **Déperditions thermiques** (nouveaux modules `js/thermique.js`, sans écran, et `js/thermiqueui.js`) :

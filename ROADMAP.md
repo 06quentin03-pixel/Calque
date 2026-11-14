@@ -148,6 +148,10 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Grande fenêtre « Ajouter un niveau » (avec « tous les murs »), sens d'élargissement d'un mur.
 - ⬜ Pistes : calcul du terre-plein selon l'EN ISO 13370, ponts thermiques linéiques, puissance de relance, export du bilan thermique dans le dossier PDF, choix d'un radiateur proposé.
 
+## Onglet « Calculs » ✅ (14 novembre 2026)
+- ✅ Chaque calcul expliqué : but, formule, lettres, données, essai en direct.
+- ⬜ Pistes : lien depuis la fiche de calcul d'un circuit vers la fiche de l'onglet, exemple tiré du plan ouvert.
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

@@ -140,4 +140,4 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Format **v16**. Tests : **190/190**. Essais iPad : voir `NEXT_SESSION.md`.
 - Pistes : couches visibles dans la vue 3D, composition par pièce (plancher différent d'une pièce à l'autre), lignes du quantitatif pour les matériaux.
 - Suite (même branche) : déperditions thermiques des murs, pièces et niveaux (`thermique.js`, `thermiqueui.js`), gaine dans une couche choisie du faux plafond, grande fenêtre « Ajouter un niveau », élargissement d'un mur vers un côté. Format **v17**. Tests : **193/193**.
-
+- Onglet « Calculs » (`formules.js`, `calculsui.js`) : 21 calculs expliqués et essayables. Tests : **195/195**.

@@ -1,3 +1,8 @@
+## 14 novembre 2026 (fin) — Onglet « Calculs »
+- 21 calculs expliqués (formule, lettres, données, essai en direct), exemples calculés par les moteurs (`js/formules.js`, `js/calculsui.js`).
+- Défaut trouvé pendant les essais : avec six onglets, le nom du plan devenait trop étroit en iPad portrait et paysage ; onglets resserrés.
+- Tests : 195/195 (`tests/calculs.test.mjs`).
+
 ## 14 novembre 2026 (suite) — Déperditions, faux plafond, ajout d'un niveau, sens d'élargissement
 - Déperditions des murs, pièces et niveaux (`js/thermique.js`, `js/thermiqueui.js`), couche choisie pour une gaine au plafond, grande fenêtre « Ajouter un niveau », élargissement d'un mur vers un côté (`changerEpaisseur`).
 - Défaut corrigé : la fenêtre « Ajouter un niveau » ouverte depuis le panneau du niveau s'affichait écrasée au bas de l'écran.

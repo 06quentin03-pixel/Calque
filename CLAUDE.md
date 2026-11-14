@@ -71,6 +71,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Composition des murs, cloisons, planchers et plafonds (format v16) : moteur `compositions.js` (sans écran : matériaux, compositions types, bandes d'un mur, logement et placement des gaines, surfaces), écran `compositionsui.js`. `w.th` = somme des couches (`appliquerAuMur`) ; dessin `drawCouches` (`rendu2d.js`, sans découpage, compatible PDF/SVG/DXF).
 - Déperditions thermiques (format v17) : moteur `thermique.js` (sans écran : U des parois, déperditions d'un mur, d'une pièce, bilan d'un niveau ; méthode simplifiée, jamais présentée comme réglementaire), écran `thermiqueui.js`. Les pièces sont fournies par l'appelant (`geo(lv).rooms`).
 - Épaisseur d'un mur : `changerEpaisseur` (`compositions.js`) élargit le mur entier (tronçons alignés) au centre ou vers un côté, en déplaçant ses angles.
+- Onglet « Calculs » : catalogue `formules.js` (sans écran) et écran `calculsui.js`. **Tout nouveau calcul ajouté à Calque doit y avoir sa fiche**, avec un exemple calculé par la fonction du moteur (jamais recopié à la main) ; `tests/calculs.test.mjs` vérifie chaque fiche.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

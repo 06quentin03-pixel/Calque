@@ -387,6 +387,32 @@ button.li:hover { background: var(--panel-2); }
 
 /* ---- onglet tableau électrique ---- */
 .ev { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 10px; min-height: 0; }
+/* onglet « Calculs » */
+.cfv { min-height: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); }
+.cf-page { height: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 18px 22px 40px; box-sizing: border-box; }
+.cf-tete { max-width: 980px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.cf-tete h2 { margin: 0; font-size: 22px; }
+.cf-tete p { margin: 0; line-height: 1.45; }
+.cf-tete input[type=search] { max-width: 520px; min-height: 40px; font-size: 15px; }
+.cf-fam > h2 { font-size: 17px; margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--rule); }
+.cf-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 430px), 1fr)); gap: 14px; }
+.cf { border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px; background: var(--panel-2, var(--panel)); display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cf h3 { margin: 0; font-size: 16px; }
+.cf h4 { margin: 4px 0 0; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
+.cf-but { margin: 0; line-height: 1.45; }
+.cf-formule { font: 600 16px/1.5 ui-monospace, "SF Mono", Menlo, monospace; padding: 10px 12px; border-radius: 8px; background: color-mix(in srgb, var(--accent, #c2410c) 9%, transparent); overflow-x: auto; white-space: pre-wrap; }
+.cf-lettres summary { cursor: pointer; font-weight: 600; }
+.cf-lettres dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 8px 0 0; }
+.cf-lettres dt { font: 700 14px ui-monospace, "SF Mono", Menlo, monospace; white-space: nowrap; }
+.cf-lettres dd { margin: 0; line-height: 1.4; }
+.cf-champs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.cf-out { display: flex; flex-direction: column; gap: 6px; }
+.cf-etapes { font: 13px/1.6 ui-monospace, "SF Mono", Menlo, monospace; padding: 8px 10px; border-left: 3px solid var(--rule); overflow-x: auto; }
+.cf-res { display: flex; flex-wrap: wrap; gap: 8px; }
+.cf-res > div { display: flex; flex-direction: column; padding: 6px 12px; border-radius: 8px; background: var(--panel); border: 1px solid var(--rule); }
+.cf-res span { font-size: 12px; color: var(--ink-3); }
+.cf-res b { font-size: 19px; }
+@media (max-width: 760px) { .cf-page { padding: 12px 12px 30px; } .cf-formule { font-size: 14px; } }
 .ev-side { background: var(--panel); border: 1px solid var(--rule); border-radius: var(--r); overflow-y: auto; padding: 14px 12px 18px; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
 .ev-head h2 { margin: 0; font-size: 16px; font-weight: 750; }
 .ev-head p { margin: 2px 0 2px; font-size: 12.5px; color: var(--ink-2); }
@@ -509,6 +535,9 @@ button.ev-chk:hover { background: var(--panel-2); }
 @media (max-width: 1199px) { .vt-long { display: none; } } /* « Tableau » au lieu de « Tableau électrique » : place pour l'onglet Schémas */
 /* cinq onglets (Schémas ajouté) : le nom du plan reste lisible en iPad portrait */
 @media (max-width: 1099px) and (min-width: 761px) { .vtabs button { padding: 0 6px; font-size: 12px; } }
+@media (max-width: 899px) and (min-width: 761px) { .vtabs button { padding: 0 4px; font-size: 11.5px; } .proj { min-width: 104px; } }
+@media (min-width: 1100px) and (max-width: 1299px) { .vtabs button { padding: 0 9px; } }
+@media (min-width: 761px) and (max-width: 1299px) { .proj { min-width: 104px; } } /* six onglets (avec « Calculs ») en iPad portrait */
 .fpill .fp-main > span:not(.fp-ic) { white-space: nowrap; flex: none; }
 .ib.info { display: none; }
 @media (max-width: 1099px) { .ib.info { display: grid; } }
@@ -711,7 +740,7 @@ button.ev-chk:hover { background: var(--panel-2); }
       <b>CALQUE</b>
     </div>
     <button class="proj" id="btnProj" title="Mes plans"><span id="projName">Plan</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
-    <div class="seg vtabs" role="group" aria-label="Vue"><button type="button" class="vtab" data-view="plan" aria-pressed="true">Plan</button><button type="button" class="vtab" data-view="3d" aria-pressed="false">3D</button><button type="button" class="vtab" data-view="elec" aria-pressed="false">Tableau<span class="vt-long"> électrique</span></button><button type="button" class="vtab" data-view="chantier" aria-pressed="false">Chantier</button><button type="button" class="vtab" data-view="schema" aria-pressed="false">Schémas</button></div>
+    <div class="seg vtabs" role="group" aria-label="Vue"><button type="button" class="vtab" data-view="plan" aria-pressed="true">Plan</button><button type="button" class="vtab" data-view="3d" aria-pressed="false">3D</button><button type="button" class="vtab" data-view="elec" aria-pressed="false">Tableau<span class="vt-long"> électrique</span></button><button type="button" class="vtab" data-view="chantier" aria-pressed="false">Chantier</button><button type="button" class="vtab" data-view="schema" aria-pressed="false">Schémas</button><button type="button" class="vtab" data-view="calculs" aria-pressed="false">Calculs</button></div>
     <div class="levels" id="levels" role="toolbar" aria-label="Niveaux"></div>
     <div class="spacer"></div>
     <span class="save" id="saveState" data-s="ok"><i></i><b id="saveTxt">Enregistré</b></span>
@@ -799,6 +828,8 @@ button.ev-chk:hover { background: var(--panel-2); }
     </section>
     <aside class="insp" id="schInsp" aria-label="Propriétés du schéma"></aside>
   </div>
+  <!-- onglet « Calculs » : explication de chaque calcul de Calque (js/calculsui.js, js/formules.js) -->
+  <div class="cfv" id="calculsView" hidden></div>
   <div class="ev" id="elecView" hidden>
     <aside class="ev-side" id="evSide" aria-label="Circuits du tableau"></aside>
     <section class="ev-work">
