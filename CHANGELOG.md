@@ -1,5 +1,19 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-15 — Fiabilisation de Calque
+Branche `claude/lucid-sagan-6h707m`, partie de `main` après la fusion n°14. Demande de l'utilisateur : « Fiabilise Calque », plan validé en 5 étapes.
+- **Bouton « Confirmer la suppression » lisible** (signalé par l'utilisateur) : il était écrit en rouge sur fond orange (contraste 1,3) ; il est maintenant rouge plein avec texte blanc (texte foncé en thème sombre), contraste ≥ 4,5 vérifié par un test.
+- **Filet contre les plantages** (`js/incidents.js`, chargé en premier) : toute erreur non prévue est notée dans un journal local (50 incidents au plus, jamais envoyé) et signalée par un bandeau qui reprend l'état réel de l'enregistrement ; les modifications en attente sont enregistrées.
+- **Menu › Journal des erreurs** (`js/journalui.js`) : liste, « Copier le journal » (à coller dans un message), « Essayer le filet », « Effacer le journal ».
+- **Plan qui ne s'ouvre pas au démarrage** : il était remplacé en silence par le plan d'exemple ; c'est maintenant dit, le plan enregistré n'est pas touché, accès à Mes plans et au journal.
+- **Plans abîmés** : un élément vide dans une liste, un objet sans identifiant, une pièce sans nom ou une zone interdite sans contour empêchaient l'ouverture ou le dessin ; ils sont corrigés à l'ouverture, chaque réparation est dite et une copie de sécurité du plan d'origine est gardée dans l'historique.
+- **Menu › Vérifier le plan** (`js/integrite.js`, sans écran) : contrôle des liens entre les objets (murs et angles, ouvertures, symboles et circuits, différentiels, liaisons, gaines, passages entre étages, réserves et cases « posé » du chantier, vues, photométries, composants, identifiants en double, positions et épaisseurs invalides). Réparation proposée seulement quand elle est sûre, après copie de sécurité, annulable ; le reste est « vérification nécessaire ».
+- **Suppressions sans trace** : supprimer un symbole, un niveau, un circuit ou une colonne de passage ne laisse plus de référence vers l'objet disparu ; le suivi de chantier d'un niveau supprimé est gardé et rattaché au niveau affiché.
+- **Démarrage lent** (base IndexedDB qui tarde, défaut connu de Safari) : « Ouverture… » au lieu d'un faux « Enregistré », et écran inactif tant que le plan enregistré n'est pas ouvert (un dessin fait pendant l'attente était remplacé).
+- **Calibre ou section manquants** : « calibre à choisir », « section à choisir » (« ? A » dans les schémas) au lieu de « undefined A » ; le contrôle NF C 15-100 les signale en « vérification nécessaire » (ils étaient ignorés).
+- Tests de résistance : ~260 variantes abîmées du plan d'exemple, 120 modifications au hasard puis tout annuler / tout rétablir, IndexedDB absente / refusée / muette, formats v2 à v16 sans champ perdu, 29 fiches de calcul à leurs bornes, plan aux valeurs extrêmes parcouru panneau par panneau avec exports PDF et DXF.
+- Aucun changement du format des plans (toujours v17). Service Worker : cache `calque-v52`. Tests : **208/208** (nouveau : `tests/fiabilite.test.mjs`, 12 tests ; `migrations` et `exemple` complétés).
+
 ## 2026-11-14 (fin) — Onglet « Calculs » : tous les calculs de Calque expliqués
 Même branche `claude/loving-thompson-b92t8x`. Demande de l'utilisateur : comprendre à quoi correspond chaque calcul et sa formule.
 - **Nouvel onglet « Calculs »** (à droite de « Schémas ») : 21 fiches réparties en 7 familles (électricité d'un circuit, installation et tableau, gaines et câbles, éclairage, bâtiment et matériaux, thermique, chiffrage). Chaque fiche dit à quoi sert le calcul, donne la formule, le sens de chaque lettre avec son unité, d'où viennent les données (valeurs estimées, extrait Legrand, saisies) et où le trouver dans l'application.

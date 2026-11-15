@@ -89,6 +89,9 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `schemasymboles.js` | Symboles des schémas électriques (inspirés de la CEI 60617) : bornes, boîte, rôle (bobine, contact, borne, potentiel, renvoi), préfixe de repère, dessin en mm ; rotation et miroir | oui |
 | `schema.js` | Moteur des schémas : folios, équipotentielles et numéros de fils, repères, numéros de contacts, renvois croisés, nomenclature, borniers, liste des fils, contrôles, insertion dans un fil, modèles, import du tableau, dessin d'un folio, nettoyage v14 | oui |
 | `schemaui.js` | Onglet « Schémas » : feuille, gestes (Pencil, doigt, pincement), outils, bibliothèque, panneau de propriétés, listes, exports PDF / SVG / DXF | non |
+| `incidents.js` | Filet contre les plantages : erreurs non prévues notées dans un journal local (`calque.incidents`), bandeau avec l'état réel de l'enregistrement ; chargé en premier par `main.js`, n'importe rien | oui (sauf bandeau) |
+| `journalui.js` | Menu › Journal des erreurs : liste, copie en texte, essai du filet, effacement | non |
+| `integrite.js` | Contrôle des liens entre les objets d'un plan (`controlerPlan`) et réparations sûres (`reparerPlan`) ; utilisé par Menu › Vérifier le plan, `planProblems` et `cleanLinks` | oui |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |

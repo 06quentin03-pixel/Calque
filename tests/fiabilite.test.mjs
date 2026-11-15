@@ -135,10 +135,10 @@ test('plans abîmés : chaque liste et chaque champ abîmé du plan d’exemple 
     const p = base(); p.walls.push(null); p.rooms[0].name = null; p.zones.push({ id: 'zz', lv: 'L0', pts: 'abîmé' });
     const avant = JSON.stringify(p);
     St.openPlan(p, 'pREP');
-    await new Promise((r) => setTimeout(r, 500));
     const modal = document.getElementById('modal').textContent;
-    const vs = await St.versionsOf('pREP');
-    const copie = vs.find((v) => /avant réparation/.test(v.why));
+    /* la copie de sécurité est écrite en arrière-plan : l'attendre (5 s au plus) */
+    let copie = null;
+    for (let t = 0; t < 100 && !copie; t++) { copie = (await St.versionsOf('pREP')).find((v) => /avant réparation/.test(v.why)); if (!copie) await new Promise((r) => setTimeout(r, 50)); }
     const json = copie && await St.versionJson(copie.k);
     const X = await import('./js/export.js');
     const dxf = X.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).bilan.total;
@@ -209,8 +209,9 @@ test('suppressions : aucun lien orphelin après la suppression d’un symbole, d
     St.ouvrirVerification();
     out.modal2 = document.getElementById('modal').textContent;
     [...document.querySelectorAll('#modal button')].find((b) => /Réparer/.test(b.textContent)).click();
-    await new Promise((r) => setTimeout(r, 600));
-    out.apresRep = I.controlerPlan(N.P).length;
+    /* la réparation suit l'écriture de la copie de sécurité : attendre la fermeture de la fenêtre (et non un délai fixe) */
+    for (let t = 0; t < 100 && !document.getElementById('modal').hidden; t++) await new Promise((r) => setTimeout(r, 50));
+    out.apresRep = I.controlerPlan(N.P).map((x) => x.msg);
     out.copie = (await St.versionsOf('pREP2')).some((v) => /avant réparation des liens/.test(v.why));
     const H = await import('./js/interaction.js'); H.undo();
     out.apresAnnuler = N.P.elec[0].cid;
@@ -222,7 +223,7 @@ test('suppressions : aucun lien orphelin après la suppression d’un symbole, d
   assert.ok(r.chantierGarde, 'le suivi de chantier d’un niveau supprimé est gardé');
   assert.match(r.modal, /Aucun lien cassé trouvé/); assert.match(r.modal, /ne dit rien de la conformité/);
   assert.match(r.modal2, /1 symbole relié à un circuit manquant/); assert.match(r.modal2, /Réparer \(1\)/);
-  assert.equal(r.apresRep, 0); assert.ok(r.copie, 'copie de sécurité'); assert.equal(r.apresAnnuler, 'cDISPARU', 'Annuler revient avant la réparation');
+  assert.deepEqual(r.apresRep, []); assert.ok(r.copie, 'copie de sécurité'); assert.equal(r.apresAnnuler, 'cDISPARU', 'Annuler revient avant la réparation');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

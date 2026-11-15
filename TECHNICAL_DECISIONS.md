@@ -18,3 +18,12 @@
 - **Modèles** : une famille de repères dont un repère est déjà pris dans le projet est renumérotée en entier, dans l'ordre du modèle.
 - **Dessin unique** (`dessinerFolio`) pour l'écran, le PDF (`PdfCtx`), le SVG (`SvgCtx`, unité mm) et le DXF (`DxfCtx` avec une échelle 0,1, écrit en mm).
 - **Symboles « inspirés de la CEI 60617 »** : dessins simplifiés de Calque, présentés comme tels ; aucune référence de matériel n'est proposée (champ « référence » saisi).
+
+## 15 novembre 2026 — fiabilisation
+- **Journal des erreurs local** (`localStorage` `calque.incidents`, 50 incidents) : rien n'est envoyé (hors ligne, aucun serveur). Le contexte noté ne contient ni le nom ni le contenu du plan (onglet, outil, nombre d'objets, format).
+- **Filet** : en cas d'incident, seules les modifications déjà validées (enregistrement en attente) sont enregistrées ; un état à moitié modifié par l'erreur n'est pas forcé. Le bandeau répète l'état affiché en haut de l'écran, jamais deviné.
+- **Réparations à l'ouverture** (`normalizePlan(p, notes)`) limitées à ce qui empêche d'ouvrir : éléments sans aucune donnée retirés, identifiant donné, pièce sans nom nommée « Pièce sans nom », zone sans contour retirée. Toujours dites (fenêtre « Plan réparé à l'ouverture ») avec une copie de sécurité exacte du plan d'origine.
+- **Vérifier le plan** (`integrite.js`) : le contrôle ne modifie jamais le plan ; une réparation n'existe que si elle est sûre (lien vers un objet disparu) ; positions, épaisseurs, niveaux manquants, composants manquants et identifiants en double restent « vérification nécessaire » (rien n'est deviné). Ce contrôle ne dit rien de la conformité NF C 15-100.
+- **Suppressions** : `cleanLinks()` (`electricite.js`) est le point unique après la suppression de symboles ; il retire aussi passages jumeaux, bouts de gaine, cases « posé » et liens des réserves vers les symboles disparus. Un nouveau type de référence vers un objet doit avoir sa règle dans `integrite.js` et être nettoyé à la suppression.
+- **Démarrage** : `body[data-demarrage]` bloque les touchers jusqu'à l'ouverture du plan enregistré, levé dans tous les cas (`finally` dans `main.js`).
+- **Calibre et section** : affichage par `txtCal` / `txtSec` (`noyau.js`) ; une valeur manquante est dite, jamais remplacée.

@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 14 novembre 2026, composition des murs, déperditions thermiques (format v17).
+Mise à jour : 15 novembre 2026, fiabilisation (format v17 inchangé).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -109,8 +109,16 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 
 **Décision de l'utilisateur (4 novembre 2026)** : les tableaux absents du guide sont **reportés à la toute fin (phase 8)**, car les documents sont payants. Ne pas les redemander avant.
 
+## 15 novembre 2026 — Fiabilisation (branche `claude/lucid-sagan-6h707m`)
+- Bouton « Confirmer la suppression » lisible (signalé par l'utilisateur).
+- Filet contre les plantages : `js/incidents.js` (journal local, bandeau), Menu › Journal des erreurs (`js/journalui.js`).
+- Contrôle des liens entre objets : `js/integrite.js` (sans écran), Menu › Vérifier le plan ; plans abîmés réparés à l'ouverture (réparation dite, copie de sécurité) ; suppressions sans référence orpheline.
+- Démarrage lent sans perte (« Ouverture… », écran inactif jusqu'à l'ouverture) ; calibre et section manquants dits partout et signalés par le contrôle NF C 15-100.
+- Tests : **208/208** (`tests/fiabilite.test.mjs`, 12 tests). Essais iPad : voir `NEXT_SESSION.md`.
+- Pistes : bouton « Voir » sur chaque ligne de « Vérifier le plan » (aller à l'objet) ; essai réel d'un incident sur l'iPad (Safari) pour vérifier le texte des erreurs.
+
 ## Tests
-- `node --test tests/*.test.mjs` : **187/187 réussis** (13 novembre 2026, demandes v15 : `demandes` (12 tests)) ; avant : **175/175 réussis** (onglet Schémas : `schemas` (4 tests)) ; avant : **171/171 réussis** (13 novembre 2026, après les demandes sur les gaines : `gaines` (2 tests)) ; avant : 169/169 (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
+- `node --test tests/*.test.mjs` : **208/208 réussis** (15 novembre 2026, fiabilisation : `fiabilite` (12 tests)) ; avant : **187/187 réussis** (13 novembre 2026, demandes v15 : `demandes` (12 tests)) ; avant : **175/175 réussis** (onglet Schémas : `schemas` (4 tests)) ; avant : **171/171 réussis** (13 novembre 2026, après les demandes sur les gaines : `gaines` (2 tests)) ; avant : 169/169 (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
 - Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (6 tests), `multi` (4 tests), `dxfimport` (3 tests), `routage` (5 tests), `dxfmurs` (4 tests), `ifc` (7 tests), `assistant` (2 tests), `equipement` (4 tests), `sauvegarde` (5 tests), `affectation` (4 tests), `regeneration` (3 tests), `mesure` (2 tests), `migrations` (2 tests : v1 → v11 sans perte, v2 à v10), `fondtraits` (2 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 
@@ -131,6 +139,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - `claude/layer-modification-prompt-feasibility-nw7oa4` : branche de développement des phases 1 à 7 (fusionnée).
 - `claude/ecstatic-sagan-juah82` : branche de la mission « développement autonome » (partie de `main` après la fusion n°6).
 - `claude/calque-electrical-plans-module-tbt1ea` : module « Plans électriques » (partie de `main` après la fusion n°10), à fusionner après les essais iPad.
+- `claude/lucid-sagan-6h707m` : fiabilisation (15 novembre 2026, partie de `main` après la fusion n°14).
 
 
 ## 14 novembre 2026 — Composition des murs, cloisons, planchers et plafonds (branche `claude/loving-thompson-b92t8x`)

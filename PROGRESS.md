@@ -1,3 +1,8 @@
+## 15 novembre 2026 — Fiabilisation
+- Bouton de suppression lisible, filet contre les plantages et journal des erreurs, contrôle complet des liens (Vérifier le plan), plans abîmés réparés à l'ouverture, suppressions sans trace, démarrage lent sans perte, calibres et sections manquants dits.
+- Défauts trouvés par les nouveaux tests et corrigés : 13 sortes de plans abîmés qui ne s'ouvraient pas, 8 erreurs de dessin, plan illisible remplacé en silence par l'exemple, références orphelines après 4 sortes de suppressions, dessin perdu pendant un démarrage lent, « undefined A » dans le tableau, circuit sans calibre ignoré par le contrôle.
+- Tests : 208/208 (`tests/fiabilite.test.mjs`, 12 tests).
+
 ## 14 novembre 2026 (fin) — Onglet « Calculs »
 - 21 calculs expliqués (formule, lettres, données, essai en direct), exemples calculés par les moteurs (`js/formules.js`, `js/calculsui.js`).
 - Défaut trouvé pendant les essais : avec six onglets, le nom du plan devenait trop étroit en iPad portrait et paysage ; onglets resserrés.

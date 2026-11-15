@@ -168,3 +168,22 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('plan d’exemple : fiabilisation (aucun lien cassé, calibres et sections présents, Vérifier le plan et Journal des erreurs au menu)', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.click('#btnMenu'); await page.click('#menuPop button:has-text("Ouvrir le plan d’exemple")'); await wait(page, 600);
+  const r = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), I = await import('./js/integrite.js');
+    return { liens: I.controlerPlan(N.P).map((x) => x.msg), sansCal: N.P.circuits.filter((c) => !Number.isFinite(c.cal) || !Number.isFinite(c.sec)).map((c) => c.name) };
+  });
+  assert.deepEqual(r.liens, []);
+  assert.deepEqual(r.sansCal, []);
+  await page.click('#btnMenu');
+  assert.equal(await page.locator('#menuPop button:has-text("Vérifier le plan")').count(), 1);
+  assert.equal(await page.locator('#menuPop button:has-text("Journal des erreurs")').count(), 1);
+  await page.click('#menuPop button:has-text("Vérifier le plan")'); await wait(page, 300);
+  assert.match(await page.textContent('#modal'), /Aucun lien cassé trouvé/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
