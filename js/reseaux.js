@@ -7,7 +7,7 @@ import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
 import { ELEC_BY, ELEC_CATS, S_ELEC, elecBox } from './symboles.js';
 import { FONT_LABEL, RC, TS, V, VIEW, bbInView, setScreen, setWorld, textHalo, w2s } from './rendu2d.js';
-import { circById, circNumbers, circuitColor, roomAt } from './electricite.js';
+import { circById, circNumbers, circuitColor, cleanLinks, roomAt } from './electricite.js';
 import { K_screen, TAP, commit, ctx, drawSnapMarker, handleDot, hitTol, isDoubleTap, keys, requestRender, revert, tag } from './interaction.js';
 import { goToRef } from './tableau.js';
 import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h, inspHead, kv, numField, parseNum,
@@ -762,13 +762,14 @@ function remplissageLigne(d) {
 function creerColonne(T) {
   const r = colonneTableau(P, T, () => uid('e'));
   for (const m of r.nouveaux) { P.elec.push(m); IDX.elec.set(m.id, m); }
-  if (r.retires.length) { const out = new Set(r.retires.map((x) => x.id)); P.elec = P.elec.filter((x) => !out.has(x.id)); for (const id of out) IDX.elec.delete(id); }
+  if (r.retires.length) { const out = new Set(r.retires.map((x) => x.id)); P.elec = P.elec.filter((x) => !out.has(x.id)); for (const id of out) IDX.elec.delete(id); cleanLinks(); }
   return r;
 }
 function retirerColonne(col) {
   const out = new Set(P.elec.filter((x) => x.type === TRAVERSEE && x.col === col).map((x) => x.id));
   P.elec = P.elec.filter((x) => !out.has(x.id)); for (const id of out) IDX.elec.delete(id);
   for (const d of P.ducts) for (const k of ['a', 'b']) if (d[k] && out.has(d[k])) d[k] = null;
+  cleanLinks();
   return out.size;
 }
 const nomNiveau = (lv) => (P.levels.find((l) => l.id === lv) || {}).name || lv;

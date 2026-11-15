@@ -1,6 +1,7 @@
 /* Calque — module « electricite » : électricité : circuits, tableau, contrôle NF C 15-100.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { besoinsPiece } from './equipement.js';
+import { reparerPlan } from './integrite.js';
 import { C, IDX, NF0, NF1, P, estExterieure, horsHabitation, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
@@ -104,7 +105,12 @@ function toggleLink(a, b) {
   }
   return true;
 }
-function cleanLinks() { P.links = P.links.filter((l) => IDX.elec.has(l.a) && IDX.elec.has(l.b)); }
+/* après la suppression de symboles : liaisons retirées, et plus aucune référence vers un symbole disparu
+   (passage jumeau, bout de gaine laissé libre, case « posé » du chantier, réserve gardée sans lien) */
+function cleanLinks() {
+  P.links = P.links.filter((l) => IDX.elec.has(l.a) && IDX.elec.has(l.b));
+  reparerPlan(P, ['traversee-jumeau', 'gaine-bout', 'pose-orpheline', 'reserve-appareil']);
+}
 
 /* ---------------- génération depuis le plan ---------------- */
 function nearItem(e, types, maxD) {

@@ -418,6 +418,7 @@ function circuitEditor(c) {
         /* gaines : le circuit supprimé n'y passe plus ; case « posé » du chantier retirée */
         for (const d of P.ducts) { if (d.cid === c.id) delete d.cid; if (Array.isArray(d.cids)) { d.cids = d.cids.filter((x) => x !== c.id); if (!d.cids.length) delete d.cids; } }
         if (P.chantier && P.chantier.poses && P.chantier.poses.circ) delete P.chantier.poses.circ[c.id];
+        for (const v of P.vues || []) if (v && Array.isArray(v.circs)) v.circs = v.circs.filter((x) => x !== c.id); // vues enregistrées
         P.circuits = P.circuits.filter((x) => x !== c); ui.evSel = null; commit();
       }, 'sm danger', 'del'))));
 }

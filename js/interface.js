@@ -982,6 +982,7 @@ function renderMenuPop() {
     menuItem('down', 'Importer un fichier (plan ou sauvegarde)', () => $('#fileIn').click()),
     h('hr'),
     menuItem('clock', 'Historique des versions', openVersions),
+    menuItem('filter', 'Vérifier le plan (liens entre les objets)', () => import('./stockage.js').then((m) => m.ouvrirVerification())),
     menuItem('folder', libelleMenu(), exportAll),
     h('hr'),
     menuItem('house', 'Ouvrir le plan d’exemple', openSample),
@@ -1066,10 +1067,14 @@ function deleteLevel(id) {
   const wallIds = new Set(P.walls.filter((w) => w.lv === id).map((w) => w.id));
   P.openings = P.openings.filter((o) => !wallIds.has(o.wall));
   for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'etudes']) P[k] = (P[k] || []).filter((o) => o.lv !== id);
-  for (const c of P.circuits) if (!P.elec.some((e) => e.cid === c.id)) { /* circuit conservé, sans symbole */ }
   P.levels = P.levels.filter((l) => l.id !== id);
   touch();
+  cleanLinks(); // passages entre étages, cases « posé » et réserves des symboles du niveau supprimé (circuits conservés)
   ui.lv = levelsSorted().reduce((best, l) => (Math.abs(l.elev) < Math.abs(best.elev) ? l : best)).id;
+  /* suivi de chantier du niveau supprimé (réserves, photos, annotations) : gardé, rattaché au niveau affiché (jamais effacé) */
+  const ch = P.chantier || {}, gardes = ['reserves', 'photos', 'notes'].flatMap((k) => (ch[k] || []).filter((o) => o && o.lv === id));
+  for (const o of gardes) o.lv = ui.lv;
+  if (gardes.length) toast(`${gardes.length} élément${gardes.length > 1 ? 's' : ''} du suivi de chantier (réserves, photos, annotations) rattaché${gardes.length > 1 ? 's' : ''} au niveau « ${(P.levels.find((l) => l.id === ui.lv) || {}).name || ''} ».`);
   ui.sel = null;
   commit();
 }

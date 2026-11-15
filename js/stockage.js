@@ -3,13 +3,14 @@
 import { $, $$, NF1, P, PIECES_EXT, PLAN_VERSION, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
 import { syncRooms } from './geometrie.js';
 import { historyReset, snapshot } from './historique.js';
-import { fitView, refreshUI } from './interaction.js';
+import { commit as commitPlan, fitView, refreshUI } from './interaction.js';
 import { confirmBtnPlain } from './tableau.js';
 import { btn, btns, closeModal, confirmBtn, h, openModal, setTool, toast } from './interface.js';
 import { exportJSON } from './export.js';
 import { samplePlan } from './demarrage.js';
 import { EV, emit } from './evenements.js';
 import { nettoyerGaine, nettoyerZone } from './cheminement.js';
+import { controlerPlan, reparerPlan } from './integrite.js';
 import { nettoyerEtude, nettoyerLum } from './eclairage.js';
 import { nettoyerPhotometrie } from './photometrie.js';
 import { nettoyerDoc } from './documents.js';
@@ -241,22 +242,8 @@ function migratePlan(p) {
 }
 /* empreinte du contenu (FNV-1a + longueur) : détecte un enregistrement tronqué ou abîmé */
 function checksum(s) { let x = 0x811c9dc5; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 0x01000193); } return (x >>> 0).toString(36) + '.' + s.length; }
-/* contrôle d'intégrité : signale les liens cassés sans rien modifier */
-function planProblems(p) {
-  const out = [];
-  const ids = (a) => new Set((a || []).map((o) => o && o.id));
-  const nodes = ids(p.nodes), walls = ids(p.walls), circs = ids(p.circuits), rcds = ids(p.rcds), lvs = ids(p.levels);
-  const n = (cond, msg) => { if (cond) out.push(msg); };
-  n((p.walls || []).some((w) => !nodes.has(w.a) || !nodes.has(w.b)), 'mur relié à un angle manquant');
-  n((p.openings || []).some((o) => !walls.has(o.wall)), 'ouverture sur un mur manquant');
-  n((p.elec || []).some((e) => e.cid && !circs.has(e.cid)), 'symbole relié à un circuit manquant');
-  n((p.circuits || []).some((c) => c.rcd && !rcds.has(c.rcd)), 'circuit relié à un différentiel manquant');
-  n((p.fonds || []).some((f) => !(p.fondImg || {})[f.img]), 'fond de plan sans image');
-  n(['nodes', 'walls', 'items', 'elec', 'rooms', 'ducts', 'zones', 'etudes'].some((k) => (p[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément sur un niveau manquant');
-  const ch = p.chantier || {};
-  n(['reserves', 'photos', 'notes'].some((k) => (ch[k] || []).some((o) => o && o.lv && !lvs.has(o.lv))), 'élément du chantier sur un niveau manquant');
-  return out;
-}
+/* contrôle d'intégrité : signale les liens cassés sans rien modifier (moteur : integrite.js ; écran : Menu › Vérifier le plan) */
+function planProblems(p) { return controlerPlan(p).map((x) => x.msg); }
 
 const DB = {
   db: null, ok: false,
@@ -464,6 +451,21 @@ async function syncFromLocal() {
 async function askPersist() {
   try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch (e) { }
 }
+/* Menu › Vérifier le plan : liens entre les objets (pas la conformité NF C 15-100) ; réparation proposée, après copie de sécurité */
+function ouvrirVerification() {
+  const pb = controlerPlan(P), rep = pb.filter((x) => x.rep);
+  const ligne = (x) => h('li', null, h('b', null, x.msg), h('br'), h('span', { class: 'note' }, x.rep ? 'Réparation : ' + x.rep + '.' : 'Vérification nécessaire : à corriger à la main (Calque ne devine pas la bonne valeur).'));
+  openModal('Vérifier le plan',
+    h('p', null, 'Calque contrôle les liens entre les objets du plan (murs et angles, symboles et circuits, gaines, passages entre étages, suivi de chantier…). Ce contrôle ne dit rien de la conformité NF C 15-100 : voir Tableau électrique › Contrôle.'),
+    pb.length ? h('ul', null, pb.map(ligne)) : h('p', null, h('b', null, 'Aucun lien cassé trouvé.')),
+    rep.length && !ui.isExample ? h('p', { class: 'note' }, 'Avant de réparer, une copie de sécurité du plan est gardée dans Menu › Historique des versions.') : null,
+    btns(rep.length && !ui.isExample ? btn(`Réparer (${rep.length})`, async () => {
+      await addVersion(P.id, P.name || 'Plan', JSON.stringify(P), 'Copie de sécurité avant réparation des liens');
+      const fait = reparerPlan(P);
+      touch(); closeModal(); commitPlan();
+      toast(`${fait.length} réparation${fait.length > 1 ? 's' : ''} faite${fait.length > 1 ? 's' : ''}. Copie de sécurité dans l’historique des versions.`);
+    }, 'pri') : null, btn('Fermer', closeModal)));
+}
 /* réparations faites à l'ouverture : toujours dites, avec la copie de sécurité */
 function avertirReparations(notes) {
   openModal('Plan réparé à l’ouverture',
@@ -496,7 +498,7 @@ function openPlan(plan, id, opts) {
   fitView();
   if (reparations.length && !ui.isExample) avertirReparations(reparations);
   else if (mig.newer) toast('Ce plan vient d’une version plus récente de Calque : certaines données peuvent ne pas s’afficher.');
-  else if (!ui.isExample && !opts.quiet) { const pb = planProblems(P); if (pb.length) toast('Plan ouvert. À vérifier : ' + pb.join(', ') + '.'); }
+  else if (!ui.isExample && !opts.quiet) { const pb = planProblems(P); if (pb.length) toast('Plan ouvert. À vérifier : ' + pb.join(', ') + ' (Menu › Vérifier le plan).'); }
   /* copie de sécurité à l'ouverture (si le plan a changé depuis la dernière version) */
   if (!ui.isExample && !opts.quiet) { const json = JSON.stringify(P); maybeVersion(id, P.name || 'Plan', json, checksum(json), 'À l’ouverture', true); }
   emit(EV.PLAN_OUVERT, { id });
@@ -642,7 +644,7 @@ function saveBlobLocal(blob, filename) {
   } catch (e) { return false; }
 }
 
-export { avertirReparations, DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, nettoyerTaille, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
+export { avertirReparations, ouvrirVerification, DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, nettoyerTaille, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
   deletedPlans, getDownloads, lastVer, listProjects, loadProject, localIndex, lsDel, lsGet, lsSet, maybeVersion,
   migratePlan, newPlan, notifySaveFail, openPlan, openProjects, openSample, openVersions, planProblems, pruneVersions,
   saveBlobLocal, saveNow, scheduleSave, setLocalIndex, setSave, slug, syncFromLocal, versionJson, versionsOf,

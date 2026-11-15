@@ -152,3 +152,73 @@ test('plans abîmés : chaque liste et chaque champ abîmé du plan d’exemple 
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('contrôle des liens : moteur sans écran (Node), réparation sûre, rien deviné', async () => {
+  const I = await import('../js/integrite.js');
+  const p = {
+    levels: [{ id: 'L0', elev: 0 }], nodes: [{ id: 'n1', lv: 'L0', x: 0, y: 0 }, { id: 'n2', lv: 'L0', x: 100, y: 0 }],
+    walls: [{ id: 'w1', lv: 'L0', a: 'n1', b: 'n2', th: 20 }, { id: 'w2', lv: 'L0', a: 'n1', b: 'nX', th: 20 }],
+    openings: [{ id: 'o1', wall: 'w2' }, { id: 'o2', wall: 'w1' }],
+    elec: [{ id: 'e1', lv: 'L0', x: 0, y: 0, cid: 'cX', to: 'eX' }, { id: 'e2', lv: 'L0', x: 5, y: 5 }, { id: 'e3', lv: 'L0', x: NaN, y: 0 }],
+    circuits: [{ id: 'c1', rcd: 'rX' }], rcds: [], links: [{ id: 'l1', a: 'e1', b: 'eY' }],
+    ducts: [{ id: 'd1', lv: 'L0', a: 'eZ', b: 'e2', cid: 'cX', cids: ['c1', 'cY'], pts: [{ x: 0, y: 0 }, { x: 1, y: 1 }] }],
+    vues: [{ id: 'v1', circs: ['c1', 'cX'] }], chantier: { poses: { app: { e1: 1, eX: 2 }, circ: { cX: 3 } }, reserves: [{ id: 'r1', lv: 'L0', ref: { t: 'elec', id: 'eX' } }] },
+  };
+  const avant = JSON.stringify(p);
+  const pb = I.controlerPlan(p);
+  assert.equal(JSON.stringify(p), avant, 'le contrôle ne modifie rien');
+  const codes = Object.fromEntries(pb.map((x) => [x.code, x.n]));
+  for (const c of ['mur-angle', 'symbole-circuit', 'circuit-differentiel', 'liaison-symbole', 'gaine-circuit', 'gaine-bout', 'traversee-jumeau', 'reserve-appareil', 'pose-orpheline', 'vue-circuit', 'coordonnees']) assert.ok(codes[c], c);
+  assert.equal(pb.find((x) => x.code === 'coordonnees').rep, null, 'une position manquante n’est pas inventée');
+  const fait = I.reparerPlan(p);
+  assert.ok(fait.length >= 10);
+  assert.deepEqual(I.controlerPlan(p).map((x) => x.code), ['coordonnees'], 'reste : à corriger à la main');
+  assert.deepEqual(p.walls.map((w) => w.id), ['w1']); assert.deepEqual(p.openings.map((o) => o.id), ['o2'], 'ouverture du mur retiré aussi');
+  assert.equal(p.elec[0].cid, undefined); assert.equal(p.elec[0].to, undefined); assert.equal(p.elec.length, 3, 'aucun symbole effacé');
+  assert.deepEqual(p.ducts[0].cids, ['c1']); assert.equal(p.ducts[0].a, null); assert.equal(p.ducts[0].b, 'e2');
+  assert.deepEqual(p.vues[0].circs, ['c1']); assert.deepEqual(p.chantier.poses, { app: { e1: 1 }, circ: {} });
+  assert.equal(p.chantier.reserves.length, 1, 'réserve gardée'); assert.equal(p.chantier.reserves[0].ref, undefined);
+});
+
+test('suppressions : aucun lien orphelin après la suppression d’un symbole, d’un niveau ou d’un circuit ; écran « Vérifier le plan »', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  const r = await page.evaluate(async () => {
+    const I = await import('./js/integrite.js'); const N = await import('./js/noyau.js'); const St = await import('./js/stockage.js');
+    const UI = await import('./js/interface.js'); const E = await import('./js/exemple.js');
+    const ouvrir = () => St.openPlan(E.samplePlan(), 'pO', { quiet: true, example: true });
+    ouvrir();
+    const out = { exemple: I.controlerPlan(N.P).map((x) => x.msg), apres: [] };
+    /* symboles reliés au suivi de chantier, à un passage entre étages ou à une réserve */
+    const ch = N.P.chantier;
+    const cibles = N.P.elec.map((e, i) => ({ e, i })).filter(({ e }) => e.to || ch.poses.app[e.id] || ch.reserves.some((x) => x.ref && x.ref.id === e.id)).map((x) => x.i);
+    out.cibles = cibles.length;
+    for (const i of cibles) { ouvrir(); const e = N.P.elec[i]; N.ui.lv = e.lv; N.ui.sel = { t: 'elec', id: e.id }; UI.deleteSel(); out.apres.push(...I.controlerPlan(N.P).map((x) => 'symbole : ' + x.msg)); }
+    for (let i = 0; i < N.P.levels.length; i++) { ouvrir(); const avant = N.P.chantier.reserves.length + N.P.chantier.photos.length + N.P.chantier.notes.length; UI.deleteLevel(N.P.levels[i].id); out.apres.push(...I.controlerPlan(N.P).map((x) => 'niveau : ' + x.msg)); out.chantierGarde = (out.chantierGarde ?? true) && N.P.chantier.reserves.length + N.P.chantier.photos.length + N.P.chantier.notes.length === avant; }
+    ouvrir();
+    St.ouvrirVerification();
+    out.modal = document.getElementById('modal').textContent;
+    UI.closeModal();
+    /* vrai plan avec un symbole relié à un circuit disparu : « Réparer » garde une copie et s'annule */
+    const p = E.samplePlan(); p.elec[0].cid = 'cDISPARU';
+    St.openPlan(p, 'pREP2', { quiet: true });
+    St.ouvrirVerification();
+    out.modal2 = document.getElementById('modal').textContent;
+    [...document.querySelectorAll('#modal button')].find((b) => /Réparer/.test(b.textContent)).click();
+    await new Promise((r) => setTimeout(r, 600));
+    out.apresRep = I.controlerPlan(N.P).length;
+    out.copie = (await St.versionsOf('pREP2')).some((v) => /avant réparation des liens/.test(v.why));
+    const H = await import('./js/interaction.js'); H.undo();
+    out.apresAnnuler = N.P.elec[0].cid;
+    return out;
+  });
+  assert.deepEqual(r.exemple, [], 'plan d’exemple sans lien cassé');
+  assert.ok(r.cibles >= 3, 'symboles testés : ' + r.cibles);
+  assert.deepEqual(r.apres, []);
+  assert.ok(r.chantierGarde, 'le suivi de chantier d’un niveau supprimé est gardé');
+  assert.match(r.modal, /Aucun lien cassé trouvé/); assert.match(r.modal, /ne dit rien de la conformité/);
+  assert.match(r.modal2, /1 symbole relié à un circuit manquant/); assert.match(r.modal2, /Réparer \(1\)/);
+  assert.equal(r.apresRep, 0); assert.ok(r.copie, 'copie de sécurité'); assert.equal(r.apresAnnuler, 'cDISPARU', 'Annuler revient avant la réparation');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
