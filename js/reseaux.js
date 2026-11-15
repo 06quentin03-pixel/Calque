@@ -470,6 +470,9 @@ function creerGaineElec(g) {
   if (g.cid) d.cid = g.cid;
   if (S.ductKind && TYPES_CHEMIN[S.ductKind]) d.kind = S.ductKind;
   if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (poseAHauteur(d.pose) && isNum(S.ductZ)) d.z = S.ductZ; else if (poseAHauteur(d.pose)) delete d.pose; }
+  /* type et pose proposés par le moteur (raccordement en boîtes de dérivation : au plafond) l'emportent */
+  if (g.kind && TYPES_CHEMIN[g.kind]) d.kind = g.kind;
+  if (g.pose && POSES[g.pose]) { d.pose = g.pose; if (poseAHauteur(d.pose) && isNum(g.z)) d.z = g.z; else if (poseAHauteur(d.pose) && !isNum(d.z)) delete d.pose; else if (!poseAHauteur(d.pose)) delete d.z; }
   d.dia = autoDuctDia(d);
   if (d.kind && TYPES_CHEMIN[d.kind].forme === 'rect') { delete d.dia; if (isNum(S.ductLw) && isNum(S.ductLh)) { d.lw = S.ductLw; d.lh = S.ductLh; } }
   P.ducts.push(d); IDX.ducts.set(d.id, d);

@@ -85,8 +85,9 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   // assistant : le plan d'exemple montre des étapes faites, à faire et à surveiller (réserves ouvertes, chiffrage partiel)
   assert.ok(r.assistant.n >= 9 && r.assistant.faites >= 4 && r.assistant.suivante); assert.equal(r.assistant.etats.chiffrage, 'afaire'); assert.equal(r.assistant.etats.chantier, 'attention');
   // équipement minimal : deux pièces de l'exemple montrent ce qui manque, à poser depuis leur inspecteur : le local technique,
-  // et la cuisine, où le four intégré sous la plaque attend sa prise spécialisée (demande du 15 novembre 2026)
-  assert.deepEqual(r.equip, ['Cuisine : pc_four', 'Local technique']);
+  // et la cuisine, où le four intégré sous la plaque attend sa prise spécialisée (demande du 15 novembre 2026) ;
+  // demande du 16 novembre 2026 : la hotte de la cuisine et le sèche-serviettes de la salle de bain attendent leur raccordement
+  assert.deepEqual(r.equip, ['Cuisine : pc_hotte,pc_four', 'Salle de bain : sortie_rad', 'Local technique']);
   // demandes du 13 novembre 2026 (v15) : escalier en L, balcon de l'étage seul, vide sur entrée, colonne du tableau utilisée, conducteurs choisis
   assert.ok(r.v15.escQ && r.v15.balcon && r.v15.vide, JSON.stringify(r.v15));
   assert.deepEqual(r.v15.colonne, ['L0', 'L1']); assert.ok(r.v15.parColonne >= 1, 'gaines de l’étage raccordées à la colonne');
@@ -208,6 +209,28 @@ test('plan d’exemple : fiabilisation et ergonomie (meubles d’angle de la cui
   assert.equal(await page.locator('#menuPop button:has-text("Journal des erreurs")').count(), 1);
   await page.click('#menuPop button:has-text("Vérifier le plan")'); await wait(page, 300);
   assert.match(await page.textContent('#modal'), /Aucun lien cassé trouvé/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('plan d’exemple : câbles à tirer et raccordement en boîtes de dérivation (demande du 16 novembre 2026)', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.click('#btnMenu'); await page.click('#menuPop button:has-text("Ouvrir le plan d’exemple")'); await wait(page, 600);
+  const r = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), C = await import('./js/cheminement.js'), E = await import('./js/equipement.js'), G = await import('./js/geometrie.js');
+    const P = N.P, bx = P.elec.filter((e) => e.type === 'derivation' && e.lv === 'L0' && e.x < 1000);
+    const parBoite = bx.map((b) => P.ducts.filter((d) => d.a === b.id || d.b === b.id).length);
+    const cid = (P.elec.find((e) => e.type === 'pc' && Math.abs(e.x - 563.5) < 1 && Math.abs(e.y - 55) < 1) || {}).cid;
+    const ch = C.cheminCircuit(P, cid);
+    const cuisine = G.geo('L0').rooms.find((q) => q.label && q.label.name === 'Cuisine');
+    return { boites: bx.length, parBoite, complet: ch.complet, points: ch.points.length, poses: [...new Set(P.ducts.filter((d) => d.cid === cid).map((d) => d.pose))],
+      cables: E.cablesATirer(P, { lv: 'L0', poly: cuisine.poly, loop: cuisine.loop }).length };
+  });
+  assert.equal(r.boites, 2, 'une boîte au plafond du séjour et une de la chambre');
+  assert.ok(r.parBoite.every((n) => n >= 3), 'chaque boîte dessert plusieurs appareils : ' + r.parBoite);
+  assert.ok(r.complet && r.points >= 6); assert.deepEqual(r.poses, ['plafond']);
+  assert.ok(r.cables > 0, 'la cuisine a des câbles à tirer');
   assert.deepEqual(errors, []);
   await ctx.close();
 });

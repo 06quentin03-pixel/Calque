@@ -10,6 +10,7 @@ import { polyArea, polyPerim } from './noyau.js';
 import { CONSTANTES, TABLE_BY } from './normes.js';
 import { bilanPuissance, chuteTension, courantMono, courantTri, equilibrage, puissances, repartirPhases } from './calcul.js';
 import { aCommander } from './cheminement.js';
+import { placerBoite } from './boites.js';
 import { intensiteLambert } from './eclairage.js';
 import { LAMBDA, RS, arrondiConseil, uParoi } from './thermique.js';
 import { chiffrer } from './quantitatif.js';
@@ -133,6 +134,21 @@ const FORMULES = [
     e: [{ k: 'L', n: 'Longueur mesurée', u: 'm', v: 23.4, min: 0, max: 1e5 }, { k: 'r', n: 'Réserve', u: '%', v: 10, min: 0, max: 100 }],
     calc: (x) => { const m = aCommander(x.L * 100, { v: x.r }); return { etapes: [`${f(x.L, 2)} × (1 + ${f(x.r, 0)} / 100) = ${f(x.L * (1 + x.r / 100), 2)} m`], res: [['À commander', m + ' m']] }; },
     donnees: 'Réserve par défaut : 10 % (valeur de Calque, « estimée »), réglable dans Tableau électrique › Cheminements.' },
+  { id: 'boite', fam: 'chemin', titre: 'Position d’une boîte de dérivation',
+    but: 'Raccordement automatique « en boîtes de dérivation » : la boîte de la pièce est posée au plafond, là où la longueur totale des gaines vers les appareils de la pièce est la plus courte (les gaines suivent des tronçons droits).',
+    formule: 'boîte = point de la pièce qui rend minimale Σ ( |x − xi| + |y − yi| )\n(à 30 cm au moins des murs, hors zones interdites, à 25 cm au moins des autres symboles)',
+    vars: [['x, y', 'position de la boîte au plafond', 'cm'], ['xi, yi', 'position de chaque appareil de la pièce sur le même circuit', 'cm'], ['30 cm, 25 cm', 'écarts choisis par Calque (pas des cotes de la norme)', 'cm']],
+    e: [{ k: 'L', n: 'Largeur de la pièce', u: 'cm', v: 400, min: 100, max: 5000 }, { k: 'P', n: 'Profondeur de la pièce', u: 'cm', v: 300, min: 100, max: 5000 },
+      { k: 'x1', n: 'Prise 1 : position le long du mur du haut', u: 'cm', v: 60, min: 0, max: 5000 }, { k: 'x2', n: 'Prise 2 : position le long du mur du haut', u: 'cm', v: 340, min: 0, max: 5000 }, { k: 'y3', n: 'Interrupteur : position le long du mur de gauche', u: 'cm', v: 250, min: 0, max: 5000 }],
+    calc: (x) => {
+      const poly = [{ x: 0, y: 0 }, { x: x.L, y: 0 }, { x: x.L, y: x.P }, { x: 0, y: x.P }];
+      const pts = [{ x: Math.min(x.x1, x.L), y: 5 }, { x: Math.min(x.x2, x.L), y: 5 }, { x: 5, y: Math.min(x.y3, x.P) }];
+      const b = placerBoite(poly, pts, [], []); if (!b) return { erreur: 'Pièce trop petite pour une boîte.' };
+      const somme = (c) => pts.reduce((s, p) => s + Math.abs(c.x - p.x) + Math.abs(c.y - p.y), 0), c = { x: x.L / 2, y: x.P / 2 };
+      return { etapes: [`appareils : (${pts.map((p) => `${f(p.x, 0)} ; ${f(p.y, 0)}`).join('), (')})`, `boîte en (${f(b.x, 0)} ; ${f(b.y, 0)}) : Σ = ${f(somme(b), 0)} cm`, `pour comparaison, au centre de la pièce : Σ = ${f(somme(c), 0)} cm`],
+        res: [['Boîte', `x = ${f(b.x, 0)} cm, y = ${f(b.y, 0)} cm`], ['Gaines vers les appareils', f(somme(b) / 100, 2) + ' m (sans les descentes)']] };
+    },
+    donnees: 'Pièces et appareils du plan. Proposition de Calque à vérifier : la boîte doit rester accessible (trappe de visite d’un faux plafond). Réglage : Tableau électrique › Cheminements › Raccordement automatique.' },
   { id: 'remplissage', fam: 'chemin', titre: 'Remplissage d’une gaine',
     but: 'Vérifier qu’il reste de la place dans un conduit pour tirer les câbles. Calque compare la place prise par les câbles à la section du conduit.',
     formule: 'taux = Σ (π × d² / 4) / (π × D² / 4) × 100\n(rectangle : section = largeur × hauteur)',

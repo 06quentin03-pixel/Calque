@@ -11,8 +11,9 @@
    - montée et descente des volets roulants (commande la plus proche).
    Un conducteur d'un réseau passe dans un tronçon quand le réseau a des extrémités des deux côtés du tronçon.
 
-   Tout ce qui sort de ce module est ESTIMÉ (schéma de câblage usuel, câblage en étoile depuis le tableau en suivant
-   les gaines) : à adapter au schéma réel. Ce n'est ni une note de calcul ni une validation réglementaire. */
+   Tout ce qui sort de ce module est ESTIMÉ (schéma de câblage usuel, en suivant l'arbre des gaines depuis le tableau :
+   une boîte de dérivation est un nœud de cet arbre, où les conducteurs se répartissent vers ses appareils — raccordement
+   en boîtes, boites.js) : à adapter au schéma réel. Ce n'est ni une note de calcul ni une validation réglementaire. */
 import { isNum } from './noyau.js';
 import { cheminCircuit, circuitsDe, grapheGaines, isElecDuct, kindOf, plusCourts, tableauDu, TRAVERSEE } from './cheminement.js';
 import { CMDS, LIGHTS, LIGHT_ACC, LINK_TARGETS } from './elecdonnees.js';

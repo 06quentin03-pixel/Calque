@@ -21,6 +21,7 @@ import { dupliquer, initialiser } from './variantes.js';
 import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
 import { colonneTableau } from './cheminement.js';
 import { raccorderCircuit } from './itineraire.js';
+import { raccorderEnBoites } from './boites.js';
 import { agcpLabel } from './elecdonnees.js';
 import { integrer, nouvelIntegre } from './integration.js';
 import { equiperPiece } from './equipement.js';
@@ -325,6 +326,7 @@ function samplePlan() {
   plansElectriquesExemple();
   schemasExemple();
   demandesExemple();
+  boitesExemple();
   compositionsExemple();
   touch();
   return JSON.parse(JSON.stringify(P));
@@ -557,6 +559,24 @@ function demandesExemple() {
   if (choisis[0]) choisis[0][1].conds = { [choisis[0][0].id]: { t: 'h07vu' } };
   if (choisis[1]) choisis[1][1].conds = { [choisis[1][0].id]: { t: 'r2v', n: 5 } };
   touch();
+}
+/* raccordement en boîtes de dérivation (demande du 16 novembre 2026) : le circuit des prises de la chambre et du séjour de la
+   maison est raccordé par le moteur (boites.js) — une boîte au plafond de chaque pièce, gaines ICTA au plafond,
+   descentes dans les cloisons. Les autres circuits du rez-de-chaussée restent à raccorder, pour essayer « Tirer les
+   câbles » et « Raccorder les circuits incomplets » ; le sèche-serviettes et la hotte (meubles) attendent leur
+   raccordement dans « Équipement minimal ». */
+function boitesExemple() {
+  touch();
+  const de = (t, x, y) => P.elec.find((e) => e.lv === 'L0' && e.type === t && Math.abs(e.x - x) < 0.6 && Math.abs(e.y - y) < 0.6);
+  const cids = [de('pc', 563.5, 55)].map((e) => e && e.cid).filter(Boolean);
+  const pieces = (lv) => geo(lv).rooms.map((r) => ({ nom: r.label ? r.label.name : '', poly: r.poly, loop: r.loop }));
+  for (const cid of cids) {
+    const r = raccorderEnBoites(P, cid, { pieces, kind: 'icta' });
+    const ids = new Map();
+    for (const b of r.boites) ids.set(b.id, sym(b.lv, 'derivation', b.x, b.y, 0, { h: null }).id);
+    for (const g of r.gaines) { const d = Object.assign({}, g, { id: uid('k'), mat: 'icta', dia: 20, a: ids.get(g.a) || g.a, b: ids.get(g.b) || g.b }); delete d.len; P.ducts.push(d); }
+    touch();
+  }
 }
 function schemasExemple() {
   const sch = schemasDe(P);

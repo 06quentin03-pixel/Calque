@@ -124,6 +124,7 @@ const S = {
   layers: { grid: true, dims: true, areas: true, furn: true, elec: true, ghost: true, names: true, compo: true },
   thMur: 20, thCloison: 7, wallEnd: 'auto',
   filt: { off: [], circ: null }, ductSys: 'vmc', ductKind: null, ductPose: null, // dernier type et dernière pose de gaine choisis
+  raccMode: 'boites', // raccordement automatique : 'boites' (boîtes de dérivation, plafond et cloisons) ou 'proche' (de proche en proche)
   pencil: false, pencilSeen: false, // Apple Pencil : le stylet dessine, le doigt déplace le plan (activé au premier usage du stylet)
 };
 function loadSettings() {
