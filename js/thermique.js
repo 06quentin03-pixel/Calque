@@ -44,6 +44,8 @@ const COTES = {
   non_chauffe: { n: 'Local non chauffé (garage, cellier…)', b: 0.5, se: false },
   vide_sanitaire: { n: 'Vide sanitaire', b: 0.8, se: false },
   terreplein: { n: 'Terre-plein (sol)', b: 0.5, se: false, sol: true },
+  /* local chauffé (logement voisin, étage non dessiné…) : pas de perte par le plancher ou le plafond (b = 0) */
+  chauffe: { n: 'Local chauffé (logement voisin, étage chauffé…)', b: 0, se: false, chauffe: true },
 };
 const SRC_B = 'Coefficient b estimé par Calque (ordre de grandeur usuel), à adapter à votre bâtiment';
 const DEF = {
@@ -200,7 +202,7 @@ function deperditionsPiece(plan, r, ctx) {
     let vers, b, dT = te ? ti.v - te.v : null, cote = 'int';
     if (rv && chauffee(rv)) { const tj = tInt(rv.label); dT = ti.v - tj.v; if (dT <= 0) continue; vers = rv.label.name; b = d(1, 'saisie', 'Pièce voisine'); }
     else if (rv) { vers = rv.label.name + ' (non chauffée)'; b = d(COTES.non_chauffe.b, 'estimee', SRC_B); }
-    else { const c = coteNiveau(plan, L, k); vers = c.n; b = c.b; cote = COTES[c.cle].sol ? 'sol' : COTES[c.cle].se ? 'ext' : 'int'; if (c.st === 'estimee') estim.add(`${k === 'sol' ? 'Dessous' : 'Dessus'} du niveau non précisé : ${c.n} supposé`); }
+    else { const c = coteNiveau(plan, L, k); if (c.cle === 'chauffe' && !(c.b.v > 0)) continue; /* local chauffé : pas de perte */ vers = c.n; b = c.b; cote = COTES[c.cle].sol ? 'sol' : COTES[c.cle].se ? 'ext' : 'int'; if (c.st === 'estimee') estim.add(`${k === 'sol' ? 'Dessous' : 'Dessus'} du niveau non précisé : ${c.n} supposé`); }
     const cp = compoNiveau(L, k);
     const U = uParoi(cp ? cp.couches : null, k === 'sol' ? 'down' : 'up', cote);
     const it = { quoi: k === 'sol' ? 'Plancher' : 'Plafond', A: S, U };
@@ -291,8 +293,8 @@ function nettoyerV17(p, nettoyerCouches) {
   }
   for (const L of Array.isArray(p.levels) ? p.levels : []) {
     if (!L || typeof L !== 'object') continue;
-    if ('dessous' in L && !['terreplein', 'vide_sanitaire', 'non_chauffe', 'exterieur'].includes(L.dessous)) delete L.dessous;
-    if ('dessus' in L && !['combles', 'non_chauffe', 'toiture'].includes(L.dessus)) delete L.dessus;
+    if ('dessous' in L && !['terreplein', 'vide_sanitaire', 'non_chauffe', 'exterieur', 'chauffe'].includes(L.dessous)) delete L.dessous;
+    if ('dessus' in L && !['combles', 'non_chauffe', 'toiture', 'chauffe'].includes(L.dessus)) delete L.dessus;
     for (const k of ['bsol', 'bplaf']) if (k in L && !(isNum(L[k]) && L[k] >= 0 && L[k] <= 1)) delete L[k];
     for (const k of ['sol', 'plafond']) if (L[k] && typeof L[k] === 'object') { const c = nettoyerCouches(L[k].couches); if (c) L[k].couches = c; else delete L[k]; }
   }

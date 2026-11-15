@@ -190,7 +190,8 @@ const MIGRATIONS = {
     return nettoyerV17(p, nettoyerCouches);
   },
   /* v17 → v18 (15 novembre 2026) : électroménager intégré dans un meuble (`dans` = id du meuble, `ox` = décalage le long
-     du meuble, sur l'appareil). Les plans v17 n'en ont pas : rien à convertir ; une valeur invalide est retirée. */
+     du meuble, sur l'appareil) ; passage entre étages laissé où il est posé (`libre`, sur le symbole) ; niveau sous ou sur un
+     local chauffé (`dessous` / `dessus` = `chauffe`). Les plans v17 n'en ont pas : rien à convertir ; une valeur invalide est retirée. */
   17(p) {
     return nettoyerV18(p);
   },

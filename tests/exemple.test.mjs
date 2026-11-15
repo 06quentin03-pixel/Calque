@@ -59,7 +59,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   // cheminements (phase 4) : tous les types et toutes les poses, passage entre étages, zone interdite, conflits, matériel
   for (const k of ['icta', 'irl', 'goulotte', 'cdc']) assert.ok(r.kinds.includes(k), k);
   for (const p of ['sol', 'plafond', 'hauteur']) assert.ok(r.poses.includes(p), p);
-  assert.ok(r.vmc >= 4); assert.equal(r.twins, 2); assert.ok(r.zones >= 1); assert.ok(r.conflits >= 1); assert.ok(r.materiel >= 4);
+  assert.ok(r.vmc >= 4); assert.equal(r.twins, 4, 'passage de la mezzanine + passage du local technique (goulotte puis laine de verre)'); assert.ok(r.zones >= 1); assert.ok(r.conflits >= 1); assert.ok(r.materiel >= 4);
   assert.deepEqual(r.non, [], 'chaque symbole de l’atelier est raccordé au tableau par les gaines');
   // éclairage (phase 5) : études avec éclairement visé et luminaires dont le flux est saisi
   assert.ok(r.etudes >= 3 && r.lum >= 20);
@@ -179,6 +179,10 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
   assert.deepEqual(ig.integ, ['four>plaque', 'lave_vaisselle>plan_travail', 'micro_ondes>colonne']);
   assert.equal(ig.piece, 'Séjour'); assert.ok(ig.conseil > 0); assert.equal(ig.sr, ig.conseil, 'sortie de câble de la puissance conseillée'); assert.ok(ig.cid);
   assert.equal(ig.raccord, 0, 'radiateur raccordé');
+  /* passage entre étages : goulotte contre le mur brut du local technique, laine de verre du doublage à l'étage ; local chauffé au-dessus */
+  const pa = await page.evaluate(async () => { const N = await import('./js/noyau.js'), K = await import('./js/compositions.js');
+    return { modes: N.P.elec.filter((e) => e.type === 'traversee' && !e.col).map((e) => K.logementPassage(N.P, e).mode).sort(), dessus: N.P.levels[0].dessus }; });
+  assert.deepEqual(pa.modes, ['couche', 'goulotte', 'libre', 'libre']); assert.equal(pa.dessus, 'chauffe');
   /* onglet « Schémas » : modèles et distribution importée du tableau, sans erreur de schéma */
   const sc = await page.evaluate(async () => { const N = await import('./js/noyau.js'), S = await import('./js/schema.js'); const s = N.P.schemas;
     return { n: s.folios.length, types: [...new Set(s.folios.map((f) => f.type))].sort(), err: S.controlesSchema(s).filter((x) => x.niveau === 'erreur').length, nom: S.nomenclature(s).lignes.length, bor: S.borniers(s).map((b) => b.rep), disj: s.folios.filter((f) => f.type === 'distribution').reduce((t, f) => t + f.syms.filter((y) => y.t === 'disj2').length, 0), circ: N.P.circuits.length }; });

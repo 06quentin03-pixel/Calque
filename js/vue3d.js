@@ -15,7 +15,7 @@ import { openFiche } from './fiche.js';
 import { OPENING_NAMES, SCR, commit, openingModels, refreshUI, requestRender, wallHeightOf } from './interaction.js';
 import { goToRef, setView } from './tableau.js';
 import { ICON, btn, btns, fmtIn, h, ico, kv, numField, openingSizeText, sec, segCtl, toast } from './interface.js';
-import { aCouches, courtCouche } from './compositions.js';
+import { GOULOTTE, aCouches, courtCouche, logementPassage } from './compositions.js';
 import { slug } from './stockage.js';
 import { openFileModal, parseColor } from './export.js';
 import { HOTES, creuxDe, morceaux } from './integration.js';
@@ -830,8 +830,21 @@ function passages3(G, visIds, hid, pick, o) {
     if (y1 - y0 < 1) continue;
     const id = pick({ t: 'elec', id: lo[0].id, lv: lo[0].lv });
     const gb = o.cables ? G.g : G.s;
-    tube3(gb, [lo[0].x, y0, lo[0].y], [lo[0].x, y1, lo[0].y], 2.2, K3.gaine, id, 12);
-    sphere3(gb, [lo[0].x, y0, lo[0].y], 2.2, K3.gaine, id, 10); sphere3(gb, [lo[0].x, y1, lo[0].y], 2.2, K3.gaine, id, 10);
+    /* passage en goulotte contre le mur (pas de couche de passage, demande du 15 novembre 2026) : goulotte jusqu'au plafond ;
+       les deux côtés décalés (goulotte en bas, isolant du mur en haut) : coude sous le plancher du dessus */
+    const a = lo[0], b = hi[0], decale = Math.hypot(a.x - b.x, a.y - b.y) > 1;
+    const yc = decale ? Math.min(y1, Math.max(y0, hi[1].elev - 6)) : y1;
+    const lg = logementPassage(P, a);
+    if (lg && lg.mode === 'goulotte') {
+      const W = P.walls.find((w) => w.id === lg.wall), A = W && nodeOf(W.a), B = W && nodeOf(W.b);
+      if (A && B) {
+        const L = Math.hypot(B.x - A.x, B.y - A.y) || 1, dx = (B.x - A.x) / L, dy = (B.y - A.y) / L, nx = -dy * lg.cote, ny = dx * lg.cote, g = GOULOTTE;
+        const q = (u, v) => ({ x: a.x + dx * u + nx * v, y: a.y + dy * u + ny * v });
+        solid3(G.s, [[q(-3, -g), q(3, -g), q(3, g), q(-3, g)]], y0 - 4, yc, K3.white2, id);
+      }
+    } else tube3(gb, [a.x, y0, a.y], [a.x, yc, a.y], 2.2, K3.gaine, id, 12);
+    if (decale) { tube3(gb, [a.x, yc, a.y], [b.x, yc, b.y], 2.2, K3.gaine, id, 12); tube3(gb, [b.x, yc, b.y], [b.x, y1, b.y], 2.2, K3.gaine, id, 12); sphere3(gb, [a.x, yc, a.y], 2.2, K3.gaine, id, 10); sphere3(gb, [b.x, yc, b.y], 2.2, K3.gaine, id, 10); }
+    sphere3(gb, [a.x, y0, a.y], 2.2, K3.gaine, id, 10); sphere3(gb, [b.x, y1, b.y], 2.2, K3.gaine, id, 10);
   }
 }
 /* altitude d'un câble dans un conduit dessiné : au fond d'un chemin de câbles ou d'une goulotte, au centre d'une gaine */

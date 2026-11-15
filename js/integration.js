@@ -203,6 +203,8 @@ function nettoyerV18(p) {
     if ('ox' in it && !Number.isFinite(it.ox)) { if (it.dans) it.ox = 0; else delete it.ox; }
     if ('ox' in it && !it.dans) delete it.ox;
   }
+  /* passage entre étages en position libre (même date) : `libre: true` seulement sur un passage */
+  for (const e of Array.isArray(p.elec) ? p.elec : []) if (e && typeof e === 'object' && 'libre' in e && (e.libre !== true || e.type !== 'traversee')) delete e.libre;
   return p;
 }
 

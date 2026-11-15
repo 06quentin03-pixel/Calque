@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (222/222 le 15 novembre 2026 au soir).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (224/224 le 15 novembre 2026 au soir).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -45,6 +45,10 @@ première ouverture, avec une copie de sécurité (Menu › Historique des versi
    puissance conseillée d'après la pièce, choix rapides 500 à 2 000 W, « Prendre … W ».
 7. Poser un radiateur de la Bibliothèque (chercher « Radiateur ») dans une pièce › « Raccordement électrique » › « Poser : Sortie de
    câble radiateur » : elle est posée sur le mur derrière, avec la puissance conseillée.
+8. Toucher le vide du plan (panneau du niveau) › Thermique : « Local chauffé » est proposé au-dessus et en dessous.
+9. Local technique (atelier) : toucher le passage entre étages contre le mur de droite : « monte dans une goulotte » ;
+   « Voir l'autre côté » : à l'étage, il est dans la laine de verre du doublage. Poser un passage contre un mur doublé :
+   il se place dans le vide technique ou l'isolant ; « Position : Libre » le laisse où vous le posez.
 
 ## Essais des demandes du 15 novembre 2026 (même branche `claude/lucid-sagan-6h707m`)
 Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :

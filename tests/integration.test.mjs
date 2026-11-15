@@ -200,3 +200,61 @@ test('écran : sortie de câble proposée pour le radiateur, prises du four et d
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+/* ---------------- passages entre étages dans la couche de passage, local chauffé (demande du 15 novembre 2026, suite) ---------------- */
+import { logementPassage, placerPassages } from '../js/compositions.js';
+
+test('moteur : passage entre étages dans la couche de passage du mur, sinon en goulotte ; loin des murs ou « libre » : ne bouge pas', () => {
+  const n = (id, x, y, lv = 'L0') => ({ id, lv, x, y });
+  const c = (m, e) => ({ m, e });
+  /* mur de 0,0 à 400,0 : normale +n = (0, 1) ; côté 1 (y > 0) : plaque + vide technique + laine, puis parpaing */
+  const P = { levels: [{ id: 'L0' }, { id: 'L1' }], nodes: [n('a', 0, 0), n('b', 400, 0), n('c', 0, 0, 'L1'), n('d', 400, 0, 'L1')],
+    walls: [{ id: 'w', lv: 'L0', a: 'a', b: 'b', th: 30, couches: [c('plaque', 1.25), c('vide_tech', 4.5), c('laine_verre', 7.5), c('parpaing', 15), c('enduit_ext', 1.75)] },
+      { id: 'w1', lv: 'L1', a: 'c', b: 'd', th: 20, couches: [c('parpaing', 20)] }],
+    elec: [{ id: 't', lv: 'L0', type: 'traversee', x: 100, y: 30 }, { id: 'u', lv: 'L0', type: 'traversee', x: 200, y: -25 }, { id: 'v', lv: 'L0', type: 'traversee', x: 300, y: 200 },
+      { id: 'z', lv: 'L0', type: 'traversee', x: 350, y: 20, libre: true }, { id: 'g', lv: 'L1', type: 'traversee', x: 100, y: 30 }, { id: 'k', lv: 'L0', type: 'traversee', x: 50, y: 20, col: 'c1' }] };
+  const L = (id) => logementPassage(P, P.elec.find((e) => e.id === id));
+  /* côté du doublage : première couche de passage depuis la face = vide technique (entre la plaque et l'isolant) */
+  let r = L('t'); assert.equal(r.mode, 'couche'); assert.equal(r.couche.m, 'vide_tech'); assert.ok(Math.abs(r.y - (15 - 1.25 - 2.25)) < 0.06, String(r.y));
+  /* côté extérieur : enduit puis parpaing (porteur) : pas de couche de passage de ce côté → goulotte contre la face */
+  r = L('u'); assert.equal(r.mode, 'goulotte'); assert.equal(r.cote, -1); assert.equal(r.y, -17.5);
+  assert.equal(L('v').mode, 'libre'); assert.equal(L('z').mode, 'libre'); assert.equal(L('k').mode, 'colonne');
+  /* étage : mur de parpaing brut → goulotte ; mur sans composition → inconnu (ne bouge pas) */
+  assert.equal(L('g').mode, 'goulotte');
+  delete P.walls[1].couches; assert.equal(L('g').mode, 'inconnu');
+  assert.equal(placerPassages(P), 2, 't et u déplacés');
+  assert.deepEqual(P.elec.map((e) => [e.id, e.x, e.y]), [['t', 100, 11.5], ['u', 200, -17.5], ['v', 300, 200], ['z', 350, 20], ['g', 100, 30], ['k', 50, 20]]);
+  assert.equal(placerPassages(P), 0, 'stable');
+  /* cloison (plaque + laine + plaque) : dans la laine */
+  P.walls[0].couches = [c('plaque', 1.25), c('laine_verre', 4.5), c('plaque', 1.25)]; P.walls[0].th = 7;
+  P.elec[0].y = 10; r = L('t'); assert.equal(r.couche.m, 'laine_verre'); assert.equal(r.y, 0);
+});
+
+test('écran : passage du plan d’exemple (goulotte en bas, laine de verre à l’étage), panneau, position libre, local chauffé au-dessus', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.click('#btnMenu'); await page.click('#menuPop button:has-text("Ouvrir le plan d’exemple")'); await wait(page, 600);
+  const r = await page.evaluate(async () => { const N = await import('./js/noyau.js'), K = await import('./js/compositions.js'), G = await import('./js/geometrie.js'), T = await import('./js/thermique.js');
+    const P = N.P, t = P.elec.filter((e) => e.type === 'traversee' && !e.col).map((e) => [e.lv, K.logementPassage(P, e)]).filter((x) => x[1].mode !== 'libre');
+    const toutes = new Map(P.levels.map((l) => [l.id, G.geo(l.id).rooms])), at = toutes.get('L0').find((q) => q.label && q.label.name === 'Atelier');
+    const D = T.deperditionsPiece(P, at, { toutes, te: T.tExt(P), pieces: toutes.get('L0') });
+    return { t: t.map(([lv, l]) => `${lv}:${l.mode}:${l.couche ? l.couche.m : ''}`).sort(), plafond: D.lignes.filter((x) => x.quoi === 'Plafond').length, dessus: P.levels[0].dessus, id: P.elec.find((e) => e.type === 'traversee' && e.lv === 'L0' && K.logementPassage(P, e).mode === 'goulotte').id }; });
+  assert.deepEqual(r.t, ['L0:goulotte:', 'L1:couche:laine_verre']);
+  assert.equal(r.dessus, 'chauffe'); assert.equal(r.plafond, 0, 'local chauffé au-dessus : pas de perte par le plafond');
+  /* panneau du passage : explication, puis « Libre » : le passage reste où on le pose */
+  await page.evaluate(async (id) => { const I = await import('./js/interaction.js'); I.select({ t: 'elec', id }); }, r.id);
+  await wait(page, 200);
+  let txt = await page.textContent('#insp');
+  assert.match(txt, /goulotte/); assert.match(txt, /Laine de verre/);
+  await page.click('#insp button:has-text("Libre")'); await wait(page, 200);
+  const p = await page.evaluate(async (id) => { const N = await import('./js/noyau.js'), X = await import('./js/interaction.js'); const e = N.P.elec.find((x) => x.id === id); e.x -= 15; X.commit(); const a = [e.x, e.libre]; delete e.libre; X.commit(); return a.concat([e.x]); }, r.id);
+  assert.deepEqual(p, [1972.5, true, 1987.5]);
+  /* panneau du niveau : « Local chauffé » au-dessus et au-dessous */
+  await page.evaluate(async () => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = null; N.ui.inspOpen = true; F.renderInspector(); });
+  await wait(page, 200);
+  txt = await page.textContent('#insp');
+  assert.equal((txt.match(/Local chauffé/g) || []).length >= 2, true, txt.slice(0, 300));
+  await page.evaluate(async () => (await import('./js/tableau.js')).setView('3d')); await wait(page, 800);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

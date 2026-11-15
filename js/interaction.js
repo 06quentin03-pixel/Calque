@@ -23,6 +23,7 @@ import { tailleChemin } from './cheminement.js';
 import { coulisser, hoteDe, liberer, synchroniserIntegres } from './integration.js';
 import { zoneAt } from './routeui.js';
 import { compoNouveauMur } from './compositionsui.js';
+import { placerPassages } from './compositions.js';
 
 /* ============================================================
    CALQUE — interaction : vue, sélection, outils, aimantation
@@ -337,6 +338,7 @@ function validateSel() {
 /* ---------------- historique ---------------- */
 function commit() {
   syncRooms();
+  placerPassages(P); // passages entre étages dans la couche de passage du mur, sinon en goulotte (demande du 15 novembre 2026)
   syncDucts();
   synchroniserIntegres(P); // électroménager intégré : suit son meuble (format v18)
   const pk = packPlan(P, H.cur);
