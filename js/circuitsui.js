@@ -8,7 +8,7 @@
      différentiel, commande), avec les valeurs calculées (puissance, intensité, longueur, conducteurs).
    Toute valeur calculée est « estimée » ; les contrôles de câblage sont des constats de Calque, pas une validation
    réglementaire. Le tableau électrique (onglet) reste lié : c'est le même circuit, aucune copie. */
-import { EXT, IDX, NF0, NF1, P, S, bboxOf, clamp, saveSettings, ui, uid } from './noyau.js';
+import { EXT, IDX, NF0, NF1, P, S, bboxOf, clamp, saveSettings, ui, uid, txtCal, txtSec, isNum } from './noyau.js';
 import { CALS, CIRC_COLORS, CK, KIND_ORDER, SECS, SEC_MAX, circById, circMembers, circNumbers, circStats, circuitColor, fmtCount, orderCircuits,
   rcdCircuits, rcdNumbers } from './electricite.js';
 import { ELEC_BY } from './symboles.js';
@@ -84,7 +84,7 @@ function tags(n) {
 function ligneCircuit(c, nums, ctl, aff) {
   const r = resumeCircuit(P, c), st = circStats(c);
   const vis = !aff || aff.has(c.id);
-  const sous = [`${c.courbe ? c.courbe : ''}${c.cal} A`, `${String(c.sec).replace('.', ',')} mm²`, r && r.principale, fmtCount(st)].filter(Boolean).join(' · ');
+  const sous = [isNum(c.cal) ? `${c.courbe ? c.courbe : ''}${c.cal} A` : txtCal(c.cal), txtSec(c.sec), r && r.principale, fmtCount(st)].filter(Boolean).join(' · ');
   const chk = h('button', { type: 'button', class: 'ci-chk', role: 'checkbox', 'aria-checked': String(vis), 'aria-label': `Afficher le circuit ${nums.get(c.id)} sur le plan`, onclick: () => basculerAffichage(c.id) }, h('i'));
   return h('div', { class: 'ci-li', 'data-cid': c.id, 'aria-current': String(ui.hl === c.id) },
     chk, h('span', { class: 'ev-num', style: `--cc:${circuitColor(c.id)}` }, nums.get(c.id)),
@@ -94,7 +94,7 @@ function ligneCircuit(c, nums, ctl, aff) {
 function inspCircuits() {
   const nums = circNumbers(), rn = rcdNumbers(), aff = affiches();
   const ctl = controlesCablage(P);
-  const groupes = [...P.rcds.map((r) => ({ titre: `${rn.get(r.id)} · ${r.cal} A · type ${r.type}`, l: rcdCircuits(r.id) })), { titre: 'Sans différentiel', l: P.circuits.filter((c) => !c.rcd || !P.rcds.some((r) => r.id === c.rcd)) }].filter((g) => g.l.length);
+  const groupes = [...P.rcds.map((r) => ({ titre: `${rn.get(r.id)} · ${txtCal(r.cal)} · type ${r.type}`, l: rcdCircuits(r.id) })), { titre: 'Sans différentiel', l: P.circuits.filter((c) => !c.rcd || !P.rcds.some((r) => r.id === c.rcd)) }].filter((g) => g.l.length);
   const tot = { erreur: 0, avertissement: 0, suggestion: 0 }; for (const x of ctl) tot[x.niveau]++;
   return [
     inspHead('Circuits', `${P.circuits.length} circuit${P.circuits.length > 1 ? 's' : ''} · ${P.rcds.length} différentiel${P.rcds.length > 1 ? 's' : ''}${aff ? ` · ${aff.size} affiché${aff.size > 1 ? 's' : ''}` : ''}`),
@@ -218,7 +218,7 @@ function inspCircuit(c) {
   const aff = affiches();
   const typeSel = h('select', { class: 'txt', id: 'ci-kind', 'aria-label': 'Fonction du circuit' }, KIND_ORDER.map((key) => h('option', { value: key, selected: key === c.kind }, CK[key].n)));
   typeSel.addEventListener('change', () => { const nk = CK[typeSel.value]; c.kind = typeSel.value; c.cal = nk.cal; c.sec = nk.sec; c.ctrl = nk.ctrl || null; if (c.name === k.n || c.name === 'Nouveau circuit') c.name = nk.n; commit(); });
-  const rcdSel = h('select', { class: 'txt', id: 'ci-rcd', 'aria-label': 'Interrupteur différentiel' }, h('option', { value: '' }, 'Aucun'), P.rcds.map((r) => h('option', { value: r.id, selected: r.id === c.rcd }, `${rn.get(r.id)} · ${r.cal} A · type ${r.type} (${rcdCircuits(r.id).length}/8)`)));
+  const rcdSel = h('select', { class: 'txt', id: 'ci-rcd', 'aria-label': 'Interrupteur différentiel' }, h('option', { value: '' }, 'Aucun'), P.rcds.map((r) => h('option', { value: r.id, selected: r.id === c.rcd }, `${rn.get(r.id)} · ${txtCal(r.cal)} · type ${r.type} (${rcdCircuits(r.id).length}/8)`)));
   rcdSel.addEventListener('change', () => { c.rcd = rcdSel.value || null; orderCircuits(); commit(); });
   const ctrlSel = h('select', { class: 'txt', id: 'ci-ctrl', 'aria-label': 'Commande' }, h('option', { value: '' }, 'Aucune'), Object.entries(CTRL_LABEL).map(([v, n]) => h('option', { value: v, selected: v === c.ctrl }, n)));
   ctrlSel.addEventListener('change', () => { c.ctrl = ctrlSel.value || null; commit(); });

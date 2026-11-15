@@ -13,6 +13,10 @@ const uid = (p) => (p || '') + Math.random().toString(36).slice(2, 9);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const snapTo = (v, step) => (step > 0 ? Math.round(v / step) * step : v);
 const isNum = (v) => typeof v === 'number' && isFinite(v);
+/* calibre et section affichés : une valeur manquante est dite (« à choisir »), jamais affichée « undefined » ni inventée.
+   court : pour les schémas (« ? A »). */
+const txtCal = (v, court) => (isNum(v) ? `${String(v).replace('.', ',')} A` : court ? '? A' : 'calibre à choisir');
+const txtSec = (v, court) => (isNum(v) ? `${String(v).replace('.', ',')} mm²` : court ? '? mm²' : 'section à choisir');
 
 /* ---------- vecteurs ---------- */
 const vadd = (a, b) => ({ x: a.x + b.x, y: a.y + b.y });
@@ -247,6 +251,6 @@ function setP(v) { P = v; }
 
 export { PIECES_EXT, estExterieure, horsHabitation };
 export { $, $$, C, DEG, EXT, LAYERS_CH, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
-  LISTES_PLAN, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
+  LISTES_PLAN, txtCal, txtSec, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,
   ui, uid, vadd, vang, vcrs, vdir, vdist, vdot, vlen, vmid, vmul, vnorm, vperp, vsub };

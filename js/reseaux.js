@@ -2,7 +2,7 @@
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { logementSection } from './compositionsui.js';
 import { $, C, EXT, IDX, NF2, P, S, bboxOf, clamp, fmtLenU, inPoly, isNum, projSeg, saveSettings, snapTo, ui, uid, vadd,
-  vang, vdir, vdist, vlen, vmid, vmul, vperp, vsub } from './noyau.js';
+  vang, vdir, vdist, vlen, vmid, vmul, vperp, vsub, txtCal, txtSec } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
 import { ELEC_BY, ELEC_CATS, S_ELEC, elecBox } from './symboles.js';
@@ -710,7 +710,7 @@ function inspGaine(d) {
   const autres = P.circuits.filter((x) => x.id !== d.cid);
   const togAutre = (id) => { const l = new Set(d.cids || []); if (l.has(id)) l.delete(id); else l.add(id); if (l.size) d.cids = [...l]; else delete d.cids; commit(); };
   const circ = sec('Circuits', sel,
-    c ? h('p', { class: 'note' }, `${c.cal} A · ${String(c.sec).replace('.', ',')} mm² : gaine ICTA Ø${gaineDia(c)} conseillée.`)
+    c ? h('p', { class: 'note' }, `${txtCal(c.cal)} · ${txtSec(c.sec)} : gaine ICTA Ø${gaineDia(c)} conseillée.`)
       : h('p', { class: 'note' }, P.circuits.length ? 'Le circuit donne sa couleur à la gaine et permet de la filtrer. Une gaine sans circuit peut servir à tous les circuits.' : 'Générez le tableau pour rattacher la gaine à un circuit.'),
     d.cid && autres.length && !(d.kind === 'goulotte' || d.kind === 'cdc' || (d.cids && d.cids.length) || ui.gaineCids === d.id)
       ? btns(btn('Autres circuits dans ce cheminement…', () => { ui.gaineCids = d.id; renderInspector(); }, 'sm')) : null,
@@ -829,7 +829,7 @@ function inspDuct(d) {
       commit();
     });
     const c = d.cid && circById(d.cid);
-    circ = sec('Circuit', sel, c ? h('p', { class: 'note' }, `${c.cal} A · ${String(c.sec).replace('.', ',')} mm² : gaine ICTA Ø${gaineDia(c)} conseillée.`)
+    circ = sec('Circuit', sel, c ? h('p', { class: 'note' }, `${txtCal(c.cal)} · ${txtSec(c.sec)} : gaine ICTA Ø${gaineDia(c)} conseillée.`)
       : h('p', { class: 'note' }, P.circuits.length ? 'Le circuit donne sa couleur à la gaine et permet de la filtrer.' : 'Générez le tableau pour rattacher la gaine à un circuit.'));
   }
   return [

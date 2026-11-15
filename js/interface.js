@@ -3,7 +3,7 @@
 import { lireIncidents } from './incidents.js';
 import { $, $$, C, DEG, EXT, IDX, NF1, P, PIECES_EXT, S, clamp, estExterieure, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
   levelOf, levelsSorted, nodeOf, saveSettings, setGEO, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
-  vnorm, vsub } from './noyau.js';
+  vnorm, vsub, txtCal, txtSec } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { clampOpening, deleteNode, deleteWall, itemToWorld, mergeAtNode, normDeg, splitWall, wallsAt } from './mutations.js';
 import { ELEC, ELEC_BY, ELEC_CATS, drawItem, furnDef, isStair, stairInfo } from './symboles.js';
@@ -715,7 +715,7 @@ function updateHint() {
     if (!hc) { el.hidden = true; return; }
     el.hidden = false;
     const st = circStats(hc);
-    el.replaceChildren(h('span', { class: 'ev-num', style: `--cc:${circuitColor(hc.id)}` }, circNumbers().get(hc.id)), h('b', null, hc.name), h('span', { class: 'msg' }, `${hc.cal} A · ${String(hc.sec).replace('.', ',')} mm² · ${fmtCount(st)}`),
+    el.replaceChildren(h('span', { class: 'ev-num', style: `--cc:${circuitColor(hc.id)}` }, circNumbers().get(hc.id)), h('b', null, hc.name), h('span', { class: 'msg' }, `${txtCal(hc.cal)} · ${txtSec(hc.sec)} · ${fmtCount(st)}`),
       btn('Retour au tableau', () => { ui.hl = null; ui.evSel = { t: 'circuit', id: hc.id }; setView('elec'); }, 'sm'), btn('Fermer', () => { ui.hl = null; updateHint(); requestRender(); }, 'pri sm'));
     return;
   }

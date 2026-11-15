@@ -140,7 +140,10 @@ test('plans abîmés : chaque liste et chaque champ abîmé du plan d’exemple 
     const vs = await St.versionsOf('pREP');
     const copie = vs.find((v) => /avant réparation/.test(v.why));
     const json = copie && await St.versionJson(copie.k);
-    return { out, modal, copie: !!copie, exacte: json === avant };
+    const X = await import('./js/export.js');
+    const dxf = X.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).bilan.total;
+    const pdf = (await X.composePDF(Object.assign({}, X.expOpts(), { fmt: 'pdf', lv: 'all' }))).size;
+    return { out, modal, copie: !!copie, exacte: json === avant, dxf, pdf };
   });
   assert.deepEqual(res.out, []);
   assert.match(res.modal, /Plan réparé à l’ouverture/);
@@ -149,6 +152,7 @@ test('plans abîmés : chaque liste et chaque champ abîmé du plan d’exemple 
   assert.match(res.modal, /1 zone interdite sans contour retirée/);
   assert.ok(res.copie, 'copie de sécurité');
   assert.ok(res.exacte, 'copie identique au plan d’origine');
+  assert.ok(res.dxf > 100 && res.pdf > 10000, 'exports du plan réparé');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -315,6 +319,73 @@ test('démarrage lent (base qui tarde à répondre) : « Ouverture… » et écr
   assert.equal(await page.$eval('#cv', (e) => getComputedStyle(e.parentElement).pointerEvents === 'none' || getComputedStyle(e).pointerEvents === 'none'), true);
   await page.waitForFunction(() => !document.body.dataset.demarrage, null, { timeout: 8000 });
   assert.doesNotMatch(await page.textContent('#saveTxt'), /Ouverture/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('valeurs extrêmes : aucun « NaN », « Infinity » ni « undefined » dans les fiches de calcul, les panneaux et le tableau électrique', async () => {
+  const I = await import('../js/formules.js');
+  const MAUVAIS = /\bNaN\b|Infinity|∞|undefined|\[object Object\]/;
+  /* 1. les 29 fiches de l'onglet Calculs, à leurs bornes */
+  const fiches = [];
+  for (const fi of I.FORMULES) {
+    const ex = I.valeursExemple(fi);
+    const cas = [];
+    for (const e of fi.e) for (const v of [e.min, e.max, 0, 1e-9]) if (v != null) cas.push({ ...ex, [e.k]: v });
+    for (const bord of ['min', 'max']) { const o = { ...ex }; for (const e of fi.e) if (e[bord] != null) o[e.k] = e[bord]; cas.push(o); }
+    for (const c of cas) { const t = JSON.stringify(I.calculer(fi, c)); if (MAUVAIS.test(t)) fiches.push(fi.id + ' ' + JSON.stringify(c)); }
+  }
+  assert.deepEqual(fiches, []);
+  /* 2. le plan d'exemple poussé aux extrêmes, parcouru panneau par panneau */
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  const r = await page.evaluate(async (src) => {
+    const MAUVAIS = new RegExp(src);
+    const N = await import('./js/noyau.js'); const St = await import('./js/stockage.js'); const E = await import('./js/exemple.js');
+    const UI = await import('./js/interface.js'); const T = await import('./js/tableau.js'); const Fi = await import('./js/fiche.js');
+    const p = E.samplePlan();
+    const d = (v) => ({ v, st: 'saisie', src: 'essai de valeurs extrêmes' });
+    p.circuits.forEach((c, i) => {
+      const k = i % 4;
+      if (k === 0) c.calc = { p: d(0), len: d(0), cos: d(0) };
+      if (k === 1) { c.calc = { p: d(1e6), len: d(1e4), cos: d(1) }; c.cal = 0; }
+      if (k === 2) { delete c.sec; delete c.cal; c.calc = {}; }
+      if (k === 3) c.calc = { p: d(-5), len: d(-1) };
+    });
+    p.levels[0].h = 0; if (p.levels[1]) p.levels[1].slab = 0;
+    p.walls.slice(0, 3).forEach((w) => { w.couches = [{ m: 'laine_verre', e: 0 }]; w.th = 0.01; });
+    p.install.kva = 0;
+    St.openPlan(p, 'pEXT', { quiet: true, example: true });
+    const vus = [];
+    const scan = (ou) => { const t = document.body.innerText + [...document.querySelectorAll('svg text')].map((x) => x.textContent).join(' '); const m = t.match(new RegExp('[^]{0,120}(' + src + ')[^]{0,60}')); if (m) vus.push(ou + ' : ' + m[0].replace(/\s+/g, ' ')); };
+    const attendre = () => new Promise((res) => setTimeout(res, 30));
+    /* panneaux du plan */
+    for (const [t, k] of [['wall', 'walls'], ['room', 'rooms'], ['elec', 'elec'], ['duct', 'ducts'], ['opening', 'openings']]) {
+      for (const o of N.P[k].slice(0, 25)) { N.ui.lv = o.lv || N.ui.lv; N.ui.sel = { t, id: o.id }; N.ui.inspOpen = true; UI.renderInspector(); for (const b of document.querySelectorAll('#insp details:not([open])')) b.open = true; await attendre(); scan(t + ' ' + o.id); }
+    }
+    N.ui.sel = null; UI.renderInspector(); await attendre(); scan('panneau du niveau');
+    /* tableau électrique : chaque onglet, puis la fiche de chaque circuit */
+    T.setView('elec');
+    for (const tab of ['uni', 'panel', 'check', 'calc', 'quant', 'chem']) { N.ui.evTab = tab; T.renderEvMain(); await attendre(); scan('onglet ' + tab); }
+    for (const c of N.P.circuits) { Fi.openFiche(c.id); await attendre(); scan('fiche ' + c.name); UI.closeModal(); }
+    T.setView('plan');
+    /* exports PDF et DXF du plan aux valeurs extrêmes */
+    const X = await import('./js/export.js');
+    const exports = {};
+    try { exports.dxf = X.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).bilan.total; } catch (e) { exports.dxf = 'ERREUR ' + e.message; }
+    try { exports.pdf = (await X.composePDF(Object.assign({}, X.expOpts(), { fmt: 'pdf', lv: 'all' }))).size; } catch (e) { exports.pdf = 'ERREUR ' + e.message; }
+    /* contrôle NF C 15-100 : un circuit sans calibre ni section n'est jamais « conforme » pour cette règle */
+    const R = await import('./js/reglesui.js').catch(() => null);
+    const rap = R && R.rapportDuPlan ? R.rapportDuPlan() : null;
+    const sansCal = N.P.circuits.filter((c) => !Number.isFinite(c.cal)).map((c) => c.id);
+    const lignes = rap ? (rap.resultats || rap.lignes || []).filter((x) => x.id === 'cq_sec_cal' && x.ref && sansCal.includes(x.ref.id)) : [];
+    return { exports, vus: vus.slice(0, 15), sansCal: sansCal.length, lignes: lignes.map((x) => x.statut), rapOk: !!rap };
+  }, MAUVAIS.source);
+  assert.deepEqual(r.vus, []);
+  assert.ok(r.exports.dxf > 100 && r.exports.pdf > 10000, JSON.stringify(r.exports));
+  assert.ok(r.rapOk, 'rapport du contrôle');
+  assert.ok(r.sansCal >= 1 && r.lignes.length === r.sansCal, JSON.stringify(r));
+  assert.ok(r.lignes.every((st) => st === 'verification'), 'vérification nécessaire, jamais conforme');
   assert.deepEqual(errors, []);
   await ctx.close();
 });
