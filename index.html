@@ -82,7 +82,7 @@
 .sim-leg { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--ink-2); }
 .sim-leg i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
 @media (max-width: 760px) { .sch-bar { flex-wrap: wrap; } .sch-acts { width: 100%; overflow-x: auto; } }
-</style></head><body>
+</style></head><body data-demarrage="1">
 <title>Calque Plans</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -227,6 +227,9 @@ button { cursor: pointer; }
 .btn.pri:hover { filter: brightness(1.05); }
 .btn.danger { color: var(--bad); }
 /* bouton de suppression armé (« Confirmer la suppression ») : rouge plein, texte contrasté (et non rouge sur orange) */
+/* démarrage : rien ne se touche tant que le plan enregistré n'est pas ouvert (sinon un dessin fait pendant l'attente serait remplacé) */
+body[data-demarrage] > *:not(.upd) { pointer-events: none; }
+body[data-demarrage] { cursor: progress; }
 .btn.danger.pri { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
 .btn.sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
 .note { font-size: 12.5px; color: var(--ink-2); margin: 0; }
@@ -757,7 +760,7 @@ button.ev-chk:hover { background: var(--panel-2); }
     <div class="seg vtabs" role="group" aria-label="Vue"><button type="button" class="vtab" data-view="plan" aria-pressed="true">Plan</button><button type="button" class="vtab" data-view="3d" aria-pressed="false">3D</button><button type="button" class="vtab" data-view="elec" aria-pressed="false">Tableau<span class="vt-long"> électrique</span></button><button type="button" class="vtab" data-view="chantier" aria-pressed="false">Chantier</button><button type="button" class="vtab" data-view="schema" aria-pressed="false">Schémas</button><button type="button" class="vtab" data-view="calculs" aria-pressed="false">Calculs</button></div>
     <div class="levels" id="levels" role="toolbar" aria-label="Niveaux"></div>
     <div class="spacer"></div>
-    <span class="save" id="saveState" data-s="ok"><i></i><b id="saveTxt">Enregistré</b></span>
+    <span class="save" id="saveState" data-s="dirty"><i></i><b id="saveTxt">Ouverture…</b></span>
     <button class="ib" id="btnUndo" title="Annuler (Ctrl+Z)" aria-label="Annuler"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button class="ib" id="btnRedo" title="Rétablir (Ctrl+Y)" aria-label="Rétablir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <button class="ib" id="btnFilter" title="Filtres : n’afficher que les prises, l’éclairage, la VMC…" aria-label="Filtres d’affichage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M3.5 5h17l-6.5 7.5V19l-4 1.5v-8z"/></svg></button>

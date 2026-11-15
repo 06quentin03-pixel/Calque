@@ -41,7 +41,7 @@ export async function fresh(opts = {}) {
 export const wait = (page, ms = 400) => page.waitForTimeout(ms);
 export async function boot(page, query = '') {
   await page.goto(env.base + query);
-  await page.waitForFunction(() => document.getElementById('projName').textContent.length > 0);
+  await page.waitForFunction(() => document.getElementById('projName').textContent.length > 0 && !document.body.dataset.demarrage);
   await wait(page, 600);
 }
 /* place un plan dans l'ancien stockage avant le démarrage : l'application le reprend et l'ouvre */

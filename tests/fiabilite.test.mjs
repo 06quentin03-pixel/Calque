@@ -222,3 +222,99 @@ test('suppressions : aucun lien orphelin après la suppression d’un symbole, d
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('annuler / rétablir : 120 modifications au hasard, tout annuler puis tout rétablir redonne exactement chaque état ; liens toujours intacts', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  const r = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'); const St = await import('./js/stockage.js'); const E = await import('./js/exemple.js');
+    const UI = await import('./js/interface.js'); const X = await import('./js/interaction.js'); const M = await import('./js/mutations.js');
+    const Hi = await import('./js/historique.js'); const I = await import('./js/integrite.js');
+    St.openPlan(E.samplePlan(), 'pUNDO', { quiet: true });
+    /* hasard reproductible */
+    let g = 12345; const rnd = () => { g = (g * 1103515245 + 12345) % 2147483648; return g / 2147483648; };
+    const pick = (a) => a[Math.floor(rnd() * a.length)];
+    const surNiveau = (k) => N.P[k].filter((o) => o.lv === N.ui.lv);
+    const sel = (t, k) => { const a = surNiveau(k); if (!a.length) return false; N.ui.sel = { t, id: pick(a).id }; return true; };
+    const actions = [
+      ['mur', () => { const x = rnd() * 2000, y = rnd() * 1500; M.addWall(N.ui.lv, { x, y }, { x: x + 100 + rnd() * 300, y: y + (rnd() < 0.5 ? 0 : 200) }, { th: 10, kind: 'cloison' }); X.commit(); }],
+      ['déplacer symbole', () => { if (sel('elec', 'elec')) UI.nudgeSel(10, -5); }],
+      ['tourner meuble', () => { if (sel('item', 'items')) UI.rotateSel(15); }],
+      ['supprimer mur', () => { if (sel('wall', 'walls')) UI.deleteSel(); }],
+      ['supprimer symbole', () => { if (sel('elec', 'elec')) UI.deleteSel(); }],
+      ['dupliquer symbole', () => { if (sel('elec', 'elec')) UI.duplicateSel(); }],
+      ['dupliquer meuble', () => { if (sel('item', 'items')) UI.duplicateSel(); }],
+      ['calibre', () => { const c = pick(N.P.circuits); if (c) { c.cal = pick([10, 16, 20, 32]); X.commit(); } }],
+      ['déplacer angle', () => { if (sel('node', 'nodes')) UI.nudgeSel(20, 0); }],
+      ['supprimer gaine', () => { if (sel('duct', 'ducts')) UI.deleteSel(); }],
+      ['changer de niveau', () => { N.ui.lv = pick(N.P.levels).id; }],
+      ['ajouter un niveau', () => { if (rnd() < 0.3) UI.addLevel('empty'); }],
+    ];
+    const etats = [Hi.snapshot()], faits = [], liens = [];
+    for (let i = 0; i < 120; i++) {
+      const [nom, fn] = pick(actions);
+      const avant = Hi.H.u.length;
+      fn(); N.ui.sel = null;
+      if (Hi.H.u.length !== avant || Hi.snapshot() !== etats[etats.length - 1]) { etats.push(Hi.snapshot()); faits.push(nom); }
+      const pb = I.controlerPlan(N.P); if (pb.length) liens.push(nom + ' : ' + pb.map((x) => x.msg).join(', '));
+    }
+    const n = etats.length - 1;
+    const ecarts = [];
+    for (let k = n - 1; k >= 0; k--) { X.undo(); if (Hi.snapshot() !== etats[k]) ecarts.push('annuler vers ' + k + ' (après « ' + faits[k] + ' »)'); }
+    const debut = Hi.snapshot() === etats[0];
+    for (let k = 1; k <= n; k++) { X.redo(); if (Hi.snapshot() !== etats[k]) ecarts.push('rétablir vers ' + k); }
+    return { n, ecarts: ecarts.slice(0, 5), debut, fin: Hi.snapshot() === etats[n], liens: liens.slice(0, 5), sortes: [...new Set(faits)].length };
+  });
+  assert.ok(r.n >= 60, 'modifications enregistrées : ' + r.n);
+  assert.ok(r.sortes >= 8, 'sortes de modifications : ' + r.sortes);
+  assert.deepEqual(r.ecarts, []);
+  assert.ok(r.debut && r.fin);
+  assert.deepEqual(r.liens, [], 'aucun lien cassé pendant les modifications');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+/* outils de dessin (comme tests/stockage.test.mjs) */
+async function menu(page, label) { await page.click('#btnMenu'); await page.click(`#menuPop button:has-text("${label}")`); await wait(page, 300); }
+async function drawRoom(page, x, y, w = 180, hgt = 140) {
+  await page.click('.tool[data-tool="room"]');
+  const b = await page.$eval('#cv', (e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y }; });
+  await page.mouse.move(b.x + x, b.y + y); await page.mouse.down();
+  await page.mouse.move(b.x + x + w, b.y + y + hgt, { steps: 8 }); await page.mouse.up();
+  await wait(page, 1400);
+}
+for (const [cas, panne] of [
+  ['absente (navigateur sans IndexedDB)', () => { Object.defineProperty(window, 'indexedDB', { value: undefined, configurable: true }); }],
+  ['qui refuse de s’ouvrir', () => { IDBFactory.prototype.open = function () { throw new DOMException('refus', 'SecurityError'); }; }],
+  ['qui ne répond jamais', () => { IDBFactory.prototype.open = function () { return {}; }; }],
+]) test(`base IndexedDB ${cas} : Calque démarre, enregistre dans la copie de secours et retrouve le plan au rechargement`, async () => {
+  const { ctx, page, errors } = await fresh();
+  await ctx.addInitScript(panne);
+  await boot(page);
+  await menu(page, 'Nouveau plan');
+  await drawRoom(page, 200, 200);
+  const etat = await page.textContent('#saveTxt');
+  assert.match(etat, /Enregistré/, etat);
+  const id = await page.evaluate(() => localStorage.getItem('calque.cur'));
+  assert.equal(JSON.parse(await page.evaluate((id) => localStorage.getItem('calque.p.' + id), id)).walls.length, 4);
+  await page.reload(); await boot(page);
+  assert.equal(await page.evaluate(() => localStorage.getItem('calque.cur')), id);
+  assert.equal(await page.evaluate(async () => (await import('./js/noyau.js')).P.walls.length), 4);
+  assert.deepEqual(errors, []);
+  assert.equal(await page.evaluate(() => localStorage.getItem('calque.incidents')), null, 'aucun incident');
+  await ctx.close();
+});
+
+test('démarrage lent (base qui tarde à répondre) : « Ouverture… » et écran inactif jusqu’à l’ouverture du plan, jamais un faux « Enregistré »', async () => {
+  const { ctx, page, errors } = await fresh();
+  await ctx.addInitScript(() => { IDBFactory.prototype.open = function () { return {}; }; });
+  await page.goto((await import('./outils.mjs')).env.base);
+  await wait(page, 800);
+  assert.equal(await page.evaluate(() => document.body.dataset.demarrage), '1');
+  assert.equal(await page.textContent('#saveTxt'), 'Ouverture…');
+  assert.equal(await page.$eval('#cv', (e) => getComputedStyle(e.parentElement).pointerEvents === 'none' || getComputedStyle(e).pointerEvents === 'none'), true);
+  await page.waitForFunction(() => !document.body.dataset.demarrage, null, { timeout: 8000 });
+  assert.doesNotMatch(await page.textContent('#saveTxt'), /Ouverture/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

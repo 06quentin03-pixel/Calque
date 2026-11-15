@@ -104,19 +104,24 @@ test('plan v1 → version actuelle : rien de perdu, copie de sécurité exacte, 
   await ctx.close();
 });
 
-test('plans v2 à v10 : chacun s’ouvre en version actuelle, avec sa copie de sécurité et sans lien cassé', async () => {
+test('plans v2 à v16 : chacun s’ouvre en version actuelle, avec sa copie de sécurité, sans champ perdu et sans lien cassé', async () => {
   const { ctx, page, errors } = await fresh();
   await boot(page);
   const r = await page.evaluate(async (base) => {
     const N = await import('./js/noyau.js'), St = await import('./js/stockage.js'), out = [];
-    for (let v = 2; v <= 10; v++) {
+    for (let v = 2; v < N.PLAN_VERSION; v++) {
       const p = JSON.parse(JSON.stringify(base)); p.v = v; p.id = 'pv' + v; p.name = 'Plan v' + v;
       if (v >= 5) p.circuits[0].calc = { p: { v: 3000, st: 'saisie' }, len: { v: 12, st: 'saisie' } };
       if (v >= 9) p.chantier = { poses: { app: { e1: 1 }, circ: {} }, reserves: [], photos: [], notes: [], journal: [] };
       if (v >= 10) p.variantes = { active: 'a', principale: 'a', liste: [{ id: 'a', nom: 'Standard', gamme: 'std', cree: 1, maj: 1 }] };
+      /* données propres aux formats récents (fiabilisation, 15 novembre 2026) */
+      if (v >= 12) { p.circuits[0].courbe = 'C'; p.circuits[0].col = '#2356c4'; p.vues = [{ id: 'vu1', nom: 'Ma vue', off: ['mobilier'], fade: [], circs: ['c1'] }]; }
+      if (v >= 14) p.schemas = { folios: [{ id: 'f1', titre: 'Folio essai', type: 'libre', syms: [{ id: 's1', t: 'bobine', x: 100, y: 100, rot: 0, rep: 'KM1' }], fils: [], textes: [] }] };
+      if (v >= 16) { p.walls[0].couches = [{ m: 'plaque', e: 1.3 }, { m: 'laine_verre', e: 5.4 }, { m: 'enduit_ext', e: 13.3 }]; p.walls[0].cn = 'Essai'; }
+      const orig = JSON.parse(JSON.stringify(p));
       St.openPlan(p, p.id); await St.saveNow();
       const vs = await St.versionsOf(p.id);
-      out.push({ v, apres: N.P.v, copie: vs.some((x) => x.why === `Copie de sécurité avant mise à jour du format (v${v} → v${N.PLAN_VERSION})`), problemes: St.planProblems(N.P), calc: N.P.circuits[0].calc || null, pose: N.P.chantier.poses.app.e1 || null, variante: N.P.variantes ? N.P.variantes.liste.length : 0 });
+      out.push({ v, orig, plan: JSON.parse(JSON.stringify(N.P)), apres: N.P.v, copie: vs.some((x) => x.why === `Copie de sécurité avant mise à jour du format (v${v} → v${N.PLAN_VERSION})`), problemes: St.planProblems(N.P), calc: N.P.circuits[0].calc || null, pose: N.P.chantier.poses.app.e1 || null, variante: N.P.variantes ? N.P.variantes.liste.length : 0 });
     }
     return { out, ver: N.PLAN_VERSION };
   }, planV1());
@@ -125,6 +130,10 @@ test('plans v2 à v10 : chacun s’ouvre en version actuelle, avec sa copie de s
     if (x.v >= 5) assert.deepEqual(x.calc, { p: { v: 3000, st: 'saisie' }, len: { v: 12, st: 'saisie' } }, `données de calcul gardées (v${x.v})`);
     if (x.v >= 9) assert.equal(x.pose, 1, `chantier gardé (v${x.v})`);
     if (x.v >= 10) assert.equal(x.variante, 1, `variantes gardées (v${x.v})`);
+    assert.deepEqual(retrouve(x.orig, x.plan), [], `rien de perdu (v${x.v})`);
+    if (x.v >= 12) { assert.equal(x.plan.vues[0].nom, 'Ma vue'); assert.equal(x.plan.circuits[0].courbe, 'C'); }
+    if (x.v >= 14) assert.equal(x.plan.schemas.folios[0].syms[0].rep, 'KM1', `schémas gardés (v${x.v})`);
+    if (x.v >= 16) assert.equal(x.plan.walls[0].couches.length, 3, `couches gardées (v${x.v})`);
   }
   assert.deepEqual(errors, []);
   await ctx.close();

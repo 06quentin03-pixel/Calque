@@ -117,6 +117,7 @@ async function boot() {
     h('p', null, 'Le plan d’exemple est ouvert en attendant. Essayez de rouvrir le plan depuis Mes plans, ou une version précédente depuis l’historique ; le détail est dans Menu › Journal des erreurs.'),
     btns(btn('Mes plans', () => { closeModal(); openProjects(); }, 'pri', 'folder'), btn('Journal des erreurs', () => { closeModal(); import('./journalui.js').then((m) => m.ouvrirJournal()); }), btn('Fermer', closeModal)));
   resizeCanvas();
+  delete document.body.dataset.demarrage; // le plan est ouvert : l'écran répond
   { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d' || vw === 'chantier' || vw === 'schema') setView(vw); }
   getDownloads();
   /* rappel de la sauvegarde complète, quelques secondes après l'ouverture (jamais pendant le chargement) */
