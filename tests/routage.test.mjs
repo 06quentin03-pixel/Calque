@@ -59,6 +59,8 @@ test('raccordement automatique : sans passage entre étages, les points de l’�
 
 test('onglet Cheminements : « Raccorder les circuits incomplets » propose les gaines, rien n’est créé avant « Valider », une seule étape d’annulation', async () => {
   const { ctx, page, errors } = await fresh();
+  /* mode « De proche en proche » (avant le 16 novembre 2026, le seul) : le mode en boîtes est testé dans boites.test.mjs */
+  await ctx.addInitScript(() => { const o = JSON.parse(localStorage.getItem('calque.settings') || '{}'); o.raccMode = 'proche'; localStorage.setItem('calque.settings', JSON.stringify(o)); });
   await seedPlan(ctx, plan()); await boot(page);
   await page.click('text=Tableau électrique'); await page.click('#evBar >> text=Cheminements');
   assert.match(await page.$eval('#autoTous', (e) => e.textContent), /Raccorder les 2 circuits incomplets/);

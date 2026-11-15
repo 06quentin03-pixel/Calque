@@ -126,7 +126,7 @@ test('écran : « Tirer les câbles » depuis Équipement minimal (boîtes propo
   await page.evaluate(async () => { const N = await import('./js/noyau.js'); const lbl = N.P.rooms.find((r) => r.name === 'Cuisine' && r.lv === 'L0'); N.ui.lv = 'L0'; N.ui.sel = { t: 'room', id: lbl.id }; N.ui.inspOpen = true; (await import('./js/interface.js')).renderInspector(); });
   assert.match(await page.textContent('#insp'), /Câbles à tirer.*Tirer les câbles \(\d+\)/s);
   const avant = await page.evaluate(async () => { const N = await import('./js/noyau.js'), H = await import('./js/historique.js'); return { d: N.P.ducts.length, b: N.P.elec.filter((e) => e.type === 'derivation').length, u: H.H.u.length }; });
-  await page.click('#tirerCables'); await wait(page, 1500);
+  await page.click('#tirerCables'); await page.waitForSelector('#propValider', { timeout: 30000 }); await wait(page, 200);
   const prop = await page.evaluate(async () => { const N = await import('./js/noyau.js'); const p = N.ui.propRacc; return p && { tool: N.ui.tool, g: p.gaines.length, b: p.boites.length, mode: p.mode, plafond: p.gaines.every((g) => g.pose === 'plafond'), d: N.P.ducts.length }; });
   assert.ok(prop, 'gaines proposées'); assert.equal(prop.tool, 'propose'); assert.equal(prop.mode, 'boites');
   assert.ok(prop.g > 0 && prop.b > 0); assert.ok(prop.plafond); assert.equal(prop.d, avant.d, 'rien n’est créé avant « Valider »');
