@@ -30,7 +30,9 @@ import './demarrage.js';
 import { boot } from './demarrage.js';
 import { watchUpdates } from './miseajour.js';
 import { incident } from './incidents.js';
+import { installerAide } from './aide.js';
 
 /* si le démarrage échoue, l'incident est noté et l'écran n'est jamais laissé bloqué */
 boot().catch((e) => incident(e, 'demarrage')).finally(() => { delete document.body.dataset.demarrage; });
 watchUpdates();
+installerAide(); // explications repliées (ⓘ) dans le panneau de droite

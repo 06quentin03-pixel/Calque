@@ -6,7 +6,7 @@ import { $, C, DEG, IDX, NF1, P, S, estExterieure, touch, bboxOf, clamp, climbHe
 import { geo, roomOfLabel } from './geometrie.js';
 import { itemToWorld, wallLength } from './mutations.js';
 import { H } from './historique.js';
-import { ELEC_BY, furnDef, isStair, stairInfo, stairModel, stairZones } from './symboles.js';
+import { ELEC_BY, furnDef, isStair, profAngle, stairInfo, stairModel, stairZones } from './symboles.js';
 import { FONT_LABEL, FONT_UI, V, closetLeafHinges, closetPlane } from './rendu2d.js';
 import { LIGHTS, circById, circNumbers, circuitColor, circuitLabel, cleanLinks, isDarkTheme, roomAt, roomName } from './electricite.js';
 import { ductLen, ductPts, ductVisible, elecVisible } from './reseaux.js';
@@ -320,6 +320,8 @@ const CAT3 = { prises: [35, 86, 196], appareils: [194, 65, 12], commandes: [21, 
 /* ---------------- mobilier : volumes simplifiés ----------------
    Repère local : x = largeur (−w/2…w/2), y = profondeur (−d/2 = dos, côté mur ;
    +d/2 = façade), z = hauteur en cm au-dessus de la pose, pour la hauteur par défaut h. */
+/* contour en L d'un meuble d'angle : dos côté -y et côté -x (voir _L dans symboles.js) */
+function formeL(w, d, p) { p = profAngle(w, d, p); return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, -d / 2 + p], [-w / 2 + p, -d / 2 + p], [-w / 2 + p, d / 2], [-w / 2, d / 2]]; }
 function kBase(X, w, d, top) {
   X.box(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark);
   X.box(-w / 2, -d / 2, w / 2, d / 2, 10, 86, K3.white);
@@ -340,6 +342,10 @@ const F3 = {
   meuble_haut: { h: 70, z: 145, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 70, K3.white); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 4, 6, K3.steel); } },
   colonne: { h: 215, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark); X.box(-w / 2, -d / 2, w / 2, d / 2, 10, 215, K3.white); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 120, 122, K3.steel); } },
   plan_travail: { h: 90, f: (X, w, d) => X.box(-w / 2, -d / 2, w / 2, d / 2, 86.5, 90, K3.stone) },
+  /* meubles d'angle en L (même forme que sur le plan, symboles.js) */
+  meuble_angle: { h: 90, f: (X, w, d) => { const L = formeL(w, d, 60); X.poly(L, 0, 10, K3.dark); X.poly(L, 10, 86, K3.white); X.poly(L, 86, 89.5, K3.stone); } },
+  meuble_haut_angle: { h: 70, z: 145, f: (X, w, d) => X.poly(formeL(w, d, 35), 0, 70, K3.white) },
+  plan_angle: { h: 90, f: (X, w, d) => X.poly(formeL(w, d, 65), 86.5, 90, K3.stone) },
   evier1: { h: 90, f: (X, w, d) => { kBase(X, w, d); X.box(-w * 0.32, -d * 0.28, w * 0.32, d * 0.32, 89.3, 90.3, K3.steel); tap3(X, 0, -d / 2 + 5, 90); } },
   evier2: { h: 90, f: (X, w, d) => { kBase(X, w, d); X.box(-w * 0.44, -d * 0.28, -w * 0.03, d * 0.32, 89.3, 90.3, K3.steel); X.box(w * 0.03, -d * 0.28, w * 0.44, d * 0.32, 89.3, 90.3, K3.steel); tap3(X, 0, -d / 2 + 5, 90); } },
   evier_eg: { h: 90, f: (X, w, d) => { kBase(X, w, d); X.box(-w * 0.44, -d * 0.28, 0, d * 0.32, 89.3, 90.3, K3.steel); X.box(w * 0.04, -d * 0.28, w * 0.44, d * 0.32, 89.3, 89.9, K3.white2); tap3(X, -w * 0.22, -d / 2 + 5, 90); } },

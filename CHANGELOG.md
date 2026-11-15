@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-15 (suite) — Demandes de l'utilisateur : panneau de droite, explications, plancher et plafond sur mesure, cuisine en L
+Même branche `claude/lucid-sagan-6h707m`.
+- **Bug corrigé (capture de l'utilisateur)** : dans le panneau de droite, les rangées de choix (« Terre-plein / Vide sanitaire / Local non chauffé / Extérieur », « Combles perdus / Local non chauffé / Toiture », « Vers extérieur », « Le départ bouge », « Vide technique »…) ne passaient pas à la ligne : le panneau défilait de côté et se coupait à gauche. Les choix passent maintenant à la ligne ; le panneau ne peut plus défiler de côté. Test : chaque panneau du plan d'exemple, en iPad paysage, portrait et téléphone.
+- **Panneau de droite plus lisible sur l'iPad 11 pouces** : plus large (330 px environ au lieu de 283 en paysage, 330 au lieu de 290 en portrait), titres, libellés et textes plus grands, boutons, puces et champs plus hauts (plus faciles au doigt).
+- **Explications repliées** (`js/aide.js`) : un long texte d'explication du panneau ne montre que sa première phrase, suivie d'un bouton ⓘ ; toucher ⓘ ouvre une petite fenêtre « Explication » avec le texte complet (à gauche du panneau, en bas de l'écran sur un téléphone). Rien n'est retiré.
+- **Plancher et plafond sur mesure** : « Composer moi-même » (sans passer par une composition type), nom de la composition (aussi pour les murs et cloisons), « Remplacer par une autre composition ».
+- **Mes compositions** : « Enregistrer dans mes compositions » (mur, cloison, plancher, plafond) ; elles sont proposées en tête de liste, sur tous les niveaux et tous les plans de l'appareil ; « ✕ » pour en oublier une. Gardées dans les réglages de l'appareil (`S.mesCompos`).
+- **Cuisine en L** : meubles bas d'angle en L 90 × 90 et 100 × 100, meuble bas d'angle droit 100 × 60 (angle aveugle), meuble haut d'angle en L 60 × 60, plan de travail d'angle en L (Bibliothèque › Cuisine) ; dessinés en L sur le plan, en 3D et dans les exports ; « Miroir » pour l'autre angle. Plan d'exemple : angle de la cuisine en L (la colonne passe au bout du mur du bas).
+- Défaut trouvé pendant les essais : avec une zone de dessin de largeur non entière (719,6 px), le dernier pixel de droite gardait des restes des images précédentes ; le fond le couvre maintenant (exports inchangés).
+- Aucun changement du format des plans (v17). Service Worker : cache `calque-v53`. Tests : **214/214** (nouveau : `tests/ergonomie.test.mjs`, 6 tests ; `bibliotheque` et `exemple` complétés).
+
 ## 2026-11-15 — Fiabilisation de Calque
 Branche `claude/lucid-sagan-6h707m`, partie de `main` après la fusion n°14. Demande de l'utilisateur : « Fiabilise Calque », plan validé en 5 étapes.
 - **Bouton « Confirmer la suppression » lisible** (signalé par l'utilisateur) : il était écrit en rouge sur fond orange (contraste 1,3) ; il est maintenant rouge plein avec texte blanc (texte foncé en thème sombre), contraste ≥ 4,5 vérifié par un test.

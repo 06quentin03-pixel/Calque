@@ -72,10 +72,35 @@ function champThermique(c, i, maj, prefix) {
     h('p', { class: 'note' }, saisi ? 'Saisie (fiche du fabricant).' : isNum(v) ? 'Estimée par Calque : remplacez-la par la valeur du fabricant.' : 'Manquante : saisissez-la pour calculer les déperditions.'),
     saisi ? btns(btn('Revenir à la valeur estimée', () => maj((y) => { delete y[i].l; delete y[i].r; }), 'sm')) : null);
 }
+/* « Mes compositions » (demande du 15 novembre 2026) : compositions faites par l'utilisateur, gardées sur l'appareil
+   (réglages S.mesCompos), proposées en tête de liste pour le même usage (mur, cloison, sol, plafond) */
+const usageCompo = (u) => (u === 'cloison' ? 'mur' : u); // murs et cloisons partagent leurs compositions
+function mesCompos(usage) { return (Array.isArray(S.mesCompos) ? S.mesCompos : []).filter((c) => c && usageCompo(c.usage) === usageCompo(usage) && aCouches(c)); }
+function enregistrerMaCompo(usage, couches, nom) {
+  const n = (nom || '').trim() || `Ma composition ${fmt(epaisseur(couches))} cm`;
+  const l = (Array.isArray(S.mesCompos) ? S.mesCompos : []).filter((c) => !(c && c.n === n && usageCompo(c.usage) === usageCompo(usage)));
+  l.push({ n, usage, couches: copierCouches(couches) });
+  S.mesCompos = l; saveSettings();
+  toast(`« ${n} » ajoutée à Mes compositions.`); renderInspector();
+}
+function oublierMaCompo(c) { S.mesCompos = (S.mesCompos || []).filter((x) => x !== c); saveSettings(); renderInspector(); }
+/* nom de la composition (modifiable) et enregistrement dans Mes compositions */
+function nomEtEnregistrer(usage, couches, nom, setNom, prefix) {
+  return h('div', { class: 'compo-nom' },
+    textField('Nom de la composition', nom || '', (v) => setNom(v.trim().slice(0, 80) || null), { id: prefix + '-nom', ph: { sol: 'ex. Plancher chauffant de la maison', plafond: 'ex. Faux plafond acoustique', cloison: 'ex. Cloison phonique' }[usage] || 'ex. Mur isolé par l’intérieur' }),
+    btns(btn('Enregistrer dans mes compositions', () => enregistrerMaCompo(usage, couches, nom), 'sm', 'plus')));
+}
 /* compositions types d'un usage */
 function choixTypes(usage, onPick) {
+  const miennes = mesCompos(usage);
   const l = COMPOSITIONS.filter((c) => ui_.tous || c.usage === usage || (usage === 'cloison' && c.usage === 'mur' && /Refend/.test(c.n)));
   return h('div', null,
+    miennes.length ? h('div', null, h('h4', null, 'Mes compositions'),
+      h('div', { class: 'list' }, miennes.map((c) => h('div', { class: 'li compo-mienne' },
+        h('button', { type: 'button', class: 'compo-pick', onclick: () => onPick(c) },
+          h('span', { class: 'sw', style: `background:${matDe(c.couches[0]).coul || 'var(--c-room)'}` }), h('span', null, c.n), h('span', { class: 'v' }, fmt(epaisseur(c.couches)) + ' cm')),
+        confirmBtnSimple('✕', 'Oublier', () => oublierMaCompo(c))))),
+      h('h4', null, 'Compositions types')) : null,
     h('div', { class: 'list' }, l.map((c) => h('button', { type: 'button', class: 'li', onclick: () => onPick(c) },
       h('span', { class: 'sw', style: `background:${matDe(c.couches.find((x) => matDe(x).cat === 'structure') || c.couches[0]).coul}` }),
       h('span', null, c.n), h('span', { class: 'v' }, fmt(epaisseur(c.couches)) + ' cm')))),
@@ -119,6 +144,7 @@ function compoMurSection(w, g) {
     barre(w.couches, 'Côté 1 : ' + c1, 'Côté 2 : ' + c2),
     kv([['Épaisseur totale', fmt(epaisseur(w.couches)) + ' cm'], ['Passage des gaines', pass ? pass.txt : '—']]),
     editeurCouches(w.couches, usage, (x) => appliquerMur(w, x, w.cn), 'f-cm'),
+    nomEtEnregistrer(usage, w.couches, w.cn, (n) => appliquerMur(w, w.couches, n), 'f-cm'),
     gaines.length ? h('div', null, h('p', { class: 'note' }, 'Gaines encastrées dans ce ' + (usage === 'mur' ? 'mur' : 'cloison') + ' :'),
       gaines.map((x) => h('div', { class: 'compo-ok' }, h('span', { class: 'pill ' + ETATS[x.statut][0] }, ETATS[x.statut][1]), h('span', { class: 'note' }, x.msg)))) : null,
     btns(btn('Inverser les côtés', () => appliquerMur(w, copierCouches(w.couches).reverse(), w.cn), 'sm'),
@@ -163,14 +189,19 @@ function compoNiveauSection(lvl) {
     const set = (couches, nom) => { appliquerAuNiveau(lvl, k, couches, nom); ui2.ouvert = null; commit(); };
     if (!cp) return h('div', { class: 'compo-niv' }, h('h4', null, titre),
       h('p', { class: 'note' }, k === 'sol' ? 'Non renseigné. Le plancher donne son épaisseur au niveau et indique où passent les gaines posées « dans le sol ».' : 'Non renseigné. Le plafond indique où passent les gaines posées « au plafond » (plénum du faux plafond, isolant des combles).'),
-      ui2.ouvert === k ? choixTypes(k, (c) => set(c.couches, c.n)) : btns(btn('Choisir une composition', () => { ui2.ouvert = k; renderInspector(); }, 'sm')));
+      ui2.ouvert === k ? choixTypes(k, (c) => set(c.couches, c.n)) : btns(btn('Choisir une composition', () => { ui2.ouvert = k; renderInspector(); }, 'sm'),
+        /* composer soi-même, couche par couche, sans partir d'une composition type */
+        btn('Composer moi-même', () => set([k === 'sol' ? { m: 'chape', e: 5 } : { m: 'plaque', e: 1.25 }], null), 'sm', 'pen')));
     const pass = resumePassage(cp.couches);
     return h('div', { class: 'compo-niv' }, h('h4', null, titre),
       cp.cn ? h('p', { class: 'note' }, h('b', null, cp.cn)) : null,
       barre(cp.couches, 'Dessus', 'Dessous'),
       kv([['Épaisseur', fmt(epaisseur(cp.couches)) + ' cm' + (k === 'plafond' ? ' (non ajoutée aux hauteurs du niveau)' : '')], ['Passage des gaines', pass ? pass.txt : '—']]),
       editeurCouches(cp.couches, k, (x) => set(x, cp.cn), 'f-' + k),
-      btns(confirmBtn('Retirer', 'Confirmer le retrait', () => set(null))));
+      nomEtEnregistrer(k, cp.couches, cp.cn, (n) => set(cp.couches, n), 'f-' + k),
+      ui2.ouvert === k ? choixTypes(k, (c) => set(c.couches, c.n)) : null,
+      btns(ui2.ouvert === k ? null : btn('Remplacer par une autre composition', () => { ui2.ouvert = k; renderInspector(); }, 'sm'),
+        confirmBtn('Retirer', 'Confirmer le retrait', () => set(null))));
   };
   const g = geo(lvl.id), aire = g.rooms.reduce((s, r) => s + (estExterieure(r.label) ? 0 : r.area), 0) / 1e4;
   const surf = surfacesMateriaux(P, lvl.id, aire);

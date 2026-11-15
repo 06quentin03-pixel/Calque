@@ -9,7 +9,7 @@ import { ELEC, ELEC_BY, ELEC_CATS, FURN, FURN_BY } from './symboles.js';
 /* furn : clés `k` du mobilier ; elec : types `t` des symboles ; elecCat : toute une catégorie de ELEC_CATS */
 const DOMAINES = [
   { id: 'mobilier', name: 'Mobilier', subs: [
-    { id: 'm_cuisine', name: 'Cuisine', furn: ['mb60', 'mb40', 'mb80', 'mh60', 'col', 'pt', 'ilot', 'tab4'] },
+    { id: 'm_cuisine', name: 'Cuisine', furn: ['mb60', 'mb40', 'mb80', 'mba90', 'mba100', 'mbaa', 'mh60', 'mha60', 'col', 'pt', 'pta', 'ilot', 'tab4'] },
     { id: 'm_sejour', name: 'Séjour', furn: ['canape2', 'canape3', 'canapeA', 'fauteuil', 'tbasse', 'tv', 'biblio', 'tab6', 'tabR', 'chaise'] },
     { id: 'm_chambre', name: 'Chambre', furn: ['lit90', 'lit140', 'lit160', 'lit180', 'litsup', 'litbb', 'chevet', 'armoire', 'dressing', 'placard', 'commode', 'bureau', 'chbur'] },
     { id: 'm_deco', name: 'Décoration', furn: ['tapis', 'plante'] },

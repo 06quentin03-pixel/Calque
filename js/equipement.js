@@ -124,7 +124,7 @@ function equiperPiece(plan, piece) {
   const items = (plan.items || []).filter((it) => it.lv === piece.lv && inPoly(it, piece.loop || piece.poly));
   const humides = items.filter((it) => /^(baignoire|baignoire_ilot|douche|douche_ita)$/.test(it.type));
   const chauds = items.filter((it) => /^(evier1|evier2|evier_eg|plaque|plaque90)$/.test(it.type));
-  const plans = items.filter((it) => /^(plan_travail|meuble_bas|ilot)$/.test(it.type));
+  const plans = items.filter((it) => /^(plan_travail|plan_angle|meuble_bas|meuble_angle|ilot)$/.test(it.type));
   const C = candidats(piece.poly, 5);
   const libre = (p) => {
     for (const o of ouv) {

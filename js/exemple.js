@@ -66,8 +66,11 @@ function maison() {
   it('tv', 32.5, 220, 270); it('canape3', 290, 210, 90); it('tbasse', 150, 210, 90); it('tab4', 395, 380, 0); it('plante', 60, 60, 0);
   /* escalier quart tournant (en L) : la trémie de l'étage ne découpe que ses deux volées (demande du 13 novembre 2026) */
   it('escQ', 455, 220, 0, { n: 16, w: 200, d: 360, e: 90 });
-  it('frigo', 42.5, 483.5, 270); it('col', 40, 543.5, 270); it('ev1', 40, 613.5, 270); it('lv', 40, 683.5, 270);
-  it('mb60', 40, 760, 180); it('pl60', 100, 760, 180); it('mb60', 160, 760, 180); it('mb60', 220, 760, 180); it('hotte', 100, 765, 180);
+  it('frigo', 42.5, 483.5, 270); it('ev1', 40, 553.5, 270); it('lv', 40, 623.5, 270);
+  /* cuisine en L : meuble bas d'angle en L dans le coin (demande du 15 novembre 2026), meuble haut d'angle au-dessus ;
+     la colonne passe au bout du mur du bas pour libérer le coin */
+  it('mba90', 55, 745, 180, { flip: true }); it('mha60', 40, 760, 180, { flip: true });
+  it('pl60', 130, 760, 180); it('mb60', 190, 760, 180); it('col', 250, 760, 180); it('hotte', 130, 765, 180);
   it('placard', 364.5, 520, 270, { w: 120 });
   it('lit160', 663.5, 190, 270); it('chevet', 583.5, 87.5, 270); it('chevet', 583.5, 292.5, 270); it('armoire', 960, 290, 90);
   it('bain', 905, 579, 180); it('vasque2', 790, 408.5, 0); it('dou90', 945, 428.5, 0); it('sserv', 708.5, 580, 270);
