@@ -14,7 +14,7 @@
    Le logement d'une gaine est un contrôle géométrique de Calque (épaisseur de la couche ≥ diamètre de la gaine) :
    il ne dit rien de la conformité à la norme. */
 import { isNum } from './noyau.js';
-import { isElecDuct, pointsGaine } from './cheminement.js';
+import { TRAVERSEE, isElecDuct, pointsGaine } from './cheminement.js';
 import { ELEC_BY } from './symboles.js';
 
 const ORIGINE = 'Épaisseur nominale courante du commerce, proposée par Calque (à vérifier sur le matériel choisi)';
@@ -226,6 +226,58 @@ function placerDansCouche(plan, d) {
   return n;
 }
 
+/* ---------------- passages entre étages (demande du 15 novembre 2026) ----------------
+   Un passage entre étages posé contre un mur monte dans la couche prévue pour les câbles : la première couche de passage
+   (vide technique, isolant, ossature) rencontrée depuis la face du mur où il est posé, avant le mur porteur — par exemple
+   entre la plaque de plâtre et le mur porteur. S'il n'y en a pas de ce côté (mur de garage brut), il monte dans une
+   goulotte contre la face du mur ; à l'étage, son jumeau rejoint la couche de passage du mur du dessus s'il y en a une.
+   Un passage loin des murs (trémie dans le plancher), d'une colonne de passage ou marqué « libre » ne bouge pas. */
+const PROCHE_MUR = 25;   // cm au-delà de la face du mur : au-delà, le passage est une trémie dans le plancher
+const GOULOTTE = 2.5;    // cm entre la face du mur et l'axe d'une goulotte (estimé par Calque, petite goulotte)
+function logementPassage(plan, e) {
+  if (!e || e.type !== TRAVERSEE) return null;
+  if (e.col) return { mode: 'colonne' };
+  if (e.libre) return { mode: 'libre', choisi: true };
+  let best = null;
+  for (const W of mursDuNiveau(plan, e.lv)) {
+    const a = local(W, e); if (a.u < 0 || a.u > W.L) continue;
+    const ecart = Math.abs(a.v) - W.th / 2; if (ecart > PROCHE_MUR) continue;
+    if (!best || ecart < best.ecart) best = { W, u: a.u, v: a.v, ecart };
+  }
+  if (!best) return { mode: 'libre' };
+  const { W, u } = best, s = best.v < 0 ? -1 : 1, w = W.w;
+  const pos = (v) => ({ x: Math.round((W.A.x + W.d.x * u + W.n.x * v) * 10) / 10, y: Math.round((W.A.y + W.d.y * u + W.n.y * v) * 10) / 10 });
+  if (!aCouches(w)) return { mode: 'inconnu', wall: w.id, cote: s };
+  /* couches depuis la face du côté s vers l'intérieur du mur, jusqu'au porteur */
+  const B = bandes(w), l = s > 0 ? B : B.slice().reverse(), cand = [];
+  for (const b of l) { const m = matDe(b.c); if (m.passage === 'libre') cand.push(b); else if (m.cat === 'structure') break; }
+  const dia = isNum(e.dia) ? e.dia : null;
+  const b = cand.find((x) => dia == null || dia <= x.e * 10 + 1e-6) || cand[0];
+  if (b) return Object.assign({ mode: 'couche', wall: w.id, cote: s, couche: b.c, v: (b.o0 + b.o1) / 2 }, pos((b.o0 + b.o1) / 2));
+  const v = s * (W.th / 2 + GOULOTTE);
+  return Object.assign({ mode: 'goulotte', wall: w.id, cote: s, v }, pos(v));
+}
+/* place tous les passages entre étages du plan à l'endroit prévu ; renvoie le nombre de passages déplacés */
+function placerPassages(plan) {
+  let n = 0;
+  for (const e of plan.elec || []) {
+    if (!e || e.type !== TRAVERSEE || e.col || e.libre) continue;
+    const L = logementPassage(plan, e);
+    if (!L || L.x == null || (Math.abs(L.x - e.x) < 0.05 && Math.abs(L.y - e.y) < 0.05)) continue;
+    e.x = L.x; e.y = L.y; n++;
+  }
+  return n;
+}
+/* texte du panneau d'un passage */
+function textePassage(L) {
+  if (!L) return '';
+  if (L.mode === 'couche') return `Monte dans « ${courtCouche(L.couche)} » (${fmt(L.couche.e)} cm) du mur, avant le mur porteur : la place prévue pour les câbles.`;
+  if (L.mode === 'goulotte') return 'Pas de vide technique ni d’isolant de ce côté du mur : le passage monte dans une goulotte contre le mur ; à l’étage, il rejoint la couche de passage du mur du dessus s’il y en a une.';
+  if (L.mode === 'inconnu') return 'Composition du mur non renseignée : la couche de passage n’est pas connue (renseignez la composition du mur pour que le passage s’y place).';
+  if (L.mode === 'libre') return L.choisi ? 'Position libre : le passage reste où vous l’avez posé.' : 'Loin des murs : trémie ou fourreau dans le plancher, à l’endroit posé.';
+  return '';
+}
+
 /* ---------------- modification ---------------- */
 function appliquerAuMur(w, couches, nom) {
   if (!couches || !couches.length) { delete w.couches; delete w.cn; return w; }
@@ -380,6 +432,7 @@ function nettoyerV16(p) {
 }
 
 export { changerEpaisseur, tronconsDuMur };
+export { GOULOTTE, logementPassage, placerPassages, textePassage };
 export { CATS, COMPOSITIONS, COMPO_BY, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, bandes, clone as copierCouches, compoNiveau,
   coucheA, couchesOrientees, couchesPassage, courtCouche, decalagePassage, epaisseur, logementGaine, matDe, nettoyerCouches, nettoyerMurV16,
   nettoyerNiveauV16, nettoyerV16, nomCouche, placerDansCouche, resumePassage, statutDans, surfacesMateriaux };

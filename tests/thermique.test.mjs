@@ -1,5 +1,5 @@
 // Demandes de l'utilisateur (14 novembre 2026, suite) : déperditions thermiques des murs et des pièces, gaine dans la laine
-// de verre du faux plafond, fenêtre « Ajouter un niveau » agrandie, élargissement d'un mur dans un sens choisi ; migration v16 → v17.
+// de verre du faux plafond, fenêtre « Ajouter un niveau » agrandie, élargissement d'un mur dans un sens choisi ; migration v16 → v18.
 // Lancer :  node --test tests/thermique.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -104,14 +104,14 @@ test('sans écran : élargir un mur vers un côté (murs adjacents, ouvertures, 
   assert.equal(r.statut, 'ok'); assert.match(r.msg, /Laine de verre/);
 });
 
-test('écran : fenêtre « Ajouter un niveau », sens d’élargissement, panneaux thermiques, migration v16 → v17', async () => {
+test('écran : fenêtre « Ajouter un niveau », sens d’élargissement, panneaux thermiques, migration v16 → v18', async () => {
   const { ctx, page, errors } = await fresh();
   const p0 = plan(16); delete p0.install.text; p0.rooms[0].ti = 99; // valeur invalide : retirée
   await seedPlan(ctx, p0); await boot(page);
   let r = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, ti: N.P.rooms[0].ti, l: N.P.walls[0].couches[0].l }; });
-  assert.deepEqual(r, { v: 17, ti: undefined, l: 0.035 });
+  assert.deepEqual(r, { v: 18, ti: undefined, l: 0.035 });
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
-  assert.ok(vers.some((w) => /\(v16 → v17\)/.test(w)), 'copie de sécurité');
+  assert.ok(vers.some((w) => /\(v16 → v18\)/.test(w)), 'copie de sécurité');
   const sel = (t, id) => page.evaluate(async ([t, id]) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = id ? { t, id } : null; N.ui.inspOpen = true; F.renderInspector(); }, [t, id]);
   /* pièce : section thermique ; température extérieure saisie par une puce */
   await sel('room', 'R'); await wait(page, 150);

@@ -136,13 +136,14 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 14) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 18) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) ; v16 : `sol`, `plafond` = `{ couches, cn }` (plancher du dessus vers le dessous ; plafond du dessus vers le parement) ; v17 : `dessous`, `dessus` (côté non chauffé), `bsol`, `bplaf` (coefficient b saisi) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
 | `walls[]` | Murs : `id`, `lv`, `a`, `b` (angles), `th` (épaisseur), `kind` (`mur` ou `cloison`), `h` (hauteur, facultative) ; v16 : `couches` [{ `m` (matériau de `MATERIAUX`, `compositions.js`), `e` (cm), `n` (nom si `autre`) }] du côté 1 (normale +n) vers le côté 2, `cn` (nom de la composition) ; `th` = somme des couches ; v17 : couche `l` (λ saisi) ou `r` (R saisi). Pièces v17 : `ti`, `nc`, `ach` ; ouvertures : `uw` ; gaines : `couche` ; `install.text`, `install.dupt` |
 | `openings[]` | Ouvertures : `id`, `wall`, `t` (position du milieu le long du mur depuis l'angle `a`), `w` (largeur), `kind` (`door`, `window`, `gap`, `closet`), `type`, `side`, `hinge`, `leaves`, `h`, `sill` (allège) |
-| `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif), `comp` (composant personnalisé, v3) |
+| `elec[]` (v18) | Passage entre étages : `libre: true` = laissé où il est posé ; sinon placé dans la couche de passage du mur voisin, ou en goulotte contre lui (`placerPassages`, `compositions.js`). Niveaux v18 : `dessous` / `dessus` peuvent valoir `chauffe` (local chauffé, b = 0) |
+| `items[]` | Mobilier et escaliers : `id`, `lv`, `k` (modèle), `type`, `name`, `x`, `y`, `w`, `d`, `rot`, `flip`, `label` (facultatif), `comp` (composant personnalisé, v3) ; v18 : `dans` (id du meuble qui reçoit l'appareil intégré : four sous la plaque, lave-vaisselle sous le plan de travail…), `ox` (décalage le long du meuble, cm) — position, rotation et miroir recalculés depuis le meuble (`synchroniserIntegres`, `integration.js`) |
 | `elec[]` | Symboles électriques : `id`, `lv`, `type` (voir `symboles.js`), `x`, `y`, `rot`, `h` (hauteur de pose, ou `null`), `cid` (circuit), `art` (article de la bibliothèque technique, facultatif, v2), `comp` (composant personnalisé, v3), `mark` (marquage affiché, v3), `to` (passage entre étages `traversee` : son jumeau sur l'autre niveau, v6), `sc` (taille du symbole, 0,5 à 3, v12), `lum` (luminaire, v7 : `ph` photométrie du plan, `flux` en lm et `p` en W, données `{ v, st, src }`) |
 | `rooms[]` | Étiquettes des pièces : `id`, `lv`, `name`, `x`, `y`, `tint` (couleur). Le contour de la pièce est calculé depuis les murs |
 | `dims[]` | Cotes libres : `id`, `lv`, `ax`, `ay`, `bx`, `by` |

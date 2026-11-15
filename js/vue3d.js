@@ -15,9 +15,10 @@ import { openFiche } from './fiche.js';
 import { OPENING_NAMES, SCR, commit, openingModels, refreshUI, requestRender, wallHeightOf } from './interaction.js';
 import { goToRef, setView } from './tableau.js';
 import { ICON, btn, btns, fmtIn, h, ico, kv, numField, openingSizeText, sec, segCtl, toast } from './interface.js';
-import { aCouches, courtCouche } from './compositions.js';
+import { GOULOTTE, aCouches, courtCouche, logementPassage } from './compositions.js';
 import { slug } from './stockage.js';
 import { openFileModal, parseColor } from './export.js';
+import { HOTES, creuxDe, morceaux } from './integration.js';
 
 /* ============================================================
    CALQUE — vue 3D : moteur WebGL2 intégré (aucune bibliothèque)
@@ -323,9 +324,9 @@ const CAT3 = { prises: [35, 86, 196], appareils: [194, 65, 12], commandes: [21, 
 /* contour en L d'un meuble d'angle : dos côté -y et côté -x (voir _L dans symboles.js) */
 function formeL(w, d, p) { p = profAngle(w, d, p); return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, -d / 2 + p], [-w / 2 + p, -d / 2 + p], [-w / 2 + p, d / 2], [-w / 2, d / 2]]; }
 function kBase(X, w, d, top) {
-  X.box(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark);
-  X.box(-w / 2, -d / 2, w / 2, d / 2, 10, 86, K3.white);
-  if (top !== false) X.box(-w / 2, -d / 2, w / 2, d / 2 + 1.5, 86, 89.5, K3.stone);
+  X.corps(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark);
+  X.corps(-w / 2, -d / 2, w / 2, d / 2, 10, 86, K3.white);
+  if (top !== false && !X.sansDessus) X.box(-w / 2, -d / 2, w / 2, d / 2 + 1.5, 86, 89.5, K3.stone);
 }
 function sofa(X, w, d, sd) {
   const bk = Math.min(22, d * 0.24), arm = Math.min(18, w * 0.12), dd = sd || d;
@@ -338,9 +339,9 @@ function sofa(X, w, d, sd) {
 function legs4(X, w, d, z1, s, ins, col) { const a = w / 2 - ins - s, b = d / 2 - ins - s; for (const [x, y] of [[-a, -b], [a, -b], [a, b], [-a, b]]) X.box(x - s / 2, y - s / 2, x + s / 2, y + s / 2, 0, z1, col || K3.woodDk); }
 function tap3(X, x, y, z) { X.cyl(x, y, 1.6, z, z + 22, K3.steel, 10); X.box(x - 1.2, y, x + 1.2, y + 14, z + 19, z + 22, K3.steel); }
 const F3 = {
-  meuble_bas: { h: 90, f: (X, w, d) => { kBase(X, w, d); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 79, 81, K3.steel); } },
-  meuble_haut: { h: 70, z: 145, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 70, K3.white); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 4, 6, K3.steel); } },
-  colonne: { h: 215, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark); X.box(-w / 2, -d / 2, w / 2, d / 2, 10, 215, K3.white); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 120, 122, K3.steel); } },
+  meuble_bas: { h: 90, f: (X, w, d) => { kBase(X, w, d); if (!X.creux.length) X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 79, 81, K3.steel); } },
+  meuble_haut: { h: 70, z: 145, f: (X, w, d) => { X.corps(-w / 2, -d / 2, w / 2, d / 2, 0, 70, K3.white); if (!X.creux.length) X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 4, 6, K3.steel); } },
+  colonne: { h: 215, f: (X, w, d) => { X.corps(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark); X.corps(-w / 2, -d / 2, w / 2, d / 2, 10, 215, K3.white); if (!X.creux.length) X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 120, 122, K3.steel); } },
   plan_travail: { h: 90, f: (X, w, d) => X.box(-w / 2, -d / 2, w / 2, d / 2, 86.5, 90, K3.stone) },
   /* meubles d'angle en L (même forme que sur le plan, symboles.js) */
   meuble_angle: { h: 90, f: (X, w, d) => { const L = formeL(w, d, 60); X.poly(L, 0, 10, K3.dark); X.poly(L, 10, 86, K3.white); X.poly(L, 86, 89.5, K3.stone); } },
@@ -358,7 +359,7 @@ const F3 = {
   congelateur: { h: 85, f: (X, w, d) => X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 85, K3.white) },
   micro_ondes: { h: 30, z: 90, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 30, K3.dark); X.box(-w * 0.42, d / 2, w * 0.15, d / 2 + 0.6, 5, 25, K3.black); } },
   hotte: { h: 14, z: 155, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 14, K3.steel); X.box(-w * 0.17, -d / 2, w * 0.17, -d / 2 + d * 0.45, 14, Math.max(15, X.toCeil()), K3.steel); } },
-  ilot: { h: 90, f: (X, w, d) => { X.box(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 0, 10, K3.dark); X.box(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 10, 86, K3.white); X.box(-w / 2, -d / 2, w / 2, d / 2, 86, 90, K3.stone); } },
+  ilot: { h: 90, f: (X, w, d) => { X.corps(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 0, 10, K3.dark); X.corps(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 10, 86, K3.white); X.box(-w / 2, -d / 2, w / 2, d / 2, 86, 90, K3.stone); } },
   table_rect: { h: 75, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 71, 75, K3.wood); legs4(X, w, d, 71, 5, 3); } },
   table_ronde: { h: 75, f: (X, w, d) => { X.cyl(0, 0, Math.min(w, d) / 2, 71, 75, K3.wood, 32); X.cyl(0, 0, 5, 3, 71, K3.woodDk, 12); X.cyl(0, 0, Math.min(w, d) * 0.22, 0, 3, K3.woodDk, 20); } },
   chaise: { h: 88, f: (X, w, d) => { legs4(X, w, d, 44, 3, 2); X.box(-w / 2 + 1, -d / 2 + 2, w / 2 - 1, d / 2 - 1, 43, 47, K3.wood); X.box(-w / 2 + 2, -d / 2 + 1, w / 2 - 2, -d / 2 + 4, 47, 88, K3.wood); } },
@@ -670,8 +671,15 @@ function stair3(G, it, E, id) {
 function furn3(G, it, E, Lh, id) {
   const f = f3Def(it), hz = itemHeight3(it), k = hz.h / f.h, Z = E + hz.z;
   const W = (x, y) => itemToWorld(it, it.flip ? -x : x, y);
+  /* électroménager intégré (format v18) : le meuble laisse la place de ses appareils cachés, et une plaque ou un évier
+     intégré dans un plan de travail ne redessine pas le dessus */
+  const creux = it.id && P.items.some((x) => x.dans === it.id) ? creuxDe(P, it, itemHeight3).map((c) => ({ x0: c.x0, x1: c.x1, z0: c.z0 / k, z1: c.z1 / k })) : [];
+  const hote = it.dans ? IDX.items.get(it.dans) : null;
   const X = {
+    creux, sansDessus: !!(hote && HOTES[hote.type] && HOTES[hote.type].plan),
     box(x0, y0, x1, y1, z0, z1, col) { solid3(G.s, [[W(x0, y0), W(x1, y0), W(x1, y1), W(x0, y1)]], Z + z0 * k, Z + z1 * k, col, id); },
+    /* pavé du corps du meuble, sans les parties occupées par les appareils intégrés */
+    corps(x0, y0, x1, y1, z0, z1, col) { for (const [a, b, c, e] of morceaux(x0, x1, z0, z1, creux)) X.box(a, y0, b, y1, c, e, col); },
     glass(x0, y0, x1, y1, z0, z1) { solid3(G.g, [[W(x0, y0), W(x1, y0), W(x1, y1), W(x0, y1)]], Z + z0 * k, Z + z1 * k, K3.glass, id, { edges: false }); },
     poly(pts, z0, z1, col) { solid3(G.s, [pts.map(([x, y]) => W(x, y))], Z + z0 * k, Z + z1 * k, col, id); },
     cyl(x, y, r, z0, z1, col, seg) { solid3(G.s, [circlePts(W(x, y), r, seg || 20)], Z + z0 * k, Z + z1 * k, col, id); },
@@ -822,8 +830,21 @@ function passages3(G, visIds, hid, pick, o) {
     if (y1 - y0 < 1) continue;
     const id = pick({ t: 'elec', id: lo[0].id, lv: lo[0].lv });
     const gb = o.cables ? G.g : G.s;
-    tube3(gb, [lo[0].x, y0, lo[0].y], [lo[0].x, y1, lo[0].y], 2.2, K3.gaine, id, 12);
-    sphere3(gb, [lo[0].x, y0, lo[0].y], 2.2, K3.gaine, id, 10); sphere3(gb, [lo[0].x, y1, lo[0].y], 2.2, K3.gaine, id, 10);
+    /* passage en goulotte contre le mur (pas de couche de passage, demande du 15 novembre 2026) : goulotte jusqu'au plafond ;
+       les deux côtés décalés (goulotte en bas, isolant du mur en haut) : coude sous le plancher du dessus */
+    const a = lo[0], b = hi[0], decale = Math.hypot(a.x - b.x, a.y - b.y) > 1;
+    const yc = decale ? Math.min(y1, Math.max(y0, hi[1].elev - 6)) : y1;
+    const lg = logementPassage(P, a);
+    if (lg && lg.mode === 'goulotte') {
+      const W = P.walls.find((w) => w.id === lg.wall), A = W && nodeOf(W.a), B = W && nodeOf(W.b);
+      if (A && B) {
+        const L = Math.hypot(B.x - A.x, B.y - A.y) || 1, dx = (B.x - A.x) / L, dy = (B.y - A.y) / L, nx = -dy * lg.cote, ny = dx * lg.cote, g = GOULOTTE;
+        const q = (u, v) => ({ x: a.x + dx * u + nx * v, y: a.y + dy * u + ny * v });
+        solid3(G.s, [[q(-3, -g), q(3, -g), q(3, g), q(-3, g)]], y0 - 4, yc, K3.white2, id);
+      }
+    } else tube3(gb, [a.x, y0, a.y], [a.x, yc, a.y], 2.2, K3.gaine, id, 12);
+    if (decale) { tube3(gb, [a.x, yc, a.y], [b.x, yc, b.y], 2.2, K3.gaine, id, 12); tube3(gb, [b.x, yc, b.y], [b.x, y1, b.y], 2.2, K3.gaine, id, 12); sphere3(gb, [a.x, yc, a.y], 2.2, K3.gaine, id, 10); sphere3(gb, [b.x, yc, b.y], 2.2, K3.gaine, id, 10); }
+    sphere3(gb, [a.x, y0, a.y], 2.2, K3.gaine, id, 10); sphere3(gb, [b.x, y1, b.y], 2.2, K3.gaine, id, 10);
   }
 }
 /* altitude d'un câble dans un conduit dessiné : au fond d'un chemin de câbles ou d'une goulotte, au centre d'une gaine */

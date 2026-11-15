@@ -28,6 +28,7 @@ import { compSection, materielSection, openTechLib } from './biblioui.js';
 import { ficheButton } from './fiche.js';
 import { fondSection, pickFond } from './fond.js';
 import { equipementNiveauSection, equipementSection } from './equipementui.js';
+import { integrationSections, puissanceChauffageSection } from './integrationui.js';
 import { TYPES_CHEMIN } from './cheminement.js';
 import { itineraireSection, startZone } from './routeui.js';
 import { eclairageSection, lumSection } from './eclairageui.js';
@@ -423,6 +424,7 @@ function inspItem(it) {
         numField('Posé à', hz.z, 'cm', (v) => { it.zb = v; commit(); }, { id: 'f-izb', min: 0, max: 500 })),
       it.ht != null || it.zb != null ? btns(btn('Hauteurs par défaut', () => { delete it.ht; delete it.zb; commit(); }, 'sm', 'rotL')) : h('p', { class: 'note' }, `Par défaut : ${fmtIn(f3.h)} cm de haut${f3.z ? `, posé à ${fmtIn(f3.z)} cm du sol` : ''}.`)));
   }
+  if (!stair) parts.push(...integrationSections(it)); // électroménager intégré, raccordement, puissance d'un radiateur
   parts.push(compSection(it, 'item'));
   parts.push(sec('Étiquette', textField(null, it.label, (v) => { it.label = v.trim(); commit(); }, { id: 'f-ilabel', ph: 'Texte affiché sur le plan (facultatif)', live: (v) => { it.label = v; requestRender(); } })));
   parts.push(sec(null, btns(btn('Dupliquer', duplicateSel, '', 'dup'), btn('Supprimer', deleteSel, 'danger', 'del'))));
@@ -458,6 +460,7 @@ function inspElec(e) {
       sec('Pose',
         fixedPose ? kv([['Hauteur de pose', fixedPose]]) : numField('Hauteur de pose (axe)', e.h != null ? e.h : def.h || 0, 'cm', (v) => { e.h = v; commit(); }, { id: 'f-eh', min: 0, max: 600 }),
         ['rad_elec', 'sortie_rad', 'seche_serv_e', 'spot', 'led', 'rail_spot', 'plancher', 'soufflant_sdb'].includes(e.type) ? numField(SPOTLIKE.has(e.type) ? 'Puissance (spots : 1 point par 300 VA)' : 'Puissance', elecPower(e), SPOTLIKE.has(e.type) ? 'VA' : 'W', (v) => { e.p = v; commit(); }, { id: 'f-ep', min: 1, max: 10000 }) : null),
+      puissanceChauffageSection(e),
       sec('Orientation', btns(btn('90°', () => rotateSel(-90), 'sm', 'rotL'), btn('90°', () => rotateSel(90), 'sm', 'rotR'))),
       sec('Taille du symbole', chipRow([0.75, 1, 1.25, 1.5, 2], e.sc || 1, (v) => { if (v === 1) delete e.sc; else e.sc = v; commit(); }, (v) => Math.round(v * 100) + ' %')),
       def.cat !== 'ventilation' ? sec('Gaine', btns(btn('Tracer une gaine d’ici', () => startDuctFrom(e, 'elec'), 'sm', 'duct'), EXT.cabler ? btn('Câbler depuis ici', () => EXT.cabler(e), 'sm') : null), ductsOf(e).length ? h('p', { class: 'note' }, `${ductsOf(e).length} conduit${ductsOf(e).length > 1 ? 's' : ''} raccordé${ductsOf(e).length > 1 ? 's' : ''} à ce symbole.`) : null) : null,
@@ -659,6 +662,11 @@ function duplicateSel() {
     const p = itemToWorld({ x: it.x, y: it.y, rot: it.rot || 0 }, step, 0);
     c.x = p.x; c.y = p.y;
     (s.t === 'item' ? P.items : P.elec).push(c);
+    /* électroménager intégré : la copie d'un appareil est libre ; la copie d'un meuble emporte ses appareils */
+    if (s.t === 'item') {
+      delete c.dans; delete c.ox;
+      for (const x of P.items.filter((y) => y.dans === o.id)) { const cx = JSON.parse(JSON.stringify(x)); cx.id = uid('i'); cx.dans = c.id; P.items.push(cx); }
+    }
   } else if (s.t === 'text') { c.x += 40; c.y += 40; P.texts.push(c); }
   else if (s.t === 'duct') { c.pts = ductPts(o).map((q) => ({ x: q.x + 40, y: q.y + 40 })); c.a = null; c.b = null; P.ducts.push(c); }
   else return;

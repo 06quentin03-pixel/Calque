@@ -20,8 +20,10 @@ import { scheduleSave } from './stockage.js';
 import { v3Refresh } from './vue3d.js';
 import { applyComp, upsertPlanComp } from './composants.js';
 import { tailleChemin } from './cheminement.js';
+import { coulisser, hoteDe, liberer, synchroniserIntegres } from './integration.js';
 import { zoneAt } from './routeui.js';
 import { compoNouveauMur } from './compositionsui.js';
+import { placerPassages } from './compositions.js';
 
 /* ============================================================
    CALQUE — interaction : vue, sélection, outils, aimantation
@@ -176,6 +178,8 @@ function hitTest(p, tolPx) {
   for (let i = P.items.length - 1; i >= 0; i--) {
     const it = P.items[i]; if (it.lv !== lv) continue;
     if (!S.layers.furn && !isStair(it.type)) continue;
+    /* appareil intégré : on touche d'abord le meuble ; un second toucher au même endroit choisit l'appareil */
+    if (it.dans && !(ui.sel && ui.sel.t === 'item' && ui.sel.id === it.dans)) continue;
     if (!libre(isStair(it.type) ? 'archi' : 'mobilier')) continue;
     const l = itemToLocal(it, p);
     if (Math.abs(l.x) <= it.w / 2 + tol * 0.2 && Math.abs(l.y) <= it.d / 2 + tol * 0.2) return { t: 'item', id: it.id };
@@ -334,7 +338,9 @@ function validateSel() {
 /* ---------------- historique ---------------- */
 function commit() {
   syncRooms();
+  placerPassages(P); // passages entre étages dans la couche de passage du mur, sinon en goulotte (demande du 15 novembre 2026)
   syncDucts();
+  synchroniserIntegres(P); // électroménager intégré : suit son meuble (format v18)
   const pk = packPlan(P, H.cur);
   if (samePack(pk, H.cur)) { refreshUI(); return; }
   H.u.push(H.cur); H.r.length = 0; H.cur = pk;
@@ -514,9 +520,13 @@ function moveDrag(h, wp0, sp0) {
       moved = true;
       const dv = vsub(wp, wp0);
       if (h.t === 'item') {
-        const def = furnDef(obj);
+        const def = furnDef(obj), hote = hoteDe(P, obj);
+        /* appareil intégré : il coulisse le long de son meuble, et en sort s'il est tiré plus loin */
+        if (hote && coulisser(obj, hote, { x: base.x + dv.x, y: base.y + dv.y })) return;
+        if (hote) { liberer(obj); toast('Appareil sorti du meuble.'); }
         obj.rot = base.rot;
         placeItemAt(obj, { x: base.x + dv.x, y: base.y + dv.y }, def);
+        synchroniserIntegres(P); // ses propres appareils intégrés le suivent
       } else if (h.t === 'elec') {
         obj.rot = base.rot;
         placeElecAt(obj, { x: base.x + dv.x, y: base.y + dv.y });
@@ -621,6 +631,10 @@ function handleDrag(h, wp0, sp0) {
           it.d = nd; it.x = base.x - s * dl; it.y = base.y + c * dl;
           if (it.type === 'table_ronde' || it.type === 'esc_helice') { it.w = nd; }
         }
+      }
+      if (h.kind === 'rot' || h.kind === 'rw' || h.kind === 'rd') {
+        if (obj.dans && h.kind === 'rot') { obj.rot = base.rot; return; } // un appareil intégré tourne avec son meuble
+        synchroniserIntegres(P);
       } else if (h.kind === 'dimA' || h.kind === 'dimB') {
         const other = h.kind === 'dimA' ? { x: base.bx, y: base.by } : { x: base.ax, y: base.ay };
         const p = snapPoint(wp, { corners: true, from: other });
@@ -645,6 +659,12 @@ TOOLS.select = {
     if (!h) return panDrag(sp, () => { select(null); ui.inspOpen = false; renderInspector(); if (ui.hl || ui.hlIds) { ui.hl = null; ui.hlIds = null; updateHint(); requestRender(); } });
     if (h.t === 'room') return panDrag(sp, (w, s2) => { select(h); onTapSelected(h, s2); });
     if (h.t === 'handle') return handleDrag(h, wp, sp);
+    /* appareil intégré sous le meuble choisi : glisser déplace le meuble (et l'appareil avec lui), toucher choisit l'appareil */
+    const it = h.t === 'item' ? IDX.items.get(h.id) : null;
+    if (it && it.dans && ui.sel && ui.sel.t === 'item' && ui.sel.id === it.dans) {
+      const hd = moveDrag({ t: 'item', id: it.dans }, wp, sp); let bouge = false;
+      return hd && { move(w2, s2) { if (!bouge && vdist(s2, sp) >= TAP()) bouge = true; hd.move(w2, s2); }, up(w2, s2) { if (bouge) hd.up(w2, s2); else select(h); }, cancel() { hd.cancel(); } };
+    }
     select(h);
     return moveDrag(h, wp, sp);
   },

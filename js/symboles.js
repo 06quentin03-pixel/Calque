@@ -1010,9 +1010,19 @@ function drawItem(c, it, K, mode) {
   c.lineWidth = 1 * K.px; c.strokeStyle = K.ink; c.lineJoin = 'round'; c.lineCap = 'round';
   const K2 = Object.assign({}, K, { flipText: needsFlip(it.rot) });
   if (isStair(it.type)) drawStair(c, it, K2, mode || 'lower');
+  else if (mode === 'cache') drawCache(c, it, K2);
   else { const f = DR[it.type] || DR.bloc; f(c, it.w, it.d, K2, it); }
   c.restore();
   if (it.label && S.layers.names) drawItemLabel(c, it, K);
+}
+/* appareil intégré sous un meuble (four sous la plaque, lave-vaisselle sous le plan de travail) : contour en pointillés
+   et abréviation, sans remplissage, pour laisser voir le meuble du dessus (compatible PDF, SVG et DXF) */
+const ABREV_CACHE = { four: 'F', lave_vaisselle: 'LV', lave_linge: 'LL', seche_linge: 'SL', frigo: 'Fr', congelateur: 'Cg', micro_ondes: 'MO', hotte: 'H' };
+function drawCache(c, it, K) {
+  const w = it.w, d = it.d, m = 2;
+  _dash(c, K, 4, 3); _r(c, -w / 2 + m, -d / 2 + m, w - 2 * m, d - 2 * m); c.stroke();
+  c.beginPath(); _ln(c, -w / 2 + m, d / 2 - m, w / 2 - m, -d / 2 + m); c.stroke(); _nodash(c);
+  _txt(c, K, ABREV_CACHE[it.type] || '', 0, 0, Math.min(w, d) * 0.26);
 }
 function drawItemLabel(c, it, K) {
   const size = 11 * K.px;

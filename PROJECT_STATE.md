@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 15 novembre 2026, fiabilisation et ergonomie (format v17 inchangé) ; avant : 14 novembre 2026, composition des murs (par tronçon, copier-coller), déperditions thermiques (format v17).
+Mise à jour : 15 novembre 2026 (soir), électroménager intégré et puissance conseillée des radiateurs (format v18) ; avant : 15 novembre 2026, fiabilisation et ergonomie (format v17 inchangé) ; avant : 14 novembre 2026, composition des murs (par tronçon, copier-coller), déperditions thermiques (format v17).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -119,8 +119,15 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Panneau de droite en volets (`js/volets.js`, réglages `S.volets`, `S.voletsTous`). Fusion de `main` (composition par tronçon). Tests : **217/217**.
 - Pistes : bouton « Voir » sur chaque ligne de « Vérifier le plan » (aller à l'objet) ; essai réel d'un incident sur l'iPad (Safari) pour vérifier le texte des erreurs.
 
+## 15 novembre 2026 (soir) — Électroménager intégré (branche `claude/sharp-thompson-n0tvun`)
+- Appareils intégrés dans les meubles : `js/integration.js` (sans écran : hôtes acceptés, position qui suit le meuble, creux de la 3D, nettoyage v18), `js/integrationui.js` (sections « Électroménager intégré », « Intégration », « Raccordement électrique », « Puissance du chauffage »).
+- « Équipement minimal » propose la sortie de câble des radiateurs du mobilier et les prises des appareils (`appareilsARaccorder`, `equipement.js`). Puissance conseillée d'un radiateur : `puissanceConseillee` (`thermique.js`), fiche « Puissance conseillée d'un radiateur » dans l'onglet Calculs.
+- « Local chauffé » (`COTES.chauffe`, `thermique.js`) au-dessus et au-dessous d'un niveau. Passages entre étages dans la couche de passage du mur, sinon en goulotte : `logementPassage`, `placerPassages` (`compositions.js`), appelé par `commit()` ; `elec[].libre` pour un passage laissé où il est posé.
+- Format **v18** (`items[].dans`, `items[].ox`, `elec[].libre`), règle « integre-meuble » dans `integrite.js`. Tests : **224/224**.
+- Pistes : bouton « Voir » sur les lignes de « Vérifier le plan » ; appareils intégrés dans un meuble d'angle en L (non proposé pour l'instant) ; puissance conseillée tenant compte d'une marge de relance saisie.
+
 ## Tests
-- `node --test tests/*.test.mjs` : **215/215 réussis** (15 novembre 2026, ergonomie : `ergonomie` (7 tests), volets du panneau) ; avant : **208/208 réussis** (fiabilisation : `fiabilite` (12 tests)) ; avant : **187/187 réussis** (13 novembre 2026, demandes v15 : `demandes` (12 tests)) ; avant : **175/175 réussis** (onglet Schémas : `schemas` (4 tests)) ; avant : **171/171 réussis** (13 novembre 2026, après les demandes sur les gaines : `gaines` (2 tests)) ; avant : 169/169 (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
+- `node --test tests/*.test.mjs` : **224/224 réussis** (15 novembre 2026 soir, `integration` (7 tests)) ; avant : **215/215 réussis** (15 novembre 2026, ergonomie : `ergonomie` (7 tests), volets du panneau) ; avant : **208/208 réussis** (fiabilisation : `fiabilite` (12 tests)) ; avant : **187/187 réussis** (13 novembre 2026, demandes v15 : `demandes` (12 tests)) ; avant : **175/175 réussis** (onglet Schémas : `schemas` (4 tests)) ; avant : **171/171 réussis** (13 novembre 2026, après les demandes sur les gaines : `gaines` (2 tests)) ; avant : 169/169 (13 novembre 2026, module « Plans électriques » : `cablage` (5 tests), `planselec` (7 tests), `exemple` (2 tests)).
 - Fichiers : `architecture`, `stockage`, `ipad`, `bibliotheque`, `technique`, `composants`, `fond`, `catalogue`, `calcul` (15 tests, valeurs calculées à la main), `fiche` (4 tests), `cheminement` (9 tests), `eclairage` (6 tests, fichiers de synthèse dans `tests/synthese.mjs`), `vue3d` (3 tests), `documents` (7 tests), `regles` (5 tests), `exemple` (1 test), `chantier` (6 tests), `variantes` (4 tests), `dxf` (3 tests), `quantitatif` (6 tests), `multi` (4 tests), `dxfimport` (3 tests), `routage` (5 tests), `dxfmurs` (4 tests), `ifc` (7 tests), `assistant` (2 tests), `equipement` (4 tests), `sauvegarde` (5 tests), `affectation` (4 tests), `regeneration` (3 tests), `mesure` (2 tests), `migrations` (2 tests : v1 → v11 sans perte, v2 à v10), `fondtraits` (2 tests).
 - Tests : les polices d'internet sont bloquées dans les tests (`tests/outils.mjs`) : le test d'image de `ipad.test.mjs` qui échouait de temps en temps (police arrivée en cours de test) est stable (3 suites complètes de suite sans échec, 11 novembre 2026).
 

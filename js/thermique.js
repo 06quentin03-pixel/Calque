@@ -44,6 +44,8 @@ const COTES = {
   non_chauffe: { n: 'Local non chauffé (garage, cellier…)', b: 0.5, se: false },
   vide_sanitaire: { n: 'Vide sanitaire', b: 0.8, se: false },
   terreplein: { n: 'Terre-plein (sol)', b: 0.5, se: false, sol: true },
+  /* local chauffé (logement voisin, étage non dessiné…) : pas de perte par le plancher ou le plafond (b = 0) */
+  chauffe: { n: 'Local chauffé (logement voisin, étage chauffé…)', b: 0, se: false, chauffe: true },
 };
 const SRC_B = 'Coefficient b estimé par Calque (ordre de grandeur usuel), à adapter à votre bâtiment';
 const DEF = {
@@ -200,7 +202,7 @@ function deperditionsPiece(plan, r, ctx) {
     let vers, b, dT = te ? ti.v - te.v : null, cote = 'int';
     if (rv && chauffee(rv)) { const tj = tInt(rv.label); dT = ti.v - tj.v; if (dT <= 0) continue; vers = rv.label.name; b = d(1, 'saisie', 'Pièce voisine'); }
     else if (rv) { vers = rv.label.name + ' (non chauffée)'; b = d(COTES.non_chauffe.b, 'estimee', SRC_B); }
-    else { const c = coteNiveau(plan, L, k); vers = c.n; b = c.b; cote = COTES[c.cle].sol ? 'sol' : COTES[c.cle].se ? 'ext' : 'int'; if (c.st === 'estimee') estim.add(`${k === 'sol' ? 'Dessous' : 'Dessus'} du niveau non précisé : ${c.n} supposé`); }
+    else { const c = coteNiveau(plan, L, k); if (c.cle === 'chauffe' && !(c.b.v > 0)) continue; /* local chauffé : pas de perte */ vers = c.n; b = c.b; cote = COTES[c.cle].sol ? 'sol' : COTES[c.cle].se ? 'ext' : 'int'; if (c.st === 'estimee') estim.add(`${k === 'sol' ? 'Dessous' : 'Dessus'} du niveau non précisé : ${c.n} supposé`); }
     const cp = compoNiveau(L, k);
     const U = uParoi(cp ? cp.couches : null, k === 'sol' ? 'down' : 'up', cote);
     const it = { quoi: k === 'sol' ? 'Plancher' : 'Plafond', A: S, U };
@@ -231,6 +233,22 @@ function chauffagePose(plan, r) {
   let p = 0, saisi = true;
   for (const e of l) { if (isNum(e.p)) p += e.p; else if (DEFAUT_P[e.type]) { p += DEFAUT_P[e.type]; saisi = false; } else saisi = false; }
   return { n: l.length, p, saisi };
+}
+/* puissance conseillée pour un appareil de chauffage `e` de la pièce r (demande du 15 novembre 2026) :
+   déperditions de la pièce − puissance des AUTRES appareils de chauffage posés dans la pièce, arrondie au multiple de
+   `pas` W supérieur (250 W par défaut : arrondi de Calque, pas une gamme de fabricant). e peut être absent (nouvel appareil).
+   Renvoie { besoin, autres, autresSaisi, reste, conseil, statut, D } ; conseil = null si les déperditions sont incalculables
+   (température extérieure manquante), 0 si les autres appareils couvrent déjà le besoin. */
+/* puissance à choisir : besoin non couvert arrondi au multiple de `pas` supérieur (0 si déjà couvert) */
+function arrondiConseil(besoin, autres, pas = 250) { const reste = besoin - autres; return reste <= 0 ? 0 : Math.ceil(reste / pas - 1e-9) * pas; }
+function puissanceConseillee(plan, r, ctx, e, pas = 250) {
+  const D = deperditionsPiece(plan, r, ctx);
+  const l = (plan.elec || []).filter((x) => x !== e && x.lv === r.label.lv && CHAUFFAGE.includes(x.type) && dans(x, r));
+  let autres = 0, autresSaisi = true;
+  for (const x of l) { if (isNum(x.p)) autres += x.p; else if (DEFAUT_P[x.type]) { autres += DEFAUT_P[x.type]; autresSaisi = false; } else autresSaisi = false; }
+  if (D.total == null) return { besoin: null, autres, autresSaisi, nAutres: l.length, reste: null, conseil: null, statut: 'partiel', D };
+  const reste = D.total - autres, conseil = arrondiConseil(D.total, autres, pas);
+  return { besoin: D.total, autres, autresSaisi, nAutres: l.length, reste, conseil, statut: D.statut === 'saisie' && autresSaisi ? 'saisie' : D.statut === 'partiel' ? 'partiel' : 'estimee', D };
 }
 /* bilan d'un niveau (ou du plan) */
 function bilanThermique(plan, lv, ctx) {
@@ -275,8 +293,8 @@ function nettoyerV17(p, nettoyerCouches) {
   }
   for (const L of Array.isArray(p.levels) ? p.levels : []) {
     if (!L || typeof L !== 'object') continue;
-    if ('dessous' in L && !['terreplein', 'vide_sanitaire', 'non_chauffe', 'exterieur'].includes(L.dessous)) delete L.dessous;
-    if ('dessus' in L && !['combles', 'non_chauffe', 'toiture'].includes(L.dessus)) delete L.dessus;
+    if ('dessous' in L && !['terreplein', 'vide_sanitaire', 'non_chauffe', 'exterieur', 'chauffe'].includes(L.dessous)) delete L.dessous;
+    if ('dessus' in L && !['combles', 'non_chauffe', 'toiture', 'chauffe'].includes(L.dessus)) delete L.dessus;
     for (const k of ['bsol', 'bplaf']) if (k in L && !(isNum(L[k]) && L[k] >= 0 && L[k] <= 1)) delete L[k];
     for (const k of ['sol', 'plafond']) if (L[k] && typeof L[k] === 'object') { const c = nettoyerCouches(L[k].couches); if (c) L[k].couches = c; else delete L[k]; }
   }
@@ -289,4 +307,4 @@ function nettoyerV17(p, nettoyerCouches) {
   return p;
 }
 
-export { COTES, DEF, LAMBDA, RS, SRC_RS, bilanThermique, chauffagePose, cotesDuMur, coteNiveau, deperditionsPiece, ficheMur, nettoyerV17, rCouche, tExt, tInt, uOuverture, uParoi };
+export { COTES, DEF, LAMBDA, RS, SRC_RS, arrondiConseil, bilanThermique, chauffagePose, puissanceConseillee, cotesDuMur, coteNiveau, deperditionsPiece, ficheMur, nettoyerV17, rCouche, tExt, tInt, uOuverture, uParoi };

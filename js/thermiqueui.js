@@ -108,10 +108,10 @@ function thermiqueNiveauSection(lvl) {
   const ctx = contexte(), B = bilanThermique(P, lvl.id, ctx);
   const cote = (k) => {
     const c = coteNiveau(P, lvl, k), champ = k === 'sol' ? 'dessous' : 'dessus', bch = k === 'sol' ? 'bsol' : 'bplaf';
-    const opts = (k === 'sol' ? ['terreplein', 'vide_sanitaire', 'non_chauffe', 'exterieur'] : ['combles', 'non_chauffe', 'toiture']).map((v) => ({ v, n: COTES[v].n.split(' (')[0] }));
+    const opts = (k === 'sol' ? ['terreplein', 'vide_sanitaire', 'non_chauffe', 'chauffe', 'exterieur'] : ['combles', 'non_chauffe', 'chauffe', 'toiture']).map((v) => ({ v, n: COTES[v].n.split(' (')[0] }));
     return h('div', null, h('div', { class: 'fld' }, h('span', null, k === 'sol' ? 'Sous le plancher (là où aucune pièce chauffée n’est dessous)' : 'Au-dessus du plafond (là où aucune pièce chauffée n’est dessus)'),
       segCtl(opts, lvl[champ] || null, (v) => { lvl[champ] = v; delete lvl[bch]; commit(); })),
-      h('p', { class: 'note' }, `${c.st === 'estimee' ? 'Non précisé, supposé : ' + c.n + '. ' : ''}Coefficient b ${f2(c.b.v)} (${c.b.st === 'saisie' ? 'saisi' : 'estimé'}).`),
+      h('p', { class: 'note' }, c.cle === 'chauffe' && !(c.b.v > 0) ? 'Local chauffé de l’autre côté : pas de perte de chaleur par ' + (k === 'sol' ? 'le plancher' : 'le plafond') + ' (b = 0).' : `${c.st === 'estimee' ? 'Non précisé, supposé : ' + c.n + '. ' : ''}Coefficient b ${f2(c.b.v)} (${c.b.st === 'saisie' ? 'saisi' : 'estimé'}).`),
       numField('Coefficient b', c.b.v, '', (v) => { lvl[bch] = v; commit(); }, { id: 'f-' + bch, min: 0, max: 1 }));
   };
   const dupt = P.install.dupt && P.install.dupt.v != null ? P.install.dupt : DEF.dupt;

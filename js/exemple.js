@@ -13,7 +13,7 @@ import { ELEC_BY, FURN_BY } from './symboles.js';
 import { generateFromPlan, circNumbers } from './electricite.js';
 import { makeElecFromDef, makeItemFromDef, newOpening } from './interaction.js';
 import { copyWalls, wallSideName } from './interface.js';
-import { appliquerAuMur, appliquerAuNiveau, placerDansCouche } from './compositions.js';
+import { appliquerAuMur, appliquerAuNiveau, placerDansCouche, placerPassages } from './compositions.js';
 import { articlesFor } from './technique.js';
 import { REGLES_VERSION } from './regles.js';
 import { changerStatut, chantierDe, noter, nouvelleReserve } from './chantier.js';
@@ -22,6 +22,9 @@ import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
 import { colonneTableau } from './cheminement.js';
 import { raccorderCircuit } from './itineraire.js';
 import { agcpLabel } from './elecdonnees.js';
+import { integrer, nouvelIntegre } from './integration.js';
+import { equiperPiece } from './equipement.js';
+import { puissanceConseillee, tExt } from './thermique.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -373,6 +376,50 @@ function compositionsExemple() {
   const gp = P.ducts.find((d) => d.lv === 'L0' && d.sys === 'elec' && d.pose === 'plafond' && (d.dia == null || d.dia <= 100));
   if (gp) gp.couche = 'laine_verre';
   thermiqueExemple();
+  integrationExemple();
+  passagesExemple();
+}
+/* passage entre étages dans la couche de passage des murs (demande du 15 novembre 2026) : le local technique a un mur brut
+   (parpaing de 20, sans doublage) : le passage y monte en goulotte, puis rejoint à l'étage la laine de verre du doublage du
+   mur du dessus. Compositions d'EXEMPLE (épaisseurs du plan gardées : 20 cm). Le rez-de-chaussée, là où aucune pièce
+   n'est dessinée au-dessus, est donné sous un « local chauffé » (valeur d'exemple saisie : logement voisin fictif). */
+function passagesExemple() {
+  const c = (m, e) => ({ m, e });
+  const nd = (id) => P.nodes.find((n) => n.id === id);
+  const murX = (lv, x, y) => P.walls.find((w) => { if (w.lv !== lv) return false; const a = nd(w.a), b = nd(w.b); return a && b && a.x === x && b.x === x && Math.min(a.y, b.y) <= y && Math.max(a.y, b.y) >= y; });
+  const bas = murX('L0', 2000, 250), haut = murX('L1', 2000, 250);
+  if (!bas || !haut || Math.abs(bas.th - 20) > 0.01 || Math.abs(haut.th - 20) > 0.01) return;
+  const cote = (w) => { const a = nd(w.a), b = nd(w.b); return b.y > a.y; }; // côté 1 (normale +n) = x < 2000 si le mur va vers le bas
+  appliquerAuMur(bas, [c('parpaing', 20)], 'Parpaing de 20 brut, sans doublage (exemple)');
+  const dbl = [c('plaque', 1.25), c('laine_verre', 3.75), c('parpaing', 15)];
+  appliquerAuMur(haut, cote(haut) ? dbl : dbl.slice().reverse(), 'Parpaing de 15 + doublage laine de verre (exemple)');
+  const t0 = sym('L0', 'traversee', 1990, 250, 0), t1 = sym('L1', 'traversee', 1990, 250, 0);
+  t0.to = t1.id; t1.to = t0.id;
+  touch();
+  placerPassages(P);
+  const L0 = P.levels.find((l) => l.id === 'L0'); if (L0) L0.dessus = 'chauffe';
+}
+/* électroménager intégré (format v18, demande du 15 novembre 2026) : four sous la plaque de cuisson, micro-ondes dans la
+   colonne, lave-vaisselle sous un plan de travail ; radiateur du séjour (mobilier) raccordé par une sortie de câble
+   radiateur posée par Calque derrière lui, de la puissance conseillée d'après les déperditions de la pièce.
+   Hauteurs de pose : valeurs d'usage de Calque (« saisie »), ni données de fabricant ni exigences réglementaires. */
+function integrationExemple() {
+  const items = P.items.filter((x) => x.lv === 'L0');
+  const plaque = items.find((x) => x.type === 'plaque'), col = items.find((x) => x.type === 'colonne'), lv = items.find((x) => x.type === 'lave_vaisselle');
+  if (plaque) nouvelIntegre(P, plaque, FURN_BY.get('four'), uid('i'));
+  if (col) nouvelIntegre(P, col, FURN_BY.get('mo'), uid('i'));
+  if (lv) { const pt = meuble('L0', 'pt', lv.x + 2.5, lv.y, lv.rot, { w: 60 }); integrer(P, lv, pt); }
+  /* radiateur du séjour sous forme de meuble, sur le mur de gauche */
+  const rad = meuble('L0', 'rad', 15, 380, 270);
+  touch();
+  const r = geo('L0').rooms.find((q) => q.label && q.label.name === 'Séjour' && inPoly(rad, q.loop));
+  if (!r) return;
+  const prop = equiperPiece(P, { lv: 'L0', nom: 'Séjour', poly: r.poly, loop: r.loop, aire: r.area / 10000 });
+  const p = prop.poses.find((x) => x.pour === rad.id); if (!p) return;
+  const toutes = new Map(P.levels.map((l) => [l.id, geo(l.id).rooms]));
+  const c = puissanceConseillee(P, r, { toutes, te: tExt(P), pieces: toutes.get('L0') }, null);
+  const ch = P.circuits.find((k) => k.kind === 'chauffage' && P.elec.some((e) => e.cid === k.id && e.lv === 'L0' && e.x < 1000));
+  sym('L0', 'sortie_rad', p.x, p.y, p.rot, Object.assign({ h: p.h }, c.conseil ? { p: c.conseil } : {}, ch ? { cid: ch.id } : {}));
 }
 /* déperditions (format v17) : valeurs d'EXEMPLE saisies (température extérieure, fenêtres, pièces), le reste estimé */
 function thermiqueExemple() {

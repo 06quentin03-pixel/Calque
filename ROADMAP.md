@@ -152,6 +152,11 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Chaque calcul expliqué : but, formule, lettres, données, essai en direct.
 - ⬜ Pistes : lien depuis la fiche de calcul d'un circuit vers la fiche de l'onglet, exemple tiré du plan ouvert.
 
+## Demande du 15 novembre 2026 (soir) : cuisine et maison fonctionnelles ✅ (à essayer sur iPad, puis à fusionner)
+- Électroménager intégré dans les meubles (four sous la plaque, lave-vaisselle sous le plan, micro-ondes en colonne…), suivi du meuble, dessin en pointillés et 3D (`integration.js`, `integrationui.js`). Format v18.
+- Sortie de câble radiateur et prises des appareils proposées par « Équipement minimal » ; puissance conseillée d'un radiateur d'après les déperditions de la pièce.
+- Pistes : intégration dans les meubles d'angle en L ; marge de relance saisie pour la puissance conseillée.
+
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).

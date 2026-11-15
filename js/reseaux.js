@@ -14,6 +14,7 @@ import { ICON, body, btn, btns, chipRow, closePops, deleteSel, faceLen, fmtIn, h
   renderInspector, row, sec, segCtl, setTool, setWallFace, setWallLength, showPop, toast, toggleRow, updateHint,
   wallSideName } from './interface.js';
 import { v3Refresh } from './vue3d.js';
+import { logementPassage, textePassage } from './compositions.js';
 import { conflitsSection } from './routeui.js';
 import { remplissageGaines } from './materiel.js';
 import { calqueDeElec, calqueDeGaine, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
@@ -801,7 +802,13 @@ function traverseeSection(e) {
   }
   const tw = jumelle(P, e, IDX.elec);
   const others = P.levels.filter((l) => l.id !== e.lv);
-  if (!others.length) return sec('Passage entre étages', h('p', { class: 'note' }, 'Ajoutez un autre niveau pour relier ce passage.'));
+  /* place dans le mur : couche de passage, sinon goulotte (calcul : logementPassage, compositions.js) */
+  const lg = logementPassage(P, e);
+  const place = h('div', null,
+    h('div', { class: 'fld' }, h('span', null, 'Position'), segCtl([{ v: false, n: 'Dans le mur (automatique)' }, { v: true, n: 'Libre' }], !!e.libre, (v) => { if (v) e.libre = true; else delete e.libre; commit(); })),
+    h('p', { class: 'note' + (lg && lg.mode === 'inconnu' ? ' garder' : '') }, textePassage(lg)),
+    tw ? h('p', { class: 'note' }, 'Autre côté : ' + textePassage(logementPassage(P, tw))) : null);
+  if (!others.length) return sec('Passage entre étages', place, h('p', { class: 'note' }, 'Ajoutez un autre niveau pour relier ce passage.'));
   const relier = (lv) => {
     if (tw) { tw.to = null; delete tw.to; }
     let t = P.elec.find((x) => x.type === TRAVERSEE && x.lv === lv && !x.to && Math.hypot(x.x - e.x, x.y - e.y) < 30);
@@ -812,9 +819,10 @@ function traverseeSection(e) {
   const delier = () => { if (tw) delete tw.to; delete e.to; commit(); };
   return sec('Passage entre étages',
     segCtl(others.map((l) => ({ v: l.id, n: l.name })), tw ? tw.lv : null, relier),
-    tw ? h('p', { class: 'note' }, `Relié à « ${(P.levels.find((l) => l.id === tw.lv) || {}).name} ». Les gaines raccordées des deux côtés forment un seul cheminement ; la hauteur entre les deux niveaux est comptée.${Math.hypot(tw.x - e.x, tw.y - e.y) > 5 ? ' Attention : les deux symboles ne sont pas l’un au-dessus de l’autre.' : ''}`)
+    tw ? h('p', { class: 'note' }, `Relié à « ${(P.levels.find((l) => l.id === tw.lv) || {}).name} ». Les gaines raccordées des deux côtés forment un seul cheminement ; la hauteur entre les deux niveaux est comptée.${Math.hypot(tw.x - e.x, tw.y - e.y) > 40 ? ' Attention : les deux symboles ne sont pas l’un au-dessus de l’autre.' : ''}`)
       : h('p', { class: 'note', style: e.to ? 'color:var(--bad)' : null }, e.to ? 'Le passage relié n’existe plus : choisissez à nouveau le niveau.' : 'Choisissez le niveau à relier : un passage est créé au même endroit sur ce niveau.'),
-    tw ? btns(btn('Voir l’autre côté', () => goToRef({ t: 'elec', id: tw.id }), 'sm'), btn('Délier', delier, 'sm')) : null);
+    tw ? btns(btn('Voir l’autre côté', () => goToRef({ t: 'elec', id: tw.id }), 'sm'), btn('Délier', delier, 'sm')) : null,
+    place);
 }
 function inspDuct(d) {
   if (d.sys !== 'vmc') return inspGaine(d);
