@@ -1,7 +1,7 @@
 /* Calque — module « tableau » : onglet « Tableau électrique » : schéma unifilaire, coffret.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { nomenclatureTableau } from './nomenclature.js';
-import { $, $$, EXT, IDX, NF0, NF1, P, estExterieure, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul } from './noyau.js';
+import { $, $$, EXT, IDX, NF0, NF1, P, estExterieure, bboxOf, clamp, fmtArea, isNum, labelPoint, ui, uid, vadd, vmul, txtCal, txtSec } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { ELEC_BY } from './symboles.js';
 import { FONT_UI, V } from './rendu2d.js';
@@ -122,7 +122,7 @@ function uniSVG(col, selId) {
       const lc = bad ? col.err : col.ink;
       s.push(`<g data-rid="${r.id}" style="cursor:pointer">`);
       s.push(sText(g.cx + 14, idY + 14, rn.get(r.id) + (r.own ? ' · IRVE' : ''), lc, 13, { w: 700 }));
-      s.push(sText(g.cx + 14, idY + 29, `${r.cal} A · 30 mA`, lc, 11.5));
+      s.push(sText(g.cx + 14, idY + 29, `${txtCal(r.cal, true)} · 30 mA`, lc, 11.5));
       s.push(sText(g.cx + 14, idY + 43, `type ${r.type}`, r.type === 'AC' ? col.ink2 : col.accent, 11.5, { w: 700 }));
       s.push(`<rect x="${g.cx - 18}" y="${idY}" width="${Math.min(g.w / 2 + 18, 110)}" height="54" style="fill:transparent"/></g>`);
       s.push(sLine(g.cx, idY + 52, g.cx, subY, col.ink));
@@ -148,13 +148,13 @@ function uniSVG(col, selId) {
       s.push(sLine(x, subY, x, brY, lc));
       s.push(symBreaker(x, brY, brY + 46, lc));
       s.push(sText(x + 8, brY + 12, nums.get(c.id), lc, 12.5, { w: 700 }));
-      s.push(sText(x + 8, brY + 27, c.cal + ' A', lc, 11.5));
+      s.push(sText(x + 8, brY + 27, txtCal(c.cal, true), lc, 11.5));
       let y = brY + 46;
       if (c.dda) { s.push(sLine(x, y, x, y + 8, lc)); s.push(symBox(x, y + 8, 26, 14, 'DDA', lc, col.bg)); y += 22; }
       if (c.ctrl) { s.push(sLine(x, y, x, y + 8, lc)); s.push(symBox(x, y + 8, 26, 16, c.ctrl === 'contacteur' ? 'KM' : c.ctrl === 'telerupteur' ? 'TL' : 'MN', lc, col.bg)); y += 24; }
       s.push(sLine(x, y, x, endY, lc));
       s.push(`<circle cx="${x}" cy="${endY - 64}" r="3.2" style="fill:${cc}"/>`);
-      s.push(sText(x + 8, endY - 46, String(c.sec).replace('.', ',') + ' mm²', lc, 11.5));
+      s.push(sText(x + 8, endY - 46, txtSec(c.sec, true), lc, 11.5));
       const cnt = st.unit === 'pt' ? st.count + ' pts' : st.unit === 'socle' ? st.count + ' socles' : st.unit === 'W' ? NF0.format(st.count) + ' W' : '';
       if (cnt) s.push(sText(x + 8, endY - 31, cnt, st.over ? col.err : col.ink2, 11));
       s.push(`<path d="M${x - 4} ${endY} l4 6 l4 -6" style="fill:none;stroke:${lc};stroke-width:1.3"/>`);
@@ -207,7 +207,7 @@ function panelSVG(col, selId) {
       if (m.k === 'id') {
         const r = m.r;
         s.push(sText(x + w / 2, y + 16, m.label, col.ink, 12, { anchor: 'middle', w: 700 }));
-        s.push(sText(x + w / 2, y + 30, r.cal + ' A', col.ink, 11, { anchor: 'middle' }));
+        s.push(sText(x + w / 2, y + 30, txtCal(r.cal, true), col.ink, 11, { anchor: 'middle' }));
         s.push(`<rect x="${x + w / 2 - 9}" y="${y + 38}" width="18" height="26" rx="3" style="fill:${col.ink}"/>`);
         s.push(sText(x + w / 2, y + 78, '30 mA', col.ink2, 10, { anchor: 'middle' }));
         s.push(`<rect x="${x + 7}" y="${y + 81}" width="${w - 14}" height="12" rx="3" style="fill:${r.type === 'AC' ? col.ink3 : col.accent}"/>`);
@@ -218,8 +218,8 @@ function panelSVG(col, selId) {
         s.push(`<rect x="${x + 4}" y="${y + 4}" width="${w - 8}" height="5" rx="2" style="fill:${cc}"/>`);
         s.push(sText(x + w / 2, y + 24, m.label, m.orphan ? col.err : col.ink, 11, { anchor: 'middle', w: 700 }));
         s.push(`<rect x="${x + w / 2 - 6}" y="${y + 34}" width="12" height="24" rx="2" style="fill:${col.ink}"/>`);
-        s.push(sText(x + w / 2, y + 74, m.c.cal + 'A', col.ink, 10.5, { anchor: 'middle', w: 600 }));
-        s.push(sText(x + w / 2, y + 88, String(m.c.sec).replace('.', ','), col.ink2, 9, { anchor: 'middle' }));
+        s.push(sText(x + w / 2, y + 74, (isNum(m.c.cal) ? m.c.cal + 'A' : '?A'), col.ink, 10.5, { anchor: 'middle', w: 600 }));
+        s.push(sText(x + w / 2, y + 88, isNum(m.c.sec) ? String(m.c.sec).replace('.', ',') : '?', col.ink2, 9, { anchor: 'middle' }));
       } else {
         const lab = { dda: 'DDA', km: 'HC', tl: 'TL', mn: 'MIN', pf: 'PF' }[m.k];
         s.push(sText(x + w / 2, y + 24, lab, col.ink, 11, { anchor: 'middle', w: 700 }));
@@ -325,7 +325,7 @@ function renderEvSide() {
       const open = ui.evSel && ui.evSel.t === 'rcd' && ui.evSel.id === r.id;
       box2.append(h('button', { type: 'button', class: 'ev-row ev-rcd' + (bad ? ' bad' : ''), 'data-key': 'rcd:' + r.id, 'aria-expanded': String(!!open), onclick: () => evSelect({ t: 'rcd', id: r.id }) },
         h('span', { class: 'ev-badge' + (r.type !== 'AC' ? ' a' : '') }, rn.get(r.id)),
-        h('span', { class: 'ev-main' }, h('b', null, `Différentiel ${r.cal} A · type ${r.type}${r.own ? ' · borne' : ''}`), h('small', null, `30 mA · ${cnt}/8 circuits · charge ${NF1.format(l)} A`)),
+        h('span', { class: 'ev-main' }, h('b', null, `Différentiel ${txtCal(r.cal)} · type ${r.type}${r.own ? ' · borne' : ''}`), h('small', null, `30 mA · ${cnt}/8 circuits · charge ${NF1.format(l)} A`)),
         h('span', { class: 'ev-dot ' + (bad ? 'err' : 'ok') })));
       if (open) box2.append(rcdEditor(r));
     } else box2.append(h('div', { class: 'ev-row ev-rcd bad' }, h('span', { class: 'ev-badge' }, '—'), h('span', { class: 'ev-main' }, h('b', null, 'Sans différentiel'), h('small', null, 'Chaque circuit doit être protégé par un différentiel 30 mA'))));
@@ -336,7 +336,7 @@ function renderEvSide() {
       const open = ui.evSel && ui.evSel.t === 'circuit' && ui.evSel.id === c.id;
       box2.append(h('button', { type: 'button', class: 'ev-row ev-c', 'data-key': 'circuit:' + c.id, 'aria-expanded': String(!!open), onclick: () => evSelect({ t: 'circuit', id: c.id }) },
         h('span', { class: 'ev-num', style: `--cc:${circuitColor(c.id) || 'var(--elec)'}` }, nums.get(c.id)),
-        h('span', { class: 'ev-main' }, h('b', null, c.name), h('small', null, `${c.cal} A · ${String(c.sec).replace('.', ',')} mm² · ${fmtCount(st)}${c.dda ? ' · DDA' : ''}${c.ctrl ? ' · ' + (c.ctrl === 'contacteur' ? 'contacteur HC' : c.ctrl) : ''}`)),
+        h('span', { class: 'ev-main' }, h('b', null, c.name), h('small', null, `${txtCal(c.cal)} · ${txtSec(c.sec)} · ${fmtCount(st)}${c.dda ? ' · DDA' : ''}${c.ctrl ? ' · ' + (c.ctrl === 'contacteur' ? 'contacteur HC' : c.ctrl) : ''}`)),
         h('span', { class: 'ev-dot ' + (err ? 'err' : st.ms.length ? 'ok' : 'idle') })));
       if (open) box2.append(circuitEditor(c));
     }
@@ -418,6 +418,7 @@ function circuitEditor(c) {
         /* gaines : le circuit supprimé n'y passe plus ; case « posé » du chantier retirée */
         for (const d of P.ducts) { if (d.cid === c.id) delete d.cid; if (Array.isArray(d.cids)) { d.cids = d.cids.filter((x) => x !== c.id); if (!d.cids.length) delete d.cids; } }
         if (P.chantier && P.chantier.poses && P.chantier.poses.circ) delete P.chantier.poses.circ[c.id];
+        for (const v of P.vues || []) if (v && Array.isArray(v.circs)) v.circs = v.circs.filter((x) => x !== c.id); // vues enregistrées
         P.circuits = P.circuits.filter((x) => x !== c); ui.evSel = null; commit();
       }, 'sm danger', 'del'))));
 }
@@ -519,7 +520,7 @@ function nomenclatureView() {
 function repereTable() {
   const nums = circNumbers(), rn = rcdNumbers();
   const rows = P.circuits.map((c) => { const r = rcdById(c.rcd); return h('tr', { onclick: () => evSelect({ t: 'circuit', id: c.id }), class: ui.evSel && ui.evSel.id === c.id ? 'on' : '' },
-    h('td', null, h('span', { class: 'ev-num', style: `--cc:${circuitColor(c.id) || 'var(--elec)'}` }, nums.get(c.id))), h('td', null, c.name), h('td', { class: 'n' }, c.cal + ' A'), h('td', { class: 'n' }, String(c.sec).replace('.', ',') + ' mm²'), h('td', null, r ? `${rn.get(r.id)} (${r.type})` : '—')); });
+    h('td', null, h('span', { class: 'ev-num', style: `--cc:${circuitColor(c.id) || 'var(--elec)'}` }, nums.get(c.id))), h('td', null, c.name), h('td', { class: 'n' }, txtCal(c.cal)), h('td', { class: 'n' }, txtSec(c.sec)), h('td', null, r ? `${rn.get(r.id)} (${r.type})` : '—')); });
   return h('div', { class: 'ev-table' }, h('h3', null, 'Repérage des circuits'), h('table', null, h('thead', null, h('tr', null, ['Repère', 'Désignation', 'Calibre', 'Section', 'Différentiel'].map((t) => h('th', null, t)))), h('tbody', null, rows)));
 }
 function checksView(checks) {

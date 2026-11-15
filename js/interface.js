@@ -1,8 +1,9 @@
 /* Calque — module « interface » : interface : inspecteur, panneaux, niveaux, fenêtres.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
+import { lireIncidents } from './incidents.js';
 import { $, $$, C, DEG, EXT, IDX, NF1, P, PIECES_EXT, S, clamp, estExterieure, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
   levelOf, levelsSorted, nodeOf, saveSettings, setGEO, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
-  vnorm, vsub } from './noyau.js';
+  vnorm, vsub, txtCal, txtSec } from './noyau.js';
 import { geo, roomOfLabel } from './geometrie.js';
 import { clampOpening, deleteNode, deleteWall, itemToWorld, mergeAtNode, normDeg, splitWall, wallsAt } from './mutations.js';
 import { ELEC, ELEC_BY, ELEC_CATS, drawItem, furnDef, isStair, stairInfo } from './symboles.js';
@@ -714,7 +715,7 @@ function updateHint() {
     if (!hc) { el.hidden = true; return; }
     el.hidden = false;
     const st = circStats(hc);
-    el.replaceChildren(h('span', { class: 'ev-num', style: `--cc:${circuitColor(hc.id)}` }, circNumbers().get(hc.id)), h('b', null, hc.name), h('span', { class: 'msg' }, `${hc.cal} A · ${String(hc.sec).replace('.', ',')} mm² · ${fmtCount(st)}`),
+    el.replaceChildren(h('span', { class: 'ev-num', style: `--cc:${circuitColor(hc.id)}` }, circNumbers().get(hc.id)), h('b', null, hc.name), h('span', { class: 'msg' }, `${txtCal(hc.cal)} · ${txtSec(hc.sec)} · ${fmtCount(st)}`),
       btn('Retour au tableau', () => { ui.hl = null; ui.evSel = { t: 'circuit', id: hc.id }; setView('elec'); }, 'sm'), btn('Fermer', () => { ui.hl = null; updateHint(); requestRender(); }, 'pri sm'));
     return;
   }
@@ -960,6 +961,8 @@ function renderViewPop() {
       numField('Cloison', S.thCloison, 'cm', (v) => { S.thCloison = v; saveSettings(); updateHint(); }, { id: 'f-dthc', min: 1, max: 60 })),
   ));
 }
+/* « Journal des erreurs », avec le nombre d'incidents réels (hors essais) */
+function journalLibelle() { const n = lireIncidents().filter((i) => !i.essai).length; return 'Journal des erreurs' + (n ? ` (${n})` : ''); }
 function menuItem(icon, label, fn) { return h('button', { type: 'button', onclick: () => { closePops(); fn(); } }, ico(icon), h('span', null, label)); }
 function renderMenuPop() {
   $('#menuPop').replaceChildren(h('div', { class: 'menu' },
@@ -979,10 +982,12 @@ function renderMenuPop() {
     menuItem('down', 'Importer un fichier (plan ou sauvegarde)', () => $('#fileIn').click()),
     h('hr'),
     menuItem('clock', 'Historique des versions', openVersions),
+    menuItem('filter', 'Vérifier le plan (liens entre les objets)', () => import('./stockage.js').then((m) => m.ouvrirVerification())),
     menuItem('folder', libelleMenu(), exportAll),
     h('hr'),
     menuItem('house', 'Ouvrir le plan d’exemple', openSample),
     menuItem('help', 'Gestes et raccourcis', openHelp),
+    menuItem('info', journalLibelle(), () => import('./journalui.js').then((m) => m.ouvrirJournal())),
   ));
 }
 /* fenêtre « Ajouter un niveau » : grande fenêtre (et non un petit menu), lisible sur l'iPad */
@@ -1062,10 +1067,14 @@ function deleteLevel(id) {
   const wallIds = new Set(P.walls.filter((w) => w.lv === id).map((w) => w.id));
   P.openings = P.openings.filter((o) => !wallIds.has(o.wall));
   for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'etudes']) P[k] = (P[k] || []).filter((o) => o.lv !== id);
-  for (const c of P.circuits) if (!P.elec.some((e) => e.cid === c.id)) { /* circuit conservé, sans symbole */ }
   P.levels = P.levels.filter((l) => l.id !== id);
   touch();
+  cleanLinks(); // passages entre étages, cases « posé » et réserves des symboles du niveau supprimé (circuits conservés)
   ui.lv = levelsSorted().reduce((best, l) => (Math.abs(l.elev) < Math.abs(best.elev) ? l : best)).id;
+  /* suivi de chantier du niveau supprimé (réserves, photos, annotations) : gardé, rattaché au niveau affiché (jamais effacé) */
+  const ch = P.chantier || {}, gardes = ['reserves', 'photos', 'notes'].flatMap((k) => (ch[k] || []).filter((o) => o && o.lv === id));
+  for (const o of gardes) o.lv = ui.lv;
+  if (gardes.length) toast(`${gardes.length} élément${gardes.length > 1 ? 's' : ''} du suivi de chantier (réserves, photos, annotations) rattaché${gardes.length > 1 ? 's' : ''} au niveau « ${(P.levels.find((l) => l.id === ui.lv) || {}).name || ''} ».`);
   ui.sel = null;
   commit();
 }

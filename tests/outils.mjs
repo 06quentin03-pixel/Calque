@@ -33,6 +33,9 @@ export async function fresh(opts = {}) {
   /* rappel de sauvegarde reporté (sinon son bandeau, affiché 5 s après l'ouverture, recouvre ce que les tests touchent) ;
      opts.rappel : le laisser (tests du rappel) */
   if (!opts.rappel) await ctx.addInitScript(() => { try { if (!localStorage.getItem('calque.sauvegarde')) localStorage.setItem('calque.sauvegarde', JSON.stringify({ derniere: 0, report: Date.now() + 864e7 })); } catch (e) { } });
+  /* volets du panneau de droite tout ouverts (réglage « Tout ouvrir ») : les tests touchent les boutons de toutes les sections ;
+     opts.volets : comportement par défaut (volets fermés), testé dans tests/ergonomie.test.mjs */
+  if (!opts.volets) await ctx.addInitScript(() => { try { const o = JSON.parse(localStorage.getItem('calque.settings') || '{}'); if (o.voletsTous === undefined) { o.voletsTous = true; localStorage.setItem('calque.settings', JSON.stringify(o)); } } catch (e) { } });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
@@ -41,7 +44,7 @@ export async function fresh(opts = {}) {
 export const wait = (page, ms = 400) => page.waitForTimeout(ms);
 export async function boot(page, query = '') {
   await page.goto(env.base + query);
-  await page.waitForFunction(() => document.getElementById('projName').textContent.length > 0);
+  await page.waitForFunction(() => document.getElementById('projName').textContent.length > 0 && !document.body.dataset.demarrage);
   await wait(page, 600);
 }
 /* place un plan dans l'ancien stockage avant le démarrage : l'application le reprend et l'ouvre */

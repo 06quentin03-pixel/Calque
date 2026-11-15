@@ -81,7 +81,10 @@ function drawSceneIn(lv, opts) {
   const lay = c.calque ? (n) => c.calque(n) : () => { };
   lay(null);
   setScreen();
-  c.fillStyle = Cc.paper; c.fillRect(0, 0, RC.w, RC.h);
+  /* écran : le fond couvre aussi le dernier pixel quand la largeur n'est pas entière (719,6 px), sinon il gardait
+     des restes des images précédentes ; exports (PDF, SVG, DXF : pas de canvas) inchangés */
+  const fw = c.canvas ? Math.ceil(RC.w) + 1 : RC.w, fh = c.canvas ? Math.ceil(RC.h) + 1 : RC.h;
+  c.fillStyle = Cc.paper; c.fillRect(0, 0, fw, fh);
   setWorld();
   lay('PIECES');
   const g = geo(lv);

@@ -1,3 +1,16 @@
+## 15 novembre 2026 (fin) — Panneau de droite en volets
+- Sections du panneau repliables, choix retenus par sorte d'objet, Tout ouvrir / Tout fermer (`js/volets.js`).
+- Tests : 215/215 (`ergonomie`, 7 tests).
+
+## 15 novembre 2026 (suite) — Panneau de droite, explications, plancher et plafond sur mesure, cuisine en L
+- Choix qui débordaient du panneau (capture de l'utilisateur) corrigés partout ; panneau plus large et plus lisible ; explications repliées derrière ⓘ ; plancher et plafond composés soi-même, Mes compositions ; meubles d'angle de cuisine.
+- Défauts trouvés pendant les essais : meubles d'angle absents de la Bibliothèque (liste explicite), dernier pixel de l'écran non effacé avec une largeur non entière.
+- Tests : 214/214 (`tests/ergonomie.test.mjs`, 6 tests).
+
+## 15 novembre 2026 — Fiabilisation
+- Bouton de suppression lisible, filet contre les plantages et journal des erreurs, contrôle complet des liens (Vérifier le plan), plans abîmés réparés à l'ouverture, suppressions sans trace, démarrage lent sans perte, calibres et sections manquants dits.
+- Défauts trouvés par les nouveaux tests et corrigés : 13 sortes de plans abîmés qui ne s'ouvraient pas, 8 erreurs de dessin, plan illisible remplacé en silence par l'exemple, références orphelines après 4 sortes de suppressions, dessin perdu pendant un démarrage lent, « undefined A » dans le tableau, circuit sans calibre ignoré par le contrôle.
+- Tests : 208/208 (`tests/fiabilite.test.mjs`, 12 tests).
 ## 14 novembre 2026 (soir) — Composition par tronçon, copier-coller d'une composition
 - Choix « Ce tronçon / Tout le mur », tronçon seul par défaut ; « Copier la composition » / « Coller la composition » (`js/compositions.js`, `js/compositionsui.js`).
 - Défaut corrigé au passage : un tronçon aligné de composition différente pouvait être tordu quand on élargissait son voisin vers un côté.

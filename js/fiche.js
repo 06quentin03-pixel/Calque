@@ -2,7 +2,7 @@
    symbole) et depuis l'onglet Tableau électrique. Affiche les hypothèses, les formules, les données utilisées
    (avec leur statut), les données manquantes, les alertes et les contrôles à trois statuts.
    Les calculs eux-mêmes sont dans calcul.js (sans écran). Module JavaScript natif (aucune compilation). */
-import { $, P } from './noyau.js';
+import { $, P, txtCal, txtSec } from './noyau.js';
 import { CONF, LIB_STATUT, bilanDuPlan, controlesDifferentiels, entreesDuPlan, equilibrageDuPlan, ficheCircuit, fmt, puissanceCircuit } from './calcul.js';
 import { TABLES, tableDisponible } from './normes.js';
 import { circById, circNumbers, circuitColor, nfcChecks, rcdNumbers } from './electricite.js';
@@ -84,7 +84,7 @@ function ficheBody(c) {
       reseau.v !== 'tri' && !k.phase ? null : segCtl(phaseOpts, k.phase || null, (v) => { if (v) calcOf(c).phase = v; else if (c.calc) delete c.calc.phase; tidy(c); commit(); }),
       h('p', { class: 'note' }, reseau.v === 'tri' ? 'Installation triphasée : choisissez la phase du circuit (équilibrage) ou « Triphasé » pour un appareil sur les trois phases.'
         : `Installation ${reseau.st === 'estimee' ? 'monophasée (non précisé, estimé)' : 'monophasée'} : réglage dans Tableau électrique › Arrivée et installation.`)),
-    h('p', { class: 'note' }, `Calibre ${c.cal} A et section ${String(c.sec).replace('.', ',')} mm² : modifiables dans l’onglet Tableau électrique.`)));
+    h('p', { class: 'note' }, `Calibre : ${txtCal(c.cal)} ; section : ${txtSec(c.sec)}. Modifiables dans l’onglet Tableau électrique.`)));
   // résultats et formules
   const r = f.resultats;
   if (f.formules.length) parts.push(sec('Résultats et formules',
@@ -196,7 +196,7 @@ function bilanView() {
   const ctlBox = (x) => h('div', { class: 'fi-c' }, h('div', { class: 'fi-ch' }, h('b', null, x.nom), pillStatut(x.statut)), h('span', null, x.detail), h('small', null, `Source : ${x.source} · Édition : ${x.edition}`));
   parts.push(h('section', { class: 'fiche' }, h('h3', null, 'Interrupteurs différentiels'),
     h('div', { class: 'fi-ctl' }, dd.global.map(ctlBox),
-      dd.rcds.map((r) => h('div', { class: 'fi-c' }, h('div', { class: 'fi-ch' }, h('b', null, `${rn.get(r.id)} · ${r.cal} A · type ${r.type} · ${r.n} circuit${r.n > 1 ? 's' : ''}`), pillStatut(r.statut)),
+      dd.rcds.map((r) => h('div', { class: 'fi-c' }, h('div', { class: 'fi-ch' }, h('b', null, `${rn.get(r.id)} · ${txtCal(r.cal)} · type ${r.type} · ${r.n} circuit${r.n > 1 ? 's' : ''}`), pillStatut(r.statut)),
         r.controles.map((x) => h('span', null, `${x.nom} : ${CONF[x.statut].toLowerCase()}. ${x.detail}`)),
         h('small', null, `Source : ${r.controles[0].source.replace(/, p\. .*$/, '')} · Édition : ${r.controles[0].edition}`)))),
     h('p', { class: 'note' }, 'Le contrôle actuel du tableau (onglet Contrôle) compte aussi la pompe à chaleur et la borne de recharge à 100 % : il est plus prudent que la règle de l’extrait.')));

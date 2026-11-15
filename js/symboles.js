@@ -20,6 +20,15 @@ function _ln(c, x1, y1, x2, y2) { c.moveTo(x1, y1); c.lineTo(x2, y2); }
 function _circ(c, x, y, r) { c.beginPath(); c.arc(x, y, Math.max(0.01, r), 0, Math.PI * 2); }
 function _ell(c, x, y, rx, ry) { c.beginPath(); c.ellipse(x, y, Math.max(0.01, rx), Math.max(0.01, ry), 0, 0, Math.PI * 2); }
 function _fs(c, fill) { if (fill) { c.fillStyle = fill; c.fill(); } c.stroke(); }
+/* forme en L d'un meuble d'angle (cuisine en L, demande du 15 novembre 2026) : dos contre le mur du fond (côté -y) et
+   contre le mur de gauche (côté -x), profondeur p ; « Miroir » donne l'angle de droite. Renvoie la profondeur retenue. */
+function profAngle(w, d, p) { return Math.max(5, Math.min(p, w - 5, d - 5)); }
+function _L(c, w, d, p) {
+  p = profAngle(w, d, p);
+  c.beginPath(); c.moveTo(-w / 2, -d / 2); c.lineTo(w / 2, -d / 2); c.lineTo(w / 2, -d / 2 + p); c.lineTo(-w / 2 + p, -d / 2 + p);
+  c.lineTo(-w / 2 + p, d / 2); c.lineTo(-w / 2, d / 2); c.closePath();
+  return p;
+}
 function _dash(c, K, a, b) { c.setLineDash([a * K.px, b * K.px]); }
 function _nodash(c) { c.setLineDash([]); }
 function _txt(c, K, str, x, y, size, opts) {
@@ -42,6 +51,14 @@ const DR = {
   meuble_haut(c, w, d, K) { _dash(c, K, 5, 4); _r(c, -w / 2, -d / 2, w, d); c.stroke(); c.beginPath(); _ln(c, -w / 2, -d / 2, w / 2, d / 2); _ln(c, w / 2, -d / 2, -w / 2, d / 2); c.stroke(); _nodash(c); },
   colonne(c, w, d, K) { _r(c, -w / 2, -d / 2, w, d); _fs(c, K.fill); c.beginPath(); _ln(c, -w / 2, -d / 2, w / 2, d / 2); _ln(c, w / 2, -d / 2, -w / 2, d / 2); c.stroke(); },
   plan_travail(c, w, d, K) { _r(c, -w / 2, -d / 2, w, d); _fs(c, K.tone); },
+  /* meubles d'angle en L : façades le long des deux bords intérieurs ; trait en pointillé = angle du meuble */
+  meuble_angle(c, w, d, K) {
+    const p = _L(c, w, d, 60); _fs(c, K.fill);
+    c.beginPath(); _ln(c, -w / 2 + p + 4, -d / 2 + p - 4, w / 2, -d / 2 + p - 4); _ln(c, -w / 2 + p - 4, -d / 2 + p + 4, -w / 2 + p - 4, d / 2); c.stroke();
+    _dash(c, K, 4, 3); c.beginPath(); _ln(c, -w / 2, -d / 2, -w / 2 + p, -d / 2 + p); c.stroke(); _nodash(c);
+  },
+  meuble_haut_angle(c, w, d, K) { _dash(c, K, 5, 4); const p = _L(c, w, d, 35); c.stroke(); c.beginPath(); _ln(c, -w / 2, -d / 2, -w / 2 + p, -d / 2 + p); c.stroke(); _nodash(c); },
+  plan_angle(c, w, d, K) { _L(c, w, d, 65); _fs(c, K.tone); },
   evier1(c, w, d, K) {
     _r(c, -w / 2, -d / 2, w, d); _fs(c, K.tone);
     const bw = Math.min(w - 14, 52), bd = d - 20;
@@ -909,6 +926,12 @@ const FURN = [
   { k: 'mh60', cat: 'cuisine', t: 'meuble_haut', n: 'Meuble haut 60', w: 60, d: 35, mag: 1 },
   { k: 'col', cat: 'cuisine', t: 'colonne', n: 'Colonne', w: 60, d: 60, mag: 1 },
   { k: 'pt', cat: 'cuisine', t: 'plan_travail', n: 'Plan de travail', w: 200, d: 65, mag: 1 },
+  /* angle d'une cuisine en L : dimensions nominales courantes (redimensionnables), aucune référence de fabricant */
+  { k: 'mba90', cat: 'cuisine', t: 'meuble_angle', n: 'Meuble bas d’angle en L 90 × 90', w: 90, d: 90, mag: 1 },
+  { k: 'mba100', cat: 'cuisine', t: 'meuble_angle', n: 'Meuble bas d’angle en L 100 × 100', w: 100, d: 100, mag: 1 },
+  { k: 'mbaa', cat: 'cuisine', t: 'meuble_bas', n: 'Meuble bas d’angle droit 100 × 60 (angle aveugle)', w: 100, d: 60, mag: 1 },
+  { k: 'mha60', cat: 'cuisine', t: 'meuble_haut_angle', n: 'Meuble haut d’angle en L 60 × 60', w: 60, d: 60, mag: 1 },
+  { k: 'pta', cat: 'cuisine', t: 'plan_angle', n: 'Plan de travail d’angle en L', w: 200, d: 200, mag: 1 },
   { k: 'ev1', cat: 'cuisine', t: 'evier1', n: 'Évier 1 bac', w: 80, d: 60, mag: 1 },
   { k: 'ev2', cat: 'cuisine', t: 'evier2', n: 'Évier 2 bacs', w: 120, d: 60, mag: 1 },
   { k: 'eveg', cat: 'cuisine', t: 'evier_eg', n: 'Évier + égouttoir', w: 100, d: 60, mag: 1 },
@@ -1007,3 +1030,4 @@ export { DR, ELEC, ELEC_BY, ELEC_CATS, FURN, FURN_BY, FURN_CATS, S_ELEC, _circ, 
   _eFill, _eLabel, _eLever, _eMotor, _ePrise, _eRoundTag, _eStem, _eSwitchBase, _ell, _fs, _ln, _nodash, _r, _rr, _txt,
   basin, drawElec, drawElecMark, drawItem, drawItemLabel, drawStair, elecBox, elecSize, furnDef, isStair, needsFlip, rectSteps,
   rectStepsX, stairInfo, stairModel, stairZones };
+export { profAngle };

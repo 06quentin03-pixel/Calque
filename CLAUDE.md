@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -72,6 +72,13 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Déperditions thermiques (format v17) : moteur `thermique.js` (sans écran : U des parois, déperditions d'un mur, d'une pièce, bilan d'un niveau ; méthode simplifiée, jamais présentée comme réglementaire), écran `thermiqueui.js`. Les pièces sont fournies par l'appelant (`geo(lv).rooms`).
 - Épaisseur d'un mur : `changerEpaisseur` (`compositions.js`) élargit le mur entier (tronçons alignés, `tronconsDuMur`) au centre ou vers un côté, en déplaçant ses angles. Option `{ seul: true }` : un seul tronçon (choix « Ce tronçon », par défaut pour une composition) ; un voisin aligné non modifié bloque le déplacement des angles (élargissement au centre).
 - Onglet « Calculs » : catalogue `formules.js` (sans écran) et écran `calculsui.js`. **Tout nouveau calcul ajouté à Calque doit y avoir sa fiche**, avec un exemple calculé par la fonction du moteur (jamais recopié à la main) ; `tests/calculs.test.mjs` vérifie chaque fiche.
+- Fiabilité (15 novembre 2026) : filet contre les plantages `incidents.js` (journal local, Menu › Journal des erreurs `journalui.js`) ; contrôle des liens `integrite.js` (sans écran, Menu › Vérifier le plan).
+  - Une réparation n'est jamais silencieuse : elle est dite, avec une copie de sécurité (`addVersion`).
+  - **Tout nouveau type de référence entre objets** doit avoir sa règle dans `integrite.js` et être nettoyé à la suppression (`cleanLinks` pour les symboles).
+  - Calibre et section s'affichent par `txtCal` / `txtSec` (`noyau.js`) : jamais « undefined ».
+- Panneau de droite (15 novembre 2026) : les longues explications (`p.note`, plus de 110 caractères) sont repliées automatiquement derrière ⓘ (`aide.js`) ; une alerte qui doit rester entière prend la classe `garder`. Les rangées de choix (`segCtl`) passent à la ligne ; un test vérifie qu'aucun panneau ne défile de côté (`tests/ergonomie.test.mjs`).
+- Volets du panneau de droite (`volets.js`) : toute section titrée (`sec('Titre', …)`) est repliable ; seules la première et « Dimensions » sont ouvertes par défaut. Les tests démarrent avec « Tout ouvrir » (`tests/outils.mjs`, `fresh({ volets: true })` pour le comportement par défaut). Dans un test, viser `button:not(.volet-tete)` quand le texte cherché peut être dans un titre.
+- Meubles d'angle en L (`meuble_angle`, `meuble_haut_angle`, `plan_angle`) : contour `_L` (`symboles.js`) et `formeL` (`vue3d.js`), dos côté −y et −x. Un nouveau meuble doit aussi être rangé dans `bibliotheque.js`.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

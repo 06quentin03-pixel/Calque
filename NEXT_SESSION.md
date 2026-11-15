@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 14 novembre 2026 (composition des murs, cloisons, planchers et plafonds, branche `claude/loving-thompson-b92t8x`).
+Mise à jour : 15 novembre 2026 (fiabilisation, branche `claude/lucid-sagan-6h707m`).
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,8 +14,9 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (197/197 le 14 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (217/217 le 15 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
+   Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
 Ensuite, continue avec les pistes du ROADMAP (section « Module Plans électriques »), une à la fois, testée, avec le plan
 d'exemple complété. Explique-moi tout simplement, en français : je débute sur GitHub et j'utilise un iPad.
@@ -30,6 +31,29 @@ compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull reques
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
 
+## Essais des demandes du 15 novembre 2026 (même branche `claude/lucid-sagan-6h707m`)
+Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :
+1. Toucher le vide du plan (panneau du niveau) › « Thermique » : les choix « Terre-plein, Vide sanitaire, Local non chauffé,
+   Extérieur » et « Combles perdus, Local non chauffé, Toiture » passent à la ligne ; le panneau n'est plus coupé à gauche.
+2. Le panneau de droite est plus large et plus lisible ; les longs textes gris finissent par ⓘ : le toucher ouvre l'explication.
+3. Panneau du niveau › « Plancher, plafond et matériaux » › Plafond › « Composer moi-même » ; ajouter une couche ; taper un nom ;
+   « Enregistrer dans mes compositions ». Sur un autre niveau : « Choisir une composition » › « Mes compositions » en tête.
+5. Toucher un mur : le panneau montre les titres des sections ; toucher « Composition » l'ouvre ; toucher un autre mur :
+   « Composition » est restée ouverte. « Tout ouvrir » / « Tout fermer » en haut du panneau.
+4. Cuisine (rez-de-chaussée de la maison) : le meuble bas d'angle en L est dans le coin, le meuble haut d'angle au-dessus ;
+   vue 3D ; Bibliothèque › Mobilier › Cuisine : meubles d'angle (bouton « Miroir » pour l'autre angle).
+
+## Essais de la fiabilisation (15 novembre 2026, branche `claude/lucid-sagan-6h707m`)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/lucid-sagan-6h707m` › Create pull request › Merge pull request). Le format des plans ne change pas (v17).
+En paysage puis en portrait :
+1. Toucher un mur › « Supprimer » : « Confirmer la suppression » est maintenant en blanc sur rouge, bien lisible.
+2. Menu › **Journal des erreurs** › « Essayer le filet » : un bandeau « Essai du filet : un problème inattendu est survenu… »
+   apparaît en haut ; « Détails » ouvre le journal ; « Copier le journal » ; « Effacer le journal » (toucher deux fois).
+3. Menu › **Vérifier le plan** sur un de vos vrais plans : « Aucun lien cassé trouvé », ou la liste des problèmes avec
+   « Réparer » (une copie de sécurité est gardée dans l'historique ; « Annuler » revient en arrière).
+4. Supprimer un niveau qui a des réserves de chantier : elles sont gardées et rattachées au niveau affiché (message).
+5. Si un jour quelque chose ne marche pas : Menu › Journal des erreurs › « Copier le journal », et le coller dans le message.
 ## Essais de la composition par tronçon (14 novembre 2026, branche `claude/wall-composition-per-room-877z62`)
 Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
 compare `claude/wall-composition-per-room-877z62` › Create › Merge). Pas de changement de format : vos plans ne sont pas modifiés.

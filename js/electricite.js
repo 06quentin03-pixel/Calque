@@ -1,7 +1,8 @@
 /* Calque — module « electricite » : électricité : circuits, tableau, contrôle NF C 15-100.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { besoinsPiece } from './equipement.js';
-import { C, IDX, NF0, NF1, P, estExterieure, horsHabitation, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub } from './noyau.js';
+import { reparerPlan } from './integrite.js';
+import { C, IDX, NF0, NF1, P, estExterieure, horsHabitation, inPoly, isNum, levelsSorted, uid, vadd, vdist, vmul, vsub, txtCal } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
 import { ELEC_BY, S_ELEC } from './symboles.js';
@@ -104,7 +105,12 @@ function toggleLink(a, b) {
   }
   return true;
 }
-function cleanLinks() { P.links = P.links.filter((l) => IDX.elec.has(l.a) && IDX.elec.has(l.b)); }
+/* après la suppression de symboles : liaisons retirées, et plus aucune référence vers un symbole disparu
+   (passage jumeau, bout de gaine laissé libre, case « posé » du chantier, réserve gardée sans lien) */
+function cleanLinks() {
+  P.links = P.links.filter((l) => IDX.elec.has(l.a) && IDX.elec.has(l.b));
+  reparerPlan(P, ['traversee-jumeau', 'gaine-bout', 'pose-orpheline', 'reserve-appareil']);
+}
 
 /* ---------------- génération depuis le plan ---------------- */
 function nearItem(e, types, maxD) {
@@ -442,12 +448,15 @@ function nfcChecks() {
   for (const c of circs) {
     const st = circStats(c), ref = { t: 'circuit', id: c.id }, nm = nums.get(c.id);
     const smax = SEC_MAX[c.sec];
+    /* calibre ou section absents (ou nuls) : le contrôle est impossible, et il est dit (jamais compté comme respecté) */
+    { const sansCal = !isNum(c.cal) || c.cal <= 0, sansSec = !isNum(c.sec) || c.sec <= 0;
+      if (sansCal || sansSec) addR('cq_sec_cal', 'warn', G2, `${nm} ${c.name} : ${sansCal && sansSec ? 'calibre et section non indiqués' : sansCal ? 'calibre non indiqué' : 'section non indiquée'} : contrôle impossible, à compléter dans le Tableau électrique.`, ref); }
     if (smax && c.cal > smax) addR('cq_sec_cal', 'err', G2, `${nm} ${c.name} : ${c.sec} mm² n'admet pas plus de ${smax} A (disjoncteur de ${c.cal} A).`, ref);
     if (c.kind === 'eclairage' && c.cal > 16) addR('cq_ecl_16', 'err', G2, `${nm} ${c.name} : un circuit d'éclairage est protégé à 16 A au plus.`, ref);
     if (st.over) {
       const why = st.unit === 'pt' ? '8 points lumineux maximum par circuit (spots : 1 point par tranche de 300 VA).'
         : st.unit === 'socle' ? (c.kind === 'prises_cuisine' ? '6 socles maximum sur le circuit dédié de la cuisine.' : c.sec >= 2.5 ? '12 socles maximum en 2,5 mm² / 20 A.' : '8 socles maximum en 1,5 mm² / 16 A.')
-        : st.unit === 'W' ? `${NF0.format(st.max)} W maximum pour un disjoncteur de ${c.cal} A.` : 'Un seul appareil par circuit spécialisé.';
+        : st.unit === 'W' ? `${NF0.format(st.max)} W maximum pour un disjoncteur de ${txtCal(c.cal)}.` : 'Un seul appareil par circuit spécialisé.';
       addR('cq_points', 'err', G2, `${nm} ${c.name} : ${fmtCount(st)}. ${why}`, ref);
     } else if (st.ms.length) addR('cq_points', 'ok', G2, `${nm} ${c.name} : ${fmtCount(st)}.`, ref);
     else addR('cq_points', 'info', G2, `${nm} ${c.name} : aucun symbole du plan n'y est relié.`, ref);
