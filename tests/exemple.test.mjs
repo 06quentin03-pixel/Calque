@@ -35,7 +35,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
       relu: await (async () => { const E = await import('./js/export.js'), I = await import('./js/dxfimport.js'); const R = I.lireDxf(E.composeDXF({ lv: 'all', dims: true, names: true, areas: true, furn: true, elec: true, unit: 'cm' }).texte); const em = I.empriseDxf(R, null); return { unite: R.unite, traits: R.traits.length, textes: R.textes.length, larg: em.x1 - em.x0 }; })(),
       auto: await (async () => { const It = await import('./js/itineraire.js'); const q = JSON.parse(JSON.stringify(P)); q.ducts = q.ducts.filter((d) => d.sys !== 'elec'); const c = q.circuits.find((x) => q.elec.filter((e) => e.cid === x.id && e.lv === 'L0').length >= 4); const r = It.raccorderCircuit(q, c.id, {}); return { gaines: r.gaines.length, echecs: r.echecs.length, points: q.elec.filter((e) => e.cid === c.id).length }; })(),
       assistant: await (async () => { const a = (await import('./js/assistantui.js')).avancementDuPlan(); return { n: a.etapes.length, faites: a.faites, suivante: a.suivante, etats: Object.fromEntries(a.etapes.map((e) => [e.id, e.etat])) }; })(),
-      equip: await (async () => { const G = await import('./js/geometrie.js'), E = await import('./js/equipement.js'); const m = []; for (const L of P.levels) for (const r of G.geo(L.id).rooms) if (r.label && E.equiperPiece(P, { lv: L.id, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 1e4, ext: N.horsHabitation(r.label) }).poses.length) m.push(r.label.name); return m; })(),
+      equip: await (async () => { const G = await import('./js/geometrie.js'), E = await import('./js/equipement.js'); const m = []; for (const L of P.levels) for (const r of G.geo(L.id).rooms) if (r.label) { const q = E.equiperPiece(P, { lv: L.id, nom: r.label.name, poly: r.poly, loop: r.loop, aire: r.area / 1e4, ext: N.horsHabitation(r.label) }); if (q.poses.length) m.push(r.label.name + (q.poses.some((x) => x.pour) ? ' : ' + q.poses.map((x) => x.type).join(',') : '')); } return m; })(),
       v15: { escQ: P.items.some((x) => x.type === 'esc_quart'), balcon: P.rooms.some((x) => x.ext === 'balcon' && x.lv === 'L1'), vide: P.rooms.some((x) => x.sol === 'vide'),
         colonne: P.elec.filter((x) => x.type === 'traversee' && x.col && x.tab).map((x) => x.lv).sort(), parColonne: P.ducts.filter((d) => d.sys === 'elec' && P.elec.some((x) => x.col && (x.id === d.a || x.id === d.b))).length,
         conds: P.ducts.filter((d) => d.conds).map((d) => Object.values(d.conds)[0].t).sort(), gc: P.walls.filter((w) => w.lv === 'L1' && w.h === 100).length },
@@ -45,7 +45,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 17);
+  assert.equal(r.v, 18);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -84,8 +84,9 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.auto.gaines >= r.auto.points && r.auto.echecs === 0, JSON.stringify(r.auto));
   // assistant : le plan d'exemple montre des étapes faites, à faire et à surveiller (réserves ouvertes, chiffrage partiel)
   assert.ok(r.assistant.n >= 9 && r.assistant.faites >= 4 && r.assistant.suivante); assert.equal(r.assistant.etats.chiffrage, 'afaire'); assert.equal(r.assistant.etats.chantier, 'attention');
-  // équipement minimal : une pièce de l'exemple (le local technique) montre ce qui manque, à poser depuis son inspecteur
-  assert.deepEqual(r.equip, ['Local technique']);
+  // équipement minimal : deux pièces de l'exemple montrent ce qui manque, à poser depuis leur inspecteur : le local technique,
+  // et la cuisine, où le four intégré sous la plaque attend sa prise spécialisée (demande du 15 novembre 2026)
+  assert.deepEqual(r.equip, ['Cuisine : pc_four', 'Local technique']);
   // demandes du 13 novembre 2026 (v15) : escalier en L, balcon de l'étage seul, vide sur entrée, colonne du tableau utilisée, conducteurs choisis
   assert.ok(r.v15.escQ && r.v15.balcon && r.v15.vide, JSON.stringify(r.v15));
   assert.deepEqual(r.v15.colonne, ['L0', 'L1']); assert.ok(r.v15.parColonne >= 1, 'gaines de l’étage raccordées à la colonne');
@@ -123,7 +124,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 17);
+  assert.equal(r.v, 18);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
@@ -164,6 +165,20 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
   assert.equal(th.couche, 'laine_verre'); assert.match(th.loge, /Laine de verre/);
   assert.equal(th.te, -7); assert.ok(th.uw >= 3); assert.equal(th.sdb, 22); assert.ok(th.nc);
   assert.ok(th.total > 300 && th.total < 5000, 'déperdition de la chambre : ' + th.total); assert.equal(th.pose, 1000); assert.ok(th.n >= 6);
+  /* électroménager intégré (format v18, 15 novembre 2026) : four sous la plaque, micro-ondes dans la colonne, lave-vaisselle
+     sous un plan de travail ; radiateur du séjour raccordé par une sortie de câble de la puissance conseillée */
+  const ig = await page.evaluate(async () => { const N = await import('./js/noyau.js'), G = await import('./js/geometrie.js'), T = await import('./js/thermique.js'), E = await import('./js/equipement.js');
+    const P = N.P, by = new Map(P.items.map((x) => [x.id, x]));
+    const integ = P.items.filter((x) => x.dans).map((x) => `${x.type}>${by.get(x.dans).type}`).sort();
+    const rad = P.items.find((x) => x.type === 'radiateur'), toutes = new Map(P.levels.map((l) => [l.id, G.geo(l.id).rooms]));
+    const r = toutes.get('L0').find((q) => q.label && N.inPoly(rad, q.loop));
+    const sr = P.elec.find((e) => e.type === 'sortie_rad' && Math.hypot(e.x - rad.x, e.y - rad.y) < 60);
+    const c = T.puissanceConseillee(P, r, { toutes, te: T.tExt(P), pieces: toutes.get('L0') }, sr);
+    return { integ, piece: r.label.name, sr: sr && sr.p, conseil: c.conseil, cid: !!(sr && sr.cid), raccord: E.appareilsARaccorder(P, { lv: 'L0', loop: r.loop, poly: r.poly }, P.elec).filter((x) => x.pour === rad.id).length };
+  });
+  assert.deepEqual(ig.integ, ['four>plaque', 'lave_vaisselle>plan_travail', 'micro_ondes>colonne']);
+  assert.equal(ig.piece, 'Séjour'); assert.ok(ig.conseil > 0); assert.equal(ig.sr, ig.conseil, 'sortie de câble de la puissance conseillée'); assert.ok(ig.cid);
+  assert.equal(ig.raccord, 0, 'radiateur raccordé');
   /* onglet « Schémas » : modèles et distribution importée du tableau, sans erreur de schéma */
   const sc = await page.evaluate(async () => { const N = await import('./js/noyau.js'), S = await import('./js/schema.js'); const s = N.P.schemas;
     return { n: s.folios.length, types: [...new Set(s.folios.map((f) => f.type))].sort(), err: S.controlesSchema(s).filter((x) => x.niveau === 'erreur').length, nom: S.nomenclature(s).lignes.length, bor: S.borniers(s).map((b) => b.rep), disj: s.folios.filter((f) => f.type === 'distribution').reduce((t, f) => t + f.syms.filter((y) => y.t === 'disj2').length, 0), circ: N.P.circuits.length }; });

@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 15 novembre 2026 (fiabilisation, branche `claude/lucid-sagan-6h707m`).
+Mise à jour : 15 novembre 2026 soir (électroménager intégré, branche `claude/sharp-thompson-n0tvun`) ; avant : fiabilisation, branche `claude/lucid-sagan-6h707m`.
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (217/217 le 15 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (222/222 le 15 novembre 2026 au soir).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -30,6 +30,21 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais de l'électroménager intégré et des radiateurs (15 novembre 2026 soir, branche `claude/sharp-thompson-n0tvun`)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/sharp-thompson-n0tvun` › Create pull request › Merge pull request). Vos plans passent au format v18 à la
+première ouverture, avec une copie de sécurité (Menu › Historique des versions, « v17 → v18 »). Sur le plan d'exemple :
+1. Cuisine : le four est en pointillés « F » sous la plaque, le lave-vaisselle « LV » sous un plan de travail. Toucher la
+   plaque › « Électroménager intégré » : le four est listé ; toucher une seconde fois la plaque au même endroit : le four.
+2. Glisser la plaque : le four suit. Vue 3D : la porte du four est sous la plaque, le micro-ondes dans la colonne.
+3. Toucher un meuble bas ou un plan de travail › « Électroménager intégré » › « + Lave-vaisselle » (ou un autre appareil).
+4. Poser un four de la Bibliothèque près d'une plaque › son panneau › « Intégration » › « Intégrer dans « Plaque… » ».
+5. Toucher la cuisine (nom de la pièce) › « Équipement minimal » : la prise du four est proposée ; « Poser l'équipement manquant ».
+6. Séjour : le radiateur (meuble) a sa sortie de câble derrière lui ; toucher la sortie › « Puissance du chauffage » :
+   puissance conseillée d'après la pièce, choix rapides 500 à 2 000 W, « Prendre … W ».
+7. Poser un radiateur de la Bibliothèque (chercher « Radiateur ») dans une pièce › « Raccordement électrique » › « Poser : Sortie de
+   câble radiateur » : elle est posée sur le mur derrière, avec la puissance conseillée.
 
 ## Essais des demandes du 15 novembre 2026 (même branche `claude/lucid-sagan-6h707m`)
 Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :

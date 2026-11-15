@@ -4,6 +4,7 @@ import { C, DEG, EXT, IDX, P, S, estExterieure, bboxOf, clamp, fmtArea, fmtLen, 
   vdist, vlen, vmid, vmul, vnorm, vperp, vsub } from './noyau.js';
 import { geo } from './geometrie.js';
 import { itemToWorld } from './mutations.js';
+import { cache } from './integration.js';
 import { ELEC_BY, S_ELEC, _rr, drawElec, drawElecMark, drawItem, elecSize, isStair } from './symboles.js';
 import { circuitColor } from './electricite.js';
 import { DIMHIT, drawDuctLabels, drawDucts, elecVisible, linkVisible, setDIMHIT } from './reseaux.js';
@@ -123,7 +124,11 @@ function drawSceneIn(lv, opts) {
     stairs();
     lay('MOBILIER');
     alpha(aMob);
-    for (const it of P.items) if (it.lv === lv && !isStair(it.type) && itemInView(it)) drawItem(c, it, K);
+    for (const it of P.items) if (it.lv === lv && !isStair(it.type) && !it.dans && itemInView(it)) drawItem(c, it, K);
+    /* plaque ou évier intégré dans un plan de travail : par-dessus le plan (format v18) */
+    for (const it of P.items) if (it.lv === lv && it.dans && !cache(it) && itemInView(it)) drawItem(c, it, K);
+    /* électroménager intégré sous un meuble : par-dessus, en pointillés (format v18) */
+    for (const it of P.items) if (it.lv === lv && cache(it) && itemInView(it)) drawItem(c, it, K, 'cache');
   } else stairs();
   alpha(1);
   lay('MURS');

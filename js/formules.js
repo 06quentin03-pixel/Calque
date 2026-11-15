@@ -11,7 +11,7 @@ import { CONSTANTES, TABLE_BY } from './normes.js';
 import { bilanPuissance, chuteTension, courantMono, courantTri, equilibrage, puissances, repartirPhases } from './calcul.js';
 import { aCommander } from './cheminement.js';
 import { intensiteLambert } from './eclairage.js';
-import { LAMBDA, RS, uParoi } from './thermique.js';
+import { LAMBDA, RS, arrondiConseil, uParoi } from './thermique.js';
 import { chiffrer } from './quantitatif.js';
 import { epaisseur } from './compositions.js';
 
@@ -197,6 +197,13 @@ const FORMULES = [
     e: [{ k: 'n', n: 'Renouvellement n', u: 'vol/h', v: 0.5, min: 0, max: 50 }, { k: 'V', n: 'Volume V', u: 'm³', v: 40, min: 0, max: 1e5 }, { k: 'dU', n: 'ΔU', u: 'W/m²·K', v: 0.1, min: 0, max: 2 }, { k: 'Ae', n: 'A enveloppe', u: 'm²', v: 25, min: 0, max: 1e5 }, { k: 'dT', n: 'ΔT', u: 'K', v: 26, min: 0, max: 100 }],
     calc: (x) => ({ etapes: [`air : 0,34 × ${f(x.n, 2)} × ${f(x.V, 1)} × ${f(x.dT, 1)}`, `ponts : ${f(x.dU, 2)} × ${f(x.Ae, 1)} × ${f(x.dT, 1)}`], res: [['Φ air', f(0.34 * x.n * x.V * x.dT, 0) + ' W'], ['Φ ponts', f(x.dU * x.Ae * x.dT, 0) + ' W']] }),
     donnees: 'Total d’une pièce = Σ parois + ponts thermiques + air. Puissance à couvrir par le chauffage, comparée à celle des appareils posés dans la pièce. Méthode simplifiée inspirée de la NF EN 12831 : pas une étude thermique réglementaire.' },
+  { id: 'radiateur', fam: 'thermique', titre: 'Puissance conseillée d’un radiateur',
+    but: 'Choisir la puissance d’un radiateur d’après la pièce où il est posé : il doit couvrir les déperditions de la pièce, moins ce que chauffent déjà les autres appareils de la pièce.',
+    formule: 'reste = Φ pièce − Σ P autres appareils de la pièce\nP conseillée = reste arrondi au multiple de 250 W supérieur (0 si reste ≤ 0)',
+    vars: [['Φ pièce', 'déperditions totales de la pièce (parois + ponts thermiques + air)', 'W'], ['Σ P autres', 'puissance des autres radiateurs, sèche-serviettes, planchers chauffants de la pièce (saisie, sinon par défaut)', 'W'], ['250 W', 'pas d’arrondi de Calque (pas une gamme de fabricant)', 'W']],
+    e: [{ k: 'phi', n: 'Déperditions de la pièce', u: 'W', v: 1180, min: 0, max: 1e6 }, { k: 'autres', n: 'Autres appareils de la pièce', u: 'W', v: 500, min: 0, max: 1e6 }],
+    calc: (x) => { const c = arrondiConseil(x.phi, x.autres); return { etapes: [`reste = ${f(x.phi, 0)} − ${f(x.autres, 0)} = ${f(x.phi - x.autres, 0)} W`, c ? `arrondi au multiple de 250 W supérieur : ${f(c, 0)} W` : 'les autres appareils couvrent déjà la pièce'], res: [['P conseillée', f(c, 0) + ' W']] }; },
+    donnees: 'Panneau d’un radiateur (ou d’une sortie de câble radiateur) › Puissance. Les déperditions viennent de la méthode simplifiée de Calque (onglet Thermique de la pièce) : choisissez un modèle du commerce de puissance égale ou supérieure, avec une marge de relance si besoin. Pas une étude thermique réglementaire.' },
   /* ---------------- chiffrage ---------------- */
   { id: 'chiffrage', fam: 'chiffrage', titre: 'Chiffrage du quantitatif',
     but: 'Transformer les quantités du plan en prix : fournitures, main-d’œuvre, TVA. Calque ne fournit aucun prix : ils sont saisis.',

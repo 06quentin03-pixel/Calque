@@ -104,16 +104,50 @@ function centre(poly) {
 /* rot d'un symbole mural dont la face est tournée vers (nx, ny) — même convention que l'aimantation du plan */
 const rotVers = (nx, ny) => { let r = Math.atan2(-nx, ny) / DEG; r = r % 360; if (r < 0) r += 360; return Math.round(r * 10) / 10; };
 
+/* raccordement des appareils posés dans la pièce (demande du 15 novembre 2026) : un radiateur du mobilier reçoit une
+   sortie de câble radiateur, un four, un lave-vaisselle, un lave-linge, un sèche-linge ou un congélateur sa prise
+   spécialisée, une plaque de cuisson sa sortie 32 A. Un appareil est déjà raccordé si un symbole qui lui convient est
+   à moins de RAYON cm de lui (chaque symbole ne sert qu'à un appareil). */
+const RACCORD = {
+  radiateur: { type: 'sortie_rad', ok: ['sortie_rad', 'rad_elec'], pourquoi: 'sortie de câble du radiateur', rayon: 100 },
+  four: { type: 'pc_four', ok: ['pc_four', 'pc20'], pourquoi: 'prise spécialisée du four' },
+  lave_vaisselle: { type: 'pc_lv', ok: ['pc_lv', 'pc20'], pourquoi: 'prise spécialisée du lave-vaisselle' },
+  lave_linge: { type: 'pc_ll', ok: ['pc_ll', 'pc20'], pourquoi: 'prise spécialisée du lave-linge' },
+  seche_linge: { type: 'pc_sl', ok: ['pc_sl', 'pc20'], pourquoi: 'prise spécialisée du sèche-linge' },
+  congelateur: { type: 'pc_cg', ok: ['pc_cg', 'pc20'], pourquoi: 'prise spécialisée du congélateur' },
+  plaque: { type: 'pc32', ok: ['pc32'], pourquoi: 'sortie 32 A de la plaque de cuisson' },
+  plaque90: { type: 'pc32', ok: ['pc32'], pourquoi: 'sortie 32 A de la plaque de cuisson' },
+};
+const RAYON = 150;
+function appareilsARaccorder(plan, piece, els) {
+  const items = (plan.items || []).filter((it) => it.lv === piece.lv && RACCORD[it.type] && inPoly(it, piece.loop || piece.poly));
+  const pris = new Set(), out = [];
+  for (const it of items) {
+    const R = RACCORD[it.type], ray = R.rayon || RAYON;
+    let best = null, bd = Infinity;
+    for (const e of els) { if (pris.has(e.id) || !R.ok.includes(e.type)) continue; const d = Math.hypot(e.x - it.x, e.y - it.y); if (d <= ray && d < bd) { bd = d; best = e; } }
+    if (best) { pris.add(best.id); continue; }
+    out.push({ type: R.type, n: 1, pourquoi: `${R.pourquoi}${it.name && !/^(Radiateur|Four|Lave-vaisselle|Lave-linge|Sèche-linge|Congélateur|Plaque de cuisson( 60| 90)?)$/.test(it.name) ? ` (${it.name})` : ''}`, pour: it.id });
+  }
+  return out;
+}
+/* besoins de la pièce + raccordement des appareils ; la sortie 32 A demandée par la cuisine sert à sa plaque */
+function besoinsComplets(plan, piece, els) {
+  const m = manquants(piece.nom, piece.aire, els, piece.ext), r = appareilsARaccorder(plan, piece, els);
+  const p32 = m.find((x) => x.type === 'pc32');
+  if (p32) { const i = r.findIndex((x) => x.type === 'pc32'); if (i >= 0) { p32.pour = r[i].pour; r.splice(i, 1); } }
+  return m.concat(r);
+}
 /* nombre d'appareils à poser dans une pièce (rapide : sans chercher les positions) */
 function aPoser(plan, piece) {
   const els = (plan.elec || []).filter((e) => e.lv === piece.lv && inPoly(e, piece.loop || piece.poly));
-  return manquants(piece.nom, piece.aire, els, piece.ext).reduce((s, m) => s + m.n, 0);
+  return besoinsComplets(plan, piece, els).reduce((s, m) => s + m.n, 0);
 }
 /* Propose les symboles à poser dans une pièce.
    piece : { lv, nom, poly (faces intérieures), loop (axes), aire (m²), holes } ; renvoie { poses: [{ type, x, y, rot, h }], liens: [[i, j]] (indices dans poses : commande → lumière), manque: [...], impossible: [...] } */
 function equiperPiece(plan, piece) {
   const els = (plan.elec || []).filter((e) => e.lv === piece.lv && inPoly(e, piece.loop || piece.poly));
-  const manque = manquants(piece.nom, piece.aire, els, piece.ext);
+  const manque = besoinsComplets(plan, piece, els);
   const out = { poses: [], liens: [], manque, impossible: [] };
   if (!manque.length) return out;
   /* seulement les ouvertures proches de la pièce (gros plans : des centaines d'ouvertures sur le niveau) */
@@ -157,7 +191,26 @@ function equiperPiece(plan, piece) {
     return res;
   };
   const poser = (type, c) => { const def = ELEC_BY.get(type); out.poses.push({ type, x: Math.round(c.x * 10) / 10, y: Math.round(c.y * 10) / 10, rot: def && def.wall ? rotVers(c.nx, c.ny) : 0, h: def ? def.h : null }); return out.poses.length - 1; };
-  const ORDRE = { pl: 0, int_s: 1, pc32: 2, pc_pt: 3, pc: 4 };
+  const ORDRE = { pl: 0, int_s: 1, pc32: 2, sortie_rad: 3, pc_four: 3, pc_lv: 3, pc_ll: 3, pc_sl: 3, pc_cg: 3, pc_pt: 4, pc: 5 };
+  /* derrière l'appareil, sur la face de mur la plus proche de son dos (à 60 cm au plus) ; une sortie de câble radiateur
+     peut être sous une fenêtre (place habituelle d'un radiateur), pas devant une porte */
+  const sousFenetre = (p) => {
+    for (const o of ouv) {
+      if (o.kind === 'window') continue;
+      const L = Math.hypot(o.b.x - o.a.x, o.b.y - o.a.y), t = (p.x - o.a.x) * o.d.x + (p.y - o.a.y) * o.d.y;
+      const perp = Math.abs(-(p.x - o.a.x) * o.d.y + (p.y - o.a.y) * o.d.x);
+      if (perp <= o.th / 2 + 10 && t >= -10 && t <= L + 10) return false;
+    }
+    return true;
+  };
+  const derriere = (m) => {
+    const it = (plan.items || []).find((x) => x.id === m.pour); if (!it) return null;
+    const a = (it.rot || 0) * DEG, dos = { x: it.x + (it.d / 2) * Math.sin(a), y: it.y - (it.d / 2) * Math.cos(a) };
+    const liste = m.type === 'sortie_rad' ? C.filter(sousFenetre) : ok;
+    let best = null, bd = Infinity;
+    for (const c of liste) { if (proche(c, 15)) continue; const d = Math.hypot(c.x - dos.x, c.y - dos.y); if (d < bd) { bd = d; best = c; } }
+    return best && bd <= 60 ? best : null;
+  };
   const proche = (c, min) => [...deja, ...pris].some((q) => Math.hypot(c.x - q.x, c.y - q.y) < min);
   for (const m of manque.slice().sort((x, y) => (ORDRE[x.type] ?? 9) - (ORDRE[y.type] ?? 9))) {
     if (m.type === 'pl') {
@@ -181,6 +234,11 @@ function equiperPiece(plan, piece) {
       const i = poser('int_s', c); const j = out.poses.findIndex((x) => x.type === 'pl'); if (j >= 0) out.liens.push([i, j]);
       continue;
     }
+    if (m.pour) {
+      const c = derriere(m);
+      if (c) { pris.push(c); out.poses[poser(m.type, c)].pour = m.pour; continue; }
+      if (m.type !== 'pc32') { out.impossible.push({ type: m.type, n: 1 }); continue; }
+    }
     if (m.type === 'pc32') {
       /* au plus près de la plaque de cuisson (sans être à son aplomb), sinon le plus loin des autres prises */
       const plaque = chauds.find((it) => /^plaque/.test(it.type));
@@ -201,4 +259,4 @@ function equiperPiece(plan, piece) {
   return out;
 }
 
-export { PIECE, VIDE_MAX, aPoser, estVide, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };
+export { PIECE, RACCORD, VIDE_MAX, aPoser, appareilsARaccorder, besoinsComplets, estVide, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };

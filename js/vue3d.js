@@ -18,6 +18,7 @@ import { ICON, btn, btns, fmtIn, h, ico, kv, numField, openingSizeText, sec, seg
 import { aCouches, courtCouche } from './compositions.js';
 import { slug } from './stockage.js';
 import { openFileModal, parseColor } from './export.js';
+import { HOTES, creuxDe, morceaux } from './integration.js';
 
 /* ============================================================
    CALQUE — vue 3D : moteur WebGL2 intégré (aucune bibliothèque)
@@ -323,9 +324,9 @@ const CAT3 = { prises: [35, 86, 196], appareils: [194, 65, 12], commandes: [21, 
 /* contour en L d'un meuble d'angle : dos côté -y et côté -x (voir _L dans symboles.js) */
 function formeL(w, d, p) { p = profAngle(w, d, p); return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, -d / 2 + p], [-w / 2 + p, -d / 2 + p], [-w / 2 + p, d / 2], [-w / 2, d / 2]]; }
 function kBase(X, w, d, top) {
-  X.box(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark);
-  X.box(-w / 2, -d / 2, w / 2, d / 2, 10, 86, K3.white);
-  if (top !== false) X.box(-w / 2, -d / 2, w / 2, d / 2 + 1.5, 86, 89.5, K3.stone);
+  X.corps(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark);
+  X.corps(-w / 2, -d / 2, w / 2, d / 2, 10, 86, K3.white);
+  if (top !== false && !X.sansDessus) X.box(-w / 2, -d / 2, w / 2, d / 2 + 1.5, 86, 89.5, K3.stone);
 }
 function sofa(X, w, d, sd) {
   const bk = Math.min(22, d * 0.24), arm = Math.min(18, w * 0.12), dd = sd || d;
@@ -338,9 +339,9 @@ function sofa(X, w, d, sd) {
 function legs4(X, w, d, z1, s, ins, col) { const a = w / 2 - ins - s, b = d / 2 - ins - s; for (const [x, y] of [[-a, -b], [a, -b], [a, b], [-a, b]]) X.box(x - s / 2, y - s / 2, x + s / 2, y + s / 2, 0, z1, col || K3.woodDk); }
 function tap3(X, x, y, z) { X.cyl(x, y, 1.6, z, z + 22, K3.steel, 10); X.box(x - 1.2, y, x + 1.2, y + 14, z + 19, z + 22, K3.steel); }
 const F3 = {
-  meuble_bas: { h: 90, f: (X, w, d) => { kBase(X, w, d); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 79, 81, K3.steel); } },
-  meuble_haut: { h: 70, z: 145, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 70, K3.white); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 4, 6, K3.steel); } },
-  colonne: { h: 215, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark); X.box(-w / 2, -d / 2, w / 2, d / 2, 10, 215, K3.white); X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 120, 122, K3.steel); } },
+  meuble_bas: { h: 90, f: (X, w, d) => { kBase(X, w, d); if (!X.creux.length) X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 79, 81, K3.steel); } },
+  meuble_haut: { h: 70, z: 145, f: (X, w, d) => { X.corps(-w / 2, -d / 2, w / 2, d / 2, 0, 70, K3.white); if (!X.creux.length) X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 4, 6, K3.steel); } },
+  colonne: { h: 215, f: (X, w, d) => { X.corps(-w / 2, -d / 2, w / 2, d / 2 - 6, 0, 10, K3.dark); X.corps(-w / 2, -d / 2, w / 2, d / 2, 10, 215, K3.white); if (!X.creux.length) X.box(-w * 0.18, d / 2, w * 0.18, d / 2 + 1.5, 120, 122, K3.steel); } },
   plan_travail: { h: 90, f: (X, w, d) => X.box(-w / 2, -d / 2, w / 2, d / 2, 86.5, 90, K3.stone) },
   /* meubles d'angle en L (même forme que sur le plan, symboles.js) */
   meuble_angle: { h: 90, f: (X, w, d) => { const L = formeL(w, d, 60); X.poly(L, 0, 10, K3.dark); X.poly(L, 10, 86, K3.white); X.poly(L, 86, 89.5, K3.stone); } },
@@ -358,7 +359,7 @@ const F3 = {
   congelateur: { h: 85, f: (X, w, d) => X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 85, K3.white) },
   micro_ondes: { h: 30, z: 90, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 30, K3.dark); X.box(-w * 0.42, d / 2, w * 0.15, d / 2 + 0.6, 5, 25, K3.black); } },
   hotte: { h: 14, z: 155, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 14, K3.steel); X.box(-w * 0.17, -d / 2, w * 0.17, -d / 2 + d * 0.45, 14, Math.max(15, X.toCeil()), K3.steel); } },
-  ilot: { h: 90, f: (X, w, d) => { X.box(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 0, 10, K3.dark); X.box(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 10, 86, K3.white); X.box(-w / 2, -d / 2, w / 2, d / 2, 86, 90, K3.stone); } },
+  ilot: { h: 90, f: (X, w, d) => { X.corps(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 0, 10, K3.dark); X.corps(-w / 2 + 3, -d / 2 + 3, w / 2 - 3, d / 2 - 3, 10, 86, K3.white); X.box(-w / 2, -d / 2, w / 2, d / 2, 86, 90, K3.stone); } },
   table_rect: { h: 75, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 71, 75, K3.wood); legs4(X, w, d, 71, 5, 3); } },
   table_ronde: { h: 75, f: (X, w, d) => { X.cyl(0, 0, Math.min(w, d) / 2, 71, 75, K3.wood, 32); X.cyl(0, 0, 5, 3, 71, K3.woodDk, 12); X.cyl(0, 0, Math.min(w, d) * 0.22, 0, 3, K3.woodDk, 20); } },
   chaise: { h: 88, f: (X, w, d) => { legs4(X, w, d, 44, 3, 2); X.box(-w / 2 + 1, -d / 2 + 2, w / 2 - 1, d / 2 - 1, 43, 47, K3.wood); X.box(-w / 2 + 2, -d / 2 + 1, w / 2 - 2, -d / 2 + 4, 47, 88, K3.wood); } },
@@ -670,8 +671,15 @@ function stair3(G, it, E, id) {
 function furn3(G, it, E, Lh, id) {
   const f = f3Def(it), hz = itemHeight3(it), k = hz.h / f.h, Z = E + hz.z;
   const W = (x, y) => itemToWorld(it, it.flip ? -x : x, y);
+  /* électroménager intégré (format v18) : le meuble laisse la place de ses appareils cachés, et une plaque ou un évier
+     intégré dans un plan de travail ne redessine pas le dessus */
+  const creux = it.id && P.items.some((x) => x.dans === it.id) ? creuxDe(P, it, itemHeight3).map((c) => ({ x0: c.x0, x1: c.x1, z0: c.z0 / k, z1: c.z1 / k })) : [];
+  const hote = it.dans ? IDX.items.get(it.dans) : null;
   const X = {
+    creux, sansDessus: !!(hote && HOTES[hote.type] && HOTES[hote.type].plan),
     box(x0, y0, x1, y1, z0, z1, col) { solid3(G.s, [[W(x0, y0), W(x1, y0), W(x1, y1), W(x0, y1)]], Z + z0 * k, Z + z1 * k, col, id); },
+    /* pavé du corps du meuble, sans les parties occupées par les appareils intégrés */
+    corps(x0, y0, x1, y1, z0, z1, col) { for (const [a, b, c, e] of morceaux(x0, x1, z0, z1, creux)) X.box(a, y0, b, y1, c, e, col); },
     glass(x0, y0, x1, y1, z0, z1) { solid3(G.g, [[W(x0, y0), W(x1, y0), W(x1, y1), W(x0, y1)]], Z + z0 * k, Z + z1 * k, K3.glass, id, { edges: false }); },
     poly(pts, z0, z1, col) { solid3(G.s, [pts.map(([x, y]) => W(x, y))], Z + z0 * k, Z + z1 * k, col, id); },
     cyl(x, y, r, z0, z1, col, seg) { solid3(G.s, [circlePts(W(x, y), r, seg || 20)], Z + z0 * k, Z + z1 * k, col, id); },

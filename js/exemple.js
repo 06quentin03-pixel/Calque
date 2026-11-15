@@ -22,6 +22,9 @@ import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
 import { colonneTableau } from './cheminement.js';
 import { raccorderCircuit } from './itineraire.js';
 import { agcpLabel } from './elecdonnees.js';
+import { integrer, nouvelIntegre } from './integration.js';
+import { equiperPiece } from './equipement.js';
+import { puissanceConseillee, tExt } from './thermique.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -373,6 +376,29 @@ function compositionsExemple() {
   const gp = P.ducts.find((d) => d.lv === 'L0' && d.sys === 'elec' && d.pose === 'plafond' && (d.dia == null || d.dia <= 100));
   if (gp) gp.couche = 'laine_verre';
   thermiqueExemple();
+  integrationExemple();
+}
+/* électroménager intégré (format v18, demande du 15 novembre 2026) : four sous la plaque de cuisson, micro-ondes dans la
+   colonne, lave-vaisselle sous un plan de travail ; radiateur du séjour (mobilier) raccordé par une sortie de câble
+   radiateur posée par Calque derrière lui, de la puissance conseillée d'après les déperditions de la pièce.
+   Hauteurs de pose : valeurs d'usage de Calque (« saisie »), ni données de fabricant ni exigences réglementaires. */
+function integrationExemple() {
+  const items = P.items.filter((x) => x.lv === 'L0');
+  const plaque = items.find((x) => x.type === 'plaque'), col = items.find((x) => x.type === 'colonne'), lv = items.find((x) => x.type === 'lave_vaisselle');
+  if (plaque) nouvelIntegre(P, plaque, FURN_BY.get('four'), uid('i'));
+  if (col) nouvelIntegre(P, col, FURN_BY.get('mo'), uid('i'));
+  if (lv) { const pt = meuble('L0', 'pt', lv.x + 2.5, lv.y, lv.rot, { w: 60 }); integrer(P, lv, pt); }
+  /* radiateur du séjour sous forme de meuble, sur le mur de gauche */
+  const rad = meuble('L0', 'rad', 15, 380, 270);
+  touch();
+  const r = geo('L0').rooms.find((q) => q.label && q.label.name === 'Séjour' && inPoly(rad, q.loop));
+  if (!r) return;
+  const prop = equiperPiece(P, { lv: 'L0', nom: 'Séjour', poly: r.poly, loop: r.loop, aire: r.area / 10000 });
+  const p = prop.poses.find((x) => x.pour === rad.id); if (!p) return;
+  const toutes = new Map(P.levels.map((l) => [l.id, geo(l.id).rooms]));
+  const c = puissanceConseillee(P, r, { toutes, te: tExt(P), pieces: toutes.get('L0') }, null);
+  const ch = P.circuits.find((k) => k.kind === 'chauffage' && P.elec.some((e) => e.cid === k.id && e.lv === 'L0' && e.x < 1000));
+  sym('L0', 'sortie_rad', p.x, p.y, p.rot, Object.assign({ h: p.h }, c.conseil ? { p: c.conseil } : {}, ch ? { cid: ch.id } : {}));
 }
 /* déperditions (format v17) : valeurs d'EXEMPLE saisies (température extérieure, fenêtres, pièces), le reste estimé */
 function thermiqueExemple() {

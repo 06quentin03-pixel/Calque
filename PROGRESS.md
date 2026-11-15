@@ -1,3 +1,8 @@
+## 15 novembre 2026 (soir) — Électroménager intégré, puissance conseillée des radiateurs
+- Appareils logés dans les meubles (four sous la plaque, lave-vaisselle sous le plan de travail, micro-ondes en colonne…), sortie de câble radiateur et prises des appareils proposées, puissance conseillée d'un radiateur d'après la pièce (`js/integration.js`, `js/integrationui.js`, `puissanceConseillee`).
+- Format v18. Défaut trouvé pendant les essais : glisser un meuble déjà choisi déplaçait l'appareil caché dessous au lieu du meuble ; corrigé (glisser = le meuble, toucher = l'appareil).
+- Tests : 222/222 (`tests/integration.test.mjs`, 5 tests).
+
 ## 15 novembre 2026 (fin) — Panneau de droite en volets
 - Sections du panneau repliables, choix retenus par sorte d'objet, Tout ouvrir / Tout fermer (`js/volets.js`).
 - Tests : 215/215 (`ergonomie`, 7 tests).

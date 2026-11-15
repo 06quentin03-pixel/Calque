@@ -2,6 +2,7 @@
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
 import { $, $$, NF1, P, PIECES_EXT, PLAN_VERSION, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
 import { syncRooms } from './geometrie.js';
+import { nettoyerV18 } from './integration.js';
 import { historyReset, snapshot } from './historique.js';
 import { commit as commitPlan, fitView, refreshUI } from './interaction.js';
 import { confirmBtnPlain } from './tableau.js';
@@ -187,6 +188,11 @@ const MIGRATIONS = {
      Les plans v16 n'en ont pas : rien n'est deviné ; valeurs invalides retirées. */
   16(p) {
     return nettoyerV17(p, nettoyerCouches);
+  },
+  /* v17 → v18 (15 novembre 2026) : électroménager intégré dans un meuble (`dans` = id du meuble, `ox` = décalage le long
+     du meuble, sur l'appareil). Les plans v17 n'en ont pas : rien à convertir ; une valeur invalide est retirée. */
+  17(p) {
+    return nettoyerV18(p);
   },
 };
 function nettoyerV15(p) {

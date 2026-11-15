@@ -6,6 +6,8 @@
    Le contrôle ne modifie jamais le plan. L'écran (Menu › Vérifier le plan) fait une copie de sécurité avant de réparer.
    Ce contrôle porte sur la cohérence des données, pas sur la conformité NF C 15-100 (onglet Tableau › Contrôle). */
 
+import { accepte } from './integration.js';
+
 const liste = (p, k) => (Array.isArray(p[k]) ? p[k] : []).filter((o) => o && typeof o === 'object');
 const ids = (a) => new Set(a.map((o) => o.id));
 const num = (v) => typeof v === 'number' && isFinite(v);
@@ -43,6 +45,10 @@ function regles(p) {
     { code: 'gaine-bout', cas: () => L('ducts').filter((d) => (d.a && !elec.has(d.a)) || (d.b && !elec.has(d.b))),
       msg: (n) => `${n} ${pl(n, 'gaine')} accrochée${n > 1 ? 's' : ''} à un symbole manquant`, rep: 'bout de la gaine laissé libre (le tracé ne bouge pas)',
       fix: (c) => { for (const d of c) { if (d.a && !elec.has(d.a)) d.a = null; if (d.b && !elec.has(d.b)) d.b = null; } } },
+    /* électroménager intégré (format v18) : `dans` doit désigner un meuble du même niveau qui peut le recevoir */
+    { code: 'integre-meuble', cas: () => { const by = new Map(L('items').map((x) => [x.id, x])); return L('items').filter((it) => it.dans && (!by.has(it.dans) || by.get(it.dans) === it || by.get(it.dans).lv !== it.lv || !accepte(by.get(it.dans), it.type))); },
+      msg: (n) => `${n} ${pl(n, 'appareil intégré', 'appareils intégrés')} dans un meuble manquant ou qui ne peut pas le recevoir`, rep: 'appareil gardé à sa place, sorti du meuble',
+      fix: (c) => { for (const it of c) { delete it.dans; delete it.ox; } } },
     { code: 'traversee-jumeau', cas: () => L('elec').filter(jumeauCasse),
       msg: (n) => `${n} ${pl(n, 'passage')} entre étages sans son jumeau sur l’autre niveau`, rep: 'passage gardé, sans jumeau (à relier de nouveau)',
       fix: (c) => { for (const e of c) delete e.to; } },

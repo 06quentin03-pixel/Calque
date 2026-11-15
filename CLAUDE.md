@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -47,7 +47,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 17) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 18) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Photos du chantier (phase 7) : base IndexedDB à part `calque-photos` (`js/photos.js`), jamais dans le plan ; incluses dans la sauvegarde complète.
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
@@ -79,6 +79,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Panneau de droite (15 novembre 2026) : les longues explications (`p.note`, plus de 110 caractères) sont repliées automatiquement derrière ⓘ (`aide.js`) ; une alerte qui doit rester entière prend la classe `garder`. Les rangées de choix (`segCtl`) passent à la ligne ; un test vérifie qu'aucun panneau ne défile de côté (`tests/ergonomie.test.mjs`).
 - Volets du panneau de droite (`volets.js`) : toute section titrée (`sec('Titre', …)`) est repliable ; seules la première et « Dimensions » sont ouvertes par défaut. Les tests démarrent avec « Tout ouvrir » (`tests/outils.mjs`, `fresh({ volets: true })` pour le comportement par défaut). Dans un test, viser `button:not(.volet-tete)` quand le texte cherché peut être dans un titre.
 - Meubles d'angle en L (`meuble_angle`, `meuble_haut_angle`, `plan_angle`) : contour `_L` (`symboles.js`) et `formeL` (`vue3d.js`), dos côté −y et −x. Un nouveau meuble doit aussi être rangé dans `bibliotheque.js`.
+- Électroménager intégré (format v18) : moteur `integration.js` (sans écran : `HOTES`, `integrer`, `synchroniserIntegres` appelé par `commit()` et pendant le glissement), écran `integrationui.js`. Un appareil intégré (`dans`, `ox`) suit son meuble ; sur le plan il est dessiné en pointillés (`drawItem(…, 'cache')`) ; en 3D le meuble dessine son corps par `X.corps` (sans les creux de ses appareils). Un nouveau meuble qui peut recevoir un appareil doit être ajouté à `HOTES` et utiliser `X.corps` dans `vue3d.js`.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible
