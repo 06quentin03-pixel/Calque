@@ -37,6 +37,8 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `reglesui.js` | Onglet « Contrôle NF C 15-100 » : rapport du plan, filtre, détail des règles, catalogue | non |
 | `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
+| `vdi.js` | Câbles RJ45 en étoile depuis le coffret de communication (itinéraire au plafond, prises sans câble, longueurs) | oui |
+| `boites.js` | Raccordement d'un circuit en boîtes de dérivation : boîte au plafond de chaque pièce (position calculée, boîte libre reprise), gaines au plafond, descentes dans les cloisons | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
 | `materiel.js` | Remplissage des cheminements (« vérification nécessaire »), liste de matériel estimée | oui |
 | `photometrie.js` | Photométries des luminaires : lecture des fichiers IES (LM-63, type C) et LDT (EULUMDAT), symétries, intensité I(C, γ) (interpolation), flux intégré, nettoyage | oui |
@@ -64,7 +66,7 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `assistant.js` | Étapes du projet déduites du plan (fait, à faire, à surveiller), sans jamais annoncer de conformité | oui |
 | `assistantui.js` | Fenêtre « Où en est mon projet ? », boutons vers la bonne page | non |
 | `equipement.js` | Besoins d'une pièce (seule définition, partagée avec le contrôle), équipement manquant, positions le long des murs | oui |
-| `equipementui.js` | Sections « Équipement minimal » des inspecteurs de la pièce et du niveau | non |
+| `equipementui.js` | Sections « Équipement minimal » des inspecteurs de la pièce et du niveau, « Câbles à tirer » des appareils déjà posés | non |
 | `sauvegarde.js` | Décision du rappel de sauvegarde complète (7 jours, report de 3 jours) | oui |
 | `rappelui.js` | Date de la dernière sauvegarde complète, bandeau de rappel, libellé du menu | non |
 | `affectation.js` | Relier les appareils sans circuit aux circuits existants (capacités, pièce, niveau), créer les circuits manquants, sans modifier l'existant | oui |

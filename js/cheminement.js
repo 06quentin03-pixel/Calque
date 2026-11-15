@@ -164,6 +164,16 @@ const TOL_JONCTION = 3; // cm : une extrémité libre à moins de 3 cm d'une aut
 /* symboles que le câble d'un autre circuit peut traverser (boîte, passage, gaine technique, tableau) */
 /* boîtes de dérivation (au plafond ou murale) : points de connexion, sans circuit propre */
 const DERIVATIONS = new Set(['derivation', 'derivation_mur']);
+/* câble RJ45 (demande du 16 novembre 2026) : gaine électrique sans circuit qui relie un coffret de communication, une baie
+   ou une box à une prise RJ45. Reconnue par ses deux bouts (aucun champ nouveau dans le format) ; elle ne sert jamais aux
+   circuits de courant fort (courants faibles dans un conduit séparé). */
+const RJ45_PRISES = new Set(['rj45', 'rj45_2', 'rj45_tv']);
+const RJ45_SOURCES = new Set(['com', 'baie', 'box']);
+function estLienRJ45(d, E) {
+  if (!isElecDuct(d) || circuitsDe(d).length || !d.a || !d.b) return false;
+  const a = E.get(d.a), b = E.get(d.b); if (!a || !b) return false;
+  return (RJ45_SOURCES.has(a.type) && RJ45_PRISES.has(b.type)) || (RJ45_SOURCES.has(b.type) && RJ45_PRISES.has(a.type));
+}
 const PASSIFS = new Set(['tableau', 'tab_div', ...DERIVATIONS, 'gtl', TRAVERSEE]);
 const GCACHE = new WeakMap();
 function signature(plan) {
@@ -178,7 +188,7 @@ function grapheGaines(plan) {
   const edge = (a, b, h, v, o = {}) => { const e = { id: edges.length, a, b, h, v, duct: o.duct || null, inc: o.inc || 0, kind: o.kind || 'h' }; edges.push(e); adj.get(a).push(e); adj.get(b).push(e); return e; };
   const hubs = new Map(); // passages et GTL : extrémités de gaines reliées entre elles
   const vertsByLv = new Map(); // pour les jonctions
-  const ducts = (plan.ducts || []).filter((d) => isElecDuct(d) && Array.isArray(d.pts) && d.pts.length >= 2);
+  const ducts = (plan.ducts || []).filter((d) => isElecDuct(d) && Array.isArray(d.pts) && d.pts.length >= 2 && !estLienRJ45(d, E));
   for (const d of ducts) {
     const L = niveau(plan, d.lv), base = altNiveau(L), zr = hauteurParcours(plan, d);
     const Z = zr == null ? null : base + zr;
@@ -395,6 +405,7 @@ function nettoyerZone(z) {
   return o;
 }
 
+export { RJ45_PRISES, RJ45_SOURCES, estLienRJ45 };
 export { DERIVATIONS, colonneTableau, membresColonne, poseAHauteur, tailleColonne, tracerALongueur };
 export { KINDS, PASSIFS, aCommander, cheminCircuit, grapheGaines, gainePourCircuit, longueurDuPlan, plusCourts, reserveDe, tableauDu, POSES, POSE_IDS, RESERVE_DEFAUT, TRAVERSEE, TYPES_CHEMIN, altNiveau, ancrage, circuitsDe, hauteurNiveau,
   hauteurParcours, hauteurSymbole, indexElec, isElecDuct, jumelle, kindOf, longueurGaine, longueurPolyligne, niveau,

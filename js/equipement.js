@@ -13,7 +13,8 @@
 import { inPoly, labelPoint } from './noyau.js';
 import { itemToLocal } from './mutations.js';
 import { ELEC_BY } from './symboles.js';
-import { SOCKETS, LIGHTS } from './elecdonnees.js';
+import { ALARM, NO_CIRCUIT, SOCKETS, LIGHTS } from './elecdonnees.js';
+import { cheminCircuit } from './cheminement.js';
 
 const DEG = Math.PI / 180;
 const PIECE = {
@@ -117,6 +118,14 @@ const RACCORD = {
   congelateur: { type: 'pc_cg', ok: ['pc_cg', 'pc20'], pourquoi: 'prise spécialisée du congélateur' },
   plaque: { type: 'pc32', ok: ['pc32'], pourquoi: 'sortie 32 A de la plaque de cuisson' },
   plaque90: { type: 'pc32', ok: ['pc32'], pourquoi: 'sortie 32 A de la plaque de cuisson' },
+  /* demande du 16 novembre 2026 : tous les appareils électriques du mobilier reçoivent leur raccordement */
+  hotte: { type: 'pc_hotte', ok: ['pc_hotte', 'sortie', 'pc20'], pourquoi: 'prise de la hotte, à 1,80 m', haut: true },
+  seche_serv: { type: 'sortie_rad', ok: ['sortie_rad', 'seche_serv_e', 'sortie'], pourquoi: 'sortie de câble du sèche-serviettes', rayon: 100 },
+  chauffe_eau: { type: 'ce_elec', ok: ['ce_elec', 'ballon_thermo', 'sortie', 'pc20'], pourquoi: 'raccordement du chauffe-eau (circuit dédié avec contacteur)', centre: true },
+  frigo: { type: 'pc_frigo', ok: ['pc_frigo', 'pc', 'pc2', 'pc20'], pourquoi: 'prise du réfrigérateur', rayon: 120 },
+  frigo_us: { type: 'pc_frigo', ok: ['pc_frigo', 'pc', 'pc2', 'pc20'], pourquoi: 'prise du réfrigérateur', rayon: 120 },
+  micro_ondes: { type: 'pc_mo', ok: ['pc_mo', 'pc', 'pc2', 'pc_pt'], pourquoi: 'prise du micro-ondes', rayon: 120 },
+  chaudiere: { type: 'pc20', ok: ['pc20', 'pc', 'sortie'], pourquoi: 'alimentation de la chaudière (circuit spécialisé, selon sa notice)' },
 };
 const RAYON = 150;
 function appareilsARaccorder(plan, piece, els) {
@@ -127,7 +136,7 @@ function appareilsARaccorder(plan, piece, els) {
     let best = null, bd = Infinity;
     for (const e of els) { if (pris.has(e.id) || !R.ok.includes(e.type)) continue; const d = Math.hypot(e.x - it.x, e.y - it.y); if (d <= ray && d < bd) { bd = d; best = e; } }
     if (best) { pris.add(best.id); continue; }
-    out.push({ type: R.type, n: 1, pourquoi: `${R.pourquoi}${it.name && !/^(Radiateur|Four|Lave-vaisselle|Lave-linge|Sèche-linge|Congélateur|Plaque de cuisson( 60| 90)?)$/.test(it.name) ? ` (${it.name})` : ''}`, pour: it.id });
+    out.push({ type: R.type, n: 1, pourquoi: `${R.pourquoi}${it.name && !/^(Radiateur|Four|Lave-vaisselle|Lave-linge|Sèche-linge|Congélateur|Plaque de cuisson( 60| 90)?|Hotte|Sèche-serviettes|Chauffe-eau|Réfrigérateur( américain)?|Micro-ondes|Chaudière)$/.test(it.name) ? ` (${it.name})` : ''}`, pour: it.id });
   }
   return out;
 }
@@ -191,7 +200,7 @@ function equiperPiece(plan, piece) {
     return res;
   };
   const poser = (type, c) => { const def = ELEC_BY.get(type); out.poses.push({ type, x: Math.round(c.x * 10) / 10, y: Math.round(c.y * 10) / 10, rot: def && def.wall ? rotVers(c.nx, c.ny) : 0, h: def ? def.h : null }); return out.poses.length - 1; };
-  const ORDRE = { pl: 0, int_s: 1, pc32: 2, sortie_rad: 3, pc_four: 3, pc_lv: 3, pc_ll: 3, pc_sl: 3, pc_cg: 3, pc_pt: 4, pc: 5 };
+  const ORDRE = { pl: 0, int_s: 1, pc32: 2, sortie_rad: 3, pc_four: 3, pc_lv: 3, pc_ll: 3, pc_sl: 3, pc_cg: 3, pc_hotte: 3, pc_frigo: 3, pc_mo: 3, ce_elec: 3, pc20: 3, pc_pt: 4, pc: 5 };
   /* derrière l'appareil, sur la face de mur la plus proche de son dos (à 60 cm au plus) ; une sortie de câble radiateur
      peut être sous une fenêtre (place habituelle d'un radiateur), pas devant une porte */
   const sousFenetre = (p) => {
@@ -206,7 +215,9 @@ function equiperPiece(plan, piece) {
   const derriere = (m) => {
     const it = (plan.items || []).find((x) => x.id === m.pour); if (!it) return null;
     const a = (it.rot || 0) * DEG, dos = { x: it.x + (it.d / 2) * Math.sin(a), y: it.y - (it.d / 2) * Math.cos(a) };
-    const liste = m.type === 'sortie_rad' ? C.filter(sousFenetre) : ok;
+    /* prise de la hotte : au-dessus de la plaque (seule prise admise à cet endroit, à 1,80 m), hors ouvertures */
+    const R = RACCORD[it.type] || {};
+    const liste = m.type === 'sortie_rad' ? C.filter(sousFenetre) : R.haut ? C.filter((p) => sousFenetre(p) && !ouv.some((o) => o.kind === 'window' && distSeg(p, o.a, o.b) <= o.th / 2 + 10)) : ok;
     let best = null, bd = Infinity;
     for (const c of liste) { if (proche(c, 15)) continue; const d = Math.hypot(c.x - dos.x, c.y - dos.y); if (d < bd) { bd = d; best = c; } }
     return best && bd <= 60 ? best : null;
@@ -234,6 +245,12 @@ function equiperPiece(plan, piece) {
       const i = poser('int_s', c); const j = out.poses.findIndex((x) => x.type === 'pl'); if (j >= 0) out.liens.push([i, j]);
       continue;
     }
+    if (m.pour && (RACCORD[((plan.items || []).find((x) => x.id === m.pour) || {}).type] || {}).centre) {
+      /* appareil raccordé par un symbole posé sur lui (chauffe-eau) : au centre de l'appareil */
+      const it = (plan.items || []).find((x) => x.id === m.pour);
+      out.poses.push({ type: m.type, x: Math.round(it.x * 10) / 10, y: Math.round(it.y * 10) / 10, rot: 0, h: (ELEC_BY.get(m.type) || {}).h ?? null, pour: m.pour });
+      continue;
+    }
     if (m.pour) {
       const c = derriere(m);
       if (c) { pris.push(c); out.poses[poser(m.type, c)].pour = m.pour; continue; }
@@ -259,4 +276,23 @@ function equiperPiece(plan, piece) {
   return out;
 }
 
+/* ---------------- câbles à tirer (demande du 16 novembre 2026) ----------------
+   Appareils électriques déjà posés dans la pièce (sèche-serviettes, sortie de hotte, radiateur, prises…) qui attendent
+   leur câble : sans circuit (etat 'circuit'), ou sur un circuit mais pas encore reliés au tableau par les gaines
+   (etat 'gaine'). Les symboles sans alimentation propre (communication, détecteurs autonomes, boîtes, passages) ne sont
+   pas comptés : même définition que « Relier les appareils sans circuit » (affectation.js). cache : Map cid → cheminCircuit. */
+const aAlimenter = (e) => !NO_CIRCUIT.has(e.type) && !(ALARM.has(e.type) && e.type !== 'centrale');
+function cablesATirer(plan, piece, cache) {
+  const valides = new Set((plan.circuits || []).map((c) => c.id)), C = cache || new Map(), out = [];
+  for (const e of plan.elec || []) {
+    if (e.lv !== piece.lv || !aAlimenter(e) || !inPoly(e, piece.loop || piece.poly)) continue;
+    if (!e.cid || !valides.has(e.cid)) { out.push({ id: e.id, type: e.type, etat: 'circuit' }); continue; }
+    if (!C.has(e.cid)) C.set(e.cid, cheminCircuit(plan, e.cid));
+    const ch = C.get(e.cid);
+    if (ch.nonAtteints.includes(e.id)) out.push({ id: e.id, type: e.type, etat: 'gaine', cid: e.cid });
+  }
+  return out;
+}
+
+export { cablesATirer };
 export { PIECE, RACCORD, VIDE_MAX, aPoser, appareilsARaccorder, besoinsComplets, estVide, besoinsPiece, equiperPiece, manquants, ouverturesDuNiveau, rotVers };

@@ -11,12 +11,14 @@ import { FONT_LABEL, RC, TS, VIEW, bbInView, setScreen, setWorld, textHalo, w2s 
 import { ELEC_BY } from './symboles.js';
 import { accepts, circById, circNumbers, circuitColor } from './electricite.js';
 import { afterFilter, circsFiltre, creerGaineElec, ductAt, ductPts, ductVisible, elecVisible, famOn } from './reseaux.js';
-import { TAP, commit, hitTest, hitTol, refreshUI, requestRender } from './interaction.js';
+import { TAP, commit, hitTest, hitTol, makeElecFromDef, refreshUI, requestRender } from './interaction.js';
 import { btn, h, renderInspector, setTool, toast, updateHint } from './interface.js';
 import { calqueVisible, setCalqueVisible } from './calques.js';
 import { cablagePlan, libelleCompo } from './cablage.js';
 import { ancrage, isElecDuct, pointsGaine, TRAVERSEE } from './cheminement.js';
 import { chercherItineraire, raccorderCircuit } from './itineraire.js';
+import { raccorderEnBoites } from './boites.js';
+import { geo } from './geometrie.js';
 import { V } from './rendu2d.js';
 import { EV, on } from './evenements.js';
 
@@ -237,16 +239,28 @@ function demarrerCablage(e) {
 EXT.cabler = demarrerCablage;
 
 /* ---------------- raccordement automatique : propositions à valider ---------------- */
-/* calcule les gaines manquantes de plusieurs circuits SANS modifier le plan, puis les affiche pour validation */
+/* calcule les gaines manquantes de plusieurs circuits SANS modifier le plan, puis les affiche pour validation.
+   Réglage S.raccMode : 'boites' (par défaut, demande du 16 novembre 2026) — boîtes de dérivation au plafond de chaque
+   pièce, gaines au plafond et descentes dans les cloisons (boites.js) ; 'proche' — de proche en proche, avec le type et la
+   pose de gaine choisis en dernier (itineraire.js). */
+const piecesDe = (lv) => geo(lv).rooms.map((r) => ({ nom: r.label ? r.label.name : '', poly: r.poly, loop: r.loop }));
 async function proposerRaccordement(cids, suivi) {
-  const tmp = Object.assign({}, P, { ducts: P.ducts.slice() });
-  const prop = { gaines: [], echecs: [], len: 0, circuits: 0 };
+  const tmp = Object.assign({}, P, { ducts: P.ducts.slice(), elec: P.elec.slice() });
+  const boites = S.raccMode !== 'proche';
+  const prop = { gaines: [], boites: [], reprises: 0, echecs: [], len: 0, circuits: 0, mode: boites ? 'boites' : 'proche' };
   const pose = (S.ductPose === 'hauteur' || S.ductPose === 'cloison') && !Number.isFinite(S.ductZ) ? null : S.ductPose || null;
   for (let i = 0; i < cids.length; i++) {
     if (suivi) { suivi(i, cids.length); await new Promise((r) => setTimeout(r, 0)); }
-    const r = raccorderCircuit(tmp, cids[i], { pose });
+    const r = boites ? raccorderEnBoites(tmp, cids[i], { pieces: piecesDe, kind: S.ductKind || undefined }) : raccorderCircuit(tmp, cids[i], { pose });
     if (r.gaines.length) prop.circuits++;
-    for (const g of r.gaines) { const x = Object.assign({}, g, { id: '~prop' + prop.gaines.length }); tmp.ducts.push(x); prop.gaines.push(g); prop.len += g.len; }
+    /* boîtes proposées : identifiants provisoires uniques pour tous les circuits (« ~pb0 »…), gardées dans le plan de travail */
+    const ren = new Map();
+    for (const b of r.boites || []) { const x = Object.assign({}, b, { id: '~pb' + prop.boites.length, cid: cids[i] }); ren.set(b.id, x.id); prop.boites.push(x); tmp.elec.push(Object.assign({}, x, { cid: null })); }
+    prop.reprises += (r.reprises || []).length;
+    for (const g0 of r.gaines) {
+      const g = Object.assign({}, g0, { a: ren.get(g0.a) || g0.a, b: ren.get(g0.b) || g0.b });
+      tmp.ducts.push(Object.assign({}, g, { id: '~prop' + prop.gaines.length })); prop.gaines.push(g); prop.len += g.len;
+    }
     for (const e of r.echecs) prop.echecs.push(Object.assign({ cid: cids[i] }, e));
   }
   if (!prop.gaines.length) { toast(prop.echecs.length ? `Aucune gaine proposée ; ${prop.echecs.length} point${prop.echecs.length > 1 ? 's' : ''} sans itinéraire.` : 'Tout est déjà raccordé au tableau.'); return prop; }
@@ -263,13 +277,17 @@ async function proposerRaccordement(cids, suivi) {
 function validerRaccordement() {
   const prop = ui.propRacc; if (!prop) return;
   ui.propRacc = null;
-  for (const g of prop.gaines) creerGaineElec(g);
+  /* boîtes de dérivation proposées : symboles ordinaires (déplaçables, supprimables), puis les gaines qui les désignent */
+  const ids = new Map(), def = ELEC_BY.get('derivation');
+  for (const b of prop.boites || []) { const e = makeElecFromDef(def, b.lv); delete e.circuit; Object.assign(e, { x: b.x, y: b.y, rot: 0, h: null }); P.elec.push(e); IDX.elec.set(e.id, e); ids.set(b.id, e.id); }
+  for (const g of prop.gaines) creerGaineElec(Object.assign({}, g, { a: ids.get(g.a) || g.a, b: ids.get(g.b) || g.b }));
   if (!famOn('gaines')) S.filt.off = S.filt.off.filter((x) => x !== 'gaines');
   S.layers.elec = true; saveSettings();
   setTool('select');
   commit(); afterFilter();
   const e = prop.echecs.length;
-  toast(`${prop.gaines.length} gaine${prop.gaines.length > 1 ? 's' : ''} créée${prop.gaines.length > 1 ? 's' : ''} (${Math.round(prop.len / 100)} m à l’horizontale)${e ? ` ; ${e} point${e > 1 ? 's' : ''} sans itinéraire` : ''}. « Annuler » les retire toutes.`);
+  const nb = (prop.boites || []).length;
+  toast(`${prop.gaines.length} gaine${prop.gaines.length > 1 ? 's' : ''} créée${prop.gaines.length > 1 ? 's' : ''} (${Math.round(prop.len / 100)} m à l’horizontale)${nb ? `, ${nb} boîte${nb > 1 ? 's' : ''} de dérivation` : ''}${e ? ` ; ${e} point${e > 1 ? 's' : ''} sans itinéraire` : ''}. « Annuler » retire tout.`);
 }
 function refuserRaccordement() { ui.propRacc = null; setTool('select'); toast('Propositions refusées : le plan n’a pas changé.'); }
 EXT.tools.propose = {
@@ -284,7 +302,9 @@ EXT.hint.propose = () => {
   const ici = p.gaines.filter((g) => g.lv === ui.lv).length, ail = p.gaines.length - ici, e = p.echecs.length;
   const b1 = btn(`Valider (${p.gaines.length})`, validerRaccordement, 'pri sm'); b1.id = 'propValider';
   const b2 = btn('Refuser', refuserRaccordement, 'sm'); b2.id = 'propRefuser';
-  return [h('b', null, 'Gaines proposées'), h('span', { class: 'msg' }, `${p.gaines.length} gaine${p.gaines.length > 1 ? 's' : ''}, ${Math.round(p.len / 100)} m à l’horizontale${ail ? ` (dont ${ail} sur d’autres niveaux)` : ''}${e ? ` ; ${e} point${e > 1 ? 's' : ''} sans itinéraire` : ''}. Rien n’est modifié avant votre validation.`), b1, b2];
+  const nb = (p.boites || []).length, rep = p.reprises || 0;
+  const bx = p.mode === 'boites' ? ` · ${nb} boîte${nb > 1 ? 's' : ''} de dérivation au plafond${rep ? ` (+ ${rep} déjà posée${rep > 1 ? 's' : ''})` : ''}, gaines au plafond et descentes dans les cloisons` : '';
+  return [h('b', null, 'Gaines proposées'), h('span', { class: 'msg' }, `${p.gaines.length} gaine${p.gaines.length > 1 ? 's' : ''}, ${Math.round(p.len / 100)} m à l’horizontale${ail ? ` (dont ${ail} sur d’autres niveaux)` : ''}${bx}${e ? ` ; ${e} point${e > 1 ? 's' : ''} sans itinéraire` : ''}. Rien n’est modifié avant votre validation.`), b1, b2];
 };
 EXT.overlay.push((c, px) => {
   if (ui.tool !== 'propose' || !ui.propRacc) return;
@@ -296,6 +316,14 @@ EXT.overlay.push((c, px) => {
     c.setLineDash([7 * px, 4 * px]); c.strokeStyle = (S.layers.circ !== false && g.cid && circuitColor(g.cid)) || ORANGE; c.lineWidth = 2.2 * px; c.stroke(); c.setLineDash([]);
   }
   for (const x of ui.propRacc.echecs) { const e = IDX.elec.get(x.id); if (!e || e.lv !== ui.lv) continue; const p = ancrage(e); c.beginPath(); c.arc(p.x, p.y, 18 * px, 0, Math.PI * 2); c.strokeStyle = ROUGE; c.lineWidth = 2 * px; c.stroke(); }
+  /* boîtes de dérivation proposées : carré orange (même dessin que le symbole, en plus visible) */
+  for (const b of ui.propRacc.boites || []) {
+    if (b.lv !== ui.lv) continue;
+    const r = 9 * px;
+    c.fillStyle = 'rgba(210,79,26,0.18)'; c.fillRect(b.x - r, b.y - r, 2 * r, 2 * r);
+    c.strokeStyle = ORANGE; c.lineWidth = 2 * px; c.setLineDash([]); c.strokeRect(b.x - r, b.y - r, 2 * r, 2 * r);
+    c.beginPath(); c.arc(b.x, b.y, 2.5 * px, 0, Math.PI * 2); c.fillStyle = ORANGE; c.fill();
+  }
 });
 /* une proposition en cours n'a plus de sens si le plan change (annuler, autre plan) */
 on(EV.PLAN_OUVERT, () => { ui.propRacc = null; ui.cabler = null; });

@@ -1,13 +1,13 @@
 /* Calque — module « métrés » : onglet « Cheminements » du Tableau électrique.
    Longueurs de chaque circuit (à vol d'oiseau, le long des gaines, à commander avec la réserve).
    Les calculs sont dans cheminement.js (sans écran). Module JavaScript natif (aucune compilation). */
-import { P } from './noyau.js';
+import { P, S, saveSettings } from './noyau.js';
 import { reserveDe } from './cheminement.js';
 import { LIB_STATUT, fmt } from './calcul.js';
 import { circNumbers, circuitColor } from './electricite.js';
-import { btn, h } from './interface.js';
+import { btn, h, segCtl } from './interface.js';
 import { conflitsPlan } from './itineraire.js';
-import { goToRef } from './tableau.js';
+import { goToRef, renderEvMain } from './tableau.js';
 import { badgeDonnee, champDonnee, openFiche, pillStatut } from './fiche.js';
 import { lignesCircuits, listeMateriel, remplissageGaines } from './materiel.js';
 import { messageAuto, raccorderAuto } from './routeui.js';
@@ -34,7 +34,11 @@ function longueursSection(lignes) {
     bouton.textContent = txt; bouton.disabled = false;
   };
   const auto = aFaire.length && tableauDu(P) ? h('section', null, h('h3', null, 'Raccordement automatique'),
-    h('p', { class: 'note' }, `${aFaire.length} circuit${aFaire.length > 1 ? 's ne sont' : ' n’est'} pas entièrement raccordé${aFaire.length > 1 ? 's' : ''} au tableau. Calque peut proposer les gaines manquantes : chaque point est relié au point déjà raccordé le plus proche, en évitant les zones interdites, avec le type et la pose de gaine choisis en dernier. Les gaines proposées s’affichent sur le plan : rien n’est créé avant « Valider » ; « Annuler » les retire ensuite toutes.`),
+    h('p', { class: 'note' }, `${aFaire.length} circuit${aFaire.length > 1 ? 's ne sont' : ' n’est'} pas entièrement raccordé${aFaire.length > 1 ? 's' : ''} au tableau. Calque peut proposer les gaines manquantes, en évitant les zones interdites. Les gaines proposées s’affichent sur le plan : rien n’est créé avant « Valider » ; « Annuler » les retire ensuite toutes.`),
+    (() => { const s = segCtl([{ v: 'boites', n: 'Boîtes de dérivation (plafond et cloisons)' }, { v: 'proche', n: 'De proche en proche' }], S.raccMode === 'proche' ? 'proche' : 'boites', (v) => { S.raccMode = v; saveSettings(); renderEvMain(); }); s.id = 'raccMode'; return s; })(),
+    h('p', { class: 'note' }, S.raccMode === 'proche'
+      ? 'De proche en proche : chaque point est relié au point déjà raccordé le plus proche (repiquage d’appareil à appareil), avec le type et la pose de gaine choisis en dernier.'
+      : 'Boîtes de dérivation : une boîte au plafond de chaque pièce où le circuit a au moins deux points (une boîte déjà posée et libre est reprise), reliée au tableau de boîte en boîte par le plafond ; chaque appareil descend de sa boîte dans le mur ou la cloison. Un circuit d’un seul appareil part directement du tableau. Proposition de Calque, à vérifier : les boîtes doivent rester accessibles (trappe de visite).'),
     h('div', { class: 'btns' }, (() => { const b = btn(`Raccorder les ${aFaire.length} circuits incomplets`, () => lancer(aFaire, b), 'pri'); b.id = 'autoTous'; return b; })())) : null;
   return [
     auto,

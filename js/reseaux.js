@@ -18,7 +18,7 @@ import { logementPassage, textePassage } from './compositions.js';
 import { conflitsSection } from './routeui.js';
 import { remplissageGaines } from './materiel.js';
 import { calqueDeElec, calqueDeGaine, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
-import { DERIVATIONS, colonneTableau, membresColonne, poseAHauteur, tailleColonne, tracerALongueur } from './cheminement.js';
+import { DERIVATIONS, colonneTableau, estLienRJ45, membresColonne, poseAHauteur, tailleColonne, tracerALongueur } from './cheminement.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -204,6 +204,7 @@ function ductEndName(id) {
 function ductColor(d, exp) {
   const cc = couleurCalque(calqueDeGaine(d));
   if (d.sys === 'vmc') return cc || RC.C.vmc;
+  if (estLienRJ45(d, IDX.elec)) return couleurCalque('faibles') || '#0E7490'; // câble RJ45 : courants faibles
   if (S.layers.circ !== false && d.cid) { const c = circuitColor(d.cid, exp); if (c) return c; }
   return cc || RC.C.gaine;
 }
@@ -297,7 +298,7 @@ function drawDuctLabels(lv, opts) {
     if (ang > Math.PI / 2 + 0.01) ang -= Math.PI; else if (ang < -Math.PI / 2 + 0.01) ang += Math.PI;
     const m = vmid(a, b), n = { x: -Math.sin(ang), y: Math.cos(ang) };
     const off = (d.sys === 'vmc' ? ((d.dia || 125) / 20) * RC.s : 1) + TS(8);
-    const str = d.sys === 'vmc' ? 'Ø' + (d.dia || '') : [typeChemin(d) ? typeChemin(d).court : '', tailleChemin(d)].filter(Boolean).join(' ');
+    const str = d.sys === 'vmc' ? 'Ø' + (d.dia || '') : [estLienRJ45(d, IDX.elec) ? 'RJ45 ·' : '', typeChemin(d) ? typeChemin(d).court : '', tailleChemin(d)].filter(Boolean).join(' ');
     c.save(); c.translate(m.x - n.x * off + (vdist(a, b) > 160 ? (b.x - a.x) * 0.22 : 0), m.y - n.y * off + (vdist(a, b) > 160 ? (b.y - a.y) * 0.22 : 0)); c.rotate(ang);
     c.fillStyle = ductColor(d, !!opts.export); textHalo(c, str, 0, 0); c.restore();
   }
@@ -470,6 +471,9 @@ function creerGaineElec(g) {
   if (g.cid) d.cid = g.cid;
   if (S.ductKind && TYPES_CHEMIN[S.ductKind]) d.kind = S.ductKind;
   if (S.ductPose && POSES[S.ductPose]) { d.pose = S.ductPose; if (poseAHauteur(d.pose) && isNum(S.ductZ)) d.z = S.ductZ; else if (poseAHauteur(d.pose)) delete d.pose; }
+  /* type et pose proposés par le moteur (raccordement en boîtes de dérivation : au plafond) l'emportent */
+  if (g.kind && TYPES_CHEMIN[g.kind]) d.kind = g.kind;
+  if (g.pose && POSES[g.pose]) { d.pose = g.pose; if (poseAHauteur(d.pose) && isNum(g.z)) d.z = g.z; else if (poseAHauteur(d.pose) && !isNum(d.z)) delete d.pose; else if (!poseAHauteur(d.pose)) delete d.z; }
   d.dia = autoDuctDia(d);
   if (d.kind && TYPES_CHEMIN[d.kind].forme === 'rect') { delete d.dia; if (isNum(S.ductLw) && isNum(S.ductLh)) { d.lw = S.ductLw; d.lh = S.ductLh; } }
   P.ducts.push(d); IDX.ducts.set(d.id, d);

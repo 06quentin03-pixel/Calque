@@ -1,3 +1,12 @@
+## 16 novembre 2026 (suite) — Câbles RJ45
+- Câble RJ45 du coffret de communication à chaque prise RJ45 (`js/vdi.js`), depuis le panneau de la prise ou du coffret. Tests : 231/231. Fusionné dans `main` à la demande de l'utilisateur.
+
+## 16 novembre 2026 — Câbles à tirer, raccordement en boîtes de dérivation
+- « Équipement minimal » : hotte, sèche-serviettes, chauffe-eau, réfrigérateur, micro-ondes, chaudière du mobilier raccordés ; « Câbles à tirer » pour les appareils déjà posés.
+- Raccordement automatique en boîtes de dérivation au plafond, gaines au plafond, descentes dans les cloisons (`js/boites.js`), au choix avec « De proche en proche ».
+- Réponse écrite sur les études thermiques réglementaires (ROADMAP).
+- Tests : 229/229 (`tests/boites.test.mjs`, 4 tests ; `exemple` complété).
+
 ## 15 novembre 2026 (soir) — Électroménager intégré, puissance conseillée des radiateurs
 - Appareils logés dans les meubles (four sous la plaque, lave-vaisselle sous le plan de travail, micro-ondes en colonne…), sortie de câble radiateur et prises des appareils proposées, puissance conseillée d'un radiateur d'après la pièce (`js/integration.js`, `js/integrationui.js`, `puissanceConseillee`).
 - Format v18. Défaut trouvé pendant les essais : glisser un meuble déjà choisi déplaçait l'appareil caché dessous au lieu du meuble ; corrigé (glisser = le meuble, toucher = l'appareil).

@@ -204,7 +204,9 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
    À chaque tour, le point non raccordé le plus proche d'un point déjà raccordé du même niveau (tableau, point du même
    circuit, boîte de dérivation, passage entre étages) est relié à celui-ci par chercherItineraire : les prises se
    suivent donc de proche en proche. Le plan n'est pas modifié : renvoie { gaines: [{ lv, pts, a, b, cid, len }],
-   echecs: [{ id, raison }], deja (points déjà raccordés) } ; l'appelant crée les gaines. */
+   echecs: [{ id, raison }], deja (points déjà raccordés) } ; l'appelant crée les gaines.
+   opts : pose, z, kind (gaines proposées) ; seulement (Set d'identifiants : seuls ces points sont raccordés) ;
+   depart(x) (points déjà raccordés d'où une gaine peut partir, en plus du tableau et des passages entre étages). */
 function raccorderCircuit(plan, cid, opts = {}) {
   const out = { cid, gaines: [], echecs: [], deja: 0 };
   const T = tableauDu(plan);
@@ -215,13 +217,15 @@ function raccorderCircuit(plan, cid, opts = {}) {
   out.deja = cheminCircuit(tmp, cid).atteints;
   for (let tour = 0; tour < 400; tour++) {
     const ch = cheminCircuit(tmp, cid);
-    const reste = ch.nonAtteints.filter((id) => !rates.has(id)).map((id) => byId.get(id)).filter(Boolean);
+    const reste = ch.nonAtteints.filter((id) => !rates.has(id) && (!opts.seulement || opts.seulement.has(id))).map((id) => byId.get(id)).filter(Boolean);
     if (!reste.length) break;
     const G = grapheGaines(tmp), sp = G.nodes.has('e:' + T.id) ? plusCourts(G, 'e:' + T.id, cid) : { D: new Map() };
     /* un passage entre étages dont le jumeau est raccordé est lui aussi un point de départ, sur son niveau */
     const relies = (plan.elec || []).filter((x) => x.id === T.id || (sp.D.has('e:' + x.id) && (x.cid === cid || x.type === TRAVERSEE || DERIVATIONS.has(x.type))) || (x.type === TRAVERSEE && x.to && sp.D.has('e:' + x.to))
       /* colonne de passage du tableau (ou dont un autre niveau est raccordé) : point de départ sur chaque niveau */
-      || (x.type === TRAVERSEE && x.col && (x.tab === T.id || (plan.elec || []).some((m) => m.col === x.col && m.id !== x.id && sp.D.has('e:' + m.id)))));
+      || (x.type === TRAVERSEE && x.col && (x.tab === T.id || (plan.elec || []).some((m) => m.col === x.col && m.id !== x.id && sp.D.has('e:' + m.id)))))
+      /* opts.depart : points de départ permis (en plus du tableau et des passages), par exemple les seules boîtes de dérivation */
+      .filter((x) => !opts.depart || x.id === T.id || x.type === TRAVERSEE || opts.depart(x));
     const troncs = tmp.ducts.filter((d) => isElecDuct(d) && !String(d.id).startsWith('~auto') && !circuitsDe(d).length && sp.D.has(`v:${d.id}:0`)).map((d) => ({ d, pts: pointsGaine(tmp, d) }));
     let best = null;
     for (const e of reste) {

@@ -117,7 +117,8 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Contrôles de câblage (erreur, avertissement, suggestion) dans le moteur de règles ; nomenclature du tableau (`js/nomenclature.js`).
 - ✅ Matériel et quantitatif reliés au plan ; exports SVG, plans électriques du dossier PDF avec légendes (`js/svgexport.js`).
 - ✅ Format v12 avec migration ; plan d'exemple complété ; 7 tests d'écran (`tests/planselec.test.mjs`).
-- ⬜ Pistes suivantes, par valeur : itinéraire d'un étage à l'autre en un geste ; câblage en boîtes de dérivation (au lieu de l'étoile) au choix ; reconnaissance des symboles d'un plan importé (DXF : blocs nommés) ; comparaison de deux plans (au-delà des variantes) ; liste des réservations et passages techniques à transmettre au gros œuvre.
+- ✅ Câblage en boîtes de dérivation (au choix, par défaut) et câbles à tirer depuis « Équipement minimal » (16 novembre 2026, `js/boites.js`).
+- ⬜ Pistes suivantes, par valeur : itinéraire d'un étage à l'autre en un geste ; reconnaissance des symboles d'un plan importé (DXF : blocs nommés) ; comparaison de deux plans (au-delà des variantes) ; liste des réservations et passages techniques à transmettre au gros œuvre.
 
 ## Onglet « Schémas » (13 novembre 2026) ✅ (à essayer sur iPad, puis à fusionner)
 - ✅ Folios A3, cartouche, colonnes ; 45 symboles CEI simplifiés ; fils d'équerre, jonctions, insertion dans un fil ; Pencil, doigt, pincement.
@@ -156,6 +157,17 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - Électroménager intégré dans les meubles (four sous la plaque, lave-vaisselle sous le plan, micro-ondes en colonne…), suivi du meuble, dessin en pointillés et 3D (`integration.js`, `integrationui.js`). Format v18.
 - Sortie de câble radiateur et prises des appareils proposées par « Équipement minimal » ; puissance conseillée d'un radiateur d'après les déperditions de la pièce.
 - Pistes : intégration dans les meubles d'angle en L ; marge de relance saisie pour la puissance conseillée.
+
+## Demande du 16 novembre 2026 : câbles à tirer, boîtes de dérivation ✅ (à essayer sur iPad, puis à fusionner)
+- ✅ « Équipement minimal » : raccordement de la hotte, du sèche-serviettes, du chauffe-eau, du réfrigérateur, du micro-ondes et de la chaudière du mobilier ; « Câbles à tirer » pour tous les appareils déjà posés.
+- ✅ Raccordement automatique en boîtes de dérivation au plafond, gaines au plafond, descentes dans les cloisons (`js/boites.js`) ; « De proche en proche » reste au choix.
+- ⬜ Pistes : boîte murale (`derivation_mur`) au lieu du plafond quand le plafond n'a pas de vide technique ; gaines horizontales dans la couche de passage des cloisons (pose « cloison ») quand c'est plus court ; contrôle « boîte accessible » (trappe de visite) ; nombre de bornes par boîte.
+
+## Études thermiques (question du 16 novembre 2026)
+- Aujourd'hui : déperditions par une méthode simplifiée inspirée de la NF EN 12831 (`thermique.js`), jamais présentée comme réglementaire.
+- Possible dans Calque (hors ligne, sans abonnement) : une **note de dimensionnement du chauffage pièce par pièce** plus complète (ponts thermiques ψ, terre-plein selon l'EN ISO 13370, débits de ventilation réels, relance, température de base de la commune), avec un rapport PDF ; résultats « estimés » tant que les valeurs de référence ne sont pas fournies (température de base, ψ par défaut).
+- Pas possible de façon officielle : l'**étude RE2020** (Bbio, Cep, DH, carbone) et le **DPE** exigent le moteur de calcul réglementaire et un logiciel évalué, utilisés par un thermicien ou un diagnostiqueur, qui signe l'attestation. Calque pourrait seulement préparer les données (surfaces, parois, menuiseries) pour ce logiciel.
+- En attente de la décision de l'utilisateur.
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.

@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 15 novembre 2026 soir (électroménager intégré, branche `claude/sharp-thompson-n0tvun`) ; avant : fiabilisation, branche `claude/lucid-sagan-6h707m`.
+Mise à jour : 16 novembre 2026 (câbles à tirer et boîtes de dérivation, branche `claude/dazzling-babbage-7wt87f`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (224/224 le 15 novembre 2026 au soir).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (231/231 le 16 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -30,6 +30,25 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais des câbles à tirer et des boîtes de dérivation (16 novembre 2026, branche `claude/dazzling-babbage-7wt87f`)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/dazzling-babbage-7wt87f` › Create pull request › Merge pull request). Le format des plans ne change pas (v18).
+Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :
+1. Zoomer sur le séjour et la chambre de la maison : une boîte de dérivation au plafond de chaque pièce, les prises en partent.
+2. Toucher la cuisine (nom de la pièce) › « Équipement minimal » : la prise de la hotte (1,80 m) est proposée ; plus bas,
+   « Câbles à tirer » liste les appareils déjà posés qui attendent leur câble. Toucher « Tirer les câbles » : les gaines
+   et les boîtes (carrés orange) sont proposées sur le plan ; « Valider » ; « Annuler » retire tout.
+3. Salle de bain › « Équipement minimal » : la sortie de câble du sèche-serviettes est proposée ; « Poser l'équipement
+   manquant », puis « Tirer les câbles ».
+4. Tableau électrique › Cheminements › « Raccordement automatique » : choisir « De proche en proche » ou « Boîtes de
+   dérivation (plafond et cloisons) », puis « Raccorder les … circuits incomplets ».
+5. Onglet Calculs › « Position d'une boîte de dérivation ».
+8. Câbles RJ45 : toucher une prise RJ45 › « Relier au coffret de communication » ; toucher le coffret de communication ›
+   « Relier les prises RJ45 ». Les câbles sont en bleu-vert « RJ45 » sur le plan.
+6. Dites-moi si les boîtes sont bien placées pour votre façon de câbler (au plafond de chaque pièce), et si vous préférez
+   des boîtes murales ou des gaines horizontales dans les cloisons dans certains cas.
+7. Études thermiques : dites-moi laquelle des deux pistes du ROADMAP (« Études thermiques ») vous intéresse.
 
 ## Essais de l'électroménager intégré et des radiateurs (15 novembre 2026 soir, branche `claude/sharp-thompson-n0tvun`)
 Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
@@ -169,5 +188,6 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en po
 - Extraits Legrand NF C 15-100 manquants (Iz, modes de pose, facteurs de correction, chutes de tension, simultanéité,
   remplissage) : sans eux, ces contrôles restent « vérification nécessaire » (voulu).
 - Un vrai fichier DXF d'architecte et, si possible, une vraie maquette IFC, pour éprouver les imports.
-- Votre avis sur le schéma de câblage supposé (câblage en étoile depuis le tableau en suivant les gaines, télérupteurs
-  au tableau) : si vous câblez en boîtes de dérivation, le moteur peut être complété.
+- Votre avis sur le raccordement en boîtes de dérivation (16 novembre 2026) et sur les télérupteurs supposés au tableau.
+- Votre choix pour les études thermiques (note de dimensionnement du chauffage dans Calque, ou préparation des données
+  pour un logiciel réglementaire RE2020 utilisé par un thermicien).
