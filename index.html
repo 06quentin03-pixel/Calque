@@ -93,7 +93,7 @@
 :root {
   --chrome: #E4E7E3; --panel: #F8F9F7; --panel-2: #EDF0EC; --ink: #1A1E22; --ink-2: #59626A; --ink-3: #8A939A; --rule: #D0D5D0;
   --accent: #D24F1A; --accent-ink: #A63D10; --on-accent: #FFFFFF; --accent-soft: rgba(210, 79, 26, .11);
-  --elec: #2356C4; --ok: #2D7A4C; --warn: #A86E12; --bad: #BF3428; --shadow: 0 10px 30px rgba(20, 30, 28, .14), 0 2px 6px rgba(20, 30, 28, .08);
+  --elec: #2356C4; --ok: #2D7A4C; --warn: #A86E12; --bad: #BF3428; --on-bad: #FFFFFF; --shadow: 0 10px 30px rgba(20, 30, 28, .14), 0 2px 6px rgba(20, 30, 28, .08);
   --c-paper: #ECEFEB; --c-room: #FFFFFF; --c-ink: #1D2125; --c-ink2: #5C656C; --c-wall: #252A2F; --c-part: #98A0A6; --c-fill: #FFFFFF; --c-tone: #E5E8E3;
   --c-grid: rgba(30, 44, 40, .06); --c-gridMajor: rgba(30, 44, 40, .13); --c-accent: #D24F1A; --c-accentSoft: rgba(210, 79, 26, .12); --c-elec: #2356C4; --c-ghost: rgba(30, 44, 40, .11);
   --c-vmc: #0B8C88; --c-gaine: #6D4FC2;
@@ -106,7 +106,7 @@
   :root:not([data-theme="light"]) {
     --chrome: #101215; --panel: #181B1F; --panel-2: #1F2328; --ink: #E5E8E4; --ink-2: #A0A9AF; --ink-3: #6E777E; --rule: #2B3036;
     --accent: #FF7A3E; --accent-ink: #FF9663; --on-accent: #1A0E07; --accent-soft: rgba(255, 122, 62, .14);
-    --elec: #7FA8FF; --ok: #5BC38A; --warn: #E2AE4E; --bad: #FF7468; --shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .3);
+    --elec: #7FA8FF; --ok: #5BC38A; --warn: #E2AE4E; --bad: #FF7468; --on-bad: #1A0806; --shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .3);
     --c-paper: #14171A; --c-room: #1C2024; --c-ink: #E2E5E1; --c-ink2: #9AA3AA; --c-wall: #D5D9D4; --c-part: #6C757B; --c-fill: #1C2024; --c-tone: #292E33;
     --c-grid: rgba(220, 230, 225, .045); --c-gridMajor: rgba(220, 230, 225, .1); --c-accent: #FF7A3E; --c-accentSoft: rgba(255, 122, 62, .16); --c-elec: #7FA8FF; --c-ghost: rgba(220, 230, 225, .1);
     --c-vmc: #3DD3C9; --c-gaine: #A993FF;
@@ -117,7 +117,7 @@
 :root[data-theme="dark"] {
   --chrome: #101215; --panel: #181B1F; --panel-2: #1F2328; --ink: #E5E8E4; --ink-2: #A0A9AF; --ink-3: #6E777E; --rule: #2B3036;
   --accent: #FF7A3E; --accent-ink: #FF9663; --on-accent: #1A0E07; --accent-soft: rgba(255, 122, 62, .14);
-  --elec: #7FA8FF; --ok: #5BC38A; --warn: #E2AE4E; --bad: #FF7468; --shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .3);
+  --elec: #7FA8FF; --ok: #5BC38A; --warn: #E2AE4E; --bad: #FF7468; --on-bad: #1A0806; --shadow: 0 10px 30px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .3);
   --c-paper: #14171A; --c-room: #1C2024; --c-ink: #E2E5E1; --c-ink2: #9AA3AA; --c-wall: #D5D9D4; --c-part: #6C757B; --c-fill: #1C2024; --c-tone: #292E33;
   --c-grid: rgba(220, 230, 225, .045); --c-gridMajor: rgba(220, 230, 225, .1); --c-accent: #FF7A3E; --c-accentSoft: rgba(255, 122, 62, .16); --c-elec: #7FA8FF; --c-ghost: rgba(220, 230, 225, .1);
   --c-vmc: #3DD3C9; --c-gaine: #A993FF;
@@ -226,6 +226,8 @@ button { cursor: pointer; }
 .btn.pri { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .btn.pri:hover { filter: brightness(1.05); }
 .btn.danger { color: var(--bad); }
+/* bouton de suppression armé (« Confirmer la suppression ») : rouge plein, texte contrasté (et non rouge sur orange) */
+.btn.danger.pri { background: var(--bad); border-color: var(--bad); color: var(--on-bad); }
 .btn.sm { height: 30px; padding: 0 10px; font-size: 12.5px; }
 .note { font-size: 12.5px; color: var(--ink-2); margin: 0; }
 .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 700; }
