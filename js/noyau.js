@@ -154,12 +154,36 @@ function blankPlan(name) {
     schemas: { folios: [] },
   };
 }
-function normalizePlan(p) {
+/* listes d'objets du plan et leur nom lisible (contrôle à l'ouverture) */
+const LISTES_PLAN = { levels: 'niveaux', nodes: 'angles', walls: 'murs', openings: 'ouvertures', items: 'mobilier', elec: 'symboles électriques',
+  rooms: 'pièces', dims: 'cotes', texts: 'textes', circuits: 'circuits', rcds: 'différentiels', links: 'liaisons', ducts: 'gaines', zones: 'zones interdites',
+  etudes: 'études d’éclairage', photometries: 'photométries', comps: 'composants', fonds: 'fonds de plan' };
+const estObjet = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
+/* normalise un plan ouvert. notes (facultatif) : reçoit, en clair, chaque réparation indispensable à l'ouverture
+   (rien n'est réparé en silence ; l'appelant fait une copie de sécurité du plan d'origine et prévient l'utilisateur) */
+function normalizePlan(p, notes = []) {
   const b = blankPlan(p && p.name);
-  const o = Object.assign(b, p || {});
-  for (const k of ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'zones', 'etudes', 'photometries', 'comps', 'fonds']) if (!Array.isArray(o[k])) o[k] = [];
+  const o = Object.assign(b, estObjet(p) ? p : {});
+  const note = (n, txt) => { if (n) notes.push(txt.replace('{n}', n).replace(/\(s\)/g, n > 1 ? 's' : '')); };
+  for (const k of Object.keys(LISTES_PLAN)) {
+    if (o[k] != null && !Array.isArray(o[k])) note(1, `liste des ${LISTES_PLAN[k]} illisible : remplacée par une liste vide`);
+    if (!Array.isArray(o[k])) o[k] = [];
+    /* éléments vides ou illisibles (null, texte, nombre) : sans aucune donnée, ils bloquaient l'ouverture */
+    const n0 = o[k].length; o[k] = o[k].filter(estObjet);
+    note(n0 - o[k].length, `{n} élément(s) vide(s) ou illisible(s) retiré(s) (${LISTES_PLAN[k]})`);
+    /* objet sans identifiant : un identifiant lui est donné (ses données sont gardées) */
+    let sansId = 0;
+    for (const x of o[k]) if (!(typeof x.id === 'string' && x.id) && !(typeof x.id === 'number')) { x.id = uid('r'); sansId++; }
+    note(sansId, `{n} objet(s) sans identifiant (${LISTES_PLAN[k]}) : identifiant donné`);
+  }
   if (!o.fondImg || typeof o.fondImg !== 'object' || Array.isArray(o.fondImg)) o.fondImg = {};
-  o.ducts = o.ducts.filter((d) => d && Array.isArray(d.pts) && d.pts.length >= 2);
+  { const n0 = o.ducts.length; o.ducts = o.ducts.filter((d) => Array.isArray(d.pts) && d.pts.length >= 2); note(n0 - o.ducts.length, '{n} gaine(s) sans tracé retirée(s)'); }
+  /* zone interdite : contour d'au moins 3 points valides */
+  { const n0 = o.zones.length;
+    o.zones = o.zones.filter((z) => Array.isArray(z.pts) && z.pts.filter((q) => estObjet(q) && isNum(q.x) && isNum(q.y)).length >= 3);
+    for (const z of o.zones) z.pts = z.pts.filter((q) => estObjet(q) && isNum(q.x) && isNum(q.y));
+    note(n0 - o.zones.length, '{n} zone(s) interdite(s) sans contour retirée(s)'); }
+  { let n = 0; for (const r of o.rooms) if (typeof r.name !== 'string') { r.name = r.name == null ? 'Pièce sans nom' : String(r.name); n++; } note(n, '{n} pièce(s) sans nom : nommée(s) « Pièce sans nom »'); }
   if (!o.install || typeof o.install !== 'object') o.install = { kva: 9, parafoudre: false, row: 13 };
   if (!o.doc || typeof o.doc !== 'object' || Array.isArray(o.doc) || !Array.isArray(o.doc.revisions)) o.doc = { revisions: [] };
   if (!o.chantier || typeof o.chantier !== 'object' || Array.isArray(o.chantier)) o.chantier = { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] };
@@ -223,6 +247,6 @@ function setP(v) { P = v; }
 
 export { PIECES_EXT, estExterieure, horsHabitation };
 export { $, $$, C, DEG, EXT, LAYERS_CH, GEO, IDX, NF, NF0, NF1, NF2, NFc, P, PLAN_VERSION, S, bboxOf, blankPlan, clamp, climbHeight, distToEdges,
-  fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
+  LISTES_PLAN, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove, levelBelow, levelOf, levelsSorted, lineX,
   loadSettings, nodeOf, normalizePlan, polyArea, polyPerim, projSeg, saveSettings, segX, setGEO, setP, snapTo, touch,
   ui, uid, vadd, vang, vcrs, vdir, vdist, vdot, vlen, vmid, vmul, vnorm, vperp, vsub };

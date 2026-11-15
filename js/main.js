@@ -1,5 +1,7 @@
 /* Calque — point d'entrée : charge les modules puis démarre l'application.
    L'ordre ci-dessous est celui du code d'origine ; le navigateur charge de toute façon chaque module avant ceux qui l'utilisent. */
+/* en premier : le filet contre les plantages attrape aussi les erreurs du chargement des autres modules */
+import './incidents.js';
 import './noyau.js';
 import './geometrie.js';
 import './mutations.js';

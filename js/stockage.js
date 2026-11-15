@@ -464,13 +464,25 @@ async function syncFromLocal() {
 async function askPersist() {
   try { if (navigator.storage && navigator.storage.persist && !(await navigator.storage.persisted())) await navigator.storage.persist(); } catch (e) { }
 }
+/* réparations faites à l'ouverture : toujours dites, avec la copie de sécurité */
+function avertirReparations(notes) {
+  openModal('Plan réparé à l’ouverture',
+    h('p', null, 'Ce plan contenait des données abîmées qui empêchaient de l’ouvrir. Calque les a corrigées :'),
+    h('ul', null, notes.map((t) => h('li', null, t))),
+    h('p', { class: 'note' }, 'Le plan tel qu’il était avant la réparation est gardé dans Menu › Historique des versions (« Copie de sécurité avant réparation à l’ouverture »).'),
+    btns(btn('Compris', closeModal, 'pri')));
+}
 function openPlan(plan, id, opts) {
   opts = opts || {};
   /* copie de sécurité du plan tel qu'il était avant la mise à jour de son format (restaurable dans l'historique) */
   const before = !opts.example && plan && typeof plan === 'object' && !(isNum(plan.v) && plan.v >= PLAN_VERSION) ? JSON.stringify(plan) : null;
+  /* plan d'origine, pour la copie de sécurité si l'ouverture doit le réparer (la migration modifie l'objet) */
+  const brut = before || (!opts.example && plan && typeof plan === 'object' ? JSON.stringify(plan) : null);
   const mig = migratePlan(plan);
   if (before && id) addVersion(id, plan.name || 'Plan', before, `Copie de sécurité avant mise à jour du format (v${mig.from} → v${PLAN_VERSION})`).catch(() => { });
-  setP(normalizePlan(mig.plan)); P.id = id; delete P.savedAt;
+  const reparations = [];
+  setP(normalizePlan(mig.plan, reparations)); P.id = id; delete P.savedAt;
+  if (reparations.length && brut && id) addVersion(id, P.name || 'Plan', brut, 'Copie de sécurité avant réparation à l’ouverture').catch(() => { });
   touch(); syncRooms();
   const L = levelsSorted();
   ui.lv = (L.find((l) => l.elev >= 0) || L[0]).id;
@@ -482,7 +494,8 @@ function openPlan(plan, id, opts) {
   refreshUI();
   setSave(ui.isExample ? (Store.cloud ? 'ok' : 'local') : Store.cloud ? 'ok' : 'local', ui.isExample ? 'Exemple non enregistré' : undefined);
   fitView();
-  if (mig.newer) toast('Ce plan vient d’une version plus récente de Calque : certaines données peuvent ne pas s’afficher.');
+  if (reparations.length && !ui.isExample) avertirReparations(reparations);
+  else if (mig.newer) toast('Ce plan vient d’une version plus récente de Calque : certaines données peuvent ne pas s’afficher.');
   else if (!ui.isExample && !opts.quiet) { const pb = planProblems(P); if (pb.length) toast('Plan ouvert. À vérifier : ' + pb.join(', ') + '.'); }
   /* copie de sécurité à l'ouverture (si le plan a changé depuis la dernière version) */
   if (!ui.isExample && !opts.quiet) { const json = JSON.stringify(P); maybeVersion(id, P.name || 'Plan', json, checksum(json), 'À l’ouverture', true); }
@@ -629,7 +642,7 @@ function saveBlobLocal(blob, filename) {
   } catch (e) { return false; }
 }
 
-export { DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, nettoyerTaille, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
+export { avertirReparations, DB, DL, LIGHT, MIGRATIONS, cleanCalc, cleanDonnee, nettoyerTaille, PLAN_VERSION, Store, VERS, addVersion, askPersist, checksum, deleteProject,
   deletedPlans, getDownloads, lastVer, listProjects, loadProject, localIndex, lsDel, lsGet, lsSet, maybeVersion,
   migratePlan, newPlan, notifySaveFail, openPlan, openProjects, openSample, openVersions, planProblems, pruneVersions,
   saveBlobLocal, saveNow, scheduleSave, setLocalIndex, setSave, slug, syncFromLocal, versionJson, versionsOf,

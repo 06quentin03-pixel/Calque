@@ -14,12 +14,13 @@ import { lireEtat, verifierSauvegarde } from './rappelui.js';
 import { toucheGroupe } from './multi.js';
 import { renderEvMain, setView } from './tableau.js';
 import { loadUserLib } from './mabiblio.js';
-import { ICON, closeModal, closePops, copyWalls, deleteSel, duplicateSel, h, nudgeSel, renderInspector, renderMenuPop,
-  renderViewPop, rotateSel, setTool, showPop, toast, updateHint } from './interface.js';
+import { ICON, btn, btns, closeModal, closePops, copyWalls, deleteSel, duplicateSel, h, nudgeSel, renderInspector, renderMenuPop,
+  openModal, renderViewPop, rotateSel, setTool, showPop, toast, updateHint } from './interface.js';
 import { DB, Store, askPersist, getDownloads, listProjects, loadProject, lsGet, openPlan, openProjects, saveNow,
   setSave, syncFromLocal } from './stockage.js';
 import { exportAll, openExport } from './export.js';
 import { samplePlan } from './exemple.js';
+import { brancherFilet, incident } from './incidents.js';
 import { V3, v3Key3, v3Refresh } from './vue3d.js';
 
 /* ---------------- clavier ---------------- */
@@ -86,6 +87,12 @@ function bindUI() {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && Store.timer) saveNow(); });
 }
 async function boot() {
+  /* filet contre les plantages : contexte noté avec chaque incident (sans nom ni contenu du plan), enregistrement des modifications en attente */
+  brancherFilet({
+    contexte: () => ({ vue: ui.view || 'plan', outil: ui.tool || '', format: P && P.v, objets: P ? ['walls', 'openings', 'items', 'elec', 'ducts', 'circuits'].reduce((n, k) => n + ((P[k] || []).length), 0) : null }),
+    sauver: async () => { if (!Store.timer) return null; await saveNow(); return true; },
+    journal: () => import('./journalui.js').then((m) => m.ouvrirJournal()),
+  });
   loadSettings();
   readColors();
   bindUI();
@@ -95,12 +102,20 @@ async function boot() {
   await lireEtat().catch(() => { }); // date de la dernière sauvegarde complète (menu)
   let curId = lsGet('calque.cur');
   if (!curId) { const list = await listProjects(); if (list.length) curId = list[0].id; }
-  let ok = false;
+  let ok = false, echec = '';
   if (curId) {
     const r = await loadProject(curId);
-    if (r) { try { openPlan(r.plan, curId, { savedAt: r.savedAt }); ok = true; if (r.damaged) toast('La dernière copie du plan était abîmée : la copie valide la plus récente a été ouverte.'); } catch (e) { } }
+    if (r) {
+      try { openPlan(r.plan, curId, { savedAt: r.savedAt }); ok = true; if (r.damaged) toast('La dernière copie du plan était abîmée : la copie valide la plus récente a été ouverte.'); }
+      catch (e) { echec = (r.plan && r.plan.name) || 'Plan'; incident(e, 'demarrage'); }
+    }
   }
   if (!ok) openPlan(samplePlan(), uid('p'), { example: true });
+  /* le plan n'a pas pu s'ouvrir : le dire (avant, le plan d'exemple s'ouvrait sans explication). Le plan enregistré n'est pas touché. */
+  if (echec) openModal('Le plan n’a pas pu s’ouvrir',
+    h('p', null, `« ${echec} » n’a pas pu s’ouvrir. Il n’a pas été modifié : il reste dans Mes plans et dans l’historique des versions.`),
+    h('p', null, 'Le plan d’exemple est ouvert en attendant. Essayez de rouvrir le plan depuis Mes plans, ou une version précédente depuis l’historique ; le détail est dans Menu › Journal des erreurs.'),
+    btns(btn('Mes plans', () => { closeModal(); openProjects(); }, 'pri', 'folder'), btn('Journal des erreurs', () => { closeModal(); import('./journalui.js').then((m) => m.ouvrirJournal()); }), btn('Fermer', closeModal)));
   resizeCanvas();
   { const vw = lsGet('calque.view'); if (vw === 'elec' || vw === '3d' || vw === 'chantier' || vw === 'schema') setView(vw); }
   getDownloads();

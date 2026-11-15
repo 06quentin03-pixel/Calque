@@ -1,5 +1,6 @@
 /* Calque — module « interface » : interface : inspecteur, panneaux, niveaux, fenêtres.
    Module JavaScript natif (aucune compilation). Les dépendances sont importées explicitement ci-dessous. */
+import { lireIncidents } from './incidents.js';
 import { $, $$, C, DEG, EXT, IDX, NF1, P, PIECES_EXT, S, clamp, estExterieure, fmtArea, fmtLen, fmtLenU, inPoly, isNum, labelPoint, levelAbove,
   levelOf, levelsSorted, nodeOf, saveSettings, setGEO, touch, ui, uid, vadd, vdir, vdist, vdot, vlen, vmid, vmul,
   vnorm, vsub } from './noyau.js';
@@ -960,6 +961,8 @@ function renderViewPop() {
       numField('Cloison', S.thCloison, 'cm', (v) => { S.thCloison = v; saveSettings(); updateHint(); }, { id: 'f-dthc', min: 1, max: 60 })),
   ));
 }
+/* « Journal des erreurs », avec le nombre d'incidents réels (hors essais) */
+function journalLibelle() { const n = lireIncidents().filter((i) => !i.essai).length; return 'Journal des erreurs' + (n ? ` (${n})` : ''); }
 function menuItem(icon, label, fn) { return h('button', { type: 'button', onclick: () => { closePops(); fn(); } }, ico(icon), h('span', null, label)); }
 function renderMenuPop() {
   $('#menuPop').replaceChildren(h('div', { class: 'menu' },
@@ -983,6 +986,7 @@ function renderMenuPop() {
     h('hr'),
     menuItem('house', 'Ouvrir le plan d’exemple', openSample),
     menuItem('help', 'Gestes et raccourcis', openHelp),
+    menuItem('info', journalLibelle(), () => import('./journalui.js').then((m) => m.ouvrirJournal())),
   ));
 }
 /* fenêtre « Ajouter un niveau » : grande fenêtre (et non un petit menu), lisible sur l'iPad */

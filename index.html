@@ -349,6 +349,18 @@ button.li:hover { background: var(--panel-2); }
 .upd { position: fixed; left: 50%; top: calc(10px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 8px 8px 8px 14px; border-radius: 12px; background: var(--panel); border: 1px solid var(--rule); box-shadow: var(--shadow); font-size: 13px; font-weight: 600; max-width: calc(100vw - 32px); }
 .upd button { height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--rule); background: var(--panel-2); font-weight: 600; }
 .upd button.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* bandeau du filet contre les plantages (js/incidents.js) : sous l'avis de mise à jour */
+.upd.inc { top: calc(58px + env(safe-area-inset-top, 0px)); border-color: var(--warn); }
+/* journal des erreurs (js/journalui.js) */
+.journal { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow: auto; }
+.jr { border: 1px solid var(--rule); border-radius: 9px; padding: 8px 10px; background: var(--panel-2); font-size: 13px; }
+.jr.essai { opacity: .75; }
+.jr-t { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; }
+.jr-o { color: var(--ink-2, inherit); opacity: .8; }
+.jr-tag { font-size: 11px; font-weight: 700; padding: 0 6px; border-radius: 6px; border: 1px solid var(--rule); }
+.jr-m { font-weight: 600; margin-top: 3px; overflow-wrap: anywhere; }
+.jr-c { font-size: 12px; opacity: .8; margin-top: 2px; }
+.jr pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; margin: 4px 0 0; }
 .upd.sauv { top: auto; bottom: calc(64px + env(safe-area-inset-bottom, 0px)); max-width: calc(100vw - 32px); }
 .upd.sauv span { flex: 1 1 260px; }
 @media (max-width: 600px) { .upd.sauv { left: 16px; right: 16px; transform: none; max-width: none; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); justify-content: flex-start; } .upd.sauv span { flex-basis: 100%; } }
