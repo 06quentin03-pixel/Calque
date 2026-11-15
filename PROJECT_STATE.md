@@ -1,6 +1,6 @@
 # PROJECT_STATE — état actuel du projet Calque
 
-Mise à jour : 15 novembre 2026, fiabilisation (format v17 inchangé).
+Mise à jour : 15 novembre 2026, fiabilisation et ergonomie (format v17 inchangé) ; avant : 14 novembre 2026, composition des murs (par tronçon, copier-coller), déperditions thermiques (format v17).
 À lire au début de chaque session avec `CLAUDE.md`, `TECHNICAL_DECISIONS.md` et `NEXT_SESSION.md`.
 Le détail chronologique est dans `PROGRESS.md` et `CHANGELOG.md`, le plan d'ensemble dans `ROADMAP.md`.
 
@@ -116,7 +116,7 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Démarrage lent sans perte (« Ouverture… », écran inactif jusqu'à l'ouverture) ; calibre et section manquants dits partout et signalés par le contrôle NF C 15-100.
 - Tests : **208/208** (`tests/fiabilite.test.mjs`, 12 tests). Essais iPad : voir `NEXT_SESSION.md`.
 - Suite (même branche) : choix du panneau de droite qui débordaient corrigés, panneau plus large et plus lisible, explications repliées derrière ⓘ (`js/aide.js`), plancher et plafond composés soi-même et « Mes compositions » (`S.mesCompos`), meubles d'angle de cuisine (types `meuble_angle`, `meuble_haut_angle`, `plan_angle`). Tests : **214/214**.
-- Panneau de droite en volets (`js/volets.js`, réglages `S.volets`, `S.voletsTous`). Tests : **215/215**.
+- Panneau de droite en volets (`js/volets.js`, réglages `S.volets`, `S.voletsTous`). Fusion de `main` (composition par tronçon). Tests : **217/217**.
 - Pistes : bouton « Voir » sur chaque ligne de « Vérifier le plan » (aller à l'objet) ; essai réel d'un incident sur l'iPad (Safari) pour vérifier le texte des erreurs.
 
 ## Tests
@@ -152,3 +152,4 @@ Conséquence : les contrôles In ≤ Iz, chute de tension maximale et pouvoir de
 - Pistes : couches visibles dans la vue 3D, composition par pièce (plancher différent d'une pièce à l'autre), lignes du quantitatif pour les matériaux.
 - Suite (même branche) : déperditions thermiques des murs, pièces et niveaux (`thermique.js`, `thermiqueui.js`), gaine dans une couche choisie du faux plafond, grande fenêtre « Ajouter un niveau », élargissement d'un mur vers un côté. Format **v17**. Tests : **193/193**.
 - Onglet « Calculs » (`formules.js`, `calculsui.js`) : 21 calculs expliqués et essayables. Tests : **195/195**.
+- Branche `claude/wall-composition-per-room-877z62` : composition d'un seul tronçon de mur (par défaut) ou du mur entier, copier-coller d'une composition. Sans changement de format. Tests : **197/197**.

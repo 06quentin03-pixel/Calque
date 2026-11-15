@@ -141,12 +141,16 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
     return { murs: P.walls.filter((w) => w.kind === 'mur' && w.couches).length, cloisons: P.walls.filter((w) => w.kind === 'cloison' && w.couches).length,
       mats: [...new Set(P.walls.flatMap((w) => (w.couches || []).map((c) => c.m)))].sort(), epOk: P.walls.every((w) => !w.couches || Math.abs(K.epaisseur(w.couches) - w.th) < 0.01),
       sol: !!K.compoNiveau(P.levels[0], 'sol'), plafonds: P.levels.filter((l) => K.compoNiveau(l, 'plafond')).length, exemple: P.walls.filter((w) => w.couches).every((w) => /exemple/.test(w.cn)),
-      loge: K.logementGaine(P, g).map((x) => x.statut) }; });
+      loge: K.logementGaine(P, g).map((x) => x.statut),
+      /* plaque hydrofuge côté salle de bain, tronçon par tronçon : un tronçon voisin aligné garde la plaque ordinaire */
+      hydro: P.walls.filter((w) => (w.couches || []).some((c) => c.m === 'plaque_h')).map((w) => K.tronconsDuMur(P, w, false).some((x) => x.couches && !x.couches.some((c) => c.m === 'plaque_h'))) }; });
   assert.ok(cp.murs >= 10 && cp.cloisons >= 8, JSON.stringify(cp));
   for (const m of ['plaque', 'laine_verre', 'brique', 'parpaing', 'vide_tech', 'brique_platriere']) assert.ok(cp.mats.includes(m), m);
   assert.ok(cp.epOk, 'épaisseur des murs = somme des couches'); assert.ok(cp.exemple, 'compositions marquées « exemple »');
   assert.ok(cp.sol); assert.equal(cp.plafonds, 2);
   assert.deepEqual(cp.loge, ['ok'], 'gaine du local technique logée dans la laine de verre');
+  assert.ok(cp.hydro.length >= 1, 'cloisons de la salle de bain en plaque hydrofuge');
+  assert.ok(cp.hydro.some((x) => x), 'un tronçon voisin aligné garde sa composition (composition par tronçon)');
   /* suite du 14 novembre (format v17) : gaine dans la laine du faux plafond, déperditions des pièces de la maison */
   const th = await page.evaluate(async () => { const N = await import('./js/noyau.js'), K = await import('./js/compositions.js'), T = await import('./js/thermique.js'), G = await import('./js/geometrie.js');
     const P = N.P, gp = P.ducts.find((d) => d.couche);

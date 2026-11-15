@@ -11,6 +11,11 @@
 - Bouton de suppression lisible, filet contre les plantages et journal des erreurs, contrôle complet des liens (Vérifier le plan), plans abîmés réparés à l'ouverture, suppressions sans trace, démarrage lent sans perte, calibres et sections manquants dits.
 - Défauts trouvés par les nouveaux tests et corrigés : 13 sortes de plans abîmés qui ne s'ouvraient pas, 8 erreurs de dessin, plan illisible remplacé en silence par l'exemple, références orphelines après 4 sortes de suppressions, dessin perdu pendant un démarrage lent, « undefined A » dans le tableau, circuit sans calibre ignoré par le contrôle.
 - Tests : 208/208 (`tests/fiabilite.test.mjs`, 12 tests).
+## 14 novembre 2026 (soir) — Composition par tronçon, copier-coller d'une composition
+- Choix « Ce tronçon / Tout le mur », tronçon seul par défaut ; « Copier la composition » / « Coller la composition » (`js/compositions.js`, `js/compositionsui.js`).
+- Défaut corrigé au passage : un tronçon aligné de composition différente pouvait être tordu quand on élargissait son voisin vers un côté.
+- Audit avant fusion : « Tout le mur » ne reste plus actif d'un mur à l'autre ; le panneau prévient quand un mur s'élargira des deux côtés malgré le sens choisi ; la composition copiée est revérifiée avant d'être collée.
+- Vérifications : captures en 1180 × 820, 820 × 1180 et 390 × 844 (libellé raccourci pour le portrait). Tests : 197/197.
 
 ## 14 novembre 2026 (fin) — Onglet « Calculs »
 - 21 calculs expliqués (formule, lettres, données, essai en direct), exemples calculés par les moteurs (`js/formules.js`, `js/calculsui.js`).

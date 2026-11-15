@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (215/215 le 15 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (217/217 le 15 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -54,6 +54,14 @@ En paysage puis en portrait :
    « Réparer » (une copie de sécurité est gardée dans l'historique ; « Annuler » revient en arrière).
 4. Supprimer un niveau qui a des réserves de chantier : elles sont gardées et rattachées au niveau affiché (message).
 5. Si un jour quelque chose ne marche pas : Menu › Journal des erreurs › « Copier le journal », et le coller dans le message.
+## Essais de la composition par tronçon (14 novembre 2026, branche `claude/wall-composition-per-room-877z62`)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/wall-composition-per-room-877z62` › Create › Merge). Pas de changement de format : vos plans ne sont pas modifiés.
+Sur le plan d'exemple :
+1. Zoomer sur la salle de bain : ses cloisons ont la plaque hydrofuge (vert pâle « Plâtre H ») de son côté seulement.
+2. Toucher une cloison faite de plusieurs tronçons alignés › Composition › « Ce tronçon » (choisi par défaut) : changer le
+   matériau d'une plaque en « Plaque de plâtre hydrofuge » : seul le tronçon en surbrillance change. Annuler, puis « Tout le mur ».
+3. « Copier la composition » sur un mur, toucher un autre mur › « Coller la composition : … ». « Inverser les côtés » si besoin.
 
 ## Essais de l'onglet « Calculs » (14 novembre 2026)
 1. Toucher l'onglet **Calculs** (en haut, après Schémas) : lire une fiche (formule, lettres, données).

@@ -242,27 +242,48 @@ function appliquerAuNiveau(L, k, couches, nom) {
 /* composition type, couches du côté 1 vers le côté 2 : inversée si la pièce est du côté 2 (exterieurCote1) */
 function couchesOrientees(compo, exterieurCote1) { const l = clone(compo.couches); return exterieurCote1 ? l.reverse() : l; }
 
-/* ---------------- épaisseur d'un mur, élargi dans un sens choisi ----------------
-   sens : 'centre' (les deux faces bougent), 'c1' (la face du côté 2 reste en place, le mur grandit vers le côté 1),
-   'c2' (la face du côté 1 reste en place). Le mur entier est traité : tronçons alignés et reliés de même épaisseur et de
-   même composition. Ses angles sont déplacés : les murs adjacents s'allongent ou raccourcissent pour suivre ; les
-   ouvertures de ces murs gardent leur place ; les appareils muraux posés sur une face qui bouge la suivent.
-   couches (facultatif) : nouvelle composition (null = la retirer, undefined = inchangée). Renvoie les murs modifiés. */
-function changerEpaisseur(plan, w, th, sens, couches, nom) {
+/* ---------------- tronçons d'un même mur ----------------
+   tronçons alignés et reliés au mur w (de proche en proche). meme = true : seulement ceux de même type, même épaisseur et
+   même composition (le « mur entier » au sens de Calque) ; meme = false : tous les tronçons alignés reliés. */
+function tronconsDuMur(plan, w, meme = true) {
   const nodes = new Map((plan.nodes || []).map((n) => [n.id, n]));
-  const A = nodes.get(w.a), B = nodes.get(w.b); if (!A || !B) return [];
-  const L = Math.hypot(B.x - A.x, B.y - A.y); if (L < 0.5) return [];
+  const A = nodes.get(w.a), B = nodes.get(w.b); if (!A || !B) return [w];
+  const L = Math.hypot(B.x - A.x, B.y - A.y); if (L < 0.5) return [w];
   const d = { x: (B.x - A.x) / L, y: (B.y - A.y) / L }, n = { x: -d.y, y: d.x };
   const cle = (x) => JSON.stringify(x.couches || null);
   const dirDe = (x) => { const a = nodes.get(x.a), b = nodes.get(x.b); if (!a || !b) return null; const l = Math.hypot(b.x - a.x, b.y - a.y); return l < 0.5 ? null : { x: (b.x - a.x) / l, y: (b.y - a.y) / l }; };
   const aligne = (x) => { const e = dirDe(x); if (!e || Math.abs(e.x * d.y - e.y * d.x) > 0.01) return false; const a = nodes.get(x.a); return Math.abs((a.x - A.x) * n.x + (a.y - A.y) * n.y) < 0.5; };
-  /* tronçons du même mur (alignés, reliés, même épaisseur, même composition) */
+  const memeMur = (y) => !meme || (Math.abs((y.th || 0) - (w.th || 0)) < 0.01 && cle(y) === cle(w) && y.kind === w.kind);
   const lv = (plan.walls || []).filter((x) => x.lv === w.lv);
-  const chaine = new Set([w]); let pile = [w];
+  const chaine = [w], vus = new Set([w]), pile = [w];
   while (pile.length) {
     const x = pile.pop();
-    for (const y of lv) if (!chaine.has(y) && (y.a === x.a || y.a === x.b || y.b === x.a || y.b === x.b) && Math.abs((y.th || 0) - (w.th || 0)) < 0.01 && cle(y) === cle(w) && y.kind === w.kind && aligne(y)) { chaine.add(y); pile.push(y); }
+    for (const y of lv) if (!vus.has(y) && (y.a === x.a || y.a === x.b || y.b === x.a || y.b === x.b) && memeMur(y) && aligne(y)) { vus.add(y); chaine.push(y); pile.push(y); }
   }
+  return chaine;
+}
+
+/* ---------------- épaisseur d'un mur, élargi dans un sens choisi ----------------
+   sens : 'centre' (les deux faces bougent), 'c1' (la face du côté 2 reste en place, le mur grandit vers le côté 1),
+   'c2' (la face du côté 1 reste en place). Le mur entier est traité : tronçons alignés et reliés de même épaisseur et de
+   même composition (tronconsDuMur). Ses angles sont déplacés : les murs adjacents s'allongent ou raccourcissent pour suivre ; les
+   ouvertures de ces murs gardent leur place ; les appareils muraux posés sur une face qui bouge la suivent.
+   couches (facultatif) : nouvelle composition (null = la retirer, undefined = inchangée).
+   opts.seul = true : seulement le tronçon w (ex. plaque hydrofuge côté salle de bain, pas côté cuisine).
+   Si un tronçon aligné qui n'est pas modifié partage un angle avec le mur, les angles ne bougent pas (sinon ce tronçon
+   serait tordu) : le mur s'élargit alors des deux côtés. Renvoie les murs modifiés (propriété centre = true dans ce cas). */
+function changerEpaisseur(plan, w, th, sens, couches, nom, opts = {}) {
+  const nodes = new Map((plan.nodes || []).map((n) => [n.id, n]));
+  const A = nodes.get(w.a), B = nodes.get(w.b); if (!A || !B) return [];
+  const L = Math.hypot(B.x - A.x, B.y - A.y); if (L < 0.5) return [];
+  const d = { x: (B.x - A.x) / L, y: (B.y - A.y) / L }, n = { x: -d.y, y: d.x };
+  const dirDe = (x) => { const a = nodes.get(x.a), b = nodes.get(x.b); if (!a || !b) return null; const l = Math.hypot(b.x - a.x, b.y - a.y); return l < 0.5 ? null : { x: (b.x - a.x) / l, y: (b.y - a.y) / l }; };
+  const lv = (plan.walls || []).filter((x) => x.lv === w.lv);
+  const chaine = new Set(opts.seul ? [w] : tronconsDuMur(plan, w, true));
+  /* tronçons alignés reliés mais non modifiés : leurs angles communs ne doivent pas bouger */
+  const bloque = tronconsDuMur(plan, w, false).some((x) => !chaine.has(x));
+  const force = bloque && sens !== 'centre';
+  if (force) sens = 'centre';
   const ancien = w.th || 10;
   const futur = couches === undefined ? th : couches ? epaisseur(couches) : th;
   const D = futur - ancien;
@@ -299,7 +320,8 @@ function changerEpaisseur(plan, w, th, sens, couches, nom) {
     if (couches !== undefined) appliquerAuMur(x, couches, nom);
     if (!couches) x.th = Math.round(futur * 100) / 100;
   }
-  return [...chaine];
+  const out = [...chaine]; if (force) out.centre = true;
+  return out;
 }
 
 /* ---------------- quantités (estimation) ---------------- */
@@ -357,7 +379,7 @@ function nettoyerV16(p) {
   return p;
 }
 
-export { changerEpaisseur };
+export { changerEpaisseur, tronconsDuMur };
 export { CATS, COMPOSITIONS, COMPO_BY, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, bandes, clone as copierCouches, compoNiveau,
   coucheA, couchesOrientees, couchesPassage, courtCouche, decalagePassage, epaisseur, logementGaine, matDe, nettoyerCouches, nettoyerMurV16,
   nettoyerNiveauV16, nettoyerV16, nomCouche, placerDansCouche, resumePassage, statutDans, surfacesMateriaux };

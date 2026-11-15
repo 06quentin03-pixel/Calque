@@ -5,6 +5,7 @@ Même branche `claude/lucid-sagan-6h707m`. Demande de l'utilisateur : choisir ce
 - **Volets** (`js/volets.js`) : chaque section titrée du panneau (Dimensions, Composition, Thermique, Circuit, Pose…) se ferme et s'ouvre d'un toucher sur son titre (flèche). Par défaut, seules la première section et « Dimensions » sont ouvertes ; les boutons sans titre (« Supprimer »…) restent visibles.
 - Les choix sont retenus sur l'appareil pour chaque sorte d'objet (murs, pièces, appareils, gaines, niveau…) : ouvrir « Composition » sur un mur l'ouvre sur tous les murs.
 - « Tout ouvrir » (toutes les sections, partout, retenu) et « Tout fermer » en haut du panneau.
+- **Fusion de `main`** (composition par tronçon, copier-coller d'une composition, PR n°15) : les deux travaux sont gardés ; « Mes compositions » relues avec `nettoyerCouches` comme la composition copiée ; l'avertissement « s'élargira quand même des deux côtés » reste entièrement visible (classe `garder`, jamais replié derrière ⓘ). Service Worker : cache `calque-v55`. Tests : **217/217**.
 - Tests : les anciens tests démarrent avec « Tout ouvrir » (`tests/outils.mjs`) ; le comportement par défaut est testé dans `tests/ergonomie.test.mjs`. Service Worker : cache `calque-v54`. Tests : **215/215**.
 
 ## 2026-11-15 (suite) — Demandes de l'utilisateur : panneau de droite, explications, plancher et plafond sur mesure, cuisine en L
@@ -31,6 +32,15 @@ Branche `claude/lucid-sagan-6h707m`, partie de `main` après la fusion n°14. De
 - **Calibre ou section manquants** : « calibre à choisir », « section à choisir » (« ? A » dans les schémas) au lieu de « undefined A » ; le contrôle NF C 15-100 les signale en « vérification nécessaire » (ils étaient ignorés).
 - Tests de résistance : ~260 variantes abîmées du plan d'exemple, 120 modifications au hasard puis tout annuler / tout rétablir, IndexedDB absente / refusée / muette, formats v2 à v16 sans champ perdu, 29 fiches de calcul à leurs bornes, plan aux valeurs extrêmes parcouru panneau par panneau avec exports PDF et DXF.
 - Aucun changement du format des plans (toujours v17). Service Worker : cache `calque-v52`. Tests : **208/208** (nouveau : `tests/fiabilite.test.mjs`, 12 tests ; `migrations` et `exemple` complétés).
+## 2026-11-14 (soir) — Composition par tronçon et copier-coller d'une composition
+Branche `claude/wall-composition-per-room-877z62`, partie de `main` après la fusion n°14. Demande de l'utilisateur : la plaque hydrofuge de la salle de bain se retrouvait aussi côté cuisine, parce que la cloison du couloir (coupée par la cloison salle de bain / cuisine) était traitée comme un seul mur.
+- **« Modifier la composition de : Ce tronçon / Tout le mur (n) »** (panneau du mur › Composition), affiché quand le mur a plusieurs tronçons alignés de même composition. Par défaut, **seul le tronçon touché** est modifié (avant : tous les tronçons alignés). « Tout le mur » ne vaut que pour le mur sélectionné : sur un autre mur, on revient à « Ce tronçon ».
+- Quand un tronçon voisin aligné n'est pas modifié, les angles communs ne bougent plus (le voisin restait tordu) : si l'épaisseur change, le tronçon s'élargit des deux côtés, avec un message (aussi pour un mur sans composition dont le voisin aligné a une autre épaisseur) ; le panneau « Quand l'épaisseur change » le signale à l'avance.
+- **« Copier la composition »** puis, sur un autre mur ou une autre cloison, **« Coller la composition : … »** (couches gardées du côté de la pièce, comme « Appliquer aux autres » ; « Inverser les côtés » au besoin). La composition copiée est gardée dans les réglages de l'appareil et revérifiée avant d'être collée.
+- Moteur : `tronconsDuMur` et option `{ seul }` de `changerEpaisseur` (`js/compositions.js`). Aucun changement du format des plans.
+- Plan d'exemple : cloisons de la salle de bain en plaque hydrofuge du côté de la salle de bain seulement, tronçon par tronçon.
+- Audit avant fusion : portée « Tout le mur » limitée au mur choisi, avertissement du sens d'élargissement, copie revérifiée, captures 1180 × 820, 820 × 1180 et 390 × 844.
+- Service Worker : cache `calque-v49`. Tests : **197/197** (2 nouveaux tests dans `tests/compositions.test.mjs`, plan d'exemple vérifié).
 
 ## 2026-11-14 (fin) — Onglet « Calculs » : tous les calculs de Calque expliqués
 Même branche `claude/loving-thompson-b92t8x`. Demande de l'utilisateur : comprendre à quoi correspond chaque calcul et sa formule.
