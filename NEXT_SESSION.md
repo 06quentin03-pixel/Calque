@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (229/229 le 16 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (231/231 le 16 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -44,6 +44,8 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en po
 4. Tableau électrique › Cheminements › « Raccordement automatique » : choisir « De proche en proche » ou « Boîtes de
    dérivation (plafond et cloisons) », puis « Raccorder les … circuits incomplets ».
 5. Onglet Calculs › « Position d'une boîte de dérivation ».
+8. Câbles RJ45 : toucher une prise RJ45 › « Relier au coffret de communication » ; toucher le coffret de communication ›
+   « Relier les prises RJ45 ». Les câbles sont en bleu-vert « RJ45 » sur le plan.
 6. Dites-moi si les boîtes sont bien placées pour votre façon de câbler (au plafond de chaque pièce), et si vous préférez
    des boîtes murales ou des gaines horizontales dans les cloisons dans certains cas.
 7. Études thermiques : dites-moi laquelle des deux pistes du ROADMAP (« Études thermiques ») vous intéresse.

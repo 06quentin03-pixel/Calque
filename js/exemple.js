@@ -22,6 +22,7 @@ import { appliquerModele, depuisTableau, schemasDe } from './schema.js';
 import { colonneTableau } from './cheminement.js';
 import { raccorderCircuit } from './itineraire.js';
 import { raccorderEnBoites } from './boites.js';
+import { cablesRJ45, prisesSansCable } from './vdi.js';
 import { agcpLabel } from './elecdonnees.js';
 import { integrer, nouvelIntegre } from './integration.js';
 import { equiperPiece } from './equipement.js';
@@ -575,6 +576,13 @@ function boitesExemple() {
     const ids = new Map();
     for (const b of r.boites) ids.set(b.id, sym(b.lv, 'derivation', b.x, b.y, 0, { h: null }).id);
     for (const g of r.gaines) { const d = Object.assign({}, g, { id: uid('k'), mat: 'icta', dia: 20, a: ids.get(g.a) || g.a, b: ids.get(g.b) || g.b }); delete d.len; P.ducts.push(d); }
+    touch();
+  }
+  /* câbles RJ45 (demande du 16 novembre 2026) : les deux prises RJ45 de la maison reliées au coffret de communication */
+  const com = P.elec.find((e) => e.lv === 'L0' && e.type === 'com' && e.x < 1000);
+  if (com) {
+    const r = cablesRJ45(P, com, prisesSansCable(P, 'L0').filter((e) => e.x < 1000));
+    for (const g of r.cables) { const d = Object.assign({}, g, { id: uid('k'), mat: 'icta', dia: 20 }); delete d.len; P.ducts.push(d); }
     touch();
   }
 }

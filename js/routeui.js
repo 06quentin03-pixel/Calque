@@ -7,7 +7,8 @@ import { commit, cv, requestRender } from './interaction.js';
 import { btn, btns, deleteSel, h, inspHead, body, kv, renderInspector, sec, setTool, textField, toast, updateHint } from './interface.js';
 import { creerGaineElec, famOn, finishDuct } from './reseaux.js';
 import { goToRef } from './tableau.js';
-import { ancrage, cheminCircuit, grapheGaines, plusCourts, tableauDu, TRAVERSEE } from './cheminement.js';
+import { RJ45_PRISES, RJ45_SOURCES, ancrage, cheminCircuit, grapheGaines, longueurGaine, plusCourts, tableauDu, TRAVERSEE } from './cheminement.js';
+import { cablesRJ45, liensRJ45, prisesSansCable, sourceRJ45 } from './vdi.js';
 import { chercherItineraire, conflitsGaine, raccorderCircuit } from './itineraire.js';
 import { ELEC_BY } from './symboles.js';
 
@@ -192,6 +193,33 @@ function itineraireSection(e) {
     btns(ok ? null : btn('Proposer un itinéraire', () => proposerItineraire(e), 'sm', 'duct'), ch.tableau && !ch.complet ? btn(`Proposer le raccordement (${ch.nonAtteints.length})`, () => raccorderEtDire([e.cid]), 'sm') : null, btn('Zone interdite', startZone, 'sm')));
 }
 
+/* ---------------- câbles RJ45 (demande du 16 novembre 2026) ----------------
+   Panneau d'une prise RJ45 : la relier au coffret de communication ; panneau du coffret (baie, box) : relier toutes les
+   prises RJ45 du niveau. Un câble par prise (étoile), gaine ICTA au plafond puis descente dans le mur ; créé en une étape
+   d'« Annuler ». */
+const NOTE_RJ45 = 'Un câble par prise, depuis le coffret de communication (ou la baie, la box) du même niveau : gaine au plafond, séparée des circuits de courant fort, puis descente dans le mur. Catégorie du câble à préciser.';
+function relierRJ45(src, prises) {
+  const r = cablesRJ45(P, src, prises);
+  for (const g of r.cables) { const d = creerGaineElec(g); d.dia = 20; }
+  if (r.cables.length) { if (!famOn('gaines')) S.filt.off = S.filt.off.filter((x) => x !== 'gaines'); S.layers.elec = true; commit(); requestRender(); }
+  const m = Math.round(r.cables.reduce((s, g) => s + g.len, 0) / 100), e = r.echecs.length;
+  toast(r.cables.length ? `${r.cables.length} câble${r.cables.length > 1 ? 's' : ''} RJ45 tiré${r.cables.length > 1 ? 's' : ''} (${m} m à l’horizontale)${e ? ` ; ${e} prise${e > 1 ? 's' : ''} sans itinéraire ou sur un autre niveau` : ''}. « Annuler » les retire.` : 'Aucun itinéraire trouvé jusqu’au coffret (zone interdite ou autre niveau).');
+}
+function rj45Section(e) {
+  if (RJ45_PRISES.has(e.type)) {
+    const l = liensRJ45(P, e);
+    if (l.length) return sec('Câble RJ45', h('p', { class: 'note' }, `Reliée au coffret par un câble de ${fmtM(longueurGaine(P, l[0]).total)} (verticales comprises).`));
+    const src = sourceRJ45(P, e.lv, e);
+    if (!src) return sec('Câble RJ45', h('p', { class: 'note' }, 'Posez un coffret de communication (ou une baie, une box) sur ce niveau : les câbles RJ45 partent de lui.'));
+    const b = btn('Relier au coffret de communication', () => relierRJ45(src, [e]), 'pri sm', 'duct'); b.id = 'relierRJ45';
+    return sec('Câble RJ45', btns(b), h('p', { class: 'note' }, NOTE_RJ45));
+  }
+  if (!RJ45_SOURCES.has(e.type)) return null;
+  const ps = prisesSansCable(P, e.lv), n = liensRJ45(P, e).length;
+  const b = ps.length ? btn(`Relier les prises RJ45 (${ps.length})`, () => relierRJ45(e, ps), 'pri sm', 'duct') : null; if (b) b.id = 'relierRJ45';
+  return sec('Câbles RJ45', h('p', { class: 'note' }, `${n} prise${n > 1 ? 's' : ''} RJ45 reliée${n > 1 ? 's' : ''} à ce coffret${ps.length ? `, ${ps.length} sans câble sur ce niveau` : ''}.`), b ? btns(b) : null, h('p', { class: 'note' }, NOTE_RJ45));
+}
+
 /* conflits d'une gaine, pour son inspecteur */
 function conflitsSection(d) {
   const cs = conflitsGaine(P, d);
@@ -201,4 +229,4 @@ function conflitsSection(d) {
 }
 
 export { messageAuto, raccorderAuto, raccorderEtDire };
-export { conflitsSection, departPour, finishZone, inspZone, itineraireSection, proposerItineraire, startZone, validerItineraire, zoneAt, ZD };
+export { conflitsSection, departPour, finishZone, inspZone, itineraireSection, rj45Section, proposerItineraire, startZone, validerItineraire, zoneAt, ZD };

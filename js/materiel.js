@@ -6,6 +6,7 @@
    - Matériel : quantités estimées depuis le plan (longueurs + réserve), à vérifier avant commande. */
 import { isNum } from './noyau.js';
 import { REGLES, tableDisponible } from './normes.js';
+import { longueurRJ45 } from './vdi.js';
 import { aCommander, cheminCircuit, circuitsDe, isElecDuct, longueurGaine, nomChemin, reserveDe, sectionNominale, tailleChemin, TRAVERSEE, typeChemin } from './cheminement.js';
 import { conflitsPlan } from './itineraire.js';
 import { ELEC_BY } from './symboles.js';
@@ -107,6 +108,9 @@ function listeMateriel(plan) {
   for (const [des, v] of [...cables.entries()].sort((a, b) => a[0].localeCompare(b[0], 'fr', { numeric: true }))) {
     add('Conducteurs', `Câble ${des.replace(',', ',')}`, v.m, 'm', `${v.circuits.length} circuit${v.circuits.length > 1 ? 's' : ''} ; mètres de câble (chemins de câbles ou câble choisi)`);
   }
+  /* câbles RJ45 (coffret → prise), longueur du plan + réserve ; catégorie non choisie par Calque */
+  const rj = longueurRJ45(plan);
+  if (rj.n) add('Conducteurs', 'Câble réseau RJ45 (catégorie à préciser)', aCommander(rj.cm, res), 'm', `${rj.n} prise${rj.n > 1 ? 's' : ''} RJ45 reliée${rj.n > 1 ? 's' : ''} au coffret ; longueur du plan + réserve`);
   /* boîtes et accessoires comptés sur le plan */
   const elec = (plan.elec || []);
   const murales = elec.filter((e) => e.cid && (ELEC_BY.get(e.type) || {}).wall).length;

@@ -1,3 +1,6 @@
+## 16 novembre 2026 (suite) — Câbles RJ45
+- Câble RJ45 du coffret de communication à chaque prise RJ45 (`js/vdi.js`), depuis le panneau de la prise ou du coffret. Tests : 231/231. Fusionné dans `main` à la demande de l'utilisateur.
+
 ## 16 novembre 2026 — Câbles à tirer, raccordement en boîtes de dérivation
 - « Équipement minimal » : hotte, sèche-serviettes, chauffe-eau, réfrigérateur, micro-ondes, chaudière du mobilier raccordés ; « Câbles à tirer » pour les appareils déjà posés.
 - Raccordement automatique en boîtes de dérivation au plafond, gaines au plafond, descentes dans les cloisons (`js/boites.js`), au choix avec « De proche en proche ».

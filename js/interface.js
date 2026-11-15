@@ -30,7 +30,7 @@ import { fondSection, pickFond } from './fond.js';
 import { equipementNiveauSection, equipementSection } from './equipementui.js';
 import { integrationSections, puissanceChauffageSection } from './integrationui.js';
 import { TYPES_CHEMIN } from './cheminement.js';
-import { itineraireSection, startZone } from './routeui.js';
+import { itineraireSection, rj45Section, startZone } from './routeui.js';
 import { eclairageSection, lumSection } from './eclairageui.js';
 import { aCouches, appliquerAuMur, compoNiveau } from './compositions.js';
 import { compoMurSection, compoNiveauSection, epaissir, epaisseurComposee, nomCompoNouveauMur, oublierCompoNouveauMur, sensElargissement } from './compositionsui.js';
@@ -451,6 +451,7 @@ function inspElec(e) {
       traverseeSection(e),
       colonneSection(e),
       itineraireSection(e),
+      rj45Section(e),
       materielSection(e),
       sec('Marquage', textField(null, e.mark, (v) => { v = v.trim().slice(0, 8); if (v) e.mark = v; else delete e.mark; commit(); }, { id: 'f-emark', ph: 'Texte court affiché près du symbole (facultatif)' })),
       compSection(e, 'elec'),

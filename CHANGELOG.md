@@ -1,5 +1,10 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-16 (suite) — Câbles RJ45
+- Panneau d'une prise RJ45 (RJ45, double, TV) › « Câble RJ45 » › **« Relier au coffret de communication »** ; panneau du coffret de communication (ou de la baie, de la box) › **« Relier les prises RJ45 (n) »**. Un câble par prise (en étoile), gaine ICTA au plafond puis descente dans le mur, une étape d'« Annuler ».
+- Câbles dessinés en couleur « courants faibles » avec la mention « RJ45 » ; ils ne servent jamais aux circuits de courant fort (`estLienRJ45`, aucun changement de format). Matériel : ligne « Câble réseau RJ45 (catégorie à préciser) », longueur du plan + réserve.
+- Plan d'exemple : les deux prises RJ45 de la maison reliées au coffret. Service Worker `calque-v58`. Tests : `tests/rj45.test.mjs` (2 tests).
+
 ## 2026-11-16 — Câbles à tirer depuis « Équipement minimal », raccordement en boîtes de dérivation
 Branche `claude/dazzling-babbage-7wt87f`, partie de `main`. Demande de l'utilisateur : proposer de tirer un câble pour tous les équipements électriques déjà posés (sèche-serviettes, hotte…) ; gaines et câbles tirés automatiquement dans les endroits techniques (plafonds, cloisons), avec des boîtes de dérivation le plus possible ; question sur les vraies études thermiques.
 - **Équipement minimal** : la hotte (prise de hotte à 1,80 m, au-dessus de la plaque), le sèche-serviettes (sortie de câble), le chauffe-eau (chauffe-eau électrique sur l'appareil), le réfrigérateur, le micro-ondes et la chaudière posés en meubles reçoivent leur raccordement, comme le four ou le radiateur.
