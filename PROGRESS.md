@@ -1,3 +1,7 @@
+## 15 novembre 2026 (fin) — Panneau de droite en volets
+- Sections du panneau repliables, choix retenus par sorte d'objet, Tout ouvrir / Tout fermer (`js/volets.js`).
+- Tests : 215/215 (`ergonomie`, 7 tests).
+
 ## 15 novembre 2026 (suite) — Panneau de droite, explications, plancher et plafond sur mesure, cuisine en L
 - Choix qui débordaient du panneau (capture de l'utilisateur) corrigés partout ; panneau plus large et plus lisible ; explications repliées derrière ⓘ ; plancher et plafond composés soi-même, Mes compositions ; meubles d'angle de cuisine.
 - Défauts trouvés pendant les essais : meubles d'angle absents de la Bibliothèque (liste explicite), dernier pixel de l'écran non effacé avec une largeur non entière.

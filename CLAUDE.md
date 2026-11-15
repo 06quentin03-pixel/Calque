@@ -77,6 +77,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
   - **Tout nouveau type de référence entre objets** doit avoir sa règle dans `integrite.js` et être nettoyé à la suppression (`cleanLinks` pour les symboles).
   - Calibre et section s'affichent par `txtCal` / `txtSec` (`noyau.js`) : jamais « undefined ».
 - Panneau de droite (15 novembre 2026) : les longues explications (`p.note`, plus de 110 caractères) sont repliées automatiquement derrière ⓘ (`aide.js`) ; une alerte qui doit rester entière prend la classe `garder`. Les rangées de choix (`segCtl`) passent à la ligne ; un test vérifie qu'aucun panneau ne défile de côté (`tests/ergonomie.test.mjs`).
+- Volets du panneau de droite (`volets.js`) : toute section titrée (`sec('Titre', …)`) est repliable ; seules la première et « Dimensions » sont ouvertes par défaut. Les tests démarrent avec « Tout ouvrir » (`tests/outils.mjs`, `fresh({ volets: true })` pour le comportement par défaut). Dans un test, viser `button:not(.volet-tete)` quand le texte cherché peut être dans un titre.
 - Meubles d'angle en L (`meuble_angle`, `meuble_haut_angle`, `plan_angle`) : contour `_L` (`symboles.js`) et `formeL` (`vue3d.js`), dos côté −y et −x. Un nouveau meuble doit aussi être rangé dans `bibliotheque.js`.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 

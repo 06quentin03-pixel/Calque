@@ -93,6 +93,7 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `journalui.js` | Menu › Journal des erreurs : liste, copie en texte, essai du filet, effacement | non |
 | `integrite.js` | Contrôle des liens entre les objets d'un plan (`controlerPlan`) et réparations sûres (`reparerPlan`) ; utilisé par Menu › Vérifier le plan, `planProblems` et `cleanLinks` | oui |
 | `aide.js` | Explications repliées du panneau de droite : un long `p.note` montre sa première phrase et un bouton ⓘ qui ouvre l'explication complète ; un observateur traite les sections ajoutées après coup ; classe `garder` = texte jamais replié | non |
+| `volets.js` | Sections repliables du panneau de droite : chaque `.sec` titrée devient un volet ; état retenu par sorte d'objet (`S.volets['wall|Composition']`), « Tout ouvrir » (`S.voletsTous`) / « Tout fermer » | non |
 | `exemple.js` | Plan d'exemple « maison et atelier » : une fonction de chaque phase (règle du projet : toute nouvelle fonctionnalité y est ajoutée) | non |
 | `demarrage.js` | Raccourcis clavier, démarrage | non |
 | `miseajour.js` | Avis « nouvelle version disponible » | non |

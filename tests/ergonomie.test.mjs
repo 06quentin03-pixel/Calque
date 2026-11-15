@@ -158,3 +158,45 @@ test('cuisine en L : meubles d’angle (bas en L, haut en L, plan de travail d�
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('volets du panneau de droite : sections fermées sauf l’essentiel, ouvertes d’un toucher, choix retenus par sorte d’objet, Tout ouvrir / Tout fermer', async () => {
+  const { ctx, page, errors } = await fresh({ volets: true });
+  await boot(page);
+  await exemple(page);
+  const choisir = (t, filtre) => page.evaluate(async ([t, filtre]) => {
+    const N = await import('./js/noyau.js'), UI = await import('./js/interface.js');
+    const k = { wall: 'walls', room: 'rooms' }[t];
+    const l = N.P[k].filter((o) => o.lv === 'L0' && (!filtre || o.kind === filtre));
+    const o = l[window.__rang = ((window.__rang || 0) + 1) % l.length];
+    N.ui.lv = 'L0'; N.ui.sel = { t, id: o.id }; N.ui.inspOpen = true; UI.renderInspector();
+  }, [t, filtre]);
+  const etat = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#insp .sec.volet')].map((s) => [s.dataset.volet, !s.classList.contains('ferme')])));
+  await choisir('wall', 'mur'); await wait(page, 100);
+  let e = await etat();
+  assert.equal(e.Type, true, 'première section ouverte'); assert.equal(e.Dimensions, true, 'dimensions ouvertes');
+  assert.equal(e.Composition, false); assert.equal(e['Thermique (déperditions)'], false);
+  assert.equal(await page.locator('#insp .sec:has(h3:has-text("Composition")) .compo-list, #insp .sec:has(h3:has-text("Composition")) .list').first().isVisible(), false, 'contenu d’un volet fermé caché');
+  assert.ok(await page.locator('#insp button:has-text("Supprimer")').isVisible(), 'boutons sans titre toujours visibles');
+  /* ouvrir « Composition » d'un toucher : retenu pour les autres murs, pas pour les pièces */
+  await page.click('#insp .volet-tete:has-text("Composition")'); await wait(page, 100);
+  assert.equal((await etat()).Composition, true);
+  await page.click('#insp .volet-tete:has-text("Dimensions")'); await wait(page, 100);
+  await choisir('wall', 'mur'); await wait(page, 100);
+  e = await etat();
+  assert.equal(e.Composition, true, 'retenu sur un autre mur'); assert.equal(e.Dimensions, false, 'fermeture retenue aussi');
+  await choisir('room'); await wait(page, 100);
+  const piece = await etat();
+  assert.ok(Object.values(piece).filter(Boolean).length <= 2, 'pièce : ses propres réglages ' + JSON.stringify(piece));
+  /* Tout ouvrir, puis Tout fermer */
+  await page.click('#insp .volets-tout button:has-text("Tout ouvrir")'); await wait(page, 100);
+  assert.ok(Object.values(await etat()).every(Boolean));
+  await choisir('wall', 'mur'); await wait(page, 100);
+  assert.ok(Object.values(await etat()).every(Boolean), 'Tout ouvrir vaut pour toutes les sortes d’objets');
+  await page.click('#insp .volets-tout button:has-text("Tout fermer")'); await wait(page, 100);
+  assert.ok(Object.values(await etat()).every((v) => !v));
+  /* réglages gardés sur l'appareil */
+  const S = JSON.parse(await page.evaluate(() => localStorage.getItem('calque.settings')));
+  assert.equal(S.voletsTous, false); assert.equal(S.volets['wall|Composition'], false);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});

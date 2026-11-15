@@ -234,6 +234,19 @@ button { cursor: pointer; }
 .insp .seg button { min-height: 36px; font-size: 14px; }
 .insp .inp input, .insp .inp select, .insp input.txt, .insp select.txt { height: 38px; font-size: 15px; }
 .insp .kv { font-size: 14px; }
+/* volets du panneau de droite (js/volets.js) : toucher un titre ouvre ou ferme sa section */
+.insp-body:has(> .sec.volet) { gap: 0; }
+.insp .sec.volet { border-bottom: 1px solid var(--rule); padding-bottom: 12px; }
+.insp .sec.volet.ferme { padding-bottom: 0; }
+.insp .sec.volet.ferme > :not(.volet-tete) { display: none; }
+.volet-tete { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 0 2px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.volet-tete h3 { flex: 1; margin: 0; }
+.insp .volet-tete h3 { font-size: 13px; color: var(--ink); }
+.volet-tete svg { flex: none; color: var(--ink-2); transition: transform .15s; }
+.sec.volet.ferme .volet-tete svg { transform: rotate(-90deg); }
+.volet-tete:active { background: var(--panel-2); border-radius: 8px; }
+.volets-tout { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 4px; }
+.volets-tout button { height: 32px; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
 /* explications repliées (js/aide.js) : première phrase + ⓘ ; texte complet dans une petite fenêtre */
 .aide-i { display: inline-grid; place-items: center; width: 30px; height: 30px; margin: -6px 0 -8px 0; padding: 0; border: 0; border-radius: 15px; background: transparent; color: var(--accent-ink); font-size: 19px; line-height: 1; vertical-align: middle; cursor: pointer; }
 .aide-i:active { background: var(--accent-soft); }

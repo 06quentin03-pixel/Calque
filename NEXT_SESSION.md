@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (214/214 le 15 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (215/215 le 15 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -38,6 +38,8 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en po
 2. Le panneau de droite est plus large et plus lisible ; les longs textes gris finissent par ⓘ : le toucher ouvre l'explication.
 3. Panneau du niveau › « Plancher, plafond et matériaux » › Plafond › « Composer moi-même » ; ajouter une couche ; taper un nom ;
    « Enregistrer dans mes compositions ». Sur un autre niveau : « Choisir une composition » › « Mes compositions » en tête.
+5. Toucher un mur : le panneau montre les titres des sections ; toucher « Composition » l'ouvre ; toucher un autre mur :
+   « Composition » est restée ouverte. « Tout ouvrir » / « Tout fermer » en haut du panneau.
 4. Cuisine (rez-de-chaussée de la maison) : le meuble bas d'angle en L est dans le coin, le meuble haut d'angle au-dessus ;
    vue 3D ; Bibliothèque › Mobilier › Cuisine : meubles d'angle (bouton « Miroir » pour l'autre angle).
 

@@ -1,5 +1,12 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-15 (fin) — Panneau de droite en volets
+Même branche `claude/lucid-sagan-6h707m`. Demande de l'utilisateur : choisir ce qu'on veut voir dans le panneau de droite plutôt que tout faire défiler.
+- **Volets** (`js/volets.js`) : chaque section titrée du panneau (Dimensions, Composition, Thermique, Circuit, Pose…) se ferme et s'ouvre d'un toucher sur son titre (flèche). Par défaut, seules la première section et « Dimensions » sont ouvertes ; les boutons sans titre (« Supprimer »…) restent visibles.
+- Les choix sont retenus sur l'appareil pour chaque sorte d'objet (murs, pièces, appareils, gaines, niveau…) : ouvrir « Composition » sur un mur l'ouvre sur tous les murs.
+- « Tout ouvrir » (toutes les sections, partout, retenu) et « Tout fermer » en haut du panneau.
+- Tests : les anciens tests démarrent avec « Tout ouvrir » (`tests/outils.mjs`) ; le comportement par défaut est testé dans `tests/ergonomie.test.mjs`. Service Worker : cache `calque-v54`. Tests : **215/215**.
+
 ## 2026-11-15 (suite) — Demandes de l'utilisateur : panneau de droite, explications, plancher et plafond sur mesure, cuisine en L
 Même branche `claude/lucid-sagan-6h707m`.
 - **Bug corrigé (capture de l'utilisateur)** : dans le panneau de droite, les rangées de choix (« Terre-plein / Vide sanitaire / Local non chauffé / Extérieur », « Combles perdus / Local non chauffé / Toiture », « Vers extérieur », « Le départ bouge », « Vide technique »…) ne passaient pas à la ligne : le panneau défilait de côté et se coupait à gauche. Les choix passent maintenant à la ligne ; le panneau ne peut plus défiler de côté. Test : chaque panneau du plan d'exemple, en iPad paysage, portrait et téléphone.

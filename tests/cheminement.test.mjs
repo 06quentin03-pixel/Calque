@@ -126,7 +126,7 @@ test('inspecteur : type, pose et longueurs d’une gaine ; passage entre étages
   });
   await wait(page, 300);
   assert.match(await insp(), /Choisissez le niveau à relier/);
-  await page.click('#insp .sec:has(h3:has-text("Passage entre étages")) button:has-text("Étage")'); await wait(page, 300);
+  await page.click('#insp .sec:has(h3:has-text("Passage entre étages")) button:not(.volet-tete):has-text("Étage")'); await wait(page, 300);
   assert.match(await insp(), /Relié à « Étage »/);
   const tw = await page.evaluate(async () => { const N = await import('./js/noyau.js'); const a = N.IDX.elec.get('tr'); const b = N.IDX.elec.get(a.to); return b && { lv: b.lv, to: b.to, x: b.x, y: b.y, type: b.type }; });
   assert.deepEqual(tw, { lv: 'L1', to: 'tr', x: 300, y: 300, type: 'traversee' });
