@@ -45,7 +45,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 18);
+  assert.equal(r.v, 19);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -65,7 +65,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
   assert.ok(r.etudes >= 3 && r.lum >= 20);
   // documents et règles (phase 6) : cartouche, indice A, dossier complet, rapport
   assert.equal(r.doc.revisions[0].i, 'A'); assert.ok(r.doc.client && r.doc.affaire);
-  assert.equal(r.chap, 13); assert.ok(r.pages >= 25, `${r.pages} pages`);
+  assert.equal(r.chap, 14); assert.ok(r.pages >= 25, `${r.pages} pages`);
   assert.ok(r.rap.total > 300 && r.rap.cq > 50); assert.notEqual(r.rap.global, 'conforme');
   // chantier (phase 7) : cases « posé » (appareils et circuits), réserves aux trois statuts avec échéance, photos à prendre
   // (aucune photo inventée), annotations, historique ; chapitre « Suivi de chantier » du dossier
@@ -125,7 +125,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 18);
+  assert.equal(r.v, 19);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
@@ -231,6 +231,18 @@ test('plan d’exemple : câbles à tirer et raccordement en boîtes de dérivat
   assert.ok(r.parBoite.every((n) => n >= 3), 'chaque boîte dessert plusieurs appareils : ' + r.parBoite);
   assert.ok(r.complet && r.points >= 6); assert.deepEqual(r.poses, ['plafond']);
   assert.ok(r.cables > 0, 'la cuisine a des câbles à tirer');
+  /* descente dans le mur (demande du 16 novembre 2026) : la gaine d'une prise arrive dans la couche de passage du mur, au-dessus d'elle ;
+     note de calcul du chauffage : relance d'exemple saisie, comptée dans les pièces */
+  const r2 = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), K = await import('./js/compositions.js'), G = await import('./js/geometrie.js'), C = await import('./js/notechauffage.js');
+    const P = N.P, bx = new Set(P.elec.filter((e) => e.type === 'derivation' && e.lv === 'L0' && e.x < 1000).map((e) => e.id));
+    const drops = P.ducts.filter((d) => bx.has(d.a) && P.elec.some((e) => e.id === d.b && e.type.startsWith('pc')));
+    const dans = drops.map((d) => { const e = P.elec.find((x) => x.id === d.b), L = K.descenteMur(P, e), q = d.pts[d.pts.length - 2]; return !!L && Math.hypot(q.x - L.x, q.y - L.y) < 0.2 ? L.mode : 'non'; });
+    const note = C.noteChauffage(P, new Map(P.levels.map((l) => [l.id, G.geo(l.id).rooms])));
+    return { dans, frh: P.install.frh && P.install.frh.v, relance: note.niveaux.flatMap((n) => n.pieces).every((p) => p.phiRH > 0), n: note.nPieces };
+  });
+  assert.ok(r2.dans.length >= 3 && r2.dans.every((m) => m !== 'non'), 'descentes dans le mur : ' + r2.dans);
+  assert.equal(r2.frh, 10); assert.ok(r2.relance && r2.n >= 10);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

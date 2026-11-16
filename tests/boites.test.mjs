@@ -148,3 +148,28 @@ test('écran : « Tirer les câbles » depuis Équipement minimal (boîtes propo
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('descente dans le mur : la gaine arrive au plafond au-dessus de l’appareil, descend dans la laine de verre (sinon en saignée), longueur avec la verticale', async () => {
+  const { descenteMur } = await import('../js/compositions.js');
+  const { longueurGaine } = await import('../js/cheminement.js');
+  const p = plan();
+  p.elec.find((e) => e.id === 'p1').y = 10; // prise sur la face du mur du haut (y = 10)
+  /* mur du haut : plaque de plâtre 1,3 cm côté pièce, laine de verre 10 cm, brique 8,7 cm */
+  p.walls.find((w) => w.id === 'L0w0').couches = [{ m: 'plaque', e: 1.3 }, { m: 'laine_verre', e: 10 }, { m: 'brique', e: 8.7 }];
+  const L = descenteMur(p, p.elec.find((e) => e.id === 'p1'));
+  assert.equal(L.mode, 'couche'); assert.equal(L.couche.m, 'laine_verre'); assert.equal(L.x, 150); assert.ok(Math.abs(L.y - 3.7) < 0.05, 'milieu de la laine : ' + L.y);
+  const r = raccorderEnBoites(p, 'c1', { pieces });
+  const g = r.gaines.find((x) => x.b === 'p1'), n = g.pts.length;
+  assert.deepEqual(g.pts[n - 2], { x: L.x, y: L.y }, 'arrivée dans le mur, au-dessus de la prise');
+  assert.ok(g.pts[n - 1].y > 10, 'puis la prise, devant le mur');
+  /* mur de droite sans couche de passage (brique enduite) : saignée sous la face ; mur sans composition : dans le mur */
+  p.walls.find((w) => w.id === 'L0w1').couches = [{ m: 'enduit_platre', e: 1.5 }, { m: 'brique', e: 18.5 }];
+  const s = descenteMur(p, { id: 'z', lv: 'L0', type: 'pc', x: 590, y: 200, rot: 90, h: 30 });
+  assert.equal(s.mode, 'saignee'); assert.ok(Math.abs(s.x - 591.5) < 0.05, 'saignée à 1,5 cm sous la face : ' + s.x);
+  assert.equal(descenteMur(p, { id: 'z2', lv: 'L0', type: 'pc', x: 300, y: 390, rot: 180, h: 30 }).mode, 'inconnu');
+  assert.equal(descenteMur(p, { id: 'z3', lv: 'L0', type: 'pl', x: 300, y: 200, rot: 0, h: null }), null, 'point au plafond : pas de descente');
+  /* longueur : horizontale + verticale (250 − 30 cm) */
+  p.elec.push(...r.boites.map((b) => Object.assign({}, b, { h: null })));
+  const d = Object.assign({ id: 'gx' }, g), lg = longueurGaine(p, d);
+  assert.ok(Math.abs(lg.vert - 220) < 0.01, 'verticale : ' + lg.vert);
+});

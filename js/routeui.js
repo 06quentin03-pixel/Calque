@@ -9,7 +9,7 @@ import { creerGaineElec, famOn, finishDuct } from './reseaux.js';
 import { goToRef } from './tableau.js';
 import { RJ45_PRISES, RJ45_SOURCES, ancrage, cheminCircuit, grapheGaines, longueurGaine, plusCourts, tableauDu, TRAVERSEE } from './cheminement.js';
 import { cablesRJ45, liensRJ45, prisesSansCable, sourceRJ45 } from './vdi.js';
-import { chercherItineraire, conflitsGaine, raccorderCircuit } from './itineraire.js';
+import { chercherItineraire, conflitsGaine, itineraireEntre, raccorderCircuit } from './itineraire.js';
 import { ELEC_BY } from './symboles.js';
 
 const ROUGE = '#C2362B';
@@ -121,7 +121,7 @@ function departPour(e) {
 function proposerItineraire(e) {
   const dep = departPour(e);
   if (!dep.from) { toast(dep.raison); return; }
-  const res = chercherItineraire(P, e.lv, ancrage(dep.from), ancrage(e), { pose: S.ductPose || null });
+  const res = itineraireEntre(P, e.lv, dep.from, ancrage(dep.from), e, ancrage(e), { pose: S.ductPose || null });
   if (!res) { toast('Aucun itinéraire trouvé : une zone interdite ou des portes bloquent le passage.'); return; }
   setTool('route');
   ui.route = { a: dep.from.id, b: e.id, cid: e.cid, res };

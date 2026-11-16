@@ -7,8 +7,8 @@
       la pièce et libre (aucune gaine d'un autre circuit) est reprise. Sur un niveau sans boîte, des points isolés dans
       plusieurs pièces se partagent une boîte, posée dans la pièce du point le plus central ;
    3. les boîtes sont reliées au tableau (ou de boîte en boîte, ou par un passage entre étages) par des gaines au plafond ;
-   4. chaque point est relié à sa boîte : gaine au plafond, puis descente verticale dans le mur ou la cloison jusqu'à
-      l'appareil (la verticale est comptée dans les longueurs) ;
+   4. chaque point est relié à sa boîte : gaine au plafond jusqu'au mur au-dessus de l'appareil, puis descente dans la
+      couche de passage du mur ou de la cloison (vide technique, laine de verre ; sinon saignée) : itineraireEntre ;
    5. un point resté seul (circuit spécialisé, point isolé) est relié à la boîte la plus proche du circuit, sinon au
       tableau : jamais d'appareil à appareil.
    Un circuit d'un seul point (four, lave-linge, plaque…) part directement du tableau : une boîte n'y sert à rien.
@@ -17,7 +17,7 @@
    droits) jusqu'à ses points, à 30 cm au moins des murs, hors zone interdite et à l'écart des autres symboles.
    La boîte doit rester accessible (trappe de visite dans un faux plafond) : rappelé par l'écran. */
 import { DERIVATIONS, TRAVERSEE, ancrage, cheminCircuit, circuitsDe, isElecDuct, tableauDu } from './cheminement.js';
-import { chercherItineraire, inPoly, raccorderCircuit } from './itineraire.js';
+import { inPoly, itineraireEntre, raccorderCircuit } from './itineraire.js';
 
 const POSE_TECHNIQUE = 'plafond';
 const MARGE_MUR = 30;   // cm entre la boîte et les faces des murs (estimé par Calque)
@@ -151,7 +151,7 @@ function raccorderEnBoites(plan, cid, opts = {}) {
     if (!relieesA.has(G.boite.id)) { for (const e of G.pts) restants.add(e.id); continue; }
     const A = ancrage(G.boite);
     for (const e of G.pts) {
-      const res = chercherItineraire(tmp, e.lv, A, ancrage(e), { pose });
+      const res = itineraireEntre(tmp, e.lv, G.boite, A, e, ancrage(e), { pose });
       if (!res) { restants.add(e.id); continue; }
       ajouter({ lv: e.lv, sys: 'elec', pts: res.pts, a: G.boite.id, b: e.id, cid, len: res.len, kind: opts.kind });
     }

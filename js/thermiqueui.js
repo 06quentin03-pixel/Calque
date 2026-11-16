@@ -4,7 +4,8 @@
 import { P } from './noyau.js';
 import { geo } from './geometrie.js';
 import { commit } from './interaction.js';
-import { chipRow, h, kv, numField, sec, segCtl } from './interface.js';
+import { btn, btns, chipRow, closeModal, h, kv, numField, openModal, sec, segCtl, toast } from './interface.js';
+import { VERDICTS, noteChauffage, relance } from './notechauffage.js';
 import { COTES, DEF, bilanThermique, chauffagePose, coteNiveau, deperditionsPiece, ficheMur, tExt, tInt, uOuverture } from './thermique.js';
 import { nomCouche } from './compositions.js';
 
@@ -85,7 +86,7 @@ function thermiquePieceSection(lbl, r) {
     h('div', { class: 'ro', style: 'font-size:26px;font-weight:700;margin-top:6px' }, D.total != null ? W_(D.total) : f1(D.H) + ' W/K'),
     h('div', null, pill(D.statut), ' ', h('span', { class: 'note' }, D.total != null ? `soit ${f1(D.parM2)} W/m² · ${f1(D.total / Math.max(D.V, 0.01))} W/m³ pour ΔT = ${f1(D.dT)} K` : 'Déperdition par degré d’écart (température extérieure manquante)')),
     kv([['Parois', D.phiT != null ? W_(D.phiT) : f1(D.Ht) + ' W/K'], ['Ponts thermiques', D.phiPt != null ? W_(D.phiPt) : f1(D.Hpt) + ' W/K'],
-      ['Renouvellement d’air', D.phiV != null ? W_(D.phiV) : f1(D.Hv) + ' W/K'], ['Surface · volume', `${f1(D.S)} m² · ${f1(D.V)} m³`]]),
+      ['Renouvellement d’air', D.phiV != null ? W_(D.phiV) : f1(D.Hv) + ' W/K'], D.phiRH != null ? ['Relance', W_(D.phiRH)] : null, ['Surface · volume', `${f1(D.S)} m² · ${f1(D.V)} m³`]]),
     tableau(D.lignes)];
   if (D.manque.length) parts.push(h('p', { class: 'note', style: 'color:var(--bad)' }, 'Manque : ' + D.manque.join(' ; ') + '.'));
   if (D.estimees.length) parts.push(h('details', null, h('summary', { class: 'note' }, `${D.estimees.length} valeur${D.estimees.length > 1 ? 's' : ''} estimée${D.estimees.length > 1 ? 's' : ''}`),
@@ -120,12 +121,61 @@ function thermiqueNiveauSection(lvl) {
     numField('Ponts thermiques (majoration ΔU)', dupt.v, 'W/m²·K', (v) => { P.install.dupt = { v, st: 'saisie', src: 'Saisie pour le projet' }; commit(); }, { id: 'f-dupt', min: 0, max: 2 }),
     dupt.st === 'estimee' ? h('p', { class: 'note' }, 'Estimée : ' + dupt.src + '.') : null,
     cote('sol'), cote('plafond'),
+    relanceField(false),
+    btns((() => { const b = btn('Note de calcul du chauffage', ouvrirNote, 'pri sm'); b.id = 'ouvrirNote'; return b; })()),
     B.lignes.length ? h('div', null, h('h4', null, 'Bilan des pièces chauffées'),
       h('div', { class: 'list' }, B.lignes.map((x) => h('div', { class: 'li' },
         h('span', null, x.piece.name, h('small', { style: 'display:block;opacity:.75' }, `${f1(x.ti.v)} °C · ${f1(x.S)} m²${x.pose.n ? ' · posé ' + W_(x.pose.p) : ''}`)),
         h('span', { class: 'v' }, x.total != null ? W_(x.total) : f1(x.H) + ' W/K', ' ', pill(x.statut)))),
         h('div', { class: 'li tot' }, h('span'), h('span', null, 'Total du niveau'), h('span', { class: 'v' }, B.total != null ? W_(B.total) + (B.partiel ? ' (partiel)' : '') : '—')))) : h('p', { class: 'note' }, 'Aucune pièce chauffée sur ce niveau.'),
     h('p', { class: 'note' }, NOTE));
+}
+
+/* ---------------- note de calcul du chauffage (demande du 16 novembre 2026) ---------------- */
+function relanceField(rouvrir) {
+  const r = relance(P);
+  const poser = (v) => { if (v == null) delete P.install.frh; else P.install.frh = { v, st: 'saisie', src: 'Saisie pour le projet' }; commit(); if (rouvrir) ouvrirNote(); };
+  return h('div', null,
+    numField('Puissance de relance f_RH', r ? r.v : null, 'W/m²', (v) => poser(v), { id: 'f-frh', min: 0, max: 300 }),
+    r ? btns(btn('Ne pas compter de relance', () => poser(null), 'sm')) : null,
+    h('p', { class: 'note' }, r ? `Saisie : ${r.v} W/m² ajoutés à chaque pièce (S × f_RH).` : 'Non comptée. Si le chauffage est réduit la nuit ou en absence, saisissez la puissance de relance par m² (elle dépend de la baisse de température et du temps de remise en température que vous choisissez).'));
+}
+function ouvrirNote() {
+  const N = noteChauffage(P, contexte().toutes);
+  const td = (v, o) => h('td', o || null, v);
+  const VCLS = { suffisant: 'ok', insuffisant: 'bad', sans: 'warn', incalculable: 'bad' };
+  const lignes = [];
+  for (const n of N.niveaux) for (const p of n.pieces) lignes.push(h('tr', null, td(n.nom), td(h('b', null, p.nom)), td(f1(p.ti.v) + ' °C', { class: 'n' }), td(f1(p.S) + ' m²', { class: 'n' }),
+    td(W_(p.phiT), { class: 'n' }), td(W_(p.phiPt), { class: 'n' }), td(W_(p.phiV), { class: 'n' }), td(p.phiRH == null ? '—' : W_(p.phiRH), { class: 'n' }),
+    td(h('b', null, W_(p.total)), { class: 'n' }), td(p.pose.n ? W_(p.pose.p) + (p.pose.saisi ? '' : ' *') : '—', { class: 'n' }),
+    td(h('span', { class: 'pill ' + VCLS[p.verdict] }, VERDICTS[p.verdict] + (p.verdict === 'insuffisant' ? ` (−${W_(p.manque)})` : '')))));
+  const exporter = async (b) => {
+    b.disabled = true; const t = b.textContent; b.textContent = 'Préparation…';
+    try {
+      const [{ dossierPDF }, { shareFile, afterShare }] = await Promise.all([import('./documents.js'), import('./export.js')]);
+      const res = await dossierPDF(P, { chapitres: ['thermique'], noteChauffage: N });
+      const nom = (P.name || 'plan').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'plan';
+      afterShare(await shareFile(new File([res.blob], `${nom}-note-chauffage.pdf`, { type: 'application/pdf' })));
+    } catch (e) { console.error(e); toast('Impossible de préparer la note.'); }
+    finally { b.disabled = false; b.textContent = t; }
+  };
+  const bPdf = btn('Exporter la note en PDF', () => exporter(bPdf), 'pri', 'down'); bPdf.id = 'notePDF';
+  openModal('Note de calcul du chauffage',
+    h('p', { class: 'note garder' }, N.avertissement),
+    kv([['Température extérieure de base', N.te ? `${N.te.v} °C (${N.te.st === 'saisie' ? 'saisie' : 'estimée'})` : 'manquante'], ['Ponts thermiques ΔU', `${f2(N.dupt.v)} W/m²·K (${N.dupt.st === 'saisie' ? 'saisie' : 'estimée'})`], ['Pièces chauffées', String(N.nPieces)]]),
+    N.te ? null : teField(),
+    relanceField(true),
+    h('details', null, h('summary', { class: 'note' }, 'Méthode de calcul'), h('ul', { class: 'note' }, N.methode.map((m) => h('li', null, m)))),
+    h('div', { class: 'nc-wrap' }, h('table', { id: 'noteTable', class: 'nc-table' },
+      h('thead', null, h('tr', null, ['Niveau', 'Pièce', 'T int.', 'Surface', 'Parois', 'Ponts th.', 'Air', 'Relance', 'Φ pièce', 'Posé', 'Comparaison'].map((x) => h('th', null, x)))),
+      h('tbody', null, lignes))),
+    h('p', { class: 'note' }, '* puissance par défaut de Calque (appareil sans puissance saisie).'),
+    kv([...N.niveaux.filter((n) => n.pieces.length).map((n) => [n.nom, `${W_(n.total)} à couvrir · ${W_(n.pose)} posés`]), ['Bâtiment', N.total == null ? 'partiel (donnée manquante)' : `${W_(N.total)} à couvrir · ${W_(N.pose)} posés`]]),
+    N.aRevoir.length ? h('p', { class: 'note garder', style: 'color:var(--bad)' }, 'À revoir : ' + N.aRevoir.map((x) => `${x.nom} (${x.verdict === 'sans' ? 'aucun chauffage' : 'il manque ' + W_(x.manque)})`).join(' ; ') + '.') : null,
+    N.manque.length ? h('details', null, h('summary', { class: 'note', style: 'color:var(--bad)' }, `${N.manque.length} donnée${N.manque.length > 1 ? 's' : ''} manquante${N.manque.length > 1 ? 's' : ''}`), h('ul', { class: 'note' }, N.manque.map((m) => h('li', null, m)))) : null,
+    N.estimees.length ? h('details', null, h('summary', { class: 'note' }, `${N.estimees.length} valeur${N.estimees.length > 1 ? 's' : ''} estimée${N.estimees.length > 1 ? 's' : ''}`), h('ul', { class: 'note' }, N.estimees.map((m) => h('li', null, m)))) : null,
+    btns(bPdf, btn('Fermer', closeModal)));
+  document.getElementById('modal').classList.add('wide');
 }
 
 /* ---------------- ouverture ---------------- */
@@ -136,4 +186,4 @@ function thermiqueOuvertureSection(o) {
     h('p', { class: 'note' }, u.st === 'estimee' ? 'Estimé : ' + u.src + '.' : 'Saisi (valeur de la fiche du fabricant).'));
 }
 
-export { thermiqueMurSection, thermiqueNiveauSection, thermiqueOuvertureSection, thermiquePieceSection };
+export { ouvrirNote, thermiqueMurSection, thermiqueNiveauSection, thermiqueOuvertureSection, thermiquePieceSection };

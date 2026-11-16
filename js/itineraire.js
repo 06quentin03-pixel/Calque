@@ -2,6 +2,7 @@
    (portes, fenêtres, murs, zones interdites, conduits de VMC). JavaScript pur, sans accès à l'écran : testable avec Node.
    Les conflits sont des points d'attention de Calque, pas des règles de la norme : ils ne disent jamais « conforme ». */
 import { isNum } from './noyau.js';
+import { descenteMur } from './compositions.js';
 import { DERIVATIONS, poseAHauteur, TRAVERSEE, ancrage, cheminCircuit, circuitsDe, grapheGaines, hauteurParcours, isElecDuct, plusCourts, pointsGaine, tableauDu } from './cheminement.js';
 
 /* ---------------- géométrie du niveau ---------------- */
@@ -199,6 +200,22 @@ function chercherItineraire(plan, lv, from, to, opts = {}) {
   return { pts: clean, len, murs, cloisons, croisements, cellule: cs };
 }
 
+/* ---------------- descente dans le mur (demande du 16 novembre 2026) ----------------
+   Une gaine posée au plafond (ou au sol) qui rejoint un appareil mural n'arrive pas en l'air devant lui : elle va jusqu'au
+   mur au-dessus (ou au-dessous) de l'appareil, entre dans sa couche de passage (vide technique, laine de verre), y descend
+   (la verticale est comptée dans la longueur), puis rejoint l'appareil. eA, eB : symboles aux deux bouts (ou null). */
+function viaMur(plan, e, p, pose) { return e && (pose === 'plafond' || pose === 'sol') ? descenteMur(plan, e, p) : null; }
+function itineraireEntre(plan, lv, eA, A, eB, B, opts = {}) {
+  const ma = viaMur(plan, eA, A, opts.pose), mb = viaMur(plan, eB, B, opts.pose);
+  const r = chercherItineraire(plan, lv, ma ? { x: ma.x, y: ma.y } : A, mb ? { x: mb.x, y: mb.y } : B, opts);
+  if (!r) return null;
+  const pts = r.pts.slice();
+  if (ma) pts.unshift({ x: A.x, y: A.y });
+  if (mb) pts.push({ x: B.x, y: B.y });
+  let len = 0; for (let m = 1; m < pts.length; m++) len += Math.hypot(pts[m].x - pts[m - 1].x, pts[m].y - pts[m - 1].y);
+  return Object.assign(r, { pts, len, descentes: { a: ma, b: mb } });
+}
+
 /* ---------------- raccordement automatique d'un circuit ----------------
    Relie au tableau, par des gaines proposées, tous les points d'un circuit qui ne le sont pas encore.
    À chaque tour, le point non raccordé le plus proche d'un point déjà raccordé du même niveau (tableau, point du même
@@ -254,7 +271,7 @@ function raccorderCircuit(plan, cid, opts = {}) {
     }
     if (!best) { for (const e of reste) { rates.add(e.id); out.echecs.push({ id: e.id, raison: 'Aucun point de ce niveau n’est raccordé au tableau (posez un passage entre étages et raccordez-le).' }); } break; }
     const dep = best.pique ? { x: Math.round(best.pique.x * 10) / 10, y: Math.round(best.pique.y * 10) / 10 } : ancrage(best.from);
-    const res = chercherItineraire(tmp, best.e.lv, dep, ancrage(best.e), { pose: opts.pose || null });
+    const res = itineraireEntre(tmp, best.e.lv, best.pique ? null : best.from, dep, best.e, ancrage(best.e), { pose: opts.pose || null });
     if (!res) { rates.add(best.e.id); out.echecs.push({ id: best.e.id, raison: 'Aucun itinéraire : une zone interdite ou des portes bloquent le passage.' }); continue; }
     const g = { id: '~auto' + (n++), lv: best.e.lv, sys: 'elec', pts: res.pts, a: best.pique ? null : best.from.id, b: best.e.id, cid, len: res.len };
     if (best.pique) { g.pts[0] = dep; g.pique = true; }
@@ -266,4 +283,4 @@ function raccorderCircuit(plan, cid, opts = {}) {
 }
 
 export { raccorderCircuit };
-export { COUT, chercherItineraire, conflitsGaine, conflitsPlan, inPoly, obstacles };
+export { COUT, chercherItineraire, itineraireEntre, conflitsGaine, conflitsPlan, inPoly, obstacles };

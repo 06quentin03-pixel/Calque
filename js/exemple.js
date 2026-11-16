@@ -327,8 +327,8 @@ function samplePlan() {
   plansElectriquesExemple();
   schemasExemple();
   demandesExemple();
-  boitesExemple();
   compositionsExemple();
+  boitesExemple(); // après les compositions : les descentes se logent dans la couche de passage des murs
   touch();
   return JSON.parse(JSON.stringify(P));
 }
@@ -427,6 +427,8 @@ function integrationExemple() {
 /* déperditions (format v17) : valeurs d'EXEMPLE saisies (température extérieure, fenêtres, pièces), le reste estimé */
 function thermiqueExemple() {
   P.install.text = d(-7, 'Valeur d’exemple : à remplacer par la température de base de votre commune');
+  /* note de calcul du chauffage (v19) : puissance de relance d'exemple, saisie (demande du 16 novembre 2026) */
+  P.install.frh = d(10, 'Valeur d’exemple : relance après un réduit de nuit, à fixer selon votre projet');
   const L0 = P.levels.find((l) => l.id === 'L0'), L1 = P.levels.find((l) => l.id === 'L1');
   if (L0) L0.dessous = 'terreplein';
   if (L1) L1.dessus = 'combles';

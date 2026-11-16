@@ -40,6 +40,7 @@ const CHAPITRES = [
   { id: 'coffret', n: 'Coffret électrique' },
   { id: 'nomenclature', n: 'Nomenclatures' },
   { id: 'bilan', n: 'Bilan de puissance' },
+  { id: 'thermique', n: 'Note de calcul du chauffage (déperditions)' },
   { id: 'metres', n: 'Métrés et matériel' },
   { id: 'quantitatif', n: 'Quantitatif et chiffrage' },
   { id: 'eclairage', n: 'Études d’éclairage' },
@@ -415,6 +416,45 @@ function chapBilan(R, plan, o) {
   }
 }
 
+/* note de calcul du chauffage (demande du 16 novembre 2026) : o.noteChauffage = noteChauffage(plan, pièces) (notechauffage.js),
+   calculée par l'appelant qui connaît la géométrie des pièces */
+function chapThermique(R, plan, o) {
+  const N = o.noteChauffage;
+  if (!N || !N.nPieces) return;
+  R.page('thermique');
+  const W = (v) => (v == null ? { t: '', manquante: true } : fmt(v, 0) + ' W');
+  R.titre('Note de calcul du chauffage');
+  R.encadre(N.avertissement, COL.est);
+  R.titre('Hypothèses', 2);
+  R.tableau([{ t: 'Donnée', w: 2.2 }, { t: 'Valeur', w: 1.2, al: 'r' }, { t: 'Origine', w: 3 }], [
+    ['Température extérieure de base', N.te ? { t: fmt(N.te.v, 0) + ' °C', st: N.te.st } : { t: '', manquante: true }, { t: N.te ? N.te.src || '' : 'À saisir : valeur de la commune (zone climatique, altitude)', petit: true }],
+    ['Ponts thermiques (majoration ΔU)', { t: fmt(N.dupt.v, 2) + ' W/m²·K', st: N.dupt.st }, { t: N.dupt.src || '', petit: true }],
+    ['Puissance de relance f_RH', N.frh ? { t: fmt(N.frh.v, 0) + ' W/m²', st: N.frh.st } : 'non comptée', { t: N.frh ? N.frh.src || 'Saisie' : 'Non saisie : pas de relance après réduit de chauffage', petit: true }],
+    ['Températures intérieures', 'par pièce', { t: '19 °C (20 °C usuel en séjour à saisir), 22 °C en salle de bain : estimées, sauf valeur saisie dans la pièce', petit: true }],
+  ]);
+  for (const m of N.methode) R.texte(m, { size: 8, retrait: 6, apres: 1 });
+  R.espace(4);
+  R.titre('Synthèse pièce par pièce', 2);
+  const VERD = { suffisant: { t: 'Suffisant', c: COL.ok }, insuffisant: { t: 'Insuffisant', c: COL.bad }, sans: { t: 'Aucun chauffage', c: COL.bad }, incalculable: { t: 'Non calculable', c: COL.manq } };
+  const rows = [];
+  for (const n of N.niveaux) for (const p of n.pieces) rows.push([{ t: n.nom, petit: true }, { t: p.nom, b: true }, { t: fmt(p.ti.v, 0) + ' °C', st: p.ti.st }, fmt(p.S, 1) + ' m²', W(p.phiT), W(p.phiPt), W(p.phiV), p.phiRH == null ? '—' : W(p.phiRH),
+    p.total == null ? { t: '', manquante: true } : { t: fmt(p.total, 0) + ' W', b: true, st: p.statut === 'partiel' ? null : 'estimee' }, p.parM2 == null ? '—' : fmt(p.parM2, 0),
+    p.pose.n ? { t: fmt(p.pose.p, 0) + ' W' + (p.pose.saisi ? '' : '*') } : '—', { t: VERD[p.verdict].t + (p.verdict === 'insuffisant' ? ` (−${fmt(p.manque, 0)} W)` : ''), c: VERD[p.verdict].c, petit: true }]);
+  R.tableau([{ t: 'Niveau', w: 0.9 }, { t: 'Pièce', w: 1.4 }, { t: 'T int.', w: 0.7, al: 'r' }, { t: 'Surface', w: 0.8, al: 'r' }, { t: 'Parois', w: 0.8, al: 'r' }, { t: 'Ponts th.', w: 0.75, al: 'r' }, { t: 'Air', w: 0.7, al: 'r' }, { t: 'Relance', w: 0.75, al: 'r' }, { t: 'Φ pièce', w: 0.9, al: 'r' }, { t: 'W/m²', w: 0.55, al: 'r' }, { t: 'Posé', w: 0.8, al: 'r' }, { t: 'Comparaison', w: 1.2 }], rows, { size: 7 });
+  R.texte('* puissance par défaut de Calque (appareil sans puissance saisie).', { size: 7, color: COL.ink2 });
+  R.tableau([{ t: 'Total', w: 2 }, { t: 'Φ à couvrir', w: 1, al: 'r' }, { t: 'Chauffage posé', w: 1, al: 'r' }],
+    [...N.niveaux.filter((n) => n.pieces.length).map((n) => [n.nom, W(n.total), fmt(n.pose, 0) + ' W']), [{ t: 'Bâtiment', b: true }, N.total == null ? { t: 'partiel', manquante: true } : { t: fmt(N.total, 0) + ' W', b: true }, { t: fmt(N.pose, 0) + ' W', b: true }]]);
+  if (N.aRevoir.length) R.encadre('À revoir : ' + N.aRevoir.map((x) => `${x.nom} (${x.niveau}) — ${x.verdict === 'sans' ? 'aucun chauffage posé' : `il manque ${fmt(x.manque, 0)} W`}`).join(' ; ') + '.', COL.bad);
+  R.titre('Détail paroi par paroi', 2);
+  for (const n of N.niveaux) for (const p of n.pieces) {
+    R.texte(`${p.nom} (${n.nom}) — ${fmt(p.ti.v, 0)} °C · ${fmt(p.S, 1)} m² · ${fmt(p.V, 1)} m³ · renouvellement d’air ${fmt(p.ach.v, 2)} vol/h${p.ach.st === 'estimee' ? ' (estimé)' : ''}`, { bold: true, size: 8.5 });
+    R.tableau([{ t: 'Paroi', w: 0.9 }, { t: 'Vers', w: 1.6 }, { t: 'A (m²)', w: 0.7, al: 'r' }, { t: 'U (W/m²·K)', w: 0.8, al: 'r' }, { t: 'b', w: 0.5, al: 'r' }, { t: 'ΔT (K)', w: 0.6, al: 'r' }, { t: 'Φ (W)', w: 0.7, al: 'r' }],
+      p.lignes.map((l) => [l.quoi, { t: l.vers, petit: true }, fmt(l.A, 2), l.u == null ? { t: '', manquante: true } : fmt(l.u, 3), fmt(l.b, 2), l.dT == null ? '—' : fmt(l.dT, 1), l.phi == null ? '—' : fmt(l.phi, 0)]), { size: 7, apres: 4 });
+  }
+  if (N.manque.length) { R.titre('Données manquantes', 2); for (const m of N.manque) R.texte('— ' + m, { size: 8, color: COL.manq, apres: 1 }); }
+  if (N.estimees.length) { R.titre('Valeurs estimées (à remplacer par vos valeurs)', 2); for (const m of N.estimees) R.texte('— ' + m, { size: 7.5, color: COL.ink2, apres: 1 }); }
+}
+
 function chapMetres(R, plan, o) {
   R.page('metres');
   const nums = reperes(plan), names = lvName(plan);
@@ -667,6 +707,7 @@ function composerDossier(plan, opts) {
   if (choix.has('coffret')) chapSVG(R, 'coffret', o.svgCoffret, 'Coffret électrique (implantation des appareils)', o);
   if (choix.has('nomenclature')) chapNomenclature(R, plan, o);
   if (choix.has('bilan')) chapBilan(R, plan, o);
+  if (choix.has('thermique')) chapThermique(R, plan, o);
   if (choix.has('metres')) chapMetres(R, plan, o);
   if (choix.has('quantitatif')) chapQuantitatif(R, plan, o);
   if (choix.has('eclairage')) chapEclairage(R, plan, o);

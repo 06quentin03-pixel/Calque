@@ -238,25 +238,47 @@ function logementPassage(plan, e) {
   if (!e || e.type !== TRAVERSEE) return null;
   if (e.col) return { mode: 'colonne' };
   if (e.libre) return { mode: 'libre', choisi: true };
+  const L = logementContreMur(plan, e.lv, e, isNum(e.dia) ? e.dia : null);
+  if (L) { delete L._pos; delete L.th; }
+  return L;
+}
+/* place dans le mur le plus proche du point p (à PROCHE_MUR cm au plus de sa face) : première couche de passage depuis la
+   face du côté de p, avant le porteur ('couche') ; sinon 'goulotte' (contre la face) ; composition inconnue : 'inconnu' */
+function logementContreMur(plan, lv, p, dia) {
   let best = null;
-  for (const W of mursDuNiveau(plan, e.lv)) {
-    const a = local(W, e); if (a.u < 0 || a.u > W.L) continue;
+  for (const W of mursDuNiveau(plan, lv)) {
+    const a = local(W, p); if (a.u < 0 || a.u > W.L) continue;
     const ecart = Math.abs(a.v) - W.th / 2; if (ecart > PROCHE_MUR) continue;
     if (!best || ecart < best.ecart) best = { W, u: a.u, v: a.v, ecart };
   }
   if (!best) return { mode: 'libre' };
   const { W, u } = best, s = best.v < 0 ? -1 : 1, w = W.w;
   const pos = (v) => ({ x: Math.round((W.A.x + W.d.x * u + W.n.x * v) * 10) / 10, y: Math.round((W.A.y + W.d.y * u + W.n.y * v) * 10) / 10 });
-  if (!aCouches(w)) return { mode: 'inconnu', wall: w.id, cote: s };
+  if (!aCouches(w)) return Object.assign({ mode: 'inconnu', wall: w.id, cote: s, th: W.th }, { _pos: pos });
   /* couches depuis la face du côté s vers l'intérieur du mur, jusqu'au porteur */
   const B = bandes(w), l = s > 0 ? B : B.slice().reverse(), cand = [];
   for (const b of l) { const m = matDe(b.c); if (m.passage === 'libre') cand.push(b); else if (m.cat === 'structure') break; }
-  const dia = isNum(e.dia) ? e.dia : null;
   const b = cand.find((x) => dia == null || dia <= x.e * 10 + 1e-6) || cand[0];
   if (b) return Object.assign({ mode: 'couche', wall: w.id, cote: s, couche: b.c, v: (b.o0 + b.o1) / 2 }, pos((b.o0 + b.o1) / 2));
   const v = s * (W.th / 2 + GOULOTTE);
-  return Object.assign({ mode: 'goulotte', wall: w.id, cote: s, v }, pos(v));
+  return Object.assign({ mode: 'goulotte', wall: w.id, cote: s, v, th: W.th, _pos: pos }, pos(v));
 }
+/* descente d'une gaine dans le mur derrière un appareil mural (demande du 16 novembre 2026) : la gaine arrive du plafond
+   (ou du sol) au-dessus de l'appareil, entre dans le mur et descend dans sa couche de passage (vide technique, laine de
+   verre, ossature) ; sans couche de passage de ce côté, en saignée dans la face du mur ; composition inconnue : dans le
+   mur, près de la face. Renvoie { mode: 'couche' | 'saignee' | 'inconnu', x, y, couche?, wall } ou null (pas un appareil
+   mural, ou loin d'un mur). p : point de raccordement de l'appareil (devant le mur). */
+const SAIGNEE = 1.5; // cm sous la face du mur (axe d'une gaine en saignée, estimé par Calque)
+function descenteMur(plan, e, p) {
+  const def = ELEC_BY.get(e && e.type);
+  if (!def || !def.wall || def.fullH) return null;
+  const L = logementContreMur(plan, e.lv, p || e, null);
+  if (!L || L.mode === 'libre') return null;
+  if (L.mode === 'couche') { const o = Object.assign({}, L); return o; }
+  const v = L.cote * Math.max(0, L.th / 2 - SAIGNEE), q = L._pos(v);
+  return { mode: L.mode === 'inconnu' ? 'inconnu' : 'saignee', wall: L.wall, cote: L.cote, v, x: q.x, y: q.y };
+}
+const TEXTE_DESCENTE = { couche: (L) => `descend dans « ${courtCouche(L.couche)} » du mur`, saignee: () => 'descend en saignée dans le mur (pas de couche de passage de ce côté)', inconnu: () => 'descend dans le mur (composition non renseignée)' };
 /* place tous les passages entre étages du plan à l'endroit prévu ; renvoie le nombre de passages déplacés */
 function placerPassages(plan) {
   let n = 0;
@@ -432,6 +454,7 @@ function nettoyerV16(p) {
 }
 
 export { changerEpaisseur, tronconsDuMur };
+export { TEXTE_DESCENTE, descenteMur };
 export { GOULOTTE, logementPassage, placerPassages, textePassage };
 export { CATS, COMPOSITIONS, COMPO_BY, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, bandes, clone as copierCouches, compoNiveau,
   coucheA, couchesOrientees, couchesPassage, courtCouche, decalagePassage, epaisseur, logementGaine, matDe, nettoyerCouches, nettoyerMurV16,

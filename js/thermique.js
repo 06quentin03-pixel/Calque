@@ -6,6 +6,7 @@
      paroi       Φ = U × A × ΔT × b                       ΔT = Ti − Te (extérieur, local non chauffé) ou Ti − Tvoisine
      ponts       Φ = ΔUpt × A(enveloppe) × ΔT × b           majoration forfaitaire des ponts thermiques
      air         Φ = 0,34 × n × V × ΔT                      n : renouvellement d'air (vol/h), V : volume de la pièce
+     relance     Φ = S × f_RH                               f_RH saisi (install.frh, W/m², format v19), sinon non comptée
    Toutes les données ont un statut : « saisie » (sur le plan), « estimée » (valeur courante proposée par Calque, à
    remplacer par la fiche du fabricant ou la valeur de votre étude) ; une donnée manquante n'est jamais remplacée en
    silence : le résultat est alors « partiel » et dit ce qui manque.
@@ -221,8 +222,11 @@ function deperditionsPiece(plan, r, ctx) {
   const dT = te ? ti.v - te.v : null;
   const phiT = te ? lignes.reduce((x, l) => x + (l.phi || 0), 0) : null;
   const phiPt = dT != null ? Hpt * dT : null, phiV = dT != null ? Hv * dT : null;
-  const total = dT != null ? phiT + phiPt + phiV : null;
-  return { piece: lbl, ti, te, dT, S, V, lignes, Ht, Hpt, Hv, H: Ht + Hpt + Hv, phiT, phiPt, phiV, total, parM2: total != null && S > 0 ? total / S : null,
+  /* relance (format v19, note de calcul du chauffage) : S × f_RH, seulement si f_RH est saisi */
+  const frh = plan.install && plan.install.frh && isNum(plan.install.frh.v) ? plan.install.frh : null;
+  const phiRH = dT != null && frh ? S * frh.v : null;
+  const total = dT != null ? phiT + phiPt + phiV + (phiRH || 0) : null;
+  return { piece: lbl, ti, te, dT, S, V, lignes, Ht, Hpt, Hv, H: Ht + Hpt + Hv, phiT, phiPt, phiV, phiRH, frh, total, parM2: total != null && S > 0 ? total / S : null,
     manque: [...new Set(manque)], estimees: [...estim], statut: manque.length ? 'partiel' : estim.size ? 'estimee' : 'saisie', dupt: pt_, ach: n };
 }
 /* chauffage posé dans la pièce (symboles de chauffage du niveau situés dans la pièce) */

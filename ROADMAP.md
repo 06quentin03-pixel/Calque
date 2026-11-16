@@ -167,7 +167,8 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - Aujourd'hui : déperditions par une méthode simplifiée inspirée de la NF EN 12831 (`thermique.js`), jamais présentée comme réglementaire.
 - Possible dans Calque (hors ligne, sans abonnement) : une **note de dimensionnement du chauffage pièce par pièce** plus complète (ponts thermiques ψ, terre-plein selon l'EN ISO 13370, débits de ventilation réels, relance, température de base de la commune), avec un rapport PDF ; résultats « estimés » tant que les valeurs de référence ne sont pas fournies (température de base, ψ par défaut).
 - Pas possible de façon officielle : l'**étude RE2020** (Bbio, Cep, DH, carbone) et le **DPE** exigent le moteur de calcul réglementaire et un logiciel évalué, utilisés par un thermicien ou un diagnostiqueur, qui signe l'attestation. Calque pourrait seulement préparer les données (surfaces, parois, menuiseries) pour ce logiciel.
-- En attente de la décision de l'utilisateur.
+- ✅ Choix de l'utilisateur (16 novembre 2026) : note de calcul du chauffage dans Calque (`js/notechauffage.js`, relance saisie, export PDF, chapitre du dossier).
+- ⬜ Pistes : terre-plein selon l'EN ISO 13370, ponts thermiques linéiques (ψ × longueur) au lieu de la majoration forfaitaire, débits de ventilation par pièce (VMC) au lieu du renouvellement d'air, température de base proposée d'après la commune (données à fournir).
 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
