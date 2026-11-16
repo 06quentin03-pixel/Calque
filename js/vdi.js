@@ -3,7 +3,7 @@
    Câblage en étoile (un câble par prise, depuis le coffret, la baie ou la box du même niveau), gaine au plafond puis
    descente dans le mur jusqu'à la prise. La catégorie du câble n'est pas choisie par Calque : à préciser. */
 import { RJ45_PRISES, RJ45_SOURCES, ancrage, estLienRJ45, indexElec, longueurGaine } from './cheminement.js';
-import { chercherItineraire } from './itineraire.js';
+import { itineraireEntre } from './itineraire.js';
 
 /* câble RJ45 raccordé à un symbole (prise ou coffret) */
 function liensRJ45(plan, e) {
@@ -28,7 +28,7 @@ function cablesRJ45(plan, src, prises) {
   const tmp = Object.assign({}, plan, { ducts: (plan.ducts || []).slice() }), out = { cables: [], echecs: [] };
   for (const e of prises) {
     if (e.lv !== src.lv) { out.echecs.push(e.id); continue; }
-    const r = chercherItineraire(tmp, e.lv, ancrage(src), ancrage(e), { pose: 'plafond' });
+    const r = itineraireEntre(tmp, e.lv, src, ancrage(src), e, ancrage(e), { pose: 'plafond' });
     if (!r) { out.echecs.push(e.id); continue; }
     const g = { lv: e.lv, sys: 'elec', pts: r.pts, a: src.id, b: e.id, len: r.len, kind: 'icta', pose: 'plafond' };
     tmp.ducts.push(Object.assign({ id: '~rj' + out.cables.length }, g)); out.cables.push(g);

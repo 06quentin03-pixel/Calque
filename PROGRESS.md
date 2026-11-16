@@ -1,3 +1,9 @@
+## 16 novembre 2026 (soir) — Descente dans les murs, note de calcul du chauffage
+- Gaines du plafond qui descendent dans la couche de passage du mur au-dessus de l'appareil (`descenteMur`, `itineraireEntre`), aussi en 3D.
+- Note de calcul du chauffage pièce par pièce, export PDF, chapitre du dossier, relance (format v19) (`js/notechauffage.js`).
+- Défauts trouvés pendant les essais : tableau de la note écrasé à hauteur nulle dans la fenêtre (corrigé) ; dans le plan d'exemple, boîtes raccordées avant la composition des murs (ordre corrigé).
+- Tests : 234/234 (`tests/notechauffage.test.mjs`).
+
 ## 16 novembre 2026 (suite) — Câbles RJ45
 - Câble RJ45 du coffret de communication à chaque prise RJ45 (`js/vdi.js`), depuis le panneau de la prise ou du coffret. Tests : 231/231. Fusionné dans `main` à la demande de l'utilisateur.
 

@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 16 novembre 2026 (câbles à tirer et boîtes de dérivation, branche `claude/dazzling-babbage-7wt87f`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
+Mise à jour : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (231/231 le 16 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (234/234 le 16 novembre 2026 au soir).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -30,6 +30,17 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais de la descente dans les murs et de la note de calcul du chauffage (16 novembre 2026 soir)
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/dazzling-babbage-7wt87f` › Create pull request › Merge pull request). Vos plans passent au format v19 à la
+première ouverture, avec une copie de sécurité (Menu › Historique des versions, « v18 → v19 »).
+1. Plan d'exemple, séjour et chambre de la maison : zoomer sur une prise : la gaine arrive au plafond dans la laine de verre
+   (jaune) du mur, juste au-dessus de la prise, puis rejoint la prise. Vue 3D : la descente est dans le mur.
+2. « Tirer les câbles » dans la cuisine, puis « Valider » : même chose pour les nouvelles gaines.
+3. Toucher le vide du plan (panneau du niveau) › Thermique › « Note de calcul du chauffage » : tableau des pièces, totaux,
+   pièces à revoir ; changer la relance (10 → 20 W/m²) ; « Exporter la note en PDF » (Partager › Fichiers).
+4. Menu › Dossier PDF : chapitre « Note de calcul du chauffage ».
 
 ## Essais des câbles à tirer et des boîtes de dérivation (16 novembre 2026, branche `claude/dazzling-babbage-7wt87f`)
 Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
@@ -189,5 +200,4 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en po
   remplissage) : sans eux, ces contrôles restent « vérification nécessaire » (voulu).
 - Un vrai fichier DXF d'architecte et, si possible, une vraie maquette IFC, pour éprouver les imports.
 - Votre avis sur le raccordement en boîtes de dérivation (16 novembre 2026) et sur les télérupteurs supposés au tableau.
-- Votre choix pour les études thermiques (note de dimensionnement du chauffage dans Calque, ou préparation des données
-  pour un logiciel réglementaire RE2020 utilisé par un thermicien).
+- La température extérieure de base de votre commune, pour vos vrais plans (Thermique du niveau).

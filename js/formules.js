@@ -11,6 +11,7 @@ import { CONSTANTES, TABLE_BY } from './normes.js';
 import { bilanPuissance, chuteTension, courantMono, courantTri, equilibrage, puissances, repartirPhases } from './calcul.js';
 import { aCommander } from './cheminement.js';
 import { placerBoite } from './boites.js';
+import { puissancePiece } from './notechauffage.js';
 import { intensiteLambert } from './eclairage.js';
 import { LAMBDA, RS, arrondiConseil, uParoi } from './thermique.js';
 import { chiffrer } from './quantitatif.js';
@@ -220,6 +221,13 @@ const FORMULES = [
     e: [{ k: 'phi', n: 'Déperditions de la pièce', u: 'W', v: 1180, min: 0, max: 1e6 }, { k: 'autres', n: 'Autres appareils de la pièce', u: 'W', v: 500, min: 0, max: 1e6 }],
     calc: (x) => { const c = arrondiConseil(x.phi, x.autres); return { etapes: [`reste = ${f(x.phi, 0)} − ${f(x.autres, 0)} = ${f(x.phi - x.autres, 0)} W`, c ? `arrondi au multiple de 250 W supérieur : ${f(c, 0)} W` : 'les autres appareils couvrent déjà la pièce'], res: [['P conseillée', f(c, 0) + ' W']] }; },
     donnees: 'Panneau d’un radiateur (ou d’une sortie de câble radiateur) › Puissance. Les déperditions viennent de la méthode simplifiée de Calque (onglet Thermique de la pièce) : choisissez un modèle du commerce de puissance égale ou supérieure, avec une marge de relance si besoin. Pas une étude thermique réglementaire.' },
+  { id: 'note_chauffage', fam: 'thermique', titre: 'Note de calcul du chauffage : puissance d’une pièce',
+    but: 'Additionner tout ce que perd une pièce par grand froid pour savoir quelle puissance de chauffage y installer : les parois, les ponts thermiques, l’air renouvelé et, si le chauffage est réduit la nuit, la relance.',
+    formule: 'Φ pièce = Φ parois + Φ ponts thermiques + Φ air + Φ relance\nΦ relance = S × f_RH',
+    vars: [['Φ parois', 'Σ U × A × b × ΔT de chaque paroi (fiche « Déperdition d’une paroi »)', 'W'], ['Φ ponts thermiques', 'ΔUpt × surface de l’enveloppe × ΔT', 'W'], ['Φ air', '0,34 × n × V × ΔT', 'W'], ['S', 'surface de la pièce', 'm²'], ['f_RH', 'puissance de relance saisie (0 si le chauffage n’est jamais réduit)', 'W/m²']],
+    e: [{ k: 'phiT', n: 'Parois', u: 'W', v: 620, min: 0, max: 1e6 }, { k: 'phiPt', n: 'Ponts thermiques', u: 'W', v: 95, min: 0, max: 1e6 }, { k: 'phiV', n: 'Renouvellement d’air', u: 'W', v: 230, min: 0, max: 1e6 }, { k: 'S', n: 'Surface', u: 'm²', v: 15, min: 0, max: 1e5 }, { k: 'frh', n: 'Relance f_RH', u: 'W/m²', v: 10, min: 0, max: 300 }],
+    calc: (x) => { const r = puissancePiece(x); return { etapes: [`relance : ${f(x.S, 1)} × ${f(x.frh, 0)} = ${f(r.phiRH, 0)} W`, `Φ pièce = ${f(x.phiT, 0)} + ${f(x.phiPt, 0)} + ${f(x.phiV, 0)} + ${f(r.phiRH, 0)} = ${f(r.total, 0)} W`], res: [['Φ pièce', f(r.total, 0) + ' W'], ['Par m²', f(x.S > 0 ? r.total / x.S : 0, 0) + ' W/m²']] }; },
+    donnees: 'Panneau du niveau › Thermique › « Note de calcul du chauffage » : toutes les pièces, export PDF, chapitre du Dossier PDF. Méthode simplifiée inspirée de la NF EN 12831-1, pas une étude réglementaire (RE2020, DPE).' },
   /* ---------------- chiffrage ---------------- */
   { id: 'chiffrage', fam: 'chiffrage', titre: 'Chiffrage du quantitatif',
     but: 'Transformer les quantités du plan en prix : fournitures, main-d’œuvre, TVA. Calque ne fournit aucun prix : ils sont saisis.',

@@ -37,6 +37,7 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `reglesui.js` | Onglet « Contrôle NF C 15-100 » : rapport du plan, filtre, détail des règles, catalogue | non |
 | `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
+| `notechauffage.js` | Note de calcul du chauffage pièce par pièce (parois, ponts thermiques, air, relance), comparaison au chauffage posé, nettoyage v19 | oui |
 | `vdi.js` | Câbles RJ45 en étoile depuis le coffret de communication (itinéraire au plafond, prises sans câble, longueurs) | oui |
 | `boites.js` | Raccordement d'un circuit en boîtes de dérivation : boîte au plafond de chaque pièce (position calculée, boîte libre reprise), gaines au plafond, descentes dans les cloisons | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |

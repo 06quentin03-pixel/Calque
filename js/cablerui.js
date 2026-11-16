@@ -16,7 +16,7 @@ import { btn, h, renderInspector, setTool, toast, updateHint } from './interface
 import { calqueVisible, setCalqueVisible } from './calques.js';
 import { cablagePlan, libelleCompo } from './cablage.js';
 import { ancrage, isElecDuct, pointsGaine, TRAVERSEE } from './cheminement.js';
-import { chercherItineraire, raccorderCircuit } from './itineraire.js';
+import { itineraireEntre, raccorderCircuit } from './itineraire.js';
 import { raccorderEnBoites } from './boites.js';
 import { geo } from './geometrie.js';
 import { V } from './rendu2d.js';
@@ -139,7 +139,7 @@ function trace(st, b) {
     let len = 0; for (let i = 1; i < pts.length; i++) len += vdist(pts[i - 1], pts[i]);
     return { pts: pts.map((p) => ({ x: Math.round(p.x * 10) / 10, y: Math.round(p.y * 10) / 10 })), len, murs: null, cloisons: null, croisements: null };
   }
-  return chercherItineraire(P, b.lv, A, B, { pose: S.ductPose || null });
+  return itineraireEntre(P, b.lv, st.a && !st.pique ? IDX.elec.get(st.a) : null, A, b, B, { pose: S.ductPose || null });
 }
 function proposer(b) {
   const st = ui.cabler;

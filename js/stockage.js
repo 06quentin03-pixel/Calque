@@ -3,6 +3,7 @@
 import { $, $$, NF1, P, PIECES_EXT, PLAN_VERSION, blankPlan, isNum, levelsSorted, normalizePlan, setP, touch, ui, uid } from './noyau.js';
 import { syncRooms } from './geometrie.js';
 import { nettoyerV18 } from './integration.js';
+import { nettoyerV19 } from './notechauffage.js';
 import { historyReset, snapshot } from './historique.js';
 import { commit as commitPlan, fitView, refreshUI } from './interaction.js';
 import { confirmBtnPlain } from './tableau.js';
@@ -194,6 +195,11 @@ const MIGRATIONS = {
      local chauffé (`dessous` / `dessus` = `chauffe`). Les plans v17 n'en ont pas : rien à convertir ; une valeur invalide est retirée. */
   17(p) {
     return nettoyerV18(p);
+  },
+  /* v18 → v19 (16 novembre 2026) : puissance de relance de la note de calcul du chauffage (`install.frh` { v, st, src },
+     W/m², js/notechauffage.js). Les plans v18 n'en ont pas : rien n'est deviné (relance non comptée) ; valeur invalide retirée. */
+  18(p) {
+    return nettoyerV19(p);
   },
 };
 function nettoyerV15(p) {

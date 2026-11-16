@@ -22,6 +22,7 @@ import { jpegMiniature } from './photos.js';
 import { variantesDe } from './variantes.js';
 import { comparaison } from './variantesui.js';
 import { CHAMPS_DOC, CHAPITRES, dossierPDF, indiceCourant, indiceSuivant, nettoyerDoc } from './documents.js';
+import { noteChauffage } from './notechauffage.js';
 
 const LIB_CHAMP = { client: 'Client / maître d’ouvrage', adresse: 'Adresse du chantier', entreprise: 'Entreprise', auteur: 'Établi par', affaire: 'N° d’affaire' };
 const DS = { gen: 0, file: null, busy: false };
@@ -57,6 +58,7 @@ function optionsDossier(d) {
     svgCoffret: has ? panelSVG(PRINT_COL, null).svg : null,
     pieceDe: (lbl) => { const r = roomOfLabel(lbl); return r ? { poly: r.poly, holes: r.holes || [], area: r.area } : null; },
     rapport: d.chap.includes('controles') ? rapportDuPlan() : null,
+    noteChauffage: d.chap.includes('thermique') ? noteChauffage(P, new Map(P.levels.map((L) => [L.id, geo(L.id).rooms]))) : null,
     pieces: Object.fromEntries(P.levels.map((L) => [L.id, geo(L.id).rooms.map((r) => ({ nom: r.label ? r.label.name : '', poly: r.poly, holes: r.holes }))])),
     referenceDe: (e) => { if (!e.art) return null; const v = articleView(e.art, UL.refs); return v && v.ref ? { ref: v.ref, fab: v.fab, fiab: v.fiab } : null; },
   };

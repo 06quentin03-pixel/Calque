@@ -774,11 +774,19 @@ function duct3(G, d, E, Lh, id, o) {
   const gb = o.cables && d.sys === 'elec' ? G.g : G.s; // câbles affichés : gaines transparentes
   const col = d.sys === 'vmc' ? K3.vmc : k === 'goulotte' ? K3GOUL : k === 'cdc' ? K3.steel : (d.cid && hexRGB(circuitColor(d.cid, true) || '#7C63D2')) || K3.gaine;
   const P3 = pts.map((p) => [p.x, y, p.y]);
-  const drops = [];
+  const drops = [], raccords = [];
   for (const [eid, idx] of [[d.a, 0], [d.b, P3.length - 1]]) {
     const e = eid && IDX.elec.get(eid); if (!e) continue; const def = ELEC_BY.get(e.type); if (!def) continue;
     if (e.type === TRAVERSEE || def.fullH) continue; // le passage et la GTL sont traversés : pas de descente
-    if (def.wall) { const f = itemToWorld(e, 0, side + 1); P3[idx] = [f.x, y, f.y]; drops.push([P3[idx], E + (e.h != null ? e.h : def.h || 110)]); }
+    if (def.wall) {
+      const f = itemToWorld(e, 0, side + 1), yd = E + (e.h != null ? e.h : def.h || 110);
+      /* descente dans le mur (demande du 16 novembre 2026) : le sommet voisin est dans le mur, derrière l'appareil ; la gaine
+         y descend, puis rejoint l'appareil à sa hauteur */
+      const j = idx === 0 ? 1 : P3.length - 2, q = pts[j], fr = itemToWorld(e, 0, 10), nx = (fr.x - e.x) / 10, ny = (fr.y - e.y) / 10;
+      if (pts.length >= 3 && Math.hypot(q.x - e.x, q.y - e.y) < 40 && (q.x - e.x) * nx + (q.y - e.y) * ny < 0.5) {
+        P3[idx] = [q.x, y, q.y]; drops.push([P3[idx], yd]); raccords.push([[q.x, yd, q.y], [f.x, yd, f.y]]);
+      } else { P3[idx] = [f.x, y, f.y]; drops.push([P3[idx], yd]); }
+    }
     else if (def.floor) drops.push([P3[idx], E + 2]);
     else if (d.pose === 'sol' || d.pose === 'hauteur' || d.pose === 'cloison') drops.push([P3[idx], E + Lh - 1]); // appareil au plafond, gaine plus bas : remontée
   }
@@ -803,6 +811,7 @@ function duct3(G, d, E, Lh, id, o) {
   for (let i = 1; i < P3.length; i++) tube3(gb, P3[i - 1], P3[i], r, col, id);
   for (let i = 1; i < P3.length - 1; i++) sphere3(gb, P3[i], r, col, id, 10);
   for (const [p, yd] of drops) { if (Math.abs(yd - y) < 1) continue; tube3(gb, [p[0], yd, p[2]], p, r, col, id); sphere3(gb, p, r, col, id, 10); }
+  for (const [a, b] of raccords) { tube3(gb, a, b, r, col, id); sphere3(gb, a, r, col, id, 10); }
 }
 /* passages entre étages : conduit vertical entre les deux symboles jumeaux, à travers le plancher */
 function passages3(G, visIds, hid, pick, o) {
