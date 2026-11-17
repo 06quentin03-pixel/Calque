@@ -47,6 +47,17 @@ const MATERIAUX = {
   carreau_platre: { n: 'Carreau de plâtre', court: 'Carreau de plâtre', cat: 'structure', eps: [5, 7, 10], coul: '#E5E0D6', usage: ['cloison'] },
   pierre: { n: 'Pierre', court: 'Pierre', cat: 'structure', eps: [20, 30, 40, 50, 60], coul: '#A79C8B', usage: ['mur'] },
   ossature_bois: { n: 'Ossature bois (montants)', court: 'Ossature bois', cat: 'structure', eps: [4.5, 9, 12, 14.5, 20], passage: 'libre', coul: '#C59A63', usage: ['mur', 'cloison'] },
+  /* ossature bois à l'américaine (platform frame, novembre 2026) : dimensions nominales nord-américaines du commerce ;
+     ossature : épaisseur d'un montant lm (cm) et entraxe par défaut (cm), pour le calepinage des montants (ossature.js) */
+  cadre_2x4: { n: 'Ossature 2×4 isolée (montants 38 × 89, laine entre montants)', court: 'Ossature 2×4', cat: 'structure', eps: [8.9], passage: 'libre', coul: '#D9B77E', usage: ['mur', 'cloison'], ossature: { lm: 3.8, entraxe: 40.6 } },
+  cadre_2x6: { n: 'Ossature 2×6 isolée (montants 38 × 140, laine entre montants)', court: 'Ossature 2×6', cat: 'structure', eps: [14], passage: 'libre', coul: '#D9B77E', usage: ['mur'], ossature: { lm: 3.8, entraxe: 40.6 } },
+  cadre_2x4_vide: { n: 'Ossature 2×4 sans isolant (cloison, montants 38 × 89)', court: 'Ossature 2×4 vide', cat: 'vide', eps: [8.9], passage: 'libre', coul: null, usage: ['cloison', 'mur'], ossature: { lm: 3.8, entraxe: 40.6 } },
+  osb: { n: 'Panneau OSB (voile de contreventement)', court: 'OSB', cat: 'parement', eps: [0.95, 1.1, 1.2, 1.5, 1.8], coul: '#D7B072', usage: ['mur', 'cloison', 'plafond', 'sol'] },
+  pare_pluie: { n: 'Pare-pluie (membrane)', court: 'Pare-pluie', cat: 'parement', eps: [0.05, 0.1], coul: '#9DB4C0', usage: ['mur'] },
+  tasseaux: { n: 'Tasseaux et lame d’air ventilée', court: 'Tasseaux', cat: 'vide', eps: [1.9, 2.2, 2.7, 3.8], coul: null, usage: ['mur'] },
+  clins: { n: 'Bardage à clins (bois, fibrociment ou vinyle)', court: 'Clins', cat: 'parement', eps: [1.2, 1.6, 1.9, 2.2], coul: '#C0A27C', usage: ['mur'] },
+  contreplaque: { n: 'Contreplaqué (support de plancher)', court: 'Contreplaqué', cat: 'structure', eps: [1.5, 1.8, 1.9, 2.2], coul: '#CFA56D', usage: ['sol', 'plafond'] },
+  solives_bois: { n: 'Solives bois (2×8 à 2×12, vide entre solives)', court: 'Solives', cat: 'structure', eps: [18.4, 23.5, 28.6], passage: 'libre', coul: '#C59A63', usage: ['sol', 'plafond'] },
   /* planchers */
   carrelage: { n: 'Carrelage (avec colle)', court: 'Carrelage', cat: 'revetement', eps: [1, 1.5, 2], coul: '#D9D2C5', usage: ['sol'] },
   parquet: { n: 'Parquet ou sol souple', court: 'Parquet', cat: 'revetement', eps: [0.5, 1, 1.4, 2.2], coul: '#C9A16E', usage: ['sol'] },
@@ -80,10 +91,14 @@ const COMPOSITIONS = [
   { id: 'mbc30', usage: 'mur', n: 'Béton cellulaire de 30 enduit', couches: [c_('enduit_platre', 1), c_('beton_cell', 30), c_('enduit_ext', 1.5)] },
   { id: 'mbe18', usage: 'mur', n: 'Béton banché de 18 + doublage collé (PSE 10 + plaque)', couches: [c_('plaque', 1), c_('pse', 10), c_('beton', 18)] },
   { id: 'mob', usage: 'mur', n: 'Ossature bois (montants 14,5 garnis de laine)', couches: [c_('plaque', 1.25), c_('vide_tech', 4.5), c_('laine_verre', 14.5), c_('lambris', 2.2)] },
+  { id: 'us2x4', usage: 'mur', n: 'Ossature bois à l’américaine 2×4 (plâtre, montants isolés, OSB, pare-pluie, clins)', couches: [c_('plaque', 1.25), c_('cadre_2x4', 8.9), c_('osb', 1.1), c_('pare_pluie', 0.1), c_('clins', 1.9)] },
+  { id: 'us2x6', usage: 'mur', n: 'Ossature bois à l’américaine 2×6 (plâtre, montants isolés, OSB, lame d’air, clins)', couches: [c_('plaque', 1.25), c_('cadre_2x6', 14), c_('osb', 1.1), c_('pare_pluie', 0.1), c_('tasseaux', 1.9), c_('clins', 1.9)] },
   { id: 'mpint', usage: 'mur', n: 'Refend en parpaing de 20 enduit', couches: [c_('enduit_platre', 1), c_('parpaing', 20), c_('enduit_platre', 1)] },
+  { id: 'clus', usage: 'cloison', n: 'Cloison à ossature bois 2×4 (plâtre, montants, plâtre)', couches: [c_('plaque', 1.25), c_('cadre_2x4_vide', 8.9), c_('plaque', 1.25)] },
   { id: 'sdal', usage: 'sol', n: 'Dalle sur terre-plein isolée (carrelage, chape, PU, dalle)', couches: [c_('carrelage', 1), c_('chape', 5), c_('pu', 6), c_('dalle', 12)] },
   { id: 'shour', usage: 'sol', n: 'Poutrelles et hourdis (carrelage, chape, ravoirage, compression)', couches: [c_('carrelage', 1), c_('chape', 5), c_('ravoirage', 4), c_('compression', 4), c_('hourdis', 16)] },
   { id: 'sbois', usage: 'sol', n: 'Plancher bois (parquet sur solives)', couches: [c_('parquet', 1.4), c_('plancher_bois', 2.2), c_('laine_verre', 10), c_('plancher_bois', 15)] },
+  { id: 'susb', usage: 'sol', n: 'Plancher à l’américaine (parquet, contreplaqué, solives 2×10)', couches: [c_('parquet', 1.4), c_('contreplaque', 1.9), c_('solives_bois', 23.5)] },
   { id: 'pfp', usage: 'plafond', n: 'Faux plafond plaque sur fourrures (plénum 10)', couches: [c_('plenum', 10), c_('plaque', 1.25)] },
   { id: 'pfpl', usage: 'plafond', n: 'Faux plafond avec laine de verre (plénum 10, laine 10, plaque)', couches: [c_('plenum', 10), c_('laine_verre', 10), c_('plaque', 1.25)] },
   { id: 'pcomb', usage: 'plafond', n: 'Plafond sous combles (laine de verre 30 sur plaque)', couches: [c_('laine_verre', 30), c_('vide_tech', 2.7), c_('plaque', 1.25)] },
@@ -92,6 +107,12 @@ const COMPOSITIONS = [
 const COMPO_BY = new Map(COMPOSITIONS.map((c) => [c.id, c]));
 
 /* ---------------- lecture ---------------- */
+/* couche d'ossature d'un mur (ossature bois à l'américaine) : { i, c, oss { lm, entraxe } } ou null */
+function coucheOssature(w) {
+  if (!w || !Array.isArray(w.couches)) return null;
+  for (let i = 0; i < w.couches.length; i++) { const m = MATERIAUX[w.couches[i] && w.couches[i].m]; if (m && m.ossature) return { i, c: w.couches[i], oss: m.ossature }; }
+  return null;
+}
 const r2 = (v) => Math.round(v * 100) / 100;
 const matDe = (c) => MATERIAUX[c && c.m] || MATERIAUX.autre;
 const nomCouche = (c) => (c && c.m === 'autre' && c.n ? c.n : matDe(c).n);
@@ -453,7 +474,7 @@ function nettoyerV16(p) {
   return p;
 }
 
-export { changerEpaisseur, tronconsDuMur };
+export { changerEpaisseur, coucheOssature, tronconsDuMur };
 export { TEXTE_DESCENTE, descenteMur };
 export { GOULOTTE, logementPassage, placerPassages, textePassage };
 export { CATS, COMPOSITIONS, COMPO_BY, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, bandes, clone as copierCouches, compoNiveau,

@@ -16,6 +16,10 @@ import { intensiteLambert } from './eclairage.js';
 import { LAMBDA, RS, arrondiConseil, uParoi } from './thermique.js';
 import { chiffrer } from './quantitatif.js';
 import { epaisseur } from './compositions.js';
+import { calepinage, inclPourA, pansToit, hauteurFaitage } from './toits.js';
+import { circuitConseille, puissanceInstantane, tempsChauffe, volumeConseille, USAGES } from './ecs.js';
+import { bilanCourant } from './knx.js';
+import { montantsCourants, montantsDuMur } from './ossature.js';
 
 const nf = (d) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: d, minimumFractionDigits: 0 });
 const f = (x, d = 2) => (Number.isFinite(x) ? nf(d).format(x) : '—');
@@ -29,6 +33,9 @@ const FAMILLES = [
   { id: 'eclairage', n: 'Éclairage', ou: 'Panneau d’une pièce › Concevoir l’éclairage' },
   { id: 'batiment', n: 'Bâtiment et matériaux', ou: 'Panneaux d’une pièce, d’un mur et du niveau' },
   { id: 'thermique', n: 'Thermique (déperditions)', ou: 'Panneaux d’un mur, d’une pièce et du niveau › Thermique' },
+  { id: 'energie', n: 'Toit, ossature et énergie solaire', ou: 'Panneau d’un toit, d’un mur ; outil Toit / sol' },
+  { id: 'ecs', n: 'Eau chaude sanitaire', ou: 'Panneau d’un chauffe-eau › Chauffe-eau' },
+  { id: 'knx', n: 'Domotique KNX', ou: 'Panneau du niveau › Installation KNX ; panneau d’un appareil KNX' },
   { id: 'chiffrage', n: 'Chiffrage', ou: 'Tableau électrique › Quantitatif' },
 ];
 const STATUT_NOTE = 'Dans Calque, chaque donnée est « vérifiée » (source contrôlée), « saisie » (tapée par vous) ou « estimée » (valeur courante proposée par Calque, à confirmer). Un résultat calculé avec une donnée estimée est lui-même « estimé ».';
@@ -228,6 +235,79 @@ const FORMULES = [
     e: [{ k: 'phiT', n: 'Parois', u: 'W', v: 620, min: 0, max: 1e6 }, { k: 'phiPt', n: 'Ponts thermiques', u: 'W', v: 95, min: 0, max: 1e6 }, { k: 'phiV', n: 'Renouvellement d’air', u: 'W', v: 230, min: 0, max: 1e6 }, { k: 'S', n: 'Surface', u: 'm²', v: 15, min: 0, max: 1e5 }, { k: 'frh', n: 'Relance f_RH', u: 'W/m²', v: 10, min: 0, max: 300 }],
     calc: (x) => { const r = puissancePiece(x); return { etapes: [`relance : ${f(x.S, 1)} × ${f(x.frh, 0)} = ${f(r.phiRH, 0)} W`, `Φ pièce = ${f(x.phiT, 0)} + ${f(x.phiPt, 0)} + ${f(x.phiV, 0)} + ${f(r.phiRH, 0)} = ${f(r.total, 0)} W`], res: [['Φ pièce', f(r.total, 0) + ' W'], ['Par m²', f(x.S > 0 ? r.total / x.S : 0, 0) + ' W/m²']] }; },
     donnees: 'Panneau du niveau › Thermique › « Note de calcul du chauffage » : toutes les pièces, export PDF, chapitre du Dossier PDF. Méthode simplifiée inspirée de la NF EN 12831-1, pas une étude réglementaire (RE2020, DPE).' },
+  /* ---------------- toit, ossature, énergie solaire (novembre 2026) ---------------- */
+  { id: 'toit_pan', fam: 'energie', titre: 'Surface d’un pan de toit et hauteur du faîtage',
+    but: 'Un toit en pente est plus grand que sa surface au sol : c’est la surface en rampant qui compte pour la couverture et les panneaux solaires.',
+    formule: 'surface en rampant = surface au sol du pan / cos(pente)\nhauteur du faîtage = demi-largeur × tan(pente)  (toit à deux pans)',
+    vars: [['pente', 'angle du pan avec l’horizontale', '°'], ['surface au sol', 'projection du pan sur le plan', 'm²'], ['demi-largeur', 'distance horizontale de la gouttière au faîtage', 'm']],
+    e: [{ k: 'L', n: 'Longueur du toit', u: 'm', v: 10, min: 0.5, max: 500 }, { k: 'l', n: 'Largeur du toit', u: 'm', v: 6, min: 0.5, max: 500 }, { k: 'p', n: 'Pente', u: '°', v: 35, min: 0, max: 75 }],
+    calc: (x) => { const s = { kind: 'toit', forme: '2pans', pente: x.p, sens: 0, pts: [{ x: 0, y: 0 }, { x: x.L * 100, y: 0 }, { x: x.L * 100, y: x.l * 100 }, { x: 0, y: x.l * 100 }] };
+      const pans = pansToit(s), pn = pans[0] || { aireProj: 0, aire: 0 };
+      return { etapes: [`surface au sol d’un pan : ${f(pn.aireProj / 1e4, 2)} m²`, `en rampant : ${f(pn.aireProj / 1e4, 2)} / cos ${f(x.p, 1)}° = ${f(pn.aire / 1e4, 2)} m²`, `faîtage : ${f(x.l / 2, 2)} × tan ${f(x.p, 1)}°`],
+        res: [['Un pan', f(pn.aire / 1e4, 2) + ' m²'], ['Deux pans', f(pans.reduce((a, q) => a + q.aire, 0) / 1e4, 2) + ' m²'], ['Hauteur du faîtage', f(hauteurFaitage(s) / 100, 2) + ' m']] }; },
+    donnees: 'Panneau d’un toit (outil « Toit / sol ») : forme, pente et direction du faîtage saisies ; surfaces calculées pan par pan (toits.js).' },
+  { id: 'pv_calepinage', fam: 'energie', titre: 'Nombre de panneaux solaires sur un pan',
+    but: 'Savoir combien de modules tiennent sur un pan de toit, en gardant une marge au bord, et la puissance crête correspondante.',
+    formule: 'modules par rangée = ⌊(longueur du pan − 2 × marge + jeu) / (largeur du module + jeu)⌋\nrangées = ⌊(rampant − 2 × marge + jeu) / (hauteur du module + jeu)⌋\npuissance crête = nombre × puissance d’un module',
+    vars: [['marge', 'distance laissée au bord du pan', 'cm'], ['jeu', 'espace entre deux modules', 'cm'], ['puissance d’un module', 'saisie d’après sa fiche (Wc)', 'Wc']],
+    e: [{ k: 'L', n: 'Longueur du pan', u: 'm', v: 10, min: 1, max: 200 }, { k: 'r', n: 'Rampant du pan', u: 'm', v: 3.66, min: 0.5, max: 50 }, { k: 'p', n: 'Pente', u: '°', v: 35, min: 0, max: 60 },
+      { k: 'lm', n: 'Largeur du module', u: 'cm', v: 113, min: 20, max: 400 }, { k: 'hm', n: 'Hauteur du module', u: 'cm', v: 172, min: 20, max: 400 }, { k: 'm', n: 'Marge', u: 'cm', v: 30, min: 0, max: 200 }, { k: 'wc', n: 'Puissance d’un module', u: 'Wc', v: 400, min: 0, max: 1500 }],
+    calc: (x) => { const c = Math.cos(x.p * Math.PI / 180), h = x.r * 100 * c;
+      const s = { kind: 'toit', forme: '1pan', pente: x.p, sens: 90, pts: [{ x: 0, y: 0 }, { x: x.L * 100, y: 0 }, { x: x.L * 100, y: h }, { x: 0, y: h }] };
+      const cp = calepinage(s, { pan: 0, lm: x.lm, hm: x.hm, marge: x.m, jeu: 2, wc: { v: x.wc, st: 'saisie' } });
+      return { etapes: [`${cp.cols} modules par rangée × ${cp.rangs} rangée${cp.rangs > 1 ? 's' : ''} = ${cp.n} modules`, `${cp.n} × ${f(x.wc, 0)} Wc`], res: [['Modules', String(cp.n)], ['Puissance crête', cp.kwc ? f(cp.kwc.v, 2) + ' kWc' : '0 kWc']] }; },
+    donnees: 'Panneau d’un toit › Panneaux solaires. Formats de modules courants proposés comme aide à la saisie (à remplacer par la fiche du module). Calque n’estime aucune production.' },
+  { id: 'mur_a', fam: 'energie', titre: 'Inclinaison des murs d’une maison en A',
+    but: 'Deux murs inclinés l’un vers l’autre se rejoignent au faîte : l’angle dépend de leur écartement au sol et de la hauteur du faîte.',
+    formule: 'inclinaison = arctan((écartement / 2) / hauteur)\nrampant = hauteur / cos(inclinaison)',
+    vars: [['écartement', 'distance entre les axes des deux murs au sol', 'm'], ['hauteur', 'hauteur verticale du faîte', 'm'], ['inclinaison', 'angle de chaque mur avec la verticale', '°']],
+    e: [{ k: 'L', n: 'Écartement', u: 'm', v: 8, min: 0.5, max: 100 }, { k: 'H', n: 'Hauteur du faîte', u: 'm', v: 6, min: 0.5, max: 100 }],
+    calc: (x) => { const a = inclPourA(x.L, x.H); return { etapes: [`arctan((${f(x.L, 2)} / 2) / ${f(x.H, 2)})`], res: [['Inclinaison', f(a, 1) + '°'], ['Rampant', f(x.H / Math.cos(a * Math.PI / 180), 2) + ' m']] }; },
+    donnees: 'Panneau d’un mur › Inclinaison › « Maison en A ». L’inclinaison est saisie en degrés (positive vers le côté 1 du mur).' },
+  { id: 'ossature', fam: 'energie', titre: 'Montants d’un mur à ossature bois',
+    but: 'Compter les montants (2×4 ou 2×6) d’un mur à l’américaine : un montant à chaque bout et à chaque entraxe, plus deux de chaque côté des baies.',
+    formule: 'montants courants = ⌈longueur / entraxe⌉ + 1\n+ par baie : 2 montants de rive + 2 poteaux d’appui (+ potelets)\nlisses = 3 × longueur (lisse basse + double sablière)',
+    vars: [['entraxe', 'distance d’axe en axe entre deux montants : 40,6 cm (16 pouces) ou 61 cm (24 pouces)', 'cm'], ['longueur', 'longueur du mur', 'm']],
+    e: [{ k: 'L', n: 'Longueur du mur', u: 'm', v: 6, min: 0.5, max: 100 }, { k: 'e', n: 'Entraxe', u: 'cm', v: 40.6, min: 20, max: 120 }, { k: 'nb', n: 'Fenêtres de 1 m', u: '', v: 1, min: 0, max: 20 }],
+    calc: (x) => { const L = x.L * 100, ops = []; for (let i = 0; i < x.nb; i++) ops.push({ t: (L * (i + 1)) / (x.nb + 1), w: 100, h: 125, sill: 95 });
+      const M = montantsDuMur(L, ops, 250, { entraxe: x.e });
+      return { etapes: [`mur plein : ⌈${f(L, 0)} / ${f(x.e, 1)}⌉ + 1 = ${montantsCourants(L, x.e)} montants`, `avec ${x.nb} fenêtre${x.nb > 1 ? 's' : ''} : ${M.n} pièces (dont ${M.potelets} potelets)`], res: [['Montants et potelets', String(M.n)], ['Lisses et sablières', f(M.lisses.total / 100, 2) + ' m']] }; },
+    donnees: 'Panneau d’un mur dont la composition est une ossature bois (compositions « Ossature bois à l’américaine ») › Ossature bois. Pose usuelle, dimensionnement à faire valider.' },
+  /* ---------------- eau chaude sanitaire ---------------- */
+  { id: 'ecs_volume', fam: 'ecs', titre: 'Volume conseillé d’un chauffe-eau',
+    but: 'Choisir la taille du ballon d’après le nombre de personnes et les habitudes, selon le type de chauffe-eau.',
+    formule: 'volume = volume de base (table par personne et par type) × coefficient d’habitudes, arrondi au volume courant supérieur',
+    vars: [['volume de base', 'ordre de grandeur usuel : 1 pers. 75 L, 2 pers. 100 L, 3 pers. 150 L, 4 pers. 200 L… (accumulation électrique)', 'L'], ['coefficient', 'économe 0,8 ; normal 1 ; important 1,3', '']],
+    e: [{ k: 'n', n: 'Personnes', u: '', v: 4, min: 1, max: 50 }, { k: 'k', n: 'Habitudes', u: '', v: 1, choix: Object.values(USAGES).map((u) => ({ v: u.k, n: u.n })) }],
+    calc: (x) => { const usage = Object.keys(USAGES).find((k) => USAGES[k].k === x.k) || 'normal';
+      const r = ['ce_elec', 'ballon_thermo', 'ce_solaire', 'ce_chaudiere'].map((t) => [t, volumeConseille(t, x.n, usage)]);
+      const N = { ce_elec: 'Accumulation électrique', ballon_thermo: 'Thermodynamique', ce_solaire: 'Solaire individuel', ce_chaudiere: 'Sur chaudière' };
+      return { etapes: r.map(([t, v]) => `${N[t]} : ${f(v.base, 0)} L × ${f(x.k, 1)} = ${f(v.brut, 0)} L → ${f(v.v, 0)} L`), res: r.map(([t, v]) => [N[t], f(v.v, 0) + ' L']) }; },
+    donnees: 'Panneau d’un chauffe-eau › Chauffe-eau. Ordres de grandeur usuels, « estimés » : la fiche du fabricant et vos habitudes font foi.' },
+  { id: 'ecs_instant', fam: 'ecs', titre: 'Puissance d’un chauffe-eau instantané',
+    but: 'Un instantané chauffe l’eau pendant qu’elle coule : sa puissance dépend du débit et de l’écart entre l’eau froide et l’eau voulue.',
+    formule: 'P = débit / 60 × 4,185 × ΔT  (kW)\nIB = P / U',
+    vars: [['débit', 'débit au puisage', 'L/min'], ['4,185', 'chaleur pour chauffer 1 kg d’eau de 1 °C', 'kJ/kg·K'], ['ΔT', 'élévation de température (eau froide 10 °C → douche 40 °C : 30 °C)', '°C'], ['U', '230 V en monophasé, √3 × 400 V en triphasé', 'V']],
+    e: [{ k: 'q', n: 'Débit', u: 'L/min', v: 8, min: 0.5, max: 100 }, { k: 'dt', n: 'Élévation ΔT', u: '°C', v: 30, min: 1, max: 80 }],
+    calc: (x) => { const P = puissanceInstantane(x.q, x.dt), m = circuitConseille(P, 'mono'), t = circuitConseille(P, 'tri');
+      return { etapes: [`P = ${f(x.q, 1)} / 60 × 4,185 × ${f(x.dt, 0)} = ${f(P / 1000, 2)} kW`, `monophasé : ${f(m.I, 1)} A ; triphasé : ${f(t.I, 1)} A par phase`],
+        res: [['Puissance', f(P / 1000, 2) + ' kW'], ['Intensité (mono)', f(m.I, 1) + ' A'], ['Intensité (tri)', f(t.I, 1) + ' A']] }; },
+    donnees: 'Panneau d’un chauffe-eau instantané. Débit et élévation saisis ; calibre et section proposés d’après les valeurs du contrôle de Calque (estimés, à vérifier).' },
+  { id: 'ecs_chauffe', fam: 'ecs', titre: 'Temps de chauffe d’un ballon',
+    but: 'Vérifier qu’un ballon électrique chauffe pendant les heures creuses (8 h en général).',
+    formule: 'E = volume × 1,163 × ΔT  (Wh)\ntemps = E / P',
+    vars: [['1,163', 'énergie pour chauffer 1 litre d’eau de 1 °C', 'Wh/L·K'], ['ΔT', 'de l’eau froide (10 °C) à la consigne (55 °C) : 45 °C', '°C'], ['P', 'puissance de la résistance', 'W']],
+    e: [{ k: 'v', n: 'Volume', u: 'L', v: 200, min: 1, max: 5000 }, { k: 'dt', n: 'Élévation ΔT', u: '°C', v: 45, min: 1, max: 80 }, { k: 'p', n: 'Puissance', u: 'W', v: 2200, min: 100, max: 60000 }],
+    calc: (x) => { const t = tempsChauffe(x.v, x.dt, x.p); return { etapes: [`E = ${f(x.v, 0)} × 1,163 × ${f(x.dt, 0)} = ${f(x.v * 1.163 * x.dt / 1000, 2)} kWh`, `temps = ${f(x.v * 1.163 * x.dt, 0)} / ${f(x.p, 0)}`], res: [['Temps de chauffe', f(t, 2) + ' h']] }; },
+    donnees: 'Panneau d’un chauffe-eau à accumulation › Chauffe-eau (sans les pertes du ballon).' },
+  /* ---------------- KNX ---------------- */
+  { id: 'knx_courant', fam: 'knx', titre: 'Courant d’une ligne KNX',
+    but: 'L’alimentation de ligne doit fournir le courant de tous les appareils reliés au bus.',
+    formule: 'consommation = Σ courant de chaque participant\nréserve = courant de l’alimentation − consommation (≥ 0)',
+    vars: [['courant d’un participant', 'd’après sa notice (10 mA estimés par défaut)', 'mA'], ['courant de l’alimentation', '160, 320, 640 ou 1 280 mA selon le modèle', 'mA']],
+    e: [{ k: 'n', n: 'Participants', u: '', v: 40, min: 0, max: 256 }, { k: 'ma', n: 'Courant d’un participant', u: 'mA', v: 10, min: 0, max: 100 }, { k: 'al', n: 'Alimentation', u: 'mA', v: 640, min: 1, max: 5000 }],
+    calc: (x) => { const b = bilanCourant(Array.from({ length: Math.round(x.n) }, () => x.ma), x.al); return { etapes: [`${f(x.n, 0)} × ${f(x.ma, 1)} = ${f(b.conso, 0)} mA`, `${f(x.al, 0)} − ${f(b.conso, 0)} = ${f(b.reste, 0)} mA`], res: [['Consommation', f(b.conso, 0) + ' mA'], ['Réserve', f(b.reste, 0) + ' mA'], ['Bilan', b.ok ? 'Suffisant (à vérifier)' : 'Insuffisant']] }; },
+    donnees: 'Panneau du niveau › Installation KNX. Règles générales du bus KNX TP, à vérifier dans la documentation KNX et les notices.' },
   /* ---------------- chiffrage ---------------- */
   { id: 'chiffrage', fam: 'chiffrage', titre: 'Chiffrage du quantitatif',
     but: 'Transformer les quantités du plan en prix : fournitures, main-d’œuvre, TVA. Calque ne fournit aucun prix : ils sont saisis.',

@@ -12,6 +12,7 @@ import { SCR } from './interaction.js';
 import { mkPath } from './export.js';
 import { calqueDeElec, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
 import { aCouches, bandes, matDe } from './compositions.js';
+import { montantsDuMur } from './ossature.js';
 
 /* ============================================================
    CALQUE — rendu canvas
@@ -291,6 +292,20 @@ function drawCouches(g) {
         }
       }
       if (b.o0 > -th / 2 + 1e-6) traits.push([E0(b.o0), E1(b.o0)]);
+      /* ossature bois à l'américaine : montants dessinés dans leur couche (s'ils sont lisibles à ce zoom) */
+      if (m.ossature && m.ossature.lm * RC.s > 1.5) {
+        const w = wg.w, e = w.oss && w.oss.entraxe > 10 ? w.oss.entraxe : m.ossature.entraxe;
+        const ops = P.openings.filter((o) => o.wall === w.id);
+        const M = montantsDuMur(wg.L, ops, 250, { entraxe: e, lm: m.ossature.lm });
+        const P4 = (u, o) => ({ x: wg.A.x + wg.d.x * u + wg.n.x * o, y: wg.A.y + wg.d.y * u + wg.n.y * o });
+        c.beginPath();
+        for (const mt of M.montants) {
+          if (mt.role === 'potelet') continue;
+          const a = mt.x - M.lm / 2, z = mt.x + M.lm / 2, q4 = [P4(a, b.o0), P4(z, b.o0), P4(z, b.o1), P4(a, b.o1)];
+          c.moveTo(q4[0].x, q4[0].y); for (let i = 1; i < 4; i++) c.lineTo(q4[i].x, q4[i].y); c.closePath();
+        }
+        c.fillStyle = '#B07D45'; c.fill(); c.strokeStyle = 'rgba(90,60,25,.7)'; c.lineWidth = 0.5 * px; c.stroke();
+      }
     }
   }
   if (!traits.length) return;

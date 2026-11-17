@@ -174,6 +174,14 @@ function estLienRJ45(d, E) {
   const a = E.get(d.a), b = E.get(d.b); if (!a || !b) return false;
   return (RJ45_SOURCES.has(a.type) && RJ45_PRISES.has(b.type)) || (RJ45_SOURCES.has(b.type) && RJ45_PRISES.has(a.type));
 }
+/* bus KNX (novembre 2026) : gaine électrique sans circuit dont les deux bouts sont des appareils KNX (câble bus,
+   paire torsadée). Reconnue par ses deux bouts, comme le câble RJ45 ; jamais utilisée par les circuits de courant fort. */
+const estKNX = (t) => typeof t === 'string' && t.startsWith('knx_');
+function estLienKNX(d, E) {
+  if (!isElecDuct(d) || circuitsDe(d).length || !d.a || !d.b) return false;
+  const a = E.get(d.a), b = E.get(d.b);
+  return !!(a && b && estKNX(a.type) && estKNX(b.type));
+}
 const PASSIFS = new Set(['tableau', 'tab_div', ...DERIVATIONS, 'gtl', TRAVERSEE]);
 const GCACHE = new WeakMap();
 function signature(plan) {
@@ -188,7 +196,7 @@ function grapheGaines(plan) {
   const edge = (a, b, h, v, o = {}) => { const e = { id: edges.length, a, b, h, v, duct: o.duct || null, inc: o.inc || 0, kind: o.kind || 'h' }; edges.push(e); adj.get(a).push(e); adj.get(b).push(e); return e; };
   const hubs = new Map(); // passages et GTL : extrémités de gaines reliées entre elles
   const vertsByLv = new Map(); // pour les jonctions
-  const ducts = (plan.ducts || []).filter((d) => isElecDuct(d) && Array.isArray(d.pts) && d.pts.length >= 2 && !estLienRJ45(d, E));
+  const ducts = (plan.ducts || []).filter((d) => isElecDuct(d) && Array.isArray(d.pts) && d.pts.length >= 2 && !estLienRJ45(d, E) && !estLienKNX(d, E));
   for (const d of ducts) {
     const L = niveau(plan, d.lv), base = altNiveau(L), zr = hauteurParcours(plan, d);
     const Z = zr == null ? null : base + zr;
@@ -405,7 +413,7 @@ function nettoyerZone(z) {
   return o;
 }
 
-export { RJ45_PRISES, RJ45_SOURCES, estLienRJ45 };
+export { RJ45_PRISES, RJ45_SOURCES, estKNX, estLienKNX, estLienRJ45 };
 export { DERIVATIONS, colonneTableau, membresColonne, poseAHauteur, tailleColonne, tracerALongueur };
 export { KINDS, PASSIFS, aCommander, cheminCircuit, grapheGaines, gainePourCircuit, longueurDuPlan, plusCourts, reserveDe, tableauDu, POSES, POSE_IDS, RESERVE_DEFAUT, TRAVERSEE, TYPES_CHEMIN, altNiveau, ancrage, circuitsDe, hauteurNiveau,
   hauteurParcours, hauteurSymbole, indexElec, isElecDuct, jumelle, kindOf, longueurGaine, longueurPolyligne, niveau,

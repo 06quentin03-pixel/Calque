@@ -88,9 +88,9 @@ test('écran : migration v15 → v18, composition d’un mur et du niveau, dessi
   const p0 = plan(15); p0.walls[0].couches = [{ m: 'bidon', e: 3 }]; // valeur invalide : retirée à la migration
   await seedPlan(ctx, p0); await boot(page);
   let r = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, c: N.P.walls[0].couches || null, th: N.P.walls.map((w) => w.th) }; });
-  assert.equal(r.v, 19); assert.equal(r.c, null); assert.deepEqual(r.th, [20, 20, 20, 20, 20, 20, 7], 'épaisseurs inchangées');
+  assert.equal(r.v, 20); assert.equal(r.c, null); assert.deepEqual(r.th, [20, 20, 20, 20, 20, 20, 7], 'épaisseurs inchangées');
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
-  assert.ok(vers.some((w) => /\(v15 → v19\)/.test(w)), 'copie de sécurité');
+  assert.ok(vers.some((w) => /\(v15 → v20\)/.test(w)), 'copie de sécurité');
   /* inspecteur du mur w0 : composition type « Parpaing de 20 + doublage sur ossature » */
   const sel = (t, id) => page.evaluate(async ([t, id]) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = id ? { t, id } : null; N.ui.inspOpen = true; F.renderInspector(); }, [t, id]);
   await sel('wall', 'w0'); await wait(page, 150);

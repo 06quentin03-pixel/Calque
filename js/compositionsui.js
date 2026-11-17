@@ -1,15 +1,16 @@
 /* Calque — module « compositionsui » : écran de la composition des murs, des cloisons, du plancher et du plafond
    (sections de l'inspecteur d'un mur, d'un niveau et d'une gaine). Calculs dans compositions.js (sans écran).
    Les épaisseurs proposées sont des dimensions nominales courantes, présentées comme telles (à vérifier). */
-import { P, S, estExterieure, isNum, saveSettings, setGEO } from './noyau.js';
+import { P, S, estExterieure, isNum, levelOf, saveSettings, setGEO } from './noyau.js';
 import { geo } from './geometrie.js';
 import { clampOpening } from './mutations.js';
 import { commit } from './interaction.js';
 import { btn, btns, chipRow, confirmBtn, h, kv, numField, renderInspector, sec, segCtl, textField, toast, wallSideName } from './interface.js';
 import { CATS, COMPOSITIONS, MATERIAUX, ORIGINE, aCouches, appliquerAuMur, appliquerAuNiveau, changerEpaisseur, compoNiveau, copierCouches, courtCouche,
-  couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nettoyerCouches, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux, tronconsDuMur } from './compositions.js';
+  coucheOssature, couchesOrientees, couchesPassage, epaisseur, logementGaine, matDe, nettoyerCouches, nomCouche, placerDansCouche, resumePassage, surfacesMateriaux, tronconsDuMur } from './compositions.js';
 
 import { LAMBDA } from './thermique.js';
+import { ENTRAXES, SRC_OSS, montantsDuMur } from './ossature.js';
 
 const fmt = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 const ETATS = { ok: ['ok', 'Place suffisante'], noyee: ['warn', 'Gaine noyée'], insuffisant: ['bad', 'Épaisseur insuffisante'], saignee: ['warn', 'Saignée à prévoir'], inconnu: ['', 'Non vérifié'] };
@@ -209,6 +210,20 @@ function compoMurSection(w, g) {
       confirmBtn('Retirer la composition', 'Confirmer le retrait', () => { appliquerAuMur(w, null); commit(); })),
     h('p', { class: 'note' }, 'Couches du côté 1 vers le côté 2. ' + ORIGINE + '.'));
 }
+/* ossature bois à l'américaine : montants, lisses, linteaux du mur (ossature.js) */
+function ossatureSection(w, g) {
+  const co = coucheOssature(w); if (!co) return null;
+  const e = w.oss && w.oss.entraxe > 10 ? w.oss.entraxe : co.oss.entraxe;
+  const L = levelOf(w.lv), H = w.h || (L && L.h) || 250;
+  const M = montantsDuMur(g.L, P.openings.filter((o) => o.wall === w.id), H, { entraxe: e, lm: co.oss.lm });
+  const m = (cm) => fmt(Math.round(cm) / 100) + ' m';
+  return sec('Ossature bois',
+    h('div', { class: 'fld' }, h('span', null, 'Entraxe des montants'), segCtl(ENTRAXES.map((x) => ({ v: x.v, n: x.n })), e, (v) => { if (v === co.oss.entraxe) delete w.oss; else w.oss = { entraxe: v }; commit(); })),
+    kv([['Montants', `${M.n} (${M.pleineHauteur} pleine hauteur, ${M.appuis} poteaux d’appui, ${M.potelets} potelets)`], ['Longueur de montants', m(M.lineaireMontants)],
+      ['Lisse basse + double sablière', m(M.lisses.total)], M.linteaux.length ? ['Linteaux', `${M.linteaux.length} (${m(M.lineaireLinteaux)})`] : null]),
+    h('p', { class: 'note' }, `Couche « ${courtCouche(co.c)} » : montants de ${fmt(co.oss.lm * 10)} mm à l’entraxe, un montant de rive et un poteau d’appui de chaque côté des baies. ${SRC_OSS}.`),
+    h('p', { class: 'note' }, `Électricité : passer les gaines dans les vides entre montants ; perçage d’un montant au milieu de sa largeur, diamètre ${fmt(Math.floor(co.c.e * 0.4 * 10) / 10)} cm au plus (40 % de la largeur, repère du code américain IRC R602.6, à vérifier). Boîtiers d’encastrement pour cloisons sèches, étanches à l’air si un pare-vapeur est posé.`));
+}
 function confirmBtnSimple(label, confirmLabel, action) {
   const b = btn(label, () => {
     if (b.dataset.armed) { action(); return; }
@@ -284,4 +299,5 @@ function logementSection(d) {
 }
 
 export { epaissir, sensElargissement };
+export { ossatureSection };
 export { compoMurSection, compoNiveauSection, compoNouveauMur, epaisseurComposee, logementSection, nomCompoNouveauMur, oublierCompoNouveauMur };

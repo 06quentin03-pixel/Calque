@@ -141,17 +141,17 @@ function saveSettings() { try { const o = LAYERS_CH.saved ? Object.assign({}, S,
 
 /* ---------- modèle ---------- */
 let P = null;          // plan courant
-const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: new Map(), elec: new Map(), rooms: new Map(), dims: new Map(), texts: new Map(), levels: new Map(), ducts: new Map(), zones: new Map() };
+const IDX = { nodes: new Map(), walls: new Map(), openings: new Map(), items: new Map(), elec: new Map(), rooms: new Map(), dims: new Map(), texts: new Map(), levels: new Map(), ducts: new Map(), zones: new Map(), surfaces: new Map() };
 let GEO = {};          // géométrie dérivée par niveau
 
 /* version du format des plans (migrations : MIGRATIONS dans stockage.js) */
-const PLAN_VERSION = 19;
+const PLAN_VERSION = 20;
 function blankPlan(name) {
   return {
     v: PLAN_VERSION, name: name || 'Nouveau plan',
     levels: [{ id: 'L0', name: 'Rez-de-chaussée', elev: 0, h: 250, slab: 20 }],
     nodes: [], walls: [], openings: [], items: [], elec: [], rooms: [], dims: [], texts: [],
-    circuits: [], rcds: [], links: [], ducts: [], zones: [], etudes: [], photometries: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
+    circuits: [], rcds: [], links: [], ducts: [], zones: [], surfaces: [], etudes: [], photometries: [], comps: [], fonds: [], fondImg: {}, install: { kva: 9, parafoudre: false, row: 13 },
     doc: { revisions: [] },
     chantier: { poses: { app: {}, circ: {} }, reserves: [], photos: [], notes: [], journal: [] },
     chiffrage: { prix: {}, temps: {} },
@@ -161,7 +161,7 @@ function blankPlan(name) {
 }
 /* listes d'objets du plan et leur nom lisible (contrôle à l'ouverture) */
 const LISTES_PLAN = { levels: 'niveaux', nodes: 'angles', walls: 'murs', openings: 'ouvertures', items: 'mobilier', elec: 'symboles électriques',
-  rooms: 'pièces', dims: 'cotes', texts: 'textes', circuits: 'circuits', rcds: 'différentiels', links: 'liaisons', ducts: 'gaines', zones: 'zones interdites',
+  rooms: 'pièces', dims: 'cotes', texts: 'textes', circuits: 'circuits', rcds: 'différentiels', links: 'liaisons', ducts: 'gaines', zones: 'zones interdites', surfaces: 'toits et terrasses',
   etudes: 'études d’éclairage', photometries: 'photométries', comps: 'composants', fonds: 'fonds de plan' };
 const estObjet = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
 /* normalise un plan ouvert. notes (facultatif) : reçoit, en clair, chaque réparation indispensable à l'ouverture
@@ -188,6 +188,11 @@ function normalizePlan(p, notes = []) {
     o.zones = o.zones.filter((z) => Array.isArray(z.pts) && z.pts.filter((q) => estObjet(q) && isNum(q.x) && isNum(q.y)).length >= 3);
     for (const z of o.zones) z.pts = z.pts.filter((q) => estObjet(q) && isNum(q.x) && isNum(q.y));
     note(n0 - o.zones.length, '{n} zone(s) interdite(s) sans contour retirée(s)'); }
+  /* toit ou terrasse (v20) : contour d'au moins 3 points valides */
+  { const n0 = o.surfaces.length;
+    o.surfaces = o.surfaces.filter((z) => Array.isArray(z.pts) && z.pts.filter((q) => estObjet(q) && isNum(q.x) && isNum(q.y)).length >= 3);
+    for (const z of o.surfaces) z.pts = z.pts.filter((q) => estObjet(q) && isNum(q.x) && isNum(q.y));
+    note(n0 - o.surfaces.length, '{n} toit(s) ou terrasse(s) sans contour retiré(s)'); }
   { let n = 0; for (const r of o.rooms) if (typeof r.name !== 'string') { r.name = r.name == null ? 'Pièce sans nom' : String(r.name); n++; } note(n, '{n} pièce(s) sans nom : nommée(s) « Pièce sans nom »'); }
   if (!o.install || typeof o.install !== 'object') o.install = { kva: 9, parafoudre: false, row: 13 };
   if (!o.doc || typeof o.doc !== 'object' || Array.isArray(o.doc) || !Array.isArray(o.doc.revisions)) o.doc = { revisions: [] };
@@ -203,7 +208,7 @@ function normalizePlan(p, notes = []) {
   return o;
 }
 function touch() {
-  for (const k of ['nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'levels', 'ducts', 'zones']) {
+  for (const k of ['nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'levels', 'ducts', 'zones', 'surfaces']) {
     const m = IDX[k]; m.clear();
     for (const o of P[k]) m.set(o.id, o);
   }
@@ -239,7 +244,8 @@ const C = {};
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
 const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {},
-  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [], cablage: [] };
+  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [], cablage: [], hitBas: [] };
+/* hitBas[] (p, tol, g) → { t, id } : sélection d'un objet ajouté par un module, après tous les objets du plan sauf les pièces */
 /* cablage[] (c, lv, opts) : dessiné juste au-dessus des gaines, sous les liaisons et les appareils (câblage des circuits) */
 /* snap[] (p, tol) → { x, y, kind, guides } : accrochage ajouté par un module (traits d'un fond DXF), après les angles des murs */
 /* top[] (c, lv, opts) : dessiné au-dessus du plan ; hit[] (p, tol) → { t, id } avant les objets du plan ;

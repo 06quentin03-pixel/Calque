@@ -10,7 +10,7 @@ const SY = await import(path.join(ROOT, 'js', 'symboles.js'));
 
 test('bibliothèque : les 76 meubles (dont 5 meubles d’angle de cuisine, 15 novembre 2026) et les 179 symboles sont tous rangés, rien n’est perdu', () => {
   assert.equal(SY.FURN.length, 76, 'catalogue de mobilier intact');
-  assert.equal(SY.ELEC.length, 179, 'catalogue électrique intact (176 + passage entre étages, phase 4 + boîte de dérivation murale et sortie de câble radiateur, novembre 2026)');
+  assert.equal(SY.ELEC.length, 203, 'catalogue électrique intact (176 + passage entre étages, phase 4 + boîte de dérivation murale et sortie de câble radiateur + 24 symboles du 17 novembre 2026 : chauffe-eau, piscine, KNX)');
   const all = B.allEntries();
   assert.equal(all.length, 255);
   for (const f of SY.FURN) assert.ok(all.some((x) => x.src === 'furn' && x.key === f.k), `meuble ${f.k} rangé`);

@@ -38,8 +38,8 @@ function calqueDeType(t) {
   switch (def.cat) {
     case 'eclairage': case 'commandes': return 'eclairage';
     case 'prises': return 'prises';
-    case 'appareils': case 'confort': case 'ventilation': case 'moteurs': case 'securite': return 'specialises';
-    case 'comm': case 'acces': case 'alarme': return 'faibles';
+    case 'appareils': case 'confort': case 'ventilation': case 'moteurs': case 'securite': case 'piscine': return 'specialises';
+    case 'comm': case 'acces': case 'alarme': case 'knx': return 'faibles';
     default: return 'tableau';
   }
 }

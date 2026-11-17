@@ -19,6 +19,7 @@ import { GOULOTTE, aCouches, courtCouche, logementPassage } from './compositions
 import { slug } from './stockage.js';
 import { openFileModal, parseColor } from './export.js';
 import { HOTES, creuxDe, morceaux } from './integration.js';
+import { TERR_MATS, TOIT_MATS, baseDe, calepinage, dessusEn, epDe, estToit, formeDe, hauteurToit, inclDe, pansToit, penteDe, surfaceSous } from './toits.js';
 
 /* ============================================================
    CALQUE — vue 3D : moteur WebGL2 intégré (aucune bibliothèque)
@@ -316,7 +317,7 @@ const K3 = {
   stair: [206, 176, 134], stairSide: [222, 218, 210], vmc: [70, 168, 162], gaine: [124, 99, 210], light: [255, 220, 140],
 };
 const TINT3 = [null, [214, 165, 80], [96, 160, 104], [80, 146, 214], [222, 110, 132], [146, 114, 214], [84, 96, 108]];
-const CAT3 = { prises: [35, 86, 196], appareils: [194, 65, 12], commandes: [21, 128, 61], eclairage: [230, 170, 40], comm: [124, 58, 237], tableau: [96, 104, 112], confort: [185, 28, 28], ventilation: [11, 140, 136], moteurs: [161, 98, 7], securite: [190, 24, 93], acces: [14, 116, 144], alarme: [77, 124, 15] };
+const CAT3 = { piscine: [30, 140, 200], knx: [90, 140, 40], prises: [35, 86, 196], appareils: [194, 65, 12], commandes: [21, 128, 61], eclairage: [230, 170, 40], comm: [124, 58, 237], tableau: [96, 104, 112], confort: [185, 28, 28], ventilation: [11, 140, 136], moteurs: [161, 98, 7], securite: [190, 24, 93], acces: [14, 116, 144], alarme: [77, 124, 15] };
 
 /* ---------------- mobilier : volumes simplifiés ----------------
    Repère local : x = largeur (−w/2…w/2), y = profondeur (−d/2 = dos, côté mur ;
@@ -407,6 +408,12 @@ const F3 = {
   seche_serv: { h: 110, z: 60, f: (X, w, d) => { X.box(-w / 2, -d / 2, -w / 2 + 3, d / 2, 0, 110, K3.white); X.box(w / 2 - 3, -d / 2, w / 2, d / 2, 0, 110, K3.white); for (let z = 6; z < 106; z += 8) X.box(-w / 2 + 3, -d / 2 + 2, w / 2 - 3, d / 2 - 2, z, z + 2.4, K3.white); } },
   lave_linge: { h: 85, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 85, K3.white); X.box(-w * 0.24, d / 2, w * 0.24, d / 2 + 1.5, 18, 62, K3.dark); } },
   seche_linge: { h: 85, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 85, K3.white); X.box(-w * 0.24, d / 2, w * 0.24, d / 2 + 1.5, 18, 62, K3.dark); } },
+  /* piscine : margelle au niveau du sol, eau un peu plus bas, parois du bassin */
+  piscine: { h: 4, f: (X, w, d) => { const m = Math.min(30, Math.min(w, d) * 0.12);
+    X.box(-w / 2, -d / 2, w / 2, -d / 2 + m, 0, 4, K3.stone); X.box(-w / 2, d / 2 - m, w / 2, d / 2, 0, 4, K3.stone);
+    X.box(-w / 2, -d / 2 + m, -w / 2 + m, d / 2 - m, 0, 4, K3.stone); X.box(w / 2 - m, -d / 2 + m, w / 2, d / 2 - m, 0, 4, K3.stone);
+    X.box(-w / 2 + m, -d / 2 + m, w / 2 - m, d / 2 - m, -30, -8, [70, 150, 200]); } },
+  spa: { h: 90, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 80, K3.woodDk); X.box(-w / 2 + 12, -d / 2 + 12, w / 2 - 12, d / 2 - 12, 80, 82, [90, 170, 210]); } },
   chauffe_eau: { h: 140, z: 60, f: (X, w, d) => X.cyl(0, 0, Math.min(w, d) / 2, 0, 140, K3.white, 24) },
   radiateur: { h: 60, z: 15, f: (X, w, d) => X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 60, K3.white) },
   chaudiere: { h: 75, z: 110, f: (X, w, d) => { X.box(-w / 2, -d / 2, w / 2, d / 2, 0, 75, K3.white); X.box(-w * 0.3, d / 2, w * 0.3, d / 2 + 0.6, 50, 60, K3.dark); } },
@@ -504,9 +511,10 @@ function build3D() {
     for (const op of P.openings) { if (!g.walls.has(op.wall)) continue; let a = opsBy.get(op.wall); if (!a) opsBy.set(op.wall, (a = [])); a.push(op); }
     const wTop = (wg) => { const hh = wg.w.h || Hh; return cut ? E + Math.min(hh, cut) : E + hh; };
     for (const wg of g.walls.values()) {
-      if (hid.has(wg.w.id)) continue;
+      if (hid.has(wg.w.id) || wg.w.masque) continue;
       const cl = wg.w.kind === 'cloison';
-      wall3(G.w, wg, E - tb, wTop(wg), E, opsBy.get(wg.w.id) || [], cl ? K3.part : K3.wall, cl ? K3.partCap : K3.wallCap, pick({ t: 'wall', id: wg.w.id, lv: lv.id }));
+      /* mur incliné (v20) : le volume est cisaillé vers le côté 1 (incl > 0) à partir du sol fini */
+      wall3(shearGB(G.w, wg.n, E, inclDe(wg.w)), wg, E - tb, wTop(wg), E, opsBy.get(wg.w.id) || [], cl ? K3.part : K3.wall, cl ? K3.partCap : K3.wallCap, pick({ t: 'wall', id: wg.w.id, lv: lv.id }));
     }
     for (const hb of g.hubs) solid3(G.w, [hb.pts], E - tb, top, hb.mur ? K3.wall : K3.part, 0, { top: hb.mur ? K3.wallCap : K3.partCap });
     // sols (dalle), trémies au-dessus des escaliers du niveau inférieur
@@ -530,7 +538,13 @@ function build3D() {
       }
     }
     // portes et fenêtres
-    for (const op of P.openings) { const wg = g.walls.get(op.wall); if (wg && !hid.has(op.id) && !hid.has(op.wall)) opening3(GW, wg, op, E, wTop(wg), pick({ t: 'opening', id: op.id, lv: lv.id })); }
+    for (const op of P.openings) {
+      const wg = g.walls.get(op.wall); if (!wg || hid.has(op.id) || hid.has(op.wall) || wg.w.masque) continue;
+      const t = inclDe(wg.w), GO = t ? Object.assign(Object.create(G), { s: shearGB(G.w, wg.n, E, t), g: shearGB(G.g, wg.n, E, t) }) : GW;
+      opening3(GO, wg, op, E, wTop(wg), pick({ t: 'opening', id: op.id, lv: lv.id }));
+    }
+    /* toits et terrasses (v20) */
+    for (const sf of P.surfaces || []) if (sf.lv === lv.id && !sf.masque && !hid.has(sf.id)) surface3(G, sf, lv, g, pick({ t: 'surface', id: sf.id, lv: lv.id }));
     // escaliers et mobilier
     for (const it of P.items) {
       if (it.lv !== lv.id || hid.has(it.id)) continue;
@@ -538,7 +552,11 @@ function build3D() {
       if (!o.furn) continue;
       furn3(G, it, E, Hh, pick({ t: 'item', id: it.id, lv: lv.id }));
     }
-    if (o.elec) for (const e of P.elec) if (e.lv === lv.id && elecVisible(e) && !hid.has(e.id)) elec3(G, e, E, Hh, pick({ t: 'elec', id: e.id, lv: lv.id }));
+    if (o.elec) for (const e of P.elec) if (e.lv === lv.id && elecVisible(e) && !hid.has(e.id)) {
+      const id = pick({ t: 'elec', id: e.id, lv: lv.id });
+      if (SUR_TOIT.has(e.type)) { const sf = surfaceSous(P, lv.id, e, 'toit'); if (sf && !sf.masque) { surToit3(G, e, sf, lv, id); continue; } }
+      elec3(G, e, E, Hh, id);
+    }
     if (o.ducts) for (const d of P.ducts) if (d.lv === lv.id && ductVisible(d) && !hid.has(d.id)) duct3(G, d, E, Hh, pick({ t: 'duct', id: d.id, lv: lv.id }), o);
   }
   const visIds = new Set(vis.map((l) => l.id));
@@ -552,6 +570,102 @@ function build3D() {
     G.groundY = groundY - 1;
   }
   return G;
+}
+
+/* cisaillement d'un lot de géométrie (mur incliné) : x += a·(y − E), z += b·(y − E) ; normales par la transposée inverse */
+function shearGB(gb, n, E, deg) {
+  const t = Math.tan((deg || 0) * DEG); if (!t) return gb;
+  const a = n.x * t, b = n.y * t;
+  return { get nv() { return gb.nv; },
+    v(x, y, z, nx, ny, nz, c, id) { const k = y - E, NY = ny - a * nx - b * nz, l = Math.hypot(nx, NY, nz) || 1; return gb.v(x + a * k, y, z + b * k, nx / l, NY / l, nz / l, c, id); },
+    t(p, q, r) { gb.t(p, q, r); }, e(p, q) { gb.e(p, q); } };
+}
+/* dalle épousant une fonction de hauteur f (plane) : dessous f(p), dessus f(p) + ep ; côtés verticaux */
+function nappe3(gb, ring, f, ep, col, id, o) {
+  o = o || {};
+  let r = cleanRing(ring); if (r.length < 3) return;
+  if (ringArea(r) < 0) r = r.slice().reverse();
+  const flat = []; for (const p of r) flat.push(p.x, p.y);
+  let tri; if (isConvex(r)) { tri = []; for (let i = 1; i < r.length - 1; i++) tri.push(0, i, i + 1); } else tri = earcut(flat, null);
+  const n = r.length, Y = r.map((p) => f(p));
+  /* normale du dessus d'après trois sommets */
+  let N = [0, 1, 0];
+  if (n >= 3) { const A = [r[0].x, Y[0], r[0].y], B = [r[1].x, Y[1], r[1].y], Cc = [r[2].x, Y[2], r[2].y];
+    const u = [B[0] - A[0], B[1] - A[1], B[2] - A[2]], v = [Cc[0] - A[0], Cc[1] - A[1], Cc[2] - A[2]];
+    let c = [u[2] * v[1] - u[1] * v[2], u[0] * v[2] - u[2] * v[0], u[1] * v[0] - u[0] * v[1]]; const l = Math.hypot(...c) || 1; c = c.map((x) => x / l); if (c[1] < 0) c = c.map((x) => -x); N = c; }
+  const top = o.top || col, bot = o.bot || col, side = o.side || col;
+  let b = gb.nv; for (let i = 0; i < n; i++) gb.v(r[i].x, Y[i] + ep, r[i].y, N[0], N[1], N[2], top, id); for (let i = 0; i < tri.length; i += 3) gb.t(b + tri[i], b + tri[i + 1], b + tri[i + 2]);
+  if (o.edges !== false) for (let i = 0; i < n; i++) gb.e(b + i, b + (i + 1) % n);
+  b = gb.nv; for (let i = 0; i < n; i++) gb.v(r[i].x, Y[i], r[i].y, -N[0], -N[1], -N[2], bot, id); for (let i = 0; i < tri.length; i += 3) gb.t(b + tri[i], b + tri[i + 2], b + tri[i + 1]);
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n, p = r[i], q = r[j], dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy); if (L < 1e-6) continue;
+    const nx = dy / L, nz = -dx / L, k = gb.nv;
+    gb.v(p.x, Y[i], p.y, nx, 0, nz, side, id); gb.v(q.x, Y[j], q.y, nx, 0, nz, side, id); gb.v(q.x, Y[j] + ep, q.y, nx, 0, nz, side, id); gb.v(p.x, Y[i] + ep, p.y, nx, 0, nz, side, id);
+    gb.t(k, k + 1, k + 2); gb.t(k, k + 2, k + 3);
+  }
+}
+/* prisme à dessus variable : dessous plat y0, dessus top(p) (pignon d'un mur sous un toit) */
+function prisme3(gb, ring, y0, top, col, id) {
+  let r = cleanRing(ring); if (r.length < 3) return;
+  if (ringArea(r) < 0) r = r.slice().reverse();
+  const Y = r.map((p) => Math.max(y0, top(p))); if (Y.every((y) => y - y0 < 0.5)) return;
+  const flat = []; for (const p of r) flat.push(p.x, p.y);
+  const n = r.length; let tri;
+  if (isConvex(r)) { tri = []; for (let i = 1; i < n - 1; i++) tri.push(0, i, i + 1); } else tri = earcut(flat, null);
+  let b = gb.nv; for (let i = 0; i < n; i++) gb.v(r[i].x, y0, r[i].y, 0, -1, 0, col, id); for (let i = 0; i < tri.length; i += 3) gb.t(b + tri[i], b + tri[i + 2], b + tri[i + 1]);
+  b = gb.nv; for (let i = 0; i < n; i++) gb.v(r[i].x, Y[i], r[i].y, 0, 1, 0, col, id); for (let i = 0; i < tri.length; i += 3) gb.t(b + tri[i], b + tri[i + 1], b + tri[i + 2]);
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n, p = r[i], q = r[j], dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy); if (L < 1e-6) continue;
+    const nx = dy / L, nz = -dx / L, k = gb.nv;
+    gb.v(p.x, y0, p.y, nx, 0, nz, col, id); gb.v(q.x, y0, q.y, nx, 0, nz, col, id); gb.v(q.x, Y[j], q.y, nx, 0, nz, col, id); gb.v(p.x, Y[i], p.y, nx, 0, nz, col, id);
+    gb.t(k, k + 1, k + 2); gb.t(k, k + 2, k + 3); gb.e(k + 3, k + 2);
+  }
+}
+const K3PV = [34, 52, 92], K3PVCADRE = [190, 196, 202];
+function surface3(G, sf, L, g, id) {
+  const E = L.elev, base = E + baseDe(sf, L), ep = epDe(sf);
+  if (!estToit(sf)) {
+    const col = hexRGB((TERR_MATS[sf.mat] || TERR_MATS.bois).coul);
+    /* une piscine ou un spa posé sur la terrasse la perce (on voit l'eau) */
+    const trous = P.items.filter((it) => it.lv === sf.lv && (it.type === 'piscine' || it.type === 'spa') && inPoly(it, sf.pts))
+      .map((it) => [itemToWorld(it, -it.w / 2, -it.d / 2), itemToWorld(it, it.w / 2, -it.d / 2), itemToWorld(it, it.w / 2, it.d / 2), itemToWorld(it, -it.w / 2, it.d / 2)]);
+    solid3(G.s, [sf.pts, ...trous], base - ep, base, col, id, { side: mixRGB(col, [90, 80, 70], 0.3) });
+    return;
+  }
+  const col = hexRGB((TOIT_MATS[sf.mat] || TOIT_MATS.tuile).coul), pente = penteDe(sf), ec = ep / Math.cos(pente * DEG);
+  const pans = pansToit(sf);
+  for (const pn of pans) { const q = pn.plan; nappe3(G.s, pn.pts, (p) => base + Math.max(0, q.a * p.x + q.b * p.y + q.c), ec, col, id, { bot: K3.wood, side: K3.woodDk }); }
+  /* pignons : les murs porteurs du niveau sous le toit montent jusqu'au dessous de la toiture */
+  if (sf.pignons !== false && formeDe(sf) !== 'plat') for (const wg of g.walls.values()) {
+    const w = wg.w; if (w.kind === 'cloison' || w.masque || inclDe(w)) continue;
+    const y0 = E + (w.h || L.h || 250);
+    for (const pn of pans) {
+      const piece = clipConvex(wg.poly, pn.pts); if (piece.length < 3) continue;
+      const q = pn.plan; prisme3(G.w, piece, y0, (p) => base + Math.max(0, q.a * p.x + q.b * p.y + q.c), K3.wall, id);
+    }
+  }
+  /* panneaux solaires */
+  if (sf.pv) {
+    const cp = calepinage(sf), pn = pans[cp.pan]; if (!pn) return;
+    const q = pn.plan, f = (p) => base + Math.max(0, q.a * p.x + q.b * p.y + q.c) + ec + 6;
+    for (const P4 of cp.panneaux) nappe3(G.s, P4, f, 4, K3PV, id, { side: K3PVCADRE, bot: K3PVCADRE });
+  }
+}
+/* appareil posé sur un toit (antenne, panneau, sortie de toit…) : à la hauteur du toit au point posé */
+const SUR_TOIT = new Set(['panneau_pv', 'antenne', 'parabole', 'sortie_toit', 'capteur_vent', 'sonde_ext', 'capteur_solaire']);
+function surToit3(G, e, sf, L, id) {
+  const y = L.elev + dessusEn(sf, e, L), def = ELEC_BY.get(e.type) || {}, acc = elecAccent(e, def);
+  const a = (e.rot || 0) * DEG, ca = Math.cos(a), sa = Math.sin(a), Wp = (lx, ly) => ({ x: e.x + lx * ca - ly * sa, y: e.y + lx * sa + ly * ca });
+  if (e.type === 'panneau_pv' || e.type === 'capteur_solaire') {
+    const pn = pansToit(sf).find((x) => x.pts.length >= 3 && inPoly(e, x.pts)), q = pn ? pn.plan : { a: 0, b: 0, c: 0 };
+    const f = (p) => L.elev + baseDe(sf, L) + Math.max(0, q.a * p.x + q.b * p.y + q.c) + epDe(sf) / Math.cos(penteDe(sf) * DEG) + 6;
+    nappe3(G.s, [Wp(-50, -85), Wp(50, -85), Wp(50, 85), Wp(-50, 85)], f, 4, e.type === 'capteur_solaire' ? [40, 44, 50] : K3PV, id, { side: K3PVCADRE, bot: K3PVCADRE });
+    return;
+  }
+  if (e.type === 'parabole') { solid3(G.s, [circlePts(e, 3, 10)], y, y + 60, K3.steel, id); solid3(G.s, [circlePts(e, 32, 20)], y + 60, y + 64, K3.white, id); return; }
+  if (e.type === 'antenne') { solid3(G.s, [circlePts(e, 2, 8)], y, y + 180, K3.steel, id); for (const z of [130, 150, 170]) solid3(G.s, [[Wp(-40, -1), Wp(40, -1), Wp(40, 1), Wp(-40, 1)]], y + z, y + z + 2, K3.steel, id); return; }
+  if (e.type === 'sortie_toit') { solid3(G.s, [circlePts(e, 10, 16)], y - 10, y + 40, K3.dark, id); return; }
+  solid3(G.s, [circlePts(e, 6, 12)], y, y + 30, acc, id);
 }
 
 function wall3(gb, wg, z0, z1, E, ops, col, cap, id) {
@@ -701,7 +815,9 @@ function elec3(G, e, E, Lh, id) {
     const z = E;
     if (t === 'pc_sol' || t === 'encastre_sol' || t === 'det_fuite' || t === 'terre') { box(-6, -6, 6, 6, z, z + 1.5, t === 'encastre_sol' ? glow : K3.steel); box(-3, -3, 3, 3, z + 1.5, z + 1.9, acc); }
     else if (t === 'borne_ext' || t === 'pc_jardin' || t === 'spot_jardin') { box(-7, -7, 7, 7, z, z + (t === 'spot_jardin' ? 25 : 60), K3.dark); box(-7, -7, 7, 7, z + (t === 'spot_jardin' ? 25 : 60), z + (t === 'spot_jardin' ? 32 : 66), t === 'pc_jardin' ? acc : glow); }
-    else if (t === 'ballon_thermo') cyl(0, 30, 30, z, z + 180, K3.white, 24);
+    else if (t === 'ballon_thermo' || t === 'ce_solaire' || t === 'ce_chaudiere') cyl(0, 30, 30, z, z + 180, K3.white, 24);
+    else if (t === 'pac_piscine') { box(-45, -20, 45, 20, z, z + 65, K3.white2); box(-30, 20, 10, 20.5, z + 15, z + 55, K3.dark); }
+    else if (t === 'proj_piscine') { box(-8, -2, 8, 2, z - 40, z - 24, glow); }
     else if (t === 'pompe') cyl(0, 0, 15, z, z + 30, acc, 16);
     else if (t === 'plancher') box(-30, -30, 30, 30, z + 0.2, z + 0.6, mixRGB(acc, [255, 255, 255], 0.5));
     else { const s = { groupe: [70, 50, 55], portail: [30, 20, 30], moteur: [40, 30, 30] }[t] || [16, 16, 10]; box(-s[0] / 2, -s[1] / 2, s[0] / 2, s[1] / 2, z, z + s[2], K3.dark); box(-s[0] / 4, s[1] / 2, s[0] / 4, s[1] / 2 + 0.5, z + s[2] * 0.6, z + s[2] * 0.8, acc); }
@@ -1271,6 +1387,13 @@ function v3RefInfo(ref) {
       ['Taille', tailleChemin(d) || (rect ? 'non indiquée (dessin indicatif 60 × 40 mm)' : '—')],
       ['Pose', d.pose && POSES[d.pose] ? POSES[d.pose].n + ((d.pose === 'hauteur' || d.pose === 'cloison') && d.z != null ? ` (${fmtLenU(d.z)})` : '') : `non précisée (affichée ${v3o().route !== 'sol' ? 'au plafond' : 'au sol'})`],
       cs.length ? ['Circuits', cs.map((c) => `${nums.get(c.id) || '?'} · ${c.name}`).join(', ')] : null, ['Niveau', lvName]] };
+  }
+  if (ref.t === 'surface') {
+    const sf = IDX.surfaces.get(ref.id); if (!sf) return null;
+    if (!estToit(sf)) return { title: sf.name || 'Terrasse', rows: [['Revêtement', (TERR_MATS[sf.mat] || TERR_MATS.bois).n], ['Dessus', fmtLenU(baseDe(sf, L)) + ' / sol du niveau'], ['Niveau', lvName]] };
+    const cp = sf.pv ? calepinage(sf) : null;
+    return { title: sf.name || 'Toit', rows: [['Forme', formeDe(sf) === 'plat' ? 'plat' : `${formeDe(sf).replace('pans', ' pans').replace('pan', ' pan')} à ${NF1.format(penteDe(sf))}°`], ['Couverture', (TOIT_MATS[sf.mat] || TOIT_MATS.tuile).n],
+      cp ? ['Panneaux solaires', String(cp.n)] : null, ['Niveau', lvName]].filter(Boolean) };
   }
   if (ref.t === 'circuit') {
     const c = circById(ref.id); if (!c) return null;

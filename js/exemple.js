@@ -27,6 +27,10 @@ import { agcpLabel } from './elecdonnees.js';
 import { integrer, nouvelIntegre } from './integration.js';
 import { equiperPiece } from './equipement.js';
 import { puissanceConseillee, tExt } from './thermique.js';
+import { inclPourA, pansToit } from './toits.js';
+import { ajouterGroupes, cablesBus, proposerGroupes } from './knx.js';
+import { relierSansCircuit } from './affectation.js';
+import { COMPO_BY } from './compositions.js';
 
 const NOM_EXEMPLE = 'Exemple : maison et atelier';
 const EX = 'Valeur d’exemple de Calque (fictive) : à remplacer par la fiche du fabricant';
@@ -329,6 +333,7 @@ function samplePlan() {
   demandesExemple();
   compositionsExemple();
   boitesExemple(); // après les compositions : les descentes se logent dans la couche de passage des murs
+  exterieurExemple(); // demandes du 17 novembre 2026 : toit, terrasse, piscine, maison en A à ossature bois, chauffe-eau, KNX
   touch();
   return JSON.parse(JSON.stringify(P));
 }
@@ -593,6 +598,70 @@ function schemasExemple() {
   for (const m of ['demarrage', 'inversion', 'telerupteur', 'vaetvient']) appliquerModele(sch, m);
   const inst = P.install || {};
   depuisTableau(sch, P, { reperes: circNumbers(), arrivee: `Arrivée : disjoncteur de branchement ${agcpLabel(inst.kva, inst.reseau)} (${inst.kva} kVA, valeurs estimées)` });
+}
+
+/* demandes du 17 novembre 2026 (format v20) : toit à deux pans de la maison avec panneaux solaires, terrasse en bois
+   (sol sans murs), piscine et ses équipements, abri de jardin en A (murs inclinés, ossature bois à l'américaine 2×6),
+   batterie à côté de l'onduleur, chauffe-eau (volume choisi, instantané), installation KNX de la mezzanine (bus, adresses
+   de groupe). Valeurs d'EXEMPLE marquées « saisie » : ni données de fabricant ni valeurs réglementaires. */
+function exterieurExemple() {
+  touch();
+  /* toit de la maison, posé sur les murs de l'étage (débord de 40 cm) ; panneaux solaires sur le pan sud */
+  const toit = { id: uid('s'), lv: 'L1', kind: 'toit', name: 'Toit de la maison', forme: '2pans', pente: 35, sens: 0, e: 25, mat: 'tuile',
+    pts: [{ x: -40, y: -40 }, { x: 1040, y: -40 }, { x: 1040, y: 840 }, { x: -40, y: 840 }] };
+  const sud = pansToit(toit).find((pn) => pn.sens === 90);
+  toit.pv = { pan: sud ? sud.i : 0, lm: 113, hm: 172, marge: 30, jeu: 2, wc: { v: 400, st: 'saisie', src: EX } };
+  /* terrasse en bois devant la maison (sol sans murs), dessus au niveau du sol fini */
+  const terrasse = { id: uid('s'), lv: 'L0', kind: 'terrasse', name: 'Terrasse', z: 0, e: 15, mat: 'bois', sens: 0,
+    pts: [{ x: 330, y: 810 }, { x: 1000, y: 810 }, { x: 1000, y: 1120 }, { x: 330, y: 1120 }] };
+  const plage = { id: uid('s'), lv: 'L0', kind: 'terrasse', name: 'Plage de la piscine', z: 0, e: 10, mat: 'dalle',
+    pts: [{ x: 40, y: 1360 }, { x: 860, y: 1360 }, { x: 860, y: 1840 }, { x: 40, y: 1840 }] };
+  P.surfaces = [toit, terrasse, plage];
+  /* piscine 7 × 3,5 m, ses équipements hors des volumes ; projecteur 12 V au bord (dans le volume 1 : vérifié à l'écran) */
+  meuble('L0', 'piscine', 450, 1600, 0, { w: 700, d: 350 });
+  sym('L0', 'proj_piscine', 450, 1440, 0);
+  sym('L0', 'coffret_piscine', -330, 1520, 0); sym('L0', 'pac_piscine', -330, 1660, 0); sym('L0', 'transfo_piscine', -330, 1760, 0);
+  sym('L0', 'electrolyseur', -250, 1520, 0);
+  /* abri de jardin en A : deux murs parallèles à ossature bois 2×6, inclinés l'un vers l'autre (faîte à 3 m) */
+  const ab = [...addWall('L0', { x: -900, y: 100 }, { x: -500, y: 100 }, { th: 20, kind: 'mur' }), ...addWall('L0', { x: -500, y: 500 }, { x: -900, y: 500 }, { th: 20, kind: 'mur' })];
+  touch();
+  const us = COMPO_BY.get('us2x6');
+  for (const w of ab) { w.h = 300; appliquerAuMur(w, us.couches.map((c) => ({ m: c.m, e: c.e })), us.n + ' (exemple)'); }
+  touch();
+  const ang = inclPourA(400, 300), g0 = geo('L0');
+  for (const w of ab) {
+    const wg = g0.walls.get(w.id), autre = ab.find((x) => x !== w), og = autre && g0.walls.get(autre.id); if (!wg || !og) continue;
+    const m = { x: (og.A.x + og.B.x) / 2 - wg.A.x, y: (og.A.y + og.B.y) / 2 - wg.A.y };
+    w.incl = Math.round(Math.sign(m.x * wg.n.x + m.y * wg.n.y) * ang * 10) / 10;
+  }
+  /* batterie de stockage à côté de l'onduleur du local technique */
+  sym('L0', 'batterie', X1 - 10, 380, 90);
+  /* chauffe-eau : volume choisi pour celui des sanitaires ; instantané électrique aux vestiaires */
+  const ce = P.elec.find((e) => e.type === 'ce_elec' && e.x > X0);
+  if (ce) ce.ce = { pers: 6, usage: 'normal', vol: { v: 300, st: 'saisie', src: EXS }, p: { v: 3000, st: 'saisie', src: EX } };
+  const nouveaux = new Set();
+  const n_ = (e) => { nouveaux.add(e.id); return e; };
+  n_(sym('L0', 'ce_instant', X0 + 15, 900, 270, { ce: { q: 8, dt: 30, reseau: 'tri', p: { v: 18000, st: 'saisie', src: EX } } }));
+  /* KNX sur la mezzanine : alimentation, actionneur et interface IP contre le mur est, boutons, détecteur, thermostat,
+     station météo ; bus tiré d'appareil en appareil, adresses de groupe proposées */
+  const k = (t, x, y, rot, extra) => n_(sym('L1', t, x, y, rot, extra));
+  k('knx_alim', X1 - 10, 600, 90, { knx: { alim: { v: 640, st: 'saisie', src: EX } } }); k('knx_act', X1 - 10, 650, 90); k('knx_ip', X1 - 10, 700, 90);
+  k('knx_bp', X0 + 15, 900, 270); k('knx_det', 1600, 800, 0); k('knx_thermo', X0 + 15, 1550, 270); k('knx_bp', X0 + 15, 1650, 270);
+  k('knx_meteo', X0 + 15, 300, 270);
+  for (const e of P.elec) if (nouveaux.has(e.id) && e.type === 'knx_bp') e.knx = { ma: { v: 12, st: 'saisie', src: EX } };
+  touch();
+  const bus = cablesBus(P, 'L1');
+  for (const g of bus.cables) { const dd = Object.assign({}, g, { id: uid('k'), mat: 'icta', dia: 16 }); delete dd.len; P.ducts.push(dd); }
+  touch();
+  const pieces = (lv) => geo(lv).rooms.filter((r) => r.label).map((r) => ({ id: r.label.id, name: r.label.name, contient: (e) => inPoly(e, r.loop) }));
+  ajouterGroupes(P, proposerGroupes(P, pieces), uid);
+  /* circuits des nouveaux appareils (domotique KNX, piscine, chauffe-eau instantané), sans toucher aux circuits existants */
+  for (const e of P.elec) if (['coffret_piscine', 'pac_piscine', 'transfo_piscine', 'electrolyseur'].includes(e.type) && !e.cid) nouveaux.add(e.id);
+  const p2 = Object.assign({}, P, { elec: P.elec.filter((e) => e.cid || nouveaux.has(e.id)) });
+  const r = relierSansCircuit(p2, { piece: () => null });
+  for (const a of r.affectations) { const e = P.elec.find((x) => x.id === a.id); if (e) e.cid = a.cid; }
+  P.circuits.push(...r.circuits); P.rcds.push(...r.rcds);
+  touch();
 }
 
 export { NOM_EXEMPLE, samplePlan };

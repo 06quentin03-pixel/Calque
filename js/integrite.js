@@ -21,7 +21,7 @@ function regles(p) {
   const elecBy = new Map(L('elec').map((e) => [e.id, e]));
   const ch = p.chantier && typeof p.chantier === 'object' ? p.chantier : {};
   const poses = ch.poses && typeof ch.poses === 'object' ? ch.poses : {};
-  const LV = ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'etudes'];
+  const LV = ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'surfaces', 'etudes'];
   const jumeauCasse = (e) => e.to != null && (!elecBy.has(e.to) || elecBy.get(e.to).to !== e.id);
   return [
     { code: 'mur-angle', cas: () => L('walls').filter((w) => !nodes.has(w.a) || !nodes.has(w.b)),
@@ -73,7 +73,7 @@ function regles(p) {
       fix: (c) => { for (const e of c) delete e.lum.ph; } },
     { code: 'composant', cas: () => [...L('items'), ...L('elec')].filter((o) => o.comp && !comps.has(o.comp)),
       msg: (n) => `${n} ${pl(n, 'objet')} relié${n > 1 ? 's' : ''} à un composant personnalisé manquant`, rep: null },
-    { code: 'id-double', cas: () => ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'zones']
+    { code: 'id-double', cas: () => ['levels', 'nodes', 'walls', 'openings', 'items', 'elec', 'rooms', 'dims', 'texts', 'circuits', 'rcds', 'links', 'ducts', 'zones', 'surfaces']
       .flatMap((k) => { const vus = new Set(); return L(k).filter((o) => { const d = vus.has(o.id); vus.add(o.id); return d; }); }),
       msg: (n) => `${n} ${pl(n, 'identifiant')} en double`, rep: null },
     { code: 'coordonnees', cas: () => [...L('nodes'), ...L('elec'), ...L('items'), ...L('texts')].filter((o) => !num(o.x) || !num(o.y)),

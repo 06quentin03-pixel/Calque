@@ -20,7 +20,9 @@ const AUTONOMOUS = new Set(['daaf', 'det_co', 'det_gaz', 'det_fuite', 'det_chale
 const COMM_OUTLETS = new Set(['tv', 'rj45', 'rj45_2', 'sat', 'fibre', 'hdmi', 'rj45_tv']);
 const LIGHT_ACC = new Set(['baes', 'extracteur', 'ventilo', 'transfo', 'pc_rasoir']); // rattachés à l'éclairage de la pièce
 const LINK_TARGETS = new Set([...LIGHTS, 'pc_cmd', 'extracteur', 'ventilo']);
-const NO_CIRCUIT = new Set(['daaf', 'camera', 'thermostat', 'derivation', 'derivation_mur', 'traversee', 'compteur', 'db', 'tableau', 'tv', 'rj45', 'rj45_2', 'sat', 'fibre', 'tel', 'hdmi', 'hp', 'wifi', 'terre', 'les', 'gtl', 'ccpi', 'panneau_pv', 'batterie', 'groupe', 'inverseur', 'det_co', 'det_gaz', 'det_fuite', 'arret_urg', 'camera_dome', 'nvr', 'rj45_tv', 'antenne', 'parabole', 'box', 'baie', 'repart_tv', 'telerupteur', 'minuterie', 'contacteur_hc', 'parafoudre', 'delesteur', 'gest_energie', 'sous_compteur', 'sonde_ext', 'prog_fp', 'vmc_insuff', 'entree_air', 'sortie_toit', 'prise_air_neuf', 'plenum', 'capteur_vent', 'det_chaleur', 'declencheur', 'ev_gaz']);
+const NO_CIRCUIT = new Set(['daaf', 'camera', 'thermostat', 'derivation', 'derivation_mur', 'traversee', 'compteur', 'db', 'tableau', 'tv', 'rj45', 'rj45_2', 'sat', 'fibre', 'tel', 'hdmi', 'hp', 'wifi', 'terre', 'les', 'gtl', 'ccpi', 'panneau_pv', 'batterie', 'groupe', 'inverseur', 'det_co', 'det_gaz', 'det_fuite', 'arret_urg', 'camera_dome', 'nvr', 'rj45_tv', 'antenne', 'parabole', 'box', 'baie', 'repart_tv', 'telerupteur', 'minuterie', 'contacteur_hc', 'parafoudre', 'delesteur', 'gest_energie', 'sous_compteur', 'sonde_ext', 'prog_fp', 'vmc_insuff', 'entree_air', 'sortie_toit', 'prise_air_neuf', 'plenum', 'capteur_vent', 'det_chaleur', 'declencheur', 'ev_gaz',
+  /* novembre 2026 : chauffe-eau sur chaudière, capteurs solaires, projecteur TBTS (par son transformateur), appareils KNX alimentés par le bus */
+  'ce_chaudiere', 'capteur_solaire', 'proj_piscine', 'knx_coupleur', 'knx_act', 'knx_var', 'knx_store', 'knx_chauf', 'knx_entree', 'knx_dali', 'knx_compteur', 'knx_bp', 'knx_det', 'knx_thermo', 'knx_meteo']);
 const SEC_MAX = { 1.5: 16, 2.5: 20, 4: 25, 6: 32, 10: 40, 16: 63 };
 const CALS = [2, 10, 16, 20, 25, 32, 40];
 const SECS = [1.5, 2.5, 4, 6, 10, 16];
@@ -47,6 +49,8 @@ const CK = {
   hotte: { n: 'Hotte', sec: 2.5, cal: 20, unit: 'app' },
   irve: { n: 'Borne de recharge (IRVE)', sec: 10, cal: 40, unit: 'app', typeA: true, full: true, ownRcd: true },
   communication: { n: 'Coffret de communication', sec: 1.5, cal: 16, unit: 'none' },
+  domotique: { n: 'Domotique KNX (alimentations du bus)', sec: 1.5, cal: 10, unit: 'none' },
+  piscine: { n: 'Piscine (filtration, traitement, éclairage)', sec: 2.5, cal: 16, unit: 'none' },
   alarme: { n: 'Alarme', sec: 1.5, cal: 10, unit: 'none' },
   sonnette: { n: 'Sonnette / interphone', sec: 1.5, cal: 2, unit: 'none' },
   autre: { n: 'Autre circuit', sec: 1.5, cal: 16, unit: 'none' },
@@ -57,7 +61,9 @@ const ACCEPT = {
   prises: (t) => t in SOCKETS || t === 'com' || t === 'pc_rasoir',
   prises_cuisine: (t) => t in SOCKETS,
   cuisson: (t) => t === 'pc32' || t === 'sortie',
-  chauffe_eau: (t) => t === 'sortie' || t === 'ce_elec' || t === 'ballon_thermo',
+  chauffe_eau: (t) => t === 'sortie' || t === 'ce_elec' || t === 'ballon_thermo' || t === 'ce_solaire' || t === 'ce_instant',
+  domotique: (t) => t === 'knx_alim' || t === 'knx_ip' || t === 'knx_ecran' || t === 'domo',
+  piscine: (t) => ['coffret_piscine', 'pompe', 'pac_piscine', 'electrolyseur', 'volet_piscine', 'transfo_piscine', 'sortie'].includes(t),
   chauffage: (t) => t === 'rad_elec' || t === 'sortie_rad' || t === 'seche_serv_e' || t === 'thermostat' || t === 'plancher' || t === 'soufflant_sdb',
   pac: (t) => t === 'pac' || t === 'clim' || t === 'pac_int' || t === 'sortie',
   vmc: (t) => t === 'vmc' || t === 'vmc_groupe' || t === 'vmc_df' || t === 'extracteur' || t === 'sortie',
@@ -79,7 +85,9 @@ function defaultKindFor(t) {
   if (t in SOCKETS || t === 'pc_rasoir') return 'prises';
   if (t === 'pc32') return 'cuisson';
   if (t === 'pc20') return 'specialise';
-  if (t === 'ce_elec' || t === 'ballon_thermo') return 'chauffe_eau';
+  if (t === 'ce_elec' || t === 'ballon_thermo' || t === 'ce_solaire' || t === 'ce_instant') return 'chauffe_eau';
+  if (t === 'knx_alim' || t === 'knx_ip' || t === 'knx_ecran') return 'domotique';
+  if (['coffret_piscine', 'pac_piscine', 'electrolyseur', 'volet_piscine', 'transfo_piscine'].includes(t)) return 'piscine';
   if (t === 'rad_elec' || t === 'sortie_rad' || t === 'seche_serv_e' || t === 'thermostat' || t === 'plancher' || t === 'soufflant_sdb') return 'chauffage';
   if (t === 'pac' || t === 'clim' || t === 'pac_int') return 'pac';
   if (t === 'vmc' || t === 'vmc_groupe' || t === 'vmc_df') return 'vmc';

@@ -250,8 +250,8 @@ function generateFromPlan() {
     }
     for (const x of syms.filter((s) => s.e.type === 'pc32')) { const c = mk('cuisson', 'Plaque de cuisson'); x.e.cid = c.id; }
     for (const x of syms.filter((s) => s.e.type in DEDIC)) { const k = DEDIC[x.e.type]; const c = mk(k, k === 'specialise' ? (ELEC_BY.get(x.e.type) || {}).n || CK[k].n : CK[k].n); x.e.cid = c.id; }
-    for (const x of syms.filter((s) => s.e.type === 'sortie' || s.e.type === 'ce_elec' || s.e.type === 'ballon_thermo')) {
-      if (x.e.type === 'ce_elec' || x.e.type === 'ballon_thermo' || nearItem(x.e, ['chauffe_eau'], 160)) { const c = mk('chauffe_eau', 'Chauffe-eau'); x.e.cid = c.id; }
+    for (const x of syms.filter((s) => s.e.type === 'sortie' || s.e.type === 'ce_elec' || s.e.type === 'ballon_thermo' || s.e.type === 'ce_solaire' || s.e.type === 'ce_instant')) {
+      if (x.e.type === 'ce_elec' || x.e.type === 'ballon_thermo' || x.e.type === 'ce_solaire' || x.e.type === 'ce_instant' || nearItem(x.e, ['chauffe_eau'], 160)) { const c = mk('chauffe_eau', 'Chauffe-eau'); x.e.cid = c.id; }
       else if (nearItem(x.e, ['hotte'], 120)) { const c = mk('hotte', 'Hotte'); x.e.cid = c.id; }
       else { const c = mk('autre', 'Sortie de câble ' + roomName(x.r).toLowerCase()); x.e.cid = c.id; }
     }
@@ -274,6 +274,9 @@ function generateFromPlan() {
   for (const e of all.filter((x) => x.type === 'borne_ve')) { const c = mk('irve', 'Borne de recharge véhicule'); e.cid = c.id; }
   for (const e of all.filter((x) => x.type === 'prise_ve')) { const c = mk('irve', 'Prise renforcée véhicule', { cal: 20, sec: 2.5 }); e.cid = c.id; }
   const com = all.filter((e) => e.type === 'com' || e.type === 'domo'); if (com.length) { const c = mk('communication', 'Coffret de communication'); for (const e of com) e.cid = c.id; }
+  const knx = all.filter((e) => e.type === 'knx_alim' || e.type === 'knx_ip' || e.type === 'knx_ecran'); if (knx.length) { const c = mk('domotique', 'Domotique KNX'); for (const e of knx) e.cid = c.id; }
+  for (const e of all.filter((x) => x.type === 'pac_piscine')) { const c = mk('piscine', 'Pompe à chaleur piscine', { cal: 20, sec: 2.5 }); e.cid = c.id; }
+  const pis = all.filter((e) => ['electrolyseur', 'volet_piscine', 'transfo_piscine'].includes(e.type)); if (pis.length) { const c = mk('piscine', 'Piscine (traitement, volet, éclairage)'); for (const e of pis) e.cid = c.id; }
   if (all.some((e) => e.type === 'centrale')) { const c = mk('alarme', 'Alarme'); for (const e of all.filter((x) => ALARM.has(x.type))) e.cid = c.id; }
   const so = all.filter((e) => ACCESS.has(e.type)); if (so.length) { const c = mk('sonnette', 'Sonnette / interphone'); for (const e of so) e.cid = c.id; }
   // appareils fixes sur leur propre circuit

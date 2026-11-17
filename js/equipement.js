@@ -121,7 +121,7 @@ const RACCORD = {
   /* demande du 16 novembre 2026 : tous les appareils électriques du mobilier reçoivent leur raccordement */
   hotte: { type: 'pc_hotte', ok: ['pc_hotte', 'sortie', 'pc20'], pourquoi: 'prise de la hotte, à 1,80 m', haut: true },
   seche_serv: { type: 'sortie_rad', ok: ['sortie_rad', 'seche_serv_e', 'sortie'], pourquoi: 'sortie de câble du sèche-serviettes', rayon: 100 },
-  chauffe_eau: { type: 'ce_elec', ok: ['ce_elec', 'ballon_thermo', 'sortie', 'pc20'], pourquoi: 'raccordement du chauffe-eau (circuit dédié avec contacteur)', centre: true },
+  chauffe_eau: { type: 'ce_elec', ok: ['ce_elec', 'ballon_thermo', 'ce_solaire', 'ce_instant', 'ce_chaudiere', 'sortie', 'pc20'], pourquoi: 'raccordement du chauffe-eau (circuit dédié avec contacteur)', centre: true },
   frigo: { type: 'pc_frigo', ok: ['pc_frigo', 'pc', 'pc2', 'pc20'], pourquoi: 'prise du réfrigérateur', rayon: 120 },
   frigo_us: { type: 'pc_frigo', ok: ['pc_frigo', 'pc', 'pc2', 'pc20'], pourquoi: 'prise du réfrigérateur', rayon: 120 },
   micro_ondes: { type: 'pc_mo', ok: ['pc_mo', 'pc', 'pc2', 'pc_pt'], pourquoi: 'prise du micro-ondes', rayon: 120 },
