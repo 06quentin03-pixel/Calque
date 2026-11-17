@@ -45,7 +45,7 @@ test('plan d’exemple : toutes les fonctions y sont (phases 1 à 7, DXF, quanti
     };
   });
   assert.equal(r.name, 'Exemple : maison et atelier');
-  assert.equal(r.v, 19);
+  assert.equal(r.v, 20);
   // dessin (phase 1-2) : 2 niveaux, pièces nommées, portes, fenêtres, ouvertures
   assert.equal(r.levels, 2);
   for (const n of ['Séjour', 'Atelier', 'Local technique', 'Bureau d’atelier', 'Open space', 'Salle de réunion']) assert.ok(r.rooms.includes(n), n);
@@ -125,7 +125,7 @@ test('plan d’exemple : module « Plans électriques » (calques, vue enregistr
       demandes: await (async () => { const CH = await import('./js/cheminement.js'); const g = P.ducts.find((d) => d.pose === 'cloison'), sr = P.elec.find((e) => e.type === 'sortie_rad');
         return { cloison: !!g && g.z === 20, mur: P.elec.some((e) => e.type === 'derivation_mur'), sortie: !!sr && sr.p > 0 && !!sr.cid, raccordee: !!sr && CH.cheminCircuit(P, sr.cid).points.find((x) => x.id === sr.id).dist != null }; })() };
   });
-  assert.equal(r.v, 19);
+  assert.equal(r.v, 20);
   assert.deepEqual(Object.keys(r.calques).sort(), ['cotations', 'faibles', 'mobilier']);
   assert.equal(r.vues.length, 1); assert.ok(r.vues[0].circs >= 1); assert.equal(r.vueOk, true);
   assert.ok(r.col >= 1); assert.deepEqual(r.courbes.sort(), ['C', 'D']); assert.deepEqual(r.conds.sort(), ['h07vu', 'r2v']);
@@ -243,6 +243,40 @@ test('plan d’exemple : câbles à tirer et raccordement en boîtes de dérivat
   });
   assert.ok(r2.dans.length >= 3 && r2.dans.every((m) => m !== 'non'), 'descentes dans le mur : ' + r2.dans);
   assert.equal(r2.frh, 10); assert.ok(r2.relance && r2.n >= 10);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('plan d’exemple : toit et panneaux solaires, terrasses, piscine, abri en A à ossature bois, chauffe-eau, KNX (demandes du 17 novembre 2026)', async () => {
+  const { ctx, page, errors } = await fresh();
+  await boot(page);
+  await page.click('#btnMenu'); await page.click('#menuPop button:has-text("Ouvrir le plan d’exemple")'); await wait(page, 600);
+  const r = await page.evaluate(async () => {
+    const N = await import('./js/noyau.js'), T = await import('./js/toits.js'), K = await import('./js/knx.js'), Pi = await import('./js/piscine.js'), K2 = await import('./js/compositions.js'), O = await import('./js/ossature.js'), G = await import('./js/geometrie.js');
+    const P = N.P, toit = P.surfaces.find((s) => s.kind === 'toit'), cp = T.calepinage(toit);
+    const pis = P.items.find((i) => i.type === 'piscine'), A = P.walls.filter((w) => w.incl);
+    const wg = A[0] && G.geo(A[0].lv).walls.get(A[0].id), oss = K2.coucheOssature(A[0]);
+    return { v: P.v, toit: { forme: toit.forme, pv: cp.n, kwc: cp.kwc && cp.kwc.st, sud: T.orientation(T.pansToit(toit)[cp.pan].sens, 0).nom },
+      terrasses: P.surfaces.filter((s) => s.kind === 'terrasse').map((s) => s.name), piscine: !!pis, volumes: pis ? Pi.appareilsDansVolumes(P, pis).map((x) => x.e.type) : [],
+      equipPiscine: ['coffret_piscine', 'pac_piscine', 'transfo_piscine', 'electrolyseur'].filter((t) => P.elec.some((e) => e.type === t && e.cid)),
+      incl: A.map((w) => w.incl), oss: oss && oss.c.m, montants: wg && oss ? O.montantsDuMur(wg.L, [], A[0].h, { entraxe: oss.oss.entraxe }).n : 0,
+      ce: P.elec.filter((e) => e.ce).map((e) => [e.type, e.ce.vol ? e.ce.vol.st : null]), batterie: P.elec.some((e) => e.type === 'batterie'),
+      knx: { lignes: K.lignesKNX(P).lignes.length, isoles: K.lignesKNX(P).isoles.length, groupes: (P.knx.groupes || []).length, nc: K.controlesKNX(P).filter((c) => c.st === 'non_conforme').length,
+        alim: P.elec.filter((e) => e.type === 'knx_alim' && e.cid).length } };
+  });
+  assert.equal(r.v, 20);
+  assert.equal(r.toit.forme, '2pans'); assert.ok(r.toit.pv >= 10, 'panneaux sur le pan sud : ' + r.toit.pv); assert.equal(r.toit.kwc, 'saisie'); assert.equal(r.toit.sud, 'sud');
+  assert.deepEqual(r.terrasses, ['Terrasse', 'Plage de la piscine']);
+  assert.ok(r.piscine); assert.deepEqual(r.volumes, ['proj_piscine'], 'seul le projecteur 12 V est dans les volumes');
+  assert.equal(r.equipPiscine.length, 4, 'équipements de la piscine sur un circuit');
+  assert.equal(r.incl.length, 2); assert.equal(Math.sign(r.incl[0]) * Math.sign(r.incl[1]), 1, 'les deux murs penchent l’un vers l’autre (normales opposées)');
+  assert.ok(Math.abs(Math.abs(r.incl[0]) - 33.7) < 0.1);
+  assert.equal(r.oss, 'cadre_2x6'); assert.equal(r.montants, 11);
+  assert.ok(r.ce.some(([t, st]) => t === 'ce_elec' && st === 'saisie')); assert.ok(r.ce.some(([t]) => t === 'ce_instant'));
+  assert.ok(r.batterie);
+  assert.equal(r.knx.lignes, 1); assert.equal(r.knx.isoles, 0); assert.ok(r.knx.groupes >= 8); assert.equal(r.knx.nc, 0); assert.equal(r.knx.alim, 1);
+  /* 3D sans erreur avec le toit, la terrasse percée par la piscine et les murs inclinés */
+  await page.evaluate(async () => { const I = await import('./js/interface.js'); I.switchLevel('L1'); (await import('./js/tableau.js')).setView('3d'); }); await wait(page, 1200);
   assert.deepEqual(errors, []);
   await ctx.close();
 });

@@ -103,9 +103,9 @@ test('écran : migration v17 → v18, ajouter un four sous la plaque, toucher le
   await seedPlan(ctx, planCuisine(17));
   await boot(page);
   const m = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, n: N.P.items.length }; });
-  assert.equal(m.v, 19); assert.equal(m.n, 4, 'rien de perdu');
+  assert.equal(m.v, 20); assert.equal(m.n, 4, 'rien de perdu');
   const vers = await idb(page, 'versions');
-  assert.ok(vers.some((w) => /\(v17 → v19\)/.test(w.why)), 'copie de sécurité');
+  assert.ok(vers.some((w) => /\(v17 → v20\)/.test(w.why)), 'copie de sécurité');
   /* plaque choisie : « Électroménager intégré » › Four */
   await page.evaluate(async () => { const I = await import('./js/interaction.js'); I.select({ t: 'item', id: 'pl' }); });
   await wait(page, 200);

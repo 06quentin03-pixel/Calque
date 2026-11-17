@@ -134,6 +134,9 @@ function handlesOf(sel) {
   } else if (sel.t === 'duct') {
     const d = IDX.ducts.get(sel.id); if (!d) return out;
     return ductHandles(d);
+  } else if (sel.t === 'surface') {
+    const s = IDX.surfaces.get(sel.id); if (!s) return out;
+    s.pts.forEach((q, idx) => out.push({ kind: 'spt', p: q, id: s.id, idx }));
   } else if (sel.t === 'elec' || sel.t === 'text') {
     const o = sel.t === 'elec' ? IDX.elec.get(sel.id) : IDX.texts.get(sel.id); if (!o) return out;
     if (sel.t === 'text') out.push({ kind: 'rot', p: { x: o.x, y: o.y - textBox(o).h / 2 - 26 * px }, id: o.id, text: true });
@@ -201,6 +204,7 @@ function hitTest(p, tolPx) {
     if (Math.abs(ps.x - sp.x) <= hw && Math.abs(ps.y - sp.y) <= 18) return { t: 'label', id: r.label.id };
   }
   const zid = libre('gaines') ? zoneAt(p) : null; if (zid) return { t: 'zone', id: zid }; // zone interdite : avant la pièce qui la contient
+  if (archi) for (const f of EXT.hitBas) { const r = f(p, tol, g); if (r) return r; } // toits et terrasses : avant la pièce qui les contient
   if (archi) for (const r of g.rooms) if (r.label && inPoly(p, r.loop) && !r.holes.some((h) => inPoly(p, h))) return { t: 'room', id: r.label.id };
   return null;
 }
@@ -327,7 +331,7 @@ function select(h) {
 function selObj(sel) {
   sel = sel || ui.sel; if (!sel) return null;
   if (EXT.obj[sel.t]) return EXT.obj[sel.t](sel.id) || null;
-  const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts, zone: IDX.zones };
+  const map = { wall: IDX.walls, node: IDX.nodes, opening: IDX.openings, item: IDX.items, elec: IDX.elec, room: IDX.rooms, dim: IDX.dims, text: IDX.texts, duct: IDX.ducts, zone: IDX.zones, surface: IDX.surfaces };
   return map[sel.t] ? map[sel.t].get(sel.id) || null : null;
 }
 function validateSel() {
@@ -532,7 +536,7 @@ function moveDrag(h, wp0, sp0) {
         placeElecAt(obj, { x: base.x + dv.x, y: base.y + dv.y });
       } else if (h.t === 'text' || h.t === 'label') {
         obj.x = Math.round(base.x + dv.x); obj.y = Math.round(base.y + dv.y);
-      } else if (h.t === 'duct') {
+      } else if (h.t === 'duct' || h.t === 'surface') {
         const ddx = snapTo(dv.x, S.grid), ddy = snapTo(dv.y, S.grid);
         obj.pts = base.pts.map((q) => ({ x: q.x + ddx, y: q.y + ddy }));
       } else if (h.t === 'dim') {
@@ -602,6 +606,15 @@ function focusField(id) {
 /* poignées : rotation, redimensionnement, extrémités */
 function handleDrag(h, wp0, sp0) {
   if (h.kind === 'dpt' || h.kind === 'dmid') return ductHandleDrag(h, wp0, sp0);
+  if (h.kind === 'spt') { /* angle d'un toit ou d'une terrasse : aimanté aux angles des murs */
+    const s = IDX.surfaces.get(h.id); if (!s || !s.pts[h.idx]) return null;
+    let moved = false;
+    return {
+      move(wp, sp) { if (!moved && vdist(sp, sp0) < TAP()) return; moved = true; const q = snapPoint(wp, { corners: true }); s.pts[h.idx] = { x: Math.round(q.x * 10) / 10, y: Math.round(q.y * 10) / 10 }; ui.cursor = q; requestRender(); },
+      up() { ui.cursor = null; if (moved) commit(); },
+      cancel() { ui.cursor = null; revert(); },
+    };
+  }
   const obj = h.kind === 'node' ? nodeOf(h.id) : h.kind.startsWith('dim') ? IDX.dims.get(h.id) : (h.text ? IDX.texts.get(h.id) : IDX.items.get(h.id));
   if (!obj) return null;
   if (h.kind === 'node') return moveDrag({ t: 'node', id: h.id }, wp0, sp0);

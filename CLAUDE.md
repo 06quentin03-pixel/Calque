@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun` ; boîtes de dérivation et câbles à tirer : `claude/dazzling-babbage-7wt87f`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun` ; boîtes de dérivation et câbles à tirer : `claude/dazzling-babbage-7wt87f` ; toits, KNX, chauffe-eau : `claude/jolly-heisenberg-lrjp4n`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -47,7 +47,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Sauvegarde (depuis la phase 1a) : **IndexedDB**, base `calque`, avec les magasins `plans` (liste), `data` (contenu), `versions` et `vdata` (historique), et `meta`.
   - `localStorage` (`calque.p.<id>`, `calque.idx`, `calque.cur`) reste une copie de secours « au mieux ». Il est relu à chaque démarrage (`syncFromLocal`) et n'est jamais effacé par la migration.
   - `saveNow()` n'affiche « Enregistré » que si une écriture a réussi. Sinon : « Non enregistré » et une alerte.
-  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 19) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
+  - Format des plans : `PLAN_VERSION` (dans `noyau.js`, actuellement 20) + `MIGRATIONS[n]` (dans `stockage.js`, fonction `migratePlan`). **Toute évolution du format doit ajouter une migration et un test.**
   - Photos du chantier (phase 7) : base IndexedDB à part `calque-photos` (`js/photos.js`), jamais dans le plan ; incluses dans la sauvegarde complète.
   - Le code `window.claude` (enregistrement en ligne) est inactif sur GitHub Pages.
 - `sw.js` : Service Worker « réseau d'abord » (cache : voir `CACHE` dans `sw.js`). Tous les fichiers de `js/` sont dans `CORE`.
@@ -85,6 +85,9 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Note de calcul du chauffage (format v19) : moteur `notechauffage.js` (sans écran : `noteChauffage`, relance `install.frh` comptée dans `deperditionsPiece`), fenêtre `ouvrirNote` (`thermiqueui.js`), chapitre « thermique » du dossier PDF (`documents.js`, `o.noteChauffage`).
 - Câbles RJ45 (16 novembre 2026) : gaine électrique sans circuit entre un coffret (`com`, `baie`, `box`) et une prise RJ45, reconnue par `estLienRJ45` (`cheminement.js`, aucun champ nouveau) ; exclue du réseau des gaines du courant fort. Moteur `vdi.js` (sans écran), panneaux par `rj45Section` (`routeui.js`), ligne de matériel dans `materiel.js`.
 - Passages entre étages (`traversee`) : placés à chaque `commit()` par `placerPassages` (`compositions.js`) dans la première couche de passage du mur depuis sa face (avant le porteur), sinon en goulotte contre le mur ; sauf colonne, `libre` ou loin d'un mur.
+- Toits et terrasses (format v20, `P.surfaces[]`) : moteur `toits.js` (sans écran), écran `toitsui.js` (outil `surface`, sélection par `EXT.hitBas`, angles par les poignées `spt`), 3D `surface3`. Murs inclinés (`w.incl`, cisaillement `shearGB` en 3D) et masqués en 3D (`w.masque`).
+- Chauffe-eau (`e.ce`) : `ecs.js` / `ecsui.js` ; piscine (volumes) : `piscine.js` ; ossature bois : `ossature.js` (matériaux avec `ossature` dans `compositions.js`).
+- KNX (`e.knx`, `P.knx`) : `knx.js` (sans écran) / `knxui.js` ; le bus est une gaine sans circuit entre deux appareils `knx_*` (`estLienKNX`, exclue du réseau du courant fort comme `estLienRJ45`).
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

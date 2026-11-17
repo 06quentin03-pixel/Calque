@@ -38,6 +38,14 @@ Mise à jour : 9 novembre 2026 (export DXF, quantitatif et chiffrage).
 | `cheminement.js` | Cheminements : types (ICTA, IRL, goulotte, chemin de câbles), pose, hauteurs des symboles, verticales, longueur d'une gaine, passages entre étages, réseau des gaines (graphe), longueurs par circuit, réserve, nettoyage (migration) | oui |
 | `itineraire.js` | Recherche d'itinéraire sur une grille du niveau, conflits des gaines (portes, fenêtres, murs, zones interdites, VMC) | oui |
 | `notechauffage.js` | Note de calcul du chauffage pièce par pièce (parois, ponts thermiques, air, relance), comparaison au chauffage posé, nettoyage v19 | oui |
+| `toits.js` | Toits (plat, 1, 2, 4 pans) et terrasses : pans, surfaces en rampant, faîtage, orientation, calepinage des panneaux solaires, appareil sur un toit, murs inclinés (maison en A), nettoyage v20 | oui |
+| `toitsui.js` | Outil « Toit / sol », panneaux d'un toit et d'une terrasse, panneaux solaires, dessin sur le plan, section « Inclinaison » d'un mur, volumes d'une piscine | non |
+| `piscine.js` | Volumes 0 / 1 / 2 d'une piscine ou d'un spa, appareils électriques qui s'y trouvent | oui |
+| `ecs.js` | Chauffe-eau : cinq types, volume conseillé (estimé), instantané, temps de chauffe, circuit à prévoir, nettoyage | oui |
+| `ecsui.js` | Section « Chauffe-eau » du panneau d'un chauffe-eau | non |
+| `knx.js` | KNX : lignes (bus = gaines entre appareils KNX), adresses physiques, contrôles de topologie, sorties d'actionneurs, adresses de groupe, CSV, bus proposé | oui |
+| `knxui.js` | Sections « KNX » d'un appareil et « Installation KNX » du niveau | non |
+| `ossature.js` | Ossature bois à l'américaine : montants, poteaux d'appui, potelets, linteaux, lisses d'un mur | oui |
 | `vdi.js` | Câbles RJ45 en étoile depuis le coffret de communication (itinéraire au plafond, prises sans câble, longueurs) | oui |
 | `boites.js` | Raccordement d'un circuit en boîtes de dérivation : boîte au plafond de chaque pièce (position calculée, boîte libre reprise), gaines au plafond, descentes dans les cloisons | oui |
 | `routeui.js` | Zones interdites (outil, dessin, inspecteur), proposition d'itinéraire, sections « Cheminement » et « Conflits » | non |
@@ -115,7 +123,7 @@ Les moteurs de calcul électrique (`calcul.js`), de règles (`regles.js`) et de 
 4. **Rendu 2D** : tout changement du plan appelle `requestRender()` sans argument. `requestRender(true)` est réservé aux changements de la seule couche du dessus (curseur, aperçu).
 5. **Format des plans** : toute évolution ajoute une fonction `MIGRATIONS[n]` (dans `stockage.js`), incrémente `PLAN_VERSION` et ajoute un test.
 
-7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus), `EXT.insp` (inspecteur d'un type d'objet, ex. `zone`) ; depuis la phase 7 : `EXT.top` (dessin au-dessus du plan), `EXT.hit` (sélection), `EXT.obj` et `EXT.del` (objet d'un type ajouté, suppression), `EXT.inspVide` (panneau sans sélection), `EXT.selectDown` (outil Sélection remplacé), `EXT.view` (changement de vue). Un outil `doigt: true` agit aussi au doigt en mode Apple Pencil.
+7. **Outil, bandeau d'aide ou dessin ajouté par un module** : `EXT` (dans `noyau.js`) : `EXT.tools`, `EXT.hint`, `EXT.hintKey`, `EXT.under` (sous les murs), `EXT.overlay` (couche du dessus), `EXT.insp` (inspecteur d'un type d'objet, ex. `zone`) ; depuis la phase 7 : `EXT.top` (dessin au-dessus du plan), `EXT.hit` (sélection), `EXT.obj` et `EXT.del` (objet d'un type ajouté, suppression), `EXT.inspVide` (panneau sans sélection), `EXT.selectDown` (outil Sélection remplacé), `EXT.view` (changement de vue) ; depuis le 17 novembre 2026 : `EXT.hitBas` (sélection après les objets du plan, avant les pièces : toits et terrasses). Un outil `doigt: true` agit aussi au doigt en mode Apple Pencil.
 6. **Domaine de bibliothèque ajouté par un module** : `LIB_EXTRA` (dans `bibliotheque.js`, pour être disponible dès le chargement).
 
 ## Événements (`evenements.js`)
@@ -139,7 +147,7 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 
 | Champ | Contenu |
 |---|---|
-| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 18) |
+| `v` | Version du format (`PLAN_VERSION` dans `noyau.js`, actuellement 20) |
 | `id`, `name` | Identifiant et nom du plan |
 | `levels[]` | Niveaux : `id`, `name`, `elev` (altitude du sol fini), `h` (hauteur sous plafond), `slab` (épaisseur du plancher) ; v16 : `sol`, `plafond` = `{ couches, cn }` (plancher du dessus vers le dessous ; plafond du dessus vers le parement) ; v17 : `dessous`, `dessus` (côté non chauffé), `bsol`, `bplaf` (coefficient b saisi) |
 | `nodes[]` | Angles des murs : `id`, `lv`, `x`, `y` |
@@ -155,6 +163,8 @@ Chaque objet a un identifiant unique `id`. Les objets dessinés sur un étage on
 | `rcds[]` | Interrupteurs différentiels : `id`, `type` (`AC`, `A`…), `cal` (calibre en A) |
 | `links[]` | Liaisons commande → éclairage : `id`, `lv`, `a`, `b` (symboles) |
 | `ducts[]` | Conduits : `id`, `lv`, `sys` (`vmc` ou `elec`), `mat`, `dia` (diamètre en mm), `a`, `b` (symboles aux extrémités), `pts[]`. Gaine électrique (v6, facultatifs) : `cid` (circuit principal), `cids[]` (autres circuits), `kind` (`icta`, `irl`, `goulotte`, `cdc`), `pose` (`sol`, `plafond`, `hauteur`, `cloison` (v13 : encastrée dans la cloison)), `z` (hauteur du parcours en cm, poses `hauteur` et `cloison`), `lw`, `lh` (largeur et hauteur en mm, goulotte et chemin de câbles) |
+| `surfaces[]` (v20) | Toits et terrasses : `id`, `lv`, `kind` (`toit`/`terrasse`), `name`, `pts[]`, `z` (base ou dessus, cm au-dessus du sol du niveau), `e` (épaisseur), `forme` (`plat`, `1pan`, `2pans`, `4pans`), `pente` (°), `sens` (°), `mat`, `pignons`, `masque`, `pv` (panneaux : `pan`, `lm`, `hm`, `orient`, `marge`, `jeu`, `wc` { v, st, src }) |
+| `knx` (v20) | KNX : `zone`, `groupes[]` (`id`, `adr` « 1/0/3 », `nom`, `dpt`, `cle`, `lv`, `room`) ; symbole : `e.knx` (`pa`, `ma`, `alim`) ; chauffe-eau : `e.ce` (`pers`, `usage`, `vol`, `p`, `q`, `dt`, `reseau`) ; mur : `incl`, `masque`, `oss` { `entraxe` } ; `install.nord` |
 | `zones[]` | Zones interdites aux cheminements (v6) : `id`, `lv`, `pts[]` (contour), `name` |
 | `photometries[]` | Photométries des luminaires (v7), lues dans des fichiers IES / LDT : `id`, `name`, `fab`, `file`, `fmt` (`ies`/`ldt`), `flux` et `p` (`{ v, st, src }`), `fluxLampes`, `C[]` et `G[]` (angles en degrés), `I[][]` (intensités en cd, une ligne par angle C) |
 | `etudes[]` | Études d'éclairage par pièce (v7) : `id`, `lv`, `room` (étiquette de la pièce), `E` (éclairement visé, lx), `hu` (plan utile, cm), `mf`, `u` (données `{ v, st, src }`, facultatives), `hlum` (hauteur des luminaires, cm, facultative), `lums[]` (jusqu'à 3 : `type`, `ph`, `flux`, `p`), `ids[]` (luminaires posés par la dernière implantation) |

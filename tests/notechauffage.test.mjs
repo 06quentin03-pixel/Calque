@@ -48,8 +48,8 @@ test('écran : migration v18 → v19, « Note de calcul du chauffage » (relance
   const { p } = plan(); p.v = 18; p.install.frh = { v: 'mauvais' };
   await seedPlan(ctx, p); await boot(page);
   const m = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, frh: 'frh' in N.P.install }; });
-  assert.equal(m.v, 19); assert.equal(m.frh, false, 'valeur invalide retirée');
-  assert.ok((await idb(page, 'versions')).some((w) => /\(v18 → v19\)/.test(w.why)), 'copie de sécurité');
+  assert.equal(m.v, 20); assert.equal(m.frh, false, 'valeur invalide retirée');
+  assert.ok((await idb(page, 'versions')).some((w) => /\(v18 → v20\)/.test(w.why)), 'copie de sécurité');
   /* plan d'exemple : panneau du niveau › Note de calcul du chauffage */
   await page.evaluate(async () => { const S = await import('./js/stockage.js'); await S.openSample(); });
   await wait(page, 600);

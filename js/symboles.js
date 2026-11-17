@@ -223,6 +223,14 @@ const DR = {
   lave_mains(c, w, d, K) { _rr(c, -w / 2, -d / 2, w, d, Math.min(w, d) * 0.45); _fs(c, K.fill); _ell(c, 0, 2, w * 0.3, d * 0.28); c.stroke(); },
   bidet(c, w, d, K) { _ell(c, 0, 0, w / 2, d / 2); _fs(c, K.fill); _ell(c, 0, 3, w * 0.3, d * 0.3); c.stroke(); _circ(c, 0, -d / 2 + 7, 2.2); c.stroke(); },
   seche_serv(c, w, d, K) { _r(c, -w / 2, -d / 2, w, d); _fs(c, K.fill); c.beginPath(); for (let x = -w / 2 + 6; x < w / 2 - 2; x += 6) _ln(c, x, -d / 2, x, d / 2); c.stroke(); },
+  piscine(c, w, d, K) {
+    const m = Math.min(30, Math.min(w, d) * 0.12);
+    _r(c, -w / 2, -d / 2, w, d); _fs(c, K.fill);
+    _r(c, -w / 2 + m, -d / 2 + m, w - 2 * m, d - 2 * m); c.save(); c.fillStyle = 'rgba(80,160,210,0.28)'; c.fill(); c.restore(); c.stroke();
+    c.beginPath(); for (let k = 1; k <= 3; k++) { const y = -d / 2 + m + (d - 2 * m) * k / 4; c.moveTo(-w / 2 + m + 10, y); c.quadraticCurveTo(-w / 4, y - 6, 0, y); c.quadraticCurveTo(w / 4, y + 6, w / 2 - m - 10, y); } c.stroke();
+    _txt(c, K, 'PISCINE', 0, 0, Math.min(d - 2 * m, w) * 0.12);
+  },
+  spa(c, w, d, K) { _rr(c, -w / 2, -d / 2, w, d, Math.min(w, d) * 0.12); _fs(c, K.fill); _rr(c, -w / 2 + 12, -d / 2 + 12, w - 24, d - 24, Math.min(w, d) * 0.1); c.save(); c.fillStyle = 'rgba(80,160,210,0.28)'; c.fill(); c.restore(); c.stroke(); _txt(c, K, 'SPA', 0, 0, Math.min(w, d) * 0.16); },
   chauffe_eau(c, w, d, K) { _circ(c, 0, 0, Math.min(w, d) / 2); _fs(c, K.fill); _circ(c, 0, 0, Math.min(w, d) / 2 - 4); c.stroke(); _txt(c, K, 'CE', 0, 0, Math.min(w, d) * 0.24); },
   chaudiere(c, w, d, K) { _r(c, -w / 2, -d / 2, w, d); _fs(c, K.fill); _circ(c, 0, -d / 2 + 8, 5); c.stroke(); _txt(c, K, 'CH', 0, 4, Math.min(w, d) * 0.3); },
   radiateur(c, w, d, K) { _r(c, -w / 2, -d / 2, w, d); _fs(c, K.fill); c.beginPath(); for (let x = -w / 2 + 5; x < w / 2 - 1; x += 5) _ln(c, x, -d / 2, x, d / 2); c.stroke(); },
@@ -485,6 +493,8 @@ const ELEC_CATS = [
   { id: 'securite', name: 'Sécurité' },
   { id: 'acces', name: 'Accès & interphonie' },
   { id: 'alarme', name: 'Alarme & vidéo' },
+  { id: 'piscine', name: 'Piscine & extérieur' },
+  { id: 'knx', name: 'KNX (bus domotique)' },
 ];
 const ELEC = [
   // prises
@@ -818,6 +828,33 @@ const ELEC = [
     _eBox(c, K, -0.4, 0, 0.8, 0.44); c.beginPath(); for (const y of [0.16, 0.29]) { c.moveTo(-0.28, y); c.quadraticCurveTo(-0.14, y - 0.07, 0, y); c.quadraticCurveTo(0.14, y + 0.07, 0.28, y); } c.stroke(); } },
   /* ---- chauffage (suite) ---- */
   { t: 'ballon_thermo', cat: 'confort', n: 'Ballon thermodynamique', desc: 'Chauffe-eau avec pompe à chaleur intégrée, sur circuit dédié 20 A.', wall: 0, h: null, floor: 1, draw(c, K) { _circ(c, 0, 0, 0.32); _fs(c, K.bg); _eLabel(c, K, 'CET', 0, 0.01, 0.17); } },
+  { t: 'ce_solaire', cat: 'confort', n: 'Chauffe-eau solaire (CESI)', desc: 'Ballon solaire à échangeur relié aux capteurs du toit, avec appoint électrique sur circuit dédié.', wall: 0, h: null, floor: 1, draw(c, K) { _circ(c, 0, 0, 0.32); _fs(c, K.bg); _eLabel(c, K, 'CES', 0, 0.01, 0.17); c.beginPath(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; _ln(c, Math.cos(a) * 0.36, Math.sin(a) * 0.36, Math.cos(a) * 0.46, Math.sin(a) * 0.46); } c.stroke(); } },
+  { t: 'ce_instant', cat: 'confort', n: 'Chauffe-eau instantané électrique', desc: 'Chauffe l’eau à la demande, sans réserve ; forte puissance sur circuit dédié (souvent triphasé pour une douche).', wall: 1, h: 150, draw(c, K) { _eBox(c, K, -0.26, 0.04, 0.52, 0.5); _eLabel(c, K, 'CEi', 0, 0.2, 0.17); c.beginPath(); c.moveTo(0.02, 0.32); c.lineTo(-0.07, 0.44); c.lineTo(0.01, 0.44); c.lineTo(-0.04, 0.53); c.stroke(); } },
+  { t: 'ce_chaudiere', cat: 'confort', n: 'Ballon relié à la chaudière', desc: 'Préparateur d’eau chaude à échangeur, chauffé par la chaudière (pas de circuit dédié, sauf appoint).', wall: 0, h: null, floor: 1, draw(c, K) { _circ(c, 0, 0, 0.32); _fs(c, K.bg); _eLabel(c, K, 'CEc', 0, 0.01, 0.16); } },
+  { t: 'capteur_solaire', cat: 'confort', n: 'Capteurs solaires thermiques', desc: 'Capteurs du chauffe-eau solaire, sur le toit (posés sur un toit dessiné : affichés sur le pan en 3D).', wall: 0, h: null, bw: 0.62, draw(c, K) {
+    _eBox(c, K, -0.6, -0.32, 1.2, 0.64); c.beginPath(); for (const x of [-0.36, -0.12, 0.12, 0.36]) _ln(c, x, -0.32, x, 0.32); c.stroke(); _eLabel(c, K, '≈', 0, 0, 0.3); } },
+  /* ---- piscine & extérieur (novembre 2026) ---- */
+  { t: 'proj_piscine', cat: 'piscine', n: 'Projecteur de piscine', desc: 'Projecteur immergé en très basse tension de sécurité (TBTS 12 V), alimenté par un transformateur hors des volumes 0 et 1.', wall: 0, h: null, floor: 1, draw(c, K) { _circ(c, 0, 0.32, 0.26); _fs(c, K.bg); _eCross(c, 0, 0.32, 0.18); _eLabel(c, K, '12V', 0.32, 0.1, 0.15, 'left'); } },
+  { t: 'pac_piscine', cat: 'piscine', n: 'Pompe à chaleur de piscine', desc: 'Réchauffe l’eau du bassin ; circuit dédié (souvent courbe D, différentiel selon la notice).', wall: 0, h: null, floor: 1, draw(c, K) { _eBox(c, K, -0.36, -0.24, 0.72, 0.48); _eFan(c, -0.1, 0, 0.16, 3); _eLabel(c, K, 'PAC', 0.2, 0.01, 0.13); } },
+  { t: 'electrolyseur', cat: 'piscine', n: 'Électrolyseur ou régulateur', desc: 'Traitement de l’eau (sel, pH), dans le local technique, asservi à la filtration.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.26, 0.04, 0.52, 0.44); _eLabel(c, K, 'NaCl', 0, 0.26, 0.15); } },
+  { t: 'volet_piscine', cat: 'piscine', n: 'Volet roulant de piscine', desc: 'Moteur du volet de sécurité du bassin (alimentation en TBTS selon le modèle).', wall: 0, h: null, floor: 1, draw(c, K) { _eMotor(c, K, 0, 0, 0.26); _eLabel(c, K, 'VP', 0.34, 0, 0.15, 'left'); } },
+  { t: 'transfo_piscine', cat: 'piscine', n: 'Transformateur TBTS piscine', desc: 'Transformateur de sécurité 230 V / 12 V des projecteurs, posé hors des volumes 0 et 1.', wall: 1, h: 130, draw(c, K) { _circ(c, -0.1, 0.3, 0.16); c.stroke(); _circ(c, 0.1, 0.3, 0.16); c.stroke(); _eLabel(c, K, 'TBTS', 0, 0.06, 0.13); } },
+  /* ---- KNX (bus domotique, novembre 2026) : appareils génériques, sans référence de fabricant ---- */
+  { t: 'knx_alim', cat: 'knx', n: 'Alimentation de ligne KNX', desc: 'Alimente le bus d’une ligne KNX (29 V) avec sa self ; modulaire, dans le tableau. Courant disponible selon le modèle (160, 320, 640 mA…).', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'Alim', 0, 0.35, 0.13); } },
+  { t: 'knx_coupleur', cat: 'knx', n: 'Coupleur de ligne ou de zone KNX', desc: 'Relie une ligne KNX à la ligne principale (ou une zone à la dorsale) et filtre les télégrammes.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'CPL', 0, 0.35, 0.13); } },
+  { t: 'knx_ip', cat: 'knx', n: 'Interface ou routeur IP KNX', desc: 'Relie le bus KNX au réseau informatique (programmation, supervision, dorsale IP).', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'IP', 0, 0.35, 0.15); } },
+  { t: 'knx_act', cat: 'knx', n: 'Actionneur de commutation KNX', desc: 'Sorties tout-ou-rien (éclairage, prises commandées, contacteurs) ; modulaire, dans le tableau.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'ACT', 0, 0.35, 0.13); } },
+  { t: 'knx_var', cat: 'knx', n: 'Actionneur variateur KNX', desc: 'Variation de l’éclairage (charges compatibles avec le variateur) ; modulaire, dans le tableau.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'VAR', 0, 0.35, 0.13); } },
+  { t: 'knx_store', cat: 'knx', n: 'Actionneur volets et stores KNX', desc: 'Sorties montée / descente des volets roulants et stores ; modulaire, dans le tableau.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'VR', 0, 0.35, 0.14); } },
+  { t: 'knx_chauf', cat: 'knx', n: 'Actionneur chauffage KNX', desc: 'Commande des vannes ou des fils pilotes du chauffage, pièce par pièce.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'CH', 0, 0.35, 0.14); } },
+  { t: 'knx_entree', cat: 'knx', n: 'Module d’entrées binaires KNX', desc: 'Raccorde au bus des boutons classiques, contacts de fenêtre ou capteurs secs.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'E/B', 0, 0.35, 0.13); } },
+  { t: 'knx_dali', cat: 'knx', n: 'Passerelle KNX / DALI', desc: 'Commande des luminaires DALI depuis le bus KNX.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'DALI', 0, 0.35, 0.12); } },
+  { t: 'knx_compteur', cat: 'knx', n: 'Compteur d’énergie KNX', desc: 'Mesure la consommation d’un départ et la transmet sur le bus.', wall: 1, h: 130, draw(c, K) { _eBox(c, K, -0.3, 0.04, 0.6, 0.44); _eLabel(c, K, 'KNX', 0, 0.17, 0.14); _eLabel(c, K, 'kWh', 0, 0.35, 0.12); } },
+  { t: 'knx_bp', cat: 'knx', n: 'Bouton-poussoir KNX', desc: 'Poussoir multitouche relié au bus : chaque touche envoie un ordre (adresse de groupe).', wall: 1, h: 110, draw(c, K) { _eStem(c, 0.08); _r(c, -0.22, 0.08, 0.44, 0.44); _fs(c, K.bg); c.beginPath(); _ln(c, 0, 0.08, 0, 0.52); _ln(c, -0.22, 0.3, 0.22, 0.3); c.stroke(); _eLabel(c, K, 'k', 0.34, 0.12, 0.16, 'left'); } },
+  { t: 'knx_det', cat: 'knx', n: 'Détecteur de présence KNX', desc: 'Détecteur au plafond relié au bus (présence, luminosité).', wall: 0, h: null, draw(c, K) { _circ(c, 0, 0, 0.3); _fs(c, K.bg); c.beginPath(); c.arc(0, 0.06, 0.16, Math.PI, 0); c.stroke(); _eLabel(c, K, 'k', 0, -0.12, 0.15); } },
+  { t: 'knx_thermo', cat: 'knx', n: 'Thermostat ou sonde KNX', desc: 'Mesure la température de la pièce et règle la consigne, par le bus.', wall: 1, h: 150, draw(c, K) { _eRoundTag(c, K, 'θk', 0.17); } },
+  { t: 'knx_ecran', cat: 'knx', n: 'Écran tactile KNX', desc: 'Écran de commande et de supervision (souvent alimenté en plus du bus).', wall: 1, h: 140, draw(c, K) { _eBox(c, K, -0.32, 0.04, 0.64, 0.46); c.beginPath(); _r(c, -0.24, 0.1, 0.48, 0.32); c.stroke(); _eLabel(c, K, 'k', 0, 0.26, 0.15); } },
+  { t: 'knx_meteo', cat: 'knx', n: 'Station météo KNX', desc: 'Vent, pluie, soleil, température extérieure : protège les stores et règle l’éclairage.', wall: 1, h: 250, draw(c, K) { _eStem(c, 0.12); _circ(c, 0, 0.4, 0.26); _fs(c, K.bg); _eLabel(c, K, '☼k', 0, 0.41, 0.15); } },
   { t: 'soufflant_sdb', cat: 'confort', n: 'Radiateur soufflant salle de bain', desc: 'Chauffage d’appoint soufflant, posé hors des volumes 0 à 2 de la salle de bain.', wall: 1, h: 180, draw(c, K) { _eBox(c, K, -0.36, 0.04, 0.72, 0.3); _eFan(c, 0, 0.19, 0.11, 3); } },
   { t: 'poele_granules', cat: 'confort', n: 'Poêle à granulés (prise)', desc: 'Prise pour l’allumage et le ventilateur du poêle, de préférence sur un circuit dédié.', wall: 1, h: 30, side: 1, draw(c, K) { _ePrise(c, K); _eLabel(c, K, 'PG', 0.42, 0.55, 0.24, 'left'); } },
   { t: 'pac_int', cat: 'confort', n: 'Module hydraulique PAC', desc: 'Unité intérieure d’une pompe à chaleur air-eau, avec ou sans ballon intégré.', wall: 1, h: 150, draw(c, K) { _eBox(c, K, -0.32, 0.04, 0.64, 0.52); _eLabel(c, K, 'PAC', 0, 0.3, 0.18); } },
@@ -991,6 +1028,8 @@ const FURN = [
   { k: 'rad', cat: 'divers', t: 'radiateur', n: 'Radiateur', w: 80, d: 10, mag: 1 },
   { k: 'chaud', cat: 'divers', t: 'chaudiere', n: 'Chaudière', w: 45, d: 35, mag: 1 },
   { k: 'poteau', cat: 'divers', t: 'poteau', n: 'Poteau', w: 20, d: 20, mag: 0 },
+  { k: 'piscine', cat: 'divers', t: 'piscine', n: 'Piscine (bassin)', w: 800, d: 400, mag: 0 },
+  { k: 'spa', cat: 'divers', t: 'spa', n: 'Spa', w: 210, d: 210, mag: 0 },
   { k: 'voiture', cat: 'divers', t: 'voiture', n: 'Voiture', w: 180, d: 450, mag: 0 },
   { k: 'bloc', cat: 'divers', t: 'bloc', n: 'Bloc libre', w: 100, d: 60, mag: 1 },
   { k: 'escD', cat: 'escaliers', t: 'esc_droit', n: 'Escalier droit', w: 90, d: 360, n_: 16, mag: 0 },

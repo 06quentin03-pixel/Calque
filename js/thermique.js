@@ -33,6 +33,10 @@ const LAMBDA = {
   beton_cell: { l: 0.11 }, carreau_platre: { l: 0.4 }, pierre: { l: 1.7 }, ossature_bois: { l: 0.13 },
   carrelage: { l: 1.3 }, parquet: { l: 0.15 }, chape: { l: 1.4 }, chape_fluide: { l: 1.2 }, ravoirage: { l: 1.0 },
   dalle: { l: 2.3 }, compression: { l: 2.3 }, hourdis: { l: 1.33, eq: 1 }, plancher_bois: { l: 0.13 },
+  /* ossature bois à l'américaine : couche mixte (≈ 9 % de bois λ 0,13, 91 % de laine λ 0,035 à l'entraxe de 40,6 cm),
+     λ équivalent par moyenne des surfaces (estimé, méthode simplifiée) ; ossature vide : lame d'air */
+  cadre_2x4: { l: 0.044, eq: 1 }, cadre_2x6: { l: 0.044, eq: 1 }, cadre_2x4_vide: { r: 0.17 }, osb: { l: 0.13 }, pare_pluie: { l: 0.2 }, tasseaux: { r: 0.09 },
+  clins: { l: 0.13 }, contreplaque: { l: 0.13 }, solives_bois: { r: 0.18 },
 };
 /* résistances superficielles conventionnelles (EN ISO 6946) : flux horizontal (mur), montant (plafond), descendant (plancher) */
 const RS = { h: { si: 0.13, se: 0.04 }, up: { si: 0.10, se: 0.04 }, down: { si: 0.17, se: 0.04 } };

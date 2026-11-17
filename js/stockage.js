@@ -4,6 +4,7 @@ import { $, $$, NF1, P, PIECES_EXT, PLAN_VERSION, blankPlan, isNum, levelsSorted
 import { syncRooms } from './geometrie.js';
 import { nettoyerV18 } from './integration.js';
 import { nettoyerV19 } from './notechauffage.js';
+import { nettoyerV20 } from './toits.js';
 import { historyReset, snapshot } from './historique.js';
 import { commit as commitPlan, fitView, refreshUI } from './interaction.js';
 import { confirmBtnPlain } from './tableau.js';
@@ -200,6 +201,13 @@ const MIGRATIONS = {
      W/m², js/notechauffage.js). Les plans v18 n'en ont pas : rien n'est deviné (relance non comptée) ; valeur invalide retirée. */
   18(p) {
     return nettoyerV19(p);
+  },
+  /* v19 → v20 (17 novembre 2026) : toits et terrasses (`surfaces[]`, js/toits.js), murs inclinés et masqués en 3D (`incl`,
+     `masque` sur le mur), entraxe d'une ossature bois (`oss`), nord du plan (`install.nord`), chauffe-eau (`ce` sur le symbole,
+     js/ecs.js), appareils KNX (`knx` sur le symbole) et installation KNX (`knx` du plan : zone, adresses de groupe, js/knx.js).
+     Les plans v19 n'en ont pas : rien n'est deviné ; valeurs invalides retirées. */
+  19(p) {
+    return nettoyerV20(p);
   },
 };
 function nettoyerV15(p) {

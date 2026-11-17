@@ -18,7 +18,7 @@ import { logementPassage, textePassage } from './compositions.js';
 import { conflitsSection } from './routeui.js';
 import { remplissageGaines } from './materiel.js';
 import { calqueDeElec, calqueDeGaine, calqueVisible, couleurCalque, opaciteCalque } from './calques.js';
-import { DERIVATIONS, colonneTableau, estLienRJ45, membresColonne, poseAHauteur, tailleColonne, tracerALongueur } from './cheminement.js';
+import { DERIVATIONS, colonneTableau, estLienKNX, estLienRJ45, membresColonne, poseAHauteur, tailleColonne, tracerALongueur } from './cheminement.js';
 import { POSES, TRAVERSEE, TYPES_CHEMIN, ancrage, circuitsDe, hauteurParcours, jumelle, kindOf, longueurGaine, nomChemin,
   tailleChemin, typeChemin } from './cheminement.js';
 
@@ -205,6 +205,7 @@ function ductColor(d, exp) {
   const cc = couleurCalque(calqueDeGaine(d));
   if (d.sys === 'vmc') return cc || RC.C.vmc;
   if (estLienRJ45(d, IDX.elec)) return couleurCalque('faibles') || '#0E7490'; // câble RJ45 : courants faibles
+  if (estLienKNX(d, IDX.elec)) return '#3F8A2E'; // bus KNX (vert)
   if (S.layers.circ !== false && d.cid) { const c = circuitColor(d.cid, exp); if (c) return c; }
   return cc || RC.C.gaine;
 }
@@ -298,7 +299,7 @@ function drawDuctLabels(lv, opts) {
     if (ang > Math.PI / 2 + 0.01) ang -= Math.PI; else if (ang < -Math.PI / 2 + 0.01) ang += Math.PI;
     const m = vmid(a, b), n = { x: -Math.sin(ang), y: Math.cos(ang) };
     const off = (d.sys === 'vmc' ? ((d.dia || 125) / 20) * RC.s : 1) + TS(8);
-    const str = d.sys === 'vmc' ? 'Ø' + (d.dia || '') : [estLienRJ45(d, IDX.elec) ? 'RJ45 ·' : '', typeChemin(d) ? typeChemin(d).court : '', tailleChemin(d)].filter(Boolean).join(' ');
+    const str = d.sys === 'vmc' ? 'Ø' + (d.dia || '') : [estLienRJ45(d, IDX.elec) ? 'RJ45 ·' : '', estLienKNX(d, IDX.elec) ? 'Bus KNX ·' : '', typeChemin(d) ? typeChemin(d).court : '', tailleChemin(d)].filter(Boolean).join(' ');
     c.save(); c.translate(m.x - n.x * off + (vdist(a, b) > 160 ? (b.x - a.x) * 0.22 : 0), m.y - n.y * off + (vdist(a, b) > 160 ? (b.y - a.y) * 0.22 : 0)); c.rotate(ang);
     c.fillStyle = ductColor(d, !!opts.export); textHalo(c, str, 0, 0); c.restore();
   }

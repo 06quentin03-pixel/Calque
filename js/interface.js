@@ -31,9 +31,12 @@ import { equipementNiveauSection, equipementSection } from './equipementui.js';
 import { integrationSections, puissanceChauffageSection } from './integrationui.js';
 import { TYPES_CHEMIN } from './cheminement.js';
 import { itineraireSection, rj45Section, startZone } from './routeui.js';
+import { chauffeEauSection } from './ecsui.js';
+import { knxNiveauSection, knxSection } from './knxui.js';
+import { piscineSection, inclinaisonMurSection, startSurface, toitSurNiveau, nomSurface } from './toitsui.js';
 import { eclairageSection, lumSection } from './eclairageui.js';
 import { aCouches, appliquerAuMur, compoNiveau } from './compositions.js';
-import { compoMurSection, compoNiveauSection, epaissir, epaisseurComposee, nomCompoNouveauMur, oublierCompoNouveauMur, sensElargissement } from './compositionsui.js';
+import { compoMurSection, ossatureSection, compoNiveauSection, epaissir, epaisseurComposee, nomCompoNouveauMur, oublierCompoNouveauMur, sensElargissement } from './compositionsui.js';
 import { thermiqueMurSection, thermiqueNiveauSection, thermiqueOuvertureSection, thermiquePieceSection } from './thermiqueui.js';
 
 /* ============================================================
@@ -261,8 +264,10 @@ function inspWall(w) {
         chipRow([5, 7, 10, 15, 20, 25, 30, 40], w.th, (v) => epaissir(w, v), (v) => v + ' cm'),
         sensElargissement(w, g)),
       compoMurSection(w, g),
+      ossatureSection(w, g),
       thermiqueMurSection(w),
       sec('Hauteur', numField('Hauteur du mur', w.h || lvl.h, 'cm', (v) => { w.h = v; commit(); }, { id: 'f-wh', min: 10, max: 3000 })),
+      inclinaisonMurSection(w, g),
       sec('Ouvertures', btns(btn('Porte', () => addOpeningOnWall(w, 'door'), '', 'door'), btn('Fenêtre', () => addOpeningOnWall(w, 'window'), '', 'win'),
         btn('Ouverture libre', () => addOpeningOnWall(w, 'gap'), '', 'gap'), btn('Porte de placard', () => addOpeningOnWall(w, 'closet'), '', 'closet'))),
       sec(null, btns(btn('Couper en deux', () => { const id = splitWall(w, vmid(nodeOf(w.a), nodeOf(w.b))); ui.sel = { t: 'node', id }; commit(); }, '', 'split'), btn('Supprimer', deleteSel, 'danger', 'del'))),
@@ -425,6 +430,7 @@ function inspItem(it) {
       it.ht != null || it.zb != null ? btns(btn('Hauteurs par défaut', () => { delete it.ht; delete it.zb; commit(); }, 'sm', 'rotL')) : h('p', { class: 'note' }, `Par défaut : ${fmtIn(f3.h)} cm de haut${f3.z ? `, posé à ${fmtIn(f3.z)} cm du sol` : ''}.`)));
   }
   if (!stair) parts.push(...integrationSections(it)); // électroménager intégré, raccordement, puissance d'un radiateur
+  if (!stair) parts.push(piscineSection(it)); // volumes d'une piscine (novembre 2026)
   parts.push(compSection(it, 'item'));
   parts.push(sec('Étiquette', textField(null, it.label, (v) => { it.label = v.trim(); commit(); }, { id: 'f-ilabel', ph: 'Texte affiché sur le plan (facultatif)', live: (v) => { it.label = v; requestRender(); } })));
   parts.push(sec(null, btns(btn('Dupliquer', duplicateSel, '', 'dup'), btn('Supprimer', deleteSel, 'danger', 'del'))));
@@ -462,6 +468,8 @@ function inspElec(e) {
         fixedPose ? kv([['Hauteur de pose', fixedPose]]) : numField('Hauteur de pose (axe)', e.h != null ? e.h : def.h || 0, 'cm', (v) => { e.h = v; commit(); }, { id: 'f-eh', min: 0, max: 600 }),
         ['rad_elec', 'sortie_rad', 'seche_serv_e', 'spot', 'led', 'rail_spot', 'plancher', 'soufflant_sdb'].includes(e.type) ? numField(SPOTLIKE.has(e.type) ? 'Puissance (spots : 1 point par 300 VA)' : 'Puissance', elecPower(e), SPOTLIKE.has(e.type) ? 'VA' : 'W', (v) => { e.p = v; commit(); }, { id: 'f-ep', min: 1, max: 10000 }) : null),
       puissanceChauffageSection(e),
+      chauffeEauSection(e),
+      knxSection(e),
       sec('Orientation', btns(btn('90°', () => rotateSel(-90), 'sm', 'rotL'), btn('90°', () => rotateSel(90), 'sm', 'rotR'))),
       sec('Taille du symbole', chipRow([0.75, 1, 1.25, 1.5, 2], e.sc || 1, (v) => { if (v === 1) delete e.sc; else e.sc = v; commit(); }, (v) => Math.round(v * 100) + ' %')),
       def.cat !== 'ventilation' ? sec('Gaine', btns(btn('Tracer une gaine d’ici', () => startDuctFrom(e, 'elec'), 'sm', 'duct'), EXT.cabler ? btn('Câbler depuis ici', () => EXT.cabler(e), 'sm') : null), ductsOf(e).length ? h('p', { class: 'note' }, `${ductsOf(e).length} conduit${ductsOf(e).length > 1 ? 's' : ''} raccordé${ductsOf(e).length > 1 ? 's' : ''} à ce symbole.`) : null) : null,
@@ -616,6 +624,8 @@ function inspLevel() {
     thermiqueNiveauSection(lvl),
     fondSection(),
     equipementNiveauSection(ui.lv),
+    toitsNiveauSection(ui.lv),
+    knxNiveauSection(),
   ].filter(Boolean);
   if (empty) parts.push(sec('Pour commencer', h('div', { class: 'empty-help' },
     h('span', null, 'Avec l’outil ', h('b', null, 'Pièce'), ', faites glisser un rectangle : quatre murs sont créés d’un coup.'),
@@ -635,6 +645,16 @@ function inspLevel() {
   return [inspHead(lvl.name, `Niveau · sol à ${lvl.elev >= 0 ? '+' : ''}${fmtLenU(lvl.elev)}`), body(...parts)];
 }
 
+/* toits et terrasses du niveau (v20) */
+function toitsNiveauSection(lv) {
+  const L = (P.surfaces || []).filter((s) => s.lv === lv);
+  return sec('Toits et terrasses',
+    L.length ? h('div', { class: 'list' }, L.map((s) => h('button', { type: 'button', class: 'li', onclick: () => select({ t: 'surface', id: s.id }) },
+      h('span', { class: 'sw', style: `background:${s.kind === 'toit' ? '#B4553A' : '#B98A57'}` }), h('span', null, nomSurface(s)), h('span', { class: 'v' }, s.kind === 'toit' ? 'toit' : 'sol')))) : null,
+    btns(btn('Toit sur tout le niveau', () => toitSurNiveau(lv), 'sm'), btn('Dessiner un toit', () => startSurface('toit'), 'sm'), btn('Dessiner une terrasse', () => startSurface('terrasse'), 'sm')),
+    h('p', { class: 'note' }, 'Un toit reçoit des panneaux solaires ; une terrasse est un sol sans murs (dalle, platelage, plage de piscine).'));
+}
+
 /* ---------------- actions sur la sélection ---------------- */
 function deleteSel() {
   const s = ui.sel; if (!s) return;
@@ -643,7 +663,7 @@ function deleteSel() {
   else if (s.t === 'room') { toast('Une pièce est définie par ses murs : supprimez un mur pour la retirer.'); return; }
   else if (EXT.del[s.t]) { if (EXT.del[s.t](s.id) === false) return; }
   else {
-    const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts', zone: 'zones' }[s.t];
+    const key = { opening: 'openings', item: 'items', elec: 'elec', dim: 'dims', text: 'texts', duct: 'ducts', zone: 'zones', surface: 'surfaces' }[s.t];
     P[key] = P[key].filter((o) => o.id !== s.id); touch();
     if (s.t === 'elec') cleanLinks();
   }
@@ -663,6 +683,8 @@ function duplicateSel() {
     const p = itemToWorld({ x: it.x, y: it.y, rot: it.rot || 0 }, step, 0);
     c.x = p.x; c.y = p.y;
     (s.t === 'item' ? P.items : P.elec).push(c);
+    /* passage entre étages : la copie n'a pas de jumeau (le lien reste à l'original) ; ni colonne du tableau */
+    if (s.t === 'elec') { delete c.to; delete c.col; delete c.tab; }
     /* électroménager intégré : la copie d'un appareil est libre ; la copie d'un meuble emporte ses appareils */
     if (s.t === 'item') {
       delete c.dans; delete c.ox;
@@ -687,7 +709,7 @@ function nudgeSel(dx, dy) {
   else if (s.t === 'node') { o.x += dx; o.y += dy; setGEO({}); }
   else if (s.t === 'opening') { const wg = geo(ui.lv).walls.get(o.wall); if (wg) { o.t += vdot({ x: dx, y: dy }, wg.d); clampOpening(o); } }
   else if (s.t === 'dim') { o.ax += dx; o.bx += dx; o.ay += dy; o.by += dy; }
-  else if (s.t === 'duct') { for (const q of o.pts) { q.x += dx; q.y += dy; } }
+  else if (s.t === 'duct' || s.t === 'surface') { for (const q of o.pts) { q.x += dx; q.y += dy; } }
   else if (s.t === 'wall') { for (const id of [o.a, o.b]) { const n = nodeOf(id); n.x += dx; n.y += dy; } setGEO({}); }
   commit();
 }
@@ -1075,7 +1097,7 @@ function deleteLevel(id) {
   if (P.levels.length < 2) return;
   const wallIds = new Set(P.walls.filter((w) => w.lv === id).map((w) => w.id));
   P.openings = P.openings.filter((o) => !wallIds.has(o.wall));
-  for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'etudes']) P[k] = (P[k] || []).filter((o) => o.lv !== id);
+  for (const k of ['nodes', 'walls', 'items', 'elec', 'rooms', 'dims', 'texts', 'links', 'ducts', 'zones', 'surfaces', 'etudes']) P[k] = (P[k] || []).filter((o) => o.lv !== id);
   P.levels = P.levels.filter((l) => l.id !== id);
   touch();
   cleanLinks(); // passages entre étages, cases « posé » et réserves des symboles du niveau supprimé (circuits conservés)

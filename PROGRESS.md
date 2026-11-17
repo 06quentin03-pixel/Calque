@@ -1,3 +1,9 @@
+## 17 novembre 2026 — Murs inclinés, toits, terrasses, piscine, chauffe-eau, KNX, ossature bois
+- Murs inclinés et « Maison en A », masquer un mur en 3D ; toits (plat, 1, 2, 4 pans) avec panneaux solaires ; terrasses et sols sans murs ; piscine et ses volumes ; cinq types de chauffe-eau avec volume conseillé ; installation KNX (bus, adresses, contrôles, CSV) ; ossature bois à l'américaine (format v20).
+- Nouveaux modules : `toits.js`, `toitsui.js`, `ecs.js`, `ecsui.js`, `knx.js`, `knxui.js`, `ossature.js`, `piscine.js`.
+- Défauts trouvés pendant les essais : eau de la piscine cachée par la plage (la terrasse est maintenant percée) ; « Relier au bus » sans alimentation encore reliée ne reliait rien (départ pris sur l'alimentation) ; adresses de groupe proposées pour toutes les pièces de la maison (par défaut, seulement les pièces équipées KNX).
+- Tests : voir CHANGELOG (`tests/exterieur.test.mjs`, 6 tests ; `exemple` +1).
+
 ## 16 novembre 2026 (soir) — Descente dans les murs, note de calcul du chauffage
 - Gaines du plafond qui descendent dans la couche de passage du mur au-dessus de l'appareil (`descenteMur`, `itineraireEntre`), aussi en 3D.
 - Note de calcul du chauffage pièce par pièce, export PDF, chapitre du dossier, relance (format v19) (`js/notechauffage.js`).

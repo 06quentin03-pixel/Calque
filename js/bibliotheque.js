@@ -20,6 +20,7 @@ const DOMAINES = [
     { id: 'b_electromenager', name: 'Électroménager', furn: ['pl60', 'pl90', 'four', 'lv', 'frigo', 'frigous', 'congel', 'mo', 'hotte', 'll', 'sl'] },
     { id: 'b_chauffage', name: 'Chauffage et eau chaude', furn: ['rad', 'sserv', 'chaud', 'ce', 'poele', 'chem'] },
     { id: 'b_structure', name: 'Structure', furn: ['poteau'] },
+    { id: 'b_exterieur', name: 'Extérieur et piscine', furn: ['piscine', 'spa'], elec: ['coffret_piscine', 'pac_piscine', 'proj_piscine', 'borne_ve', 'panneau_pv', 'onduleur', 'batterie'] },
     { id: 'b_escaliers', name: 'Escaliers', furn: ['escD', 'escQ', 'escU', 'escH'] },
   ] },
   { id: 'electricite', name: 'Électricité', subs: ELEC_CATS.map((c) => ({ id: 'e_' + c.id, name: c.name, elecCat: c.id })) },

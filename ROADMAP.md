@@ -163,6 +163,10 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 - ✅ Raccordement automatique en boîtes de dérivation au plafond, gaines au plafond, descentes dans les cloisons (`js/boites.js`) ; « De proche en proche » reste au choix.
 - ⬜ Pistes : boîte murale (`derivation_mur`) au lieu du plafond quand le plafond n'a pas de vide technique ; gaines horizontales dans la couche de passage des cloisons (pose « cloison ») quand c'est plus court ; contrôle « boîte accessible » (trappe de visite) ; nombre de bornes par boîte.
 
+## Demandes du 17 novembre 2026 ✅ (à essayer sur iPad, puis à fusionner)
+- ✅ Murs inclinés (maison en A), masqués en 3D ; toits plat / 1 / 2 / 4 pans avec panneaux solaires ; terrasses et sols sans murs ; piscine (volumes, équipements) ; chauffe-eau (5 types, volume conseillé) ; KNX (bus, adresses physiques et de groupe, contrôles, CSV) ; ossature bois à l'américaine (format v20).
+- ⬜ Pistes : catalogues KNX des fabricants (références, consommation, nombre de sorties) à importer quand l'utilisateur les fournira ; affectation des sorties d'actionneur canal par canal ; export au format d'import d'ETS à vérifier avec un vrai projet ; toit en L ou en T (plusieurs faîtages), lucarnes et fenêtres de toit ; pignon triangulaire d'une maison en A (mur de pignon découpé sous les rampants) ; murs inclinés pris en compte dans la surface des parois (thermique) ; montants dessinés en 3D ; calepinage des panneaux en évitant les fenêtres de toit et les cheminées ; production solaire (données d'ensoleillement à fournir).
+
 ## Études thermiques (question du 16 novembre 2026)
 - Aujourd'hui : déperditions par une méthode simplifiée inspirée de la NF EN 12831 (`thermique.js`), jamais présentée comme réglementaire.
 - Possible dans Calque (hors ligne, sans abonnement) : une **note de dimensionnement du chauffage pièce par pièce** plus complète (ponts thermiques ψ, terre-plein selon l'EN ISO 13370, débits de ventilation réels, relance, température de base de la commune), avec un rapport PDF ; résultats « estimés » tant que les valeurs de référence ne sont pas fournies (température de base, ψ par défaut).
@@ -173,3 +177,4 @@ Branche `claude/calque-electrical-plans-module-tbt1ea`. Audit et architecture : 
 ## Données à fournir par l'utilisateur (au moment voulu)
 - Extraits NF C 15-100 de Legrand : guide « Points clés » reçu ; les autres (payants) en phase 8.
 - Catalogues ou tarifs fabricants (CSV, Excel, FAB-DIS ou PDF).
+- Catalogues KNX (ABB, Schneider, Hager, Theben, MDT, Siemens… : référence, désignation, consommation sur le bus en mA, nombre de sorties, courant d'une alimentation) pour remplacer les appareils génériques.

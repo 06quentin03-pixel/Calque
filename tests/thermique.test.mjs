@@ -109,9 +109,9 @@ test('écran : fenêtre « Ajouter un niveau », sens d’élargissement, pannea
   const p0 = plan(16); delete p0.install.text; p0.rooms[0].ti = 99; // valeur invalide : retirée
   await seedPlan(ctx, p0); await boot(page);
   let r = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, ti: N.P.rooms[0].ti, l: N.P.walls[0].couches[0].l }; });
-  assert.deepEqual(r, { v: 19, ti: undefined, l: 0.035 });
+  assert.deepEqual(r, { v: 20, ti: undefined, l: 0.035 });
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
-  assert.ok(vers.some((w) => /\(v16 → v19\)/.test(w)), 'copie de sécurité');
+  assert.ok(vers.some((w) => /\(v16 → v20\)/.test(w)), 'copie de sécurité');
   const sel = (t, id) => page.evaluate(async ([t, id]) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = id ? { t, id } : null; N.ui.inspOpen = true; F.renderInspector(); }, [t, id]);
   /* pièce : section thermique ; température extérieure saisie par une puce */
   await sel('room', 'R'); await wait(page, 150);

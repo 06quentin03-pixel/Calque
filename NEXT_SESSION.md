@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
+Mise à jour : 17 novembre 2026 (murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois, branche `claude/jolly-heisenberg-lrjp4n`) ; avant : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (234/234 le 16 novembre 2026 au soir).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (241/241 le 17 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
@@ -30,6 +30,27 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais du 17 novembre 2026 : murs inclinés, toits, terrasses, piscine, chauffe-eau, KNX, ossature bois
+Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
+compare `claude/jolly-heisenberg-lrjp4n` › Create pull request › Merge pull request). Vos plans passent au format v20 à la
+première ouverture, avec une copie de sécurité (Menu › Historique des versions, « v19 → v20 »).
+Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en portrait :
+1. Niveau « Étage » : le toit de la maison (pointillés marron), les panneaux solaires sur le pan sud. Toucher le contour du
+   toit : forme, pente, direction du faîtage, pans et leur orientation, « Panneaux solaires » (format, puissance d'un module).
+   Vue 3D : toit, pignons, panneaux.
+2. Rez-de-chaussée : la terrasse en bois devant la maison et la plage de la piscine (toucher l'intérieur). Toucher le bassin :
+   volumes 0, 1, 2 en bleu, le projecteur 12 V signalé, « Poser le coffret de filtration ».
+3. À gauche de la maison : l'abri de jardin en A. Toucher un mur › Inclinaison (33,7°), « Masquer en 3D », Ossature bois
+   (entraxe 16 / 24 pouces, montants) ; zoomer : les montants sont dessinés dans le mur.
+4. Toucher le vide du plan › Toits et terrasses › « Dessiner une terrasse » (toucher les angles) ; « Toit sur tout le niveau ».
+5. Atelier › Sanitaires : toucher le chauffe-eau › Chauffe-eau : changer le type, le nombre de personnes, « Prendre le volume
+   conseillé ». Vestiaires : le chauffe-eau instantané (débit, puissance, circuit triphasé).
+6. Étage de l'atelier (mezzanine) : appareils KNX reliés par le bus (vert). Toucher le vide du plan › « Installation KNX » :
+   lignes, contrôles, sorties d'actionneurs, adresses de groupe, « Exporter … (CSV) ». Toucher un appareil KNX › KNX.
+7. Onglet Calculs : familles « Toit, ossature et énergie solaire », « Eau chaude sanitaire », « Domotique KNX ».
+8. Dites-moi : vos catalogues KNX (fabricant, références, consommation sur le bus) à importer ; si vous voulez un mur de
+   pignon triangulaire pour la maison en A ; si l'export CSV s'importe bien dans ETS.
 
 ## Essais de la descente dans les murs et de la note de calcul du chauffage (16 novembre 2026 soir)
 Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,
