@@ -15,7 +15,7 @@ Branche `claude/jolly-heisenberg-lrjp4n`, partie de `main`. Demandes de l'utilis
 - **Format v20** : `surfaces[]`, mur `incl` / `masque` / `oss`, `install.nord`, symbole `ce` et `knx`, plan `knx` ; migration v19 → v20 avec copie de sécurité ; Menu › Vérifier le plan contrôle les toits et terrasses.
 - Plan d'exemple : toit à deux pans de la maison avec 14 panneaux sur le pan sud, terrasse en bois, plage et piscine avec ses équipements, abri de jardin en A à ossature 2×6, batterie, chauffe-eau (volume choisi, instantané aux vestiaires), installation KNX de la mezzanine (bus, adresses de groupe).
 - Corrigé au passage : dupliquer un passage entre étages copiait le lien vers son jumeau (la copie est maintenant libre).
-- Service Worker `calque-v60`. Tests : nouveau `tests/exterieur.test.mjs` (6 tests), `exemple` complété, tests de migration passés en v20.
+- Service Worker `calque-v60`. Tests : **241/241** (nouveau `tests/exterieur.test.mjs`, 6 tests ; `exemple` complété ; tests de migration passés en v20).
 
 ## 2026-11-16 (soir) — Descente des gaines dans les murs, note de calcul du chauffage
 Branche `claude/dazzling-babbage-7wt87f`. Demandes de l'utilisateur : redescendre les câbles du plafond dans une cloison ou un mur, par le vide technique ou la laine de verre (et non en l'air jusqu'à l'appareil) ; une vraie note de calcul du chauffage.

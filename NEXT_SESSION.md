@@ -14,7 +14,7 @@ toi-même : c'est moi qui fusionne.
 Avant toute modification :
 1. Lis CLAUDE.md, PROJECT_STATE.md, TECHNICAL_DECISIONS.md, NEXT_SESSION.md, ROADMAP.md, PROGRESS.md, CHANGELOG.md,
    docs/ARCHITECTURE.md et docs/MODULE_ELECTRIQUE.md, et respecte toutes les règles de CLAUDE.md.
-2. Lance node --test tests/*.test.mjs : tout doit réussir (voir le CHANGELOG du 17 novembre 2026).
+2. Lance node --test tests/*.test.mjs : tout doit réussir (241/241 le 17 novembre 2026).
 3. Demande-moi le résultat de mes essais sur l'iPad (liste ci-dessous) et corrige d'abord ce qui ne va pas.
    Demande-moi aussi de copier le Journal des erreurs (Menu › Journal des erreurs) s'il contient des incidents.
 
