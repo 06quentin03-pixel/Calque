@@ -43,7 +43,7 @@ Sur le plan d'exemple (Menu › Ouvrir le plan d'exemple), en paysage puis en po
    volumes 0, 1, 2 en bleu, le projecteur 12 V signalé, « Poser le coffret de filtration ».
 3. À gauche de la maison : l'abri de jardin en A. Toucher un mur › Inclinaison (33,7°), « Masquer en 3D », Ossature bois
    (entraxe 16 / 24 pouces, montants) ; zoomer : les montants sont dessinés dans le mur.
-4. Outil « Toit / sol » (barre d'outils) : dessiner une terrasse ; panneau d'un niveau › « Toit sur tout le niveau ».
+4. Toucher le vide du plan › Toits et terrasses › « Dessiner une terrasse » (toucher les angles) ; « Toit sur tout le niveau ».
 5. Atelier › Sanitaires : toucher le chauffe-eau › Chauffe-eau : changer le type, le nombre de personnes, « Prendre le volume
    conseillé ». Vestiaires : le chauffe-eau instantané (débit, puissance, circuit triphasé).
 6. Étage de l'atelier (mezzanine) : appareils KNX reliés par le bus (vert). Toucher le vide du plan › « Installation KNX » :

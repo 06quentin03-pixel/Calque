@@ -33,7 +33,7 @@ const FAMILLES = [
   { id: 'eclairage', n: 'Éclairage', ou: 'Panneau d’une pièce › Concevoir l’éclairage' },
   { id: 'batiment', n: 'Bâtiment et matériaux', ou: 'Panneaux d’une pièce, d’un mur et du niveau' },
   { id: 'thermique', n: 'Thermique (déperditions)', ou: 'Panneaux d’un mur, d’une pièce et du niveau › Thermique' },
-  { id: 'energie', n: 'Toit, ossature et énergie solaire', ou: 'Panneau d’un toit, d’un mur ; outil Toit / sol' },
+  { id: 'energie', n: 'Toit, ossature et énergie solaire', ou: 'Panneau d’un toit, d’un mur ; panneau du niveau › Toits et terrasses' },
   { id: 'ecs', n: 'Eau chaude sanitaire', ou: 'Panneau d’un chauffe-eau › Chauffe-eau' },
   { id: 'knx', n: 'Domotique KNX', ou: 'Panneau du niveau › Installation KNX ; panneau d’un appareil KNX' },
   { id: 'chiffrage', n: 'Chiffrage', ou: 'Tableau électrique › Quantitatif' },
@@ -245,7 +245,7 @@ const FORMULES = [
       const pans = pansToit(s), pn = pans[0] || { aireProj: 0, aire: 0 };
       return { etapes: [`surface au sol d’un pan : ${f(pn.aireProj / 1e4, 2)} m²`, `en rampant : ${f(pn.aireProj / 1e4, 2)} / cos ${f(x.p, 1)}° = ${f(pn.aire / 1e4, 2)} m²`, `faîtage : ${f(x.l / 2, 2)} × tan ${f(x.p, 1)}°`],
         res: [['Un pan', f(pn.aire / 1e4, 2) + ' m²'], ['Deux pans', f(pans.reduce((a, q) => a + q.aire, 0) / 1e4, 2) + ' m²'], ['Hauteur du faîtage', f(hauteurFaitage(s) / 100, 2) + ' m']] }; },
-    donnees: 'Panneau d’un toit (outil « Toit / sol ») : forme, pente et direction du faîtage saisies ; surfaces calculées pan par pan (toits.js).' },
+    donnees: 'Panneau d’un toit (panneau du niveau › Toits et terrasses) : forme, pente et direction du faîtage saisies ; surfaces calculées pan par pan (toits.js).' },
   { id: 'pv_calepinage', fam: 'energie', titre: 'Nombre de panneaux solaires sur un pan',
     but: 'Savoir combien de modules tiennent sur un pan de toit, en gardant une marge au bord, et la puissance crête correspondante.',
     formule: 'modules par rangée = ⌊(longueur du pan − 2 × marge + jeu) / (largeur du module + jeu)⌋\nrangées = ⌊(rampant − 2 × marge + jeu) / (hauteur du module + jeu)⌋\npuissance crête = nombre × puissance d’un module',

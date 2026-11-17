@@ -50,7 +50,7 @@ test('sans écran : U d’une paroi, déperditions d’une pièce, chauffage pos
   delete p.install.text; delete p.rooms[0].ti;
   const D2 = T.deperditionsPiece(p, ctx.pieces[0], ctx);
   assert.equal(D2.total, null); assert.equal(D2.statut, 'partiel'); assert.ok(D2.manque.includes('température extérieure de base'));
-  assert.equal(D2.ti.v, 20); assert.equal(D2.ti.st, 'estimee');
+  assert.equal(D2.ti.v, 19); assert.equal(D2.ti.st, 'estimee');
   /* fiche d'un mur : vue depuis la pièce vers l'extérieur */
   const p3 = plan(), F = T.ficheMur(p3, p3.walls[0], { pieces: [piece(p3)], toutes: new Map([['L0', [piece(p3)]]]) });
   assert.equal(F.ext, true); assert.equal(F.vues.length, 1); assert.equal(F.vues[0].vers, 'Extérieur'); near(F.vues[0].dT, 25, 'ΔT');
@@ -109,7 +109,7 @@ test('écran : fenêtre « Ajouter un niveau », sens d’élargissement, pannea
   const p0 = plan(16); delete p0.install.text; p0.rooms[0].ti = 99; // valeur invalide : retirée
   await seedPlan(ctx, p0); await boot(page);
   let r = await page.evaluate(async () => { const N = await import('./js/noyau.js'); return { v: N.P.v, ti: N.P.rooms[0].ti, l: N.P.walls[0].couches[0].l }; });
-  assert.deepEqual(r, { v: 19, ti: undefined, l: 0.035 });
+  assert.deepEqual(r, { v: 20, ti: undefined, l: 0.035 });
   const vers = await page.evaluate(() => new Promise((res) => { const q = indexedDB.open('calque'); q.onsuccess = () => { const t = q.result.transaction('versions').objectStore('versions').getAll(); t.onsuccess = () => res(t.result.map((x) => x.why)); }; }));
   assert.ok(vers.some((w) => /\(v16 → v20\)/.test(w)), 'copie de sécurité');
   const sel = (t, id) => page.evaluate(async ([t, id]) => { const N = await import('./js/noyau.js'), F = await import('./js/interface.js'); N.ui.sel = id ? { t, id } : null; N.ui.inspOpen = true; F.renderInspector(); }, [t, id]);

@@ -683,6 +683,8 @@ function duplicateSel() {
     const p = itemToWorld({ x: it.x, y: it.y, rot: it.rot || 0 }, step, 0);
     c.x = p.x; c.y = p.y;
     (s.t === 'item' ? P.items : P.elec).push(c);
+    /* passage entre étages : la copie n'a pas de jumeau (le lien reste à l'original) ; ni colonne du tableau */
+    if (s.t === 'elec') { delete c.to; delete c.col; delete c.tab; }
     /* électroménager intégré : la copie d'un appareil est libre ; la copie d'un meuble emporte ses appareils */
     if (s.t === 'item') {
       delete c.dans; delete c.ox;
