@@ -27,6 +27,7 @@ import './circuitsui.js';
 import './schemaui.js';
 import './calculsui.js';
 import './demarrage.js';
+import './pc.js';
 import { boot } from './demarrage.js';
 import { watchUpdates } from './miseajour.js';
 import { incident } from './incidents.js';

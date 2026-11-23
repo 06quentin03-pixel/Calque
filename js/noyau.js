@@ -125,6 +125,7 @@ const S = {
   thMur: 20, thCloison: 7, wallEnd: 'auto',
   filt: { off: [], circ: null }, ductSys: 'vmc', ductKind: null, ductPose: null, // dernier type et dernière pose de gaine choisis
   raccMode: 'boites', // raccordement automatique : 'boites' (boîtes de dérivation, plafond et cloisons) ou 'proche' (de proche en proche)
+  barres: 'auto', molette: 'zoom', // ordinateur (pc.js) : barres de défilement 'auto' | 'oui' | 'non' ; molette 'zoom' ou 'defiler'
   pencil: false, pencilSeen: false, // Apple Pencil : le stylet dessine, le doigt déplace le plan (activé au premier usage du stylet)
 };
 function loadSettings() {
@@ -244,7 +245,8 @@ const C = {};
    tools[nom] = { down, hover } (comme TOOLS) ; hint[nom]() → éléments du bandeau ; hintKey() → clé de mise à jour ;
    under[] (c, lv, opts) : dessiné sous les murs ; overlay[] (c, px) : dessiné sur la couche du dessus */
 const EXT = { tools: {}, hint: {}, hintKey: [], under: [], overlay: [], insp: {},
-  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [], cablage: [], hitBas: [] };
+  top: [], hit: [], obj: {}, del: {}, inspVide: null, selectDown: null, view: [], snap: [], cablage: [], hitBas: [], rendu: [], menuContextuel: null };
+/* rendu[] () : appelé après chaque dessin du plan (barres de défilement, pc.js) ; menuContextuel(wp, sp, e) : clic droit sans glisser */
 /* hitBas[] (p, tol, g) → { t, id } : sélection d'un objet ajouté par un module, après tous les objets du plan sauf les pièces */
 /* cablage[] (c, lv, opts) : dessiné juste au-dessus des gaines, sous les liaisons et les appareils (câblage des circuits) */
 /* snap[] (p, tol) → { x, y, kind, guides } : accrochage ajouté par un module (traits d'un fond DXF), après les angles des murs */

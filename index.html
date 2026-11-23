@@ -406,6 +406,30 @@ button.li:hover { background: var(--panel-2); }
 .upd.sauv span { flex: 1 1 260px; }
 @media (max-width: 600px) { .upd.sauv { left: 16px; right: 16px; transform: none; max-width: none; bottom: calc(100px + env(safe-area-inset-bottom, 0px)); justify-content: flex-start; } .upd.sauv span { flex-basis: 100%; } }
 
+/* ---- ordinateur (pc.js) : barres de défilement du plan, menu du clic droit, panneau redimensionnable ---- */
+.sbar { position: absolute; z-index: 3; display: none; border-radius: 6px; touch-action: none; }
+.stage.barres .sbar { display: block; }
+.sbar.h { left: 6px; right: 20px; bottom: 3px; height: 12px; }
+.sbar.v { top: 6px; bottom: 20px; right: 3px; width: 12px; }
+.sbar:hover, .sbar.actif { background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.sthumb { position: absolute; left: 2px; top: 2px; border-radius: 5px; background: color-mix(in srgb, var(--ink) 30%, transparent); cursor: grab; }
+.sbar.h .sthumb { height: 8px; top: 2px; left: 0; }
+.sbar.v .sthumb { width: 8px; left: 2px; top: 0; }
+.sbar:hover .sthumb { background: color-mix(in srgb, var(--ink) 45%, transparent); }
+.sbar.actif .sthumb { background: var(--accent); cursor: grabbing; }
+.sbar.plein .sthumb { opacity: .35; }
+.stage.barres .status { bottom: 20px; }
+.stage.barres .zoom { bottom: 20px; right: 20px; }
+.ctxmenu { min-width: 240px; }
+.ctxmenu .menu > button { min-height: 34px; }
+.ctxmenu .menu > button:disabled { opacity: .45; cursor: default; }
+.ctxmenu .ico { display: inline-grid; width: 17px; }
+.ctxmenu kbd { margin-left: auto; font: 500 11.5px var(--f-num, system-ui); color: var(--ink-3); }
+.insp-poignee { position: absolute; top: 0; bottom: 0; width: 8px; cursor: col-resize; z-index: 6; border-radius: 4px; touch-action: none; }
+.insp-poignee:hover, .insp-poignee.actif { background: color-mix(in srgb, var(--accent) 35%, transparent); }
+body.redim, body.redim * { cursor: col-resize !important; user-select: none; }
+@media (min-width: 1100px) { .main { grid-template-columns: auto minmax(0, 1fr) var(--insp-w, clamp(300px, 28vw, 380px)); } }
+
 /* ---- tailles d'écran ---- */
 @media (max-width: 1099px) {
   .main { grid-template-columns: auto minmax(0, 1fr); }
