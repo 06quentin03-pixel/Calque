@@ -25,6 +25,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 6. Le hors ligne est prioritaire. Aucune dépendance cloud, aucun abonnement, aucun serveur obligatoire.
 7. Compatibilité totale avec les plans existants. Toute évolution du format passe par une migration et une copie de sécurité.
 8. Tester chaque modification. Ne pas déclarer terminé ce qui n'est que visible à l'écran.
+   - **Demande de l'utilisateur (23 novembre 2026) : ne pas lancer toute la suite de tests à chaque modification.** Lancer seulement les tests logiques pour ce qui a été touché (le fichier de test du module modifié, ceux des modules qui l'utilisent, `exemple.test.mjs` si le plan d'exemple change, `architecture.test.mjs` si un fichier est ajouté). La suite complète seulement si l'utilisateur la demande, ou pour un changement profond (format des plans, moteur partagé comme `noyau.js` ou `interaction.js`) : le dire avant.
 9. **S'arrêter et demander** avant toute décision qui risque de détruire des données, de casser une fonction existante ou de changer profondément l'architecture sans retour possible.
    - Pour le reste, décider de façon autonome.
 10. Langue : français, pour l'interface, les commentaires et les échanges. L'utilisateur débute sur GitHub : lui donner des explications simples et concrètes, adaptées à l'iPad.
@@ -101,7 +102,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 
 - Serveur local : `python3 -m http.server 8765` à la racine du dépôt.
 - Navigateur : Chromium est installé avec Playwright (`require('playwright')`). WebKit n'est pas disponible dans l'environnement cloud.
-- Tests : `node --test tests/*.test.mjs` (Playwright + Chromium, serveur intégré au test). Outils communs et plan de test de grande taille : `tests/outils.mjs`.
+- Tests : `node --test tests/<fichier>.test.mjs` pour les tests ciblés (règle 8) ; suite complète `node --test tests/*.test.mjs` (Playwright + Chromium, serveur intégré au test). Outils communs et plan de test de grande taille : `tests/outils.mjs`.
 - Tailles d'écran à vérifier : 1180×820 (iPad paysage), 820×1180 (iPad portrait), 390×844 (téléphone).
 - Ne jamais laisser de fichiers de test (captures, etc.) dans le dépôt : utiliser le dossier temporaire de la session.
 - Plan d'exemple : `tests/exemple.test.mjs` vérifie qu'il contient chaque fonction (à compléter à chaque phase).
