@@ -9,7 +9,7 @@ Branche `claude/awesome-dirac-wyg7fq`, partie de `main`. Demande de l'utilisateu
 - **Panneau de droite redimensionnable** (écrans ≥ 1100 px) : glisser son bord gauche (280 à 720 px, au plus la moitié de l'écran), largeur gardée dans les réglages ; double-clic : largeur d'origine.
 - Points d'extension : `EXT.rendu[]` (appelé après chaque dessin du plan) et `EXT.menuContextuel` (clic droit sans glisser). Réglages `S.barres`, `S.molette`, `S.largeurPanneau` (réglages de l'appareil, pas le plan : format inchangé, v20).
 - Plan d'exemple : rien à ajouter (réglages d'affichage, pas de donnée du plan) ; le plan d'exemple sert aux essais (`tests/pc.test.mjs`).
-- Tests : `tests/pc.test.mjs` (6 tests).
+- Tests : `tests/pc.test.mjs` (6 tests) ; 247/247.
 
 ## 2026-11-17 — Murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois
 Branche `claude/jolly-heisenberg-lrjp4n`, partie de `main`. Demandes de l'utilisateur : incliner les murs (maison en A) et pouvoir les masquer ; un toit pour y poser des panneaux solaires ; un sol sans murs (terrasse) ; piscine, panneaux solaires, borne de recharge, batterie ; tout le KNX ; choisir le type de chauffe-eau avec une aide pour le volume ; de quoi faire une maison en bois à l'américaine.
