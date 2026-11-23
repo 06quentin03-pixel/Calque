@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 17 novembre 2026 (murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois, branche `claude/jolly-heisenberg-lrjp4n`) ; avant : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
+Mise à jour : 23 novembre 2026 (confort sur ordinateur, branche `claude/awesome-dirac-wyg7fq`) ; avant : 17 novembre 2026 (murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois, branche `claude/jolly-heisenberg-lrjp4n`) ; avant : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -30,6 +30,17 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais du 23 novembre 2026 : confort sur ordinateur
+Pour l'essayer : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`, compare
+`claude/awesome-dirac-wyg7fq` › Create pull request › Merge pull request). Le format des plans ne change pas (v20).
+Sur un ordinateur avec une souris, plan d'exemple ouvert :
+1. Barres grises en bas et à droite du plan : glisser le curseur, cliquer dans la barre (une page).
+2. Clic droit sur une prise : menu (Propriétés, Dupliquer, Pivoter, Supprimer) ; clic droit maintenu + glisser : le plan bouge.
+3. Affichage (icône des calques) › Souris (ordinateur) : molette « Faire défiler » ; barres Automatique / Toujours / Jamais.
+4. Touches + − 0 et ? ; Ctrl S.
+5. Glisser le bord gauche du panneau de droite pour l'élargir ; double-clic pour revenir.
+6. Sur l'iPad : rien ne doit avoir changé (pas de barres sans souris ni pavé tactile).
 
 ## Essais du 17 novembre 2026 : murs inclinés, toits, terrasses, piscine, chauffe-eau, KNX, ossature bois
 Pour l'essayer sur l'iPad : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`,

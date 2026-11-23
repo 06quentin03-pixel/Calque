@@ -1,5 +1,16 @@
 # CHANGELOG — historique des modifications
 
+## 2026-11-23 — Confort sur ordinateur (souris, clavier, grand écran)
+Branche `claude/awesome-dirac-wyg7fq`, partie de `main`. Demande de l'utilisateur : rendre l'appli facile et agréable sur PC, par exemple des barres de défilement pour bouger le plan.
+- **Barres de défilement du plan** (`js/pc.js`) : en bas et à droite du plan ; glisser le curseur déplace la vue, cliquer dans la barre avance d'une page, molette au-dessus d'une barre = défilement dans son sens. L'étendue = le contenu du niveau avec une demi-vue de marge. Réglage Affichage › Souris (ordinateur) › Barres de défilement : **Automatique** (affichées seulement avec une souris ou un pavé tactile ; rien ne change sur l'iPad au doigt ou au Pencil), Toujours, Jamais. L'échelle et les boutons de zoom remontent au-dessus des barres.
+- **Clic droit** : menu de l'objet sous la souris (Propriétés, Dupliquer, Pivoter de 90°, Supprimer) et de la vue (Recadrer, Zoomer ici, Annuler, Gestes et raccourcis), avec le raccourci de chaque action. **Clic droit maintenu + glisser** = déplacer le plan (comme le clic molette).
+- **Molette** : réglage « Zoomer » (par défaut, comme avant) ou « Faire défiler » (Maj : de côté, Ctrl : zoomer). Le pavé tactile garde glisser à deux doigts / pincer.
+- **Raccourcis** : `+` / `−` zoomer / dézoomer, `0` recadrer, `?` aide, **Ctrl S** enregistre tout de suite (au lieu de la fenêtre « Enregistrer la page » du navigateur). L'aide « Gestes et raccourcis » a une section « À la souris (ordinateur) ».
+- **Panneau de droite redimensionnable** (écrans ≥ 1100 px) : glisser son bord gauche (280 à 720 px, au plus la moitié de l'écran), largeur gardée dans les réglages ; double-clic : largeur d'origine.
+- Points d'extension : `EXT.rendu[]` (appelé après chaque dessin du plan) et `EXT.menuContextuel` (clic droit sans glisser). Réglages `S.barres`, `S.molette`, `S.largeurPanneau` (réglages de l'appareil, pas le plan : format inchangé, v20).
+- Plan d'exemple : rien à ajouter (réglages d'affichage, pas de donnée du plan) ; le plan d'exemple sert aux essais (`tests/pc.test.mjs`).
+- Tests : `tests/pc.test.mjs` (6 tests).
+
 ## 2026-11-17 — Murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois
 Branche `claude/jolly-heisenberg-lrjp4n`, partie de `main`. Demandes de l'utilisateur : incliner les murs (maison en A) et pouvoir les masquer ; un toit pour y poser des panneaux solaires ; un sol sans murs (terrasse) ; piscine, panneaux solaires, borne de recharge, batterie ; tout le KNX ; choisir le type de chauffe-eau avec une aide pour le volume ; de quoi faire une maison en bois à l'américaine.
 - **Murs inclinés** : panneau d'un mur › Inclinaison (−75° à +75°, positive vers le côté 1), choix rapides, bouton **« Maison en A : rejoindre le mur parallèle »** (les deux murs se rejoignent au faîte). Plan : haut du mur en pointillés violets. 3D : mur et baies inclinés (cisaillement). **« Masquer en 3D »** pour un mur (enregistré dans le plan ; il reste sur le plan et dans les calculs).

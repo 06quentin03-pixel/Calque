@@ -984,6 +984,11 @@ function renderViewPop() {
     toggleRow('Angles droits et à 45°', () => S.ortho, (v) => (S.ortho = v)),
     toggleRow('Coller les objets aux murs', () => S.magnet, (v) => (S.magnet = v)),
     segCtl([{ v: 1, n: 'Pas de 1 cm' }, { v: 5, n: '5 cm' }, { v: 10, n: '10 cm' }], S.grid, (v) => { S.grid = v; saveSettings(); renderViewPop(); }),
+    h('h4', null, 'Souris (ordinateur)'),
+    h('div', { class: 'note', style: 'padding:0 10px 4px' }, 'Barres de défilement du plan'),
+    segCtl([{ v: 'auto', n: 'Automatique' }, { v: 'oui', n: 'Toujours' }, { v: 'non', n: 'Jamais' }], S.barres || 'auto', (v) => { S.barres = v; saveSettings(); renderViewPop(); requestRender(); }),
+    h('div', { class: 'note', style: 'padding:6px 10px 4px' }, 'Molette de la souris'),
+    segCtl([{ v: 'zoom', n: 'Zoomer' }, { v: 'defiler', n: 'Faire défiler' }], S.molette === 'defiler' ? 'defiler' : 'zoom', (v) => { S.molette = v; saveSettings(); renderViewPop(); }),
     h('h4', null, 'Apple Pencil'),
     toggleRow('Le stylet dessine, le doigt déplace le plan', () => S.pencil, (v) => { S.pencil = v; S.pencilSeen = true; }),
     h('h4', null, 'Épaisseurs par défaut'),
@@ -1143,7 +1148,15 @@ function openHelp() {
     h('dl', { class: 'kv', style: 'grid-template-columns:auto 1fr' },
       li('Outil Groupe', 'Rectangle de sélection ; flèches : déplacer ; Suppr : supprimer ; Échap : désélectionner'), li('U', 'Mesurer une distance ou une surface'), li('V M P O F B C T', 'Sélection, Mur, Pièce, pOrte, Fenêtre, ouverture liBre, Cote, Texte'), li('L G', 'Liaison, Conduit (VMC ou gaine)'), li('Entrée', 'Terminer le conduit en cours'), li('R', 'Pivoter de 90°'), li('Ctrl D', 'Dupliquer'),
       li('Suppr', 'Supprimer'), li('Flèches', 'Déplacer de 1 cm (Maj : 10 cm)'), li('Ctrl Z / Ctrl Y', 'Annuler / Rétablir'), li('Échap', 'Terminer l’outil'),
-      li('Espace + glisser', 'Déplacer la vue'), li('Molette', 'Zoomer')),
+      li('Espace + glisser', 'Déplacer la vue'), li('+  −  0', 'Zoomer, dézoomer, recadrer le plan'), li('?', 'Cette aide'), li('Ctrl S', 'Enregistrer tout de suite (Calque enregistre aussi tout seul)')),
+    h('h3', { style: 'margin:6px 0 0;font-size:13px' }, 'À la souris (ordinateur)'),
+    h('dl', { class: 'kv', style: 'grid-template-columns:auto 1fr' },
+      li('Barres de défilement', 'Glisser le curseur gris en bas ou à droite du plan pour déplacer la vue ; cliquer dans la barre pour avancer d’une page'),
+      li('Molette', S.molette === 'defiler' ? 'Faire défiler (Maj : de côté, Ctrl : zoomer)' : 'Zoomer (réglage « Faire défiler » dans Affichage)'),
+      li('Pavé tactile', 'Glisser à 2 doigts : déplacer la vue ; pincer : zoomer'),
+      li('Clic droit', 'Menu de l’objet sous la souris (propriétés, dupliquer, pivoter, supprimer) et de la vue'),
+      li('Clic droit ou clic molette + glisser', 'Déplacer la vue'),
+      li('Bord gauche du panneau de droite', 'Glisser pour l’élargir ; double-clic : largeur d’origine')),
     h('p', { class: 'note' }, 'Les murs se dessinent dans l’axe. Les surfaces affichées sont des surfaces au sol, murs et cloisons déduits.'));
 }
 

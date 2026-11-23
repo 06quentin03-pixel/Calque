@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun` ; boîtes de dérivation et câbles à tirer : `claude/dazzling-babbage-7wt87f` ; toits, KNX, chauffe-eau : `claude/jolly-heisenberg-lrjp4n`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun` ; boîtes de dérivation et câbles à tirer : `claude/dazzling-babbage-7wt87f` ; toits, KNX, chauffe-eau : `claude/jolly-heisenberg-lrjp4n` ; confort sur ordinateur : `claude/awesome-dirac-wyg7fq`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -88,6 +88,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Toits et terrasses (format v20, `P.surfaces[]`) : moteur `toits.js` (sans écran), écran `toitsui.js` (outil `surface`, sélection par `EXT.hitBas`, angles par les poignées `spt`), 3D `surface3`. Murs inclinés (`w.incl`, cisaillement `shearGB` en 3D) et masqués en 3D (`w.masque`).
 - Chauffe-eau (`e.ce`) : `ecs.js` / `ecsui.js` ; piscine (volumes) : `piscine.js` ; ossature bois : `ossature.js` (matériaux avec `ossature` dans `compositions.js`).
 - KNX (`e.knx`, `P.knx`) : `knx.js` (sans écran) / `knxui.js` ; le bus est une gaine sans circuit entre deux appareils `knx_*` (`estLienKNX`, exclue du réseau du courant fort comme `estLienRJ45`).
+- Ordinateur (23 novembre 2026) : `pc.js` (écran) — barres de défilement du plan (`EXT.rendu`, réglage `S.barres` 'auto' | 'oui' | 'non'), menu du clic droit (`EXT.menuContextuel`, clic droit + glisser = déplacer), molette `S.molette` ('zoom' par défaut ou 'defiler'), raccourcis + − 0 ? Ctrl S, panneau de droite redimensionnable (`S.largeurPanneau`, variable CSS `--insp-w`).
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

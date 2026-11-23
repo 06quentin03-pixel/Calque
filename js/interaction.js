@@ -79,6 +79,7 @@ function render() {
   drawOverlay();
   ctx.restore();
   updateStatus();
+  for (const f of EXT.rendu) { try { f(); } catch (e) { /* barres de défilement : jamais bloquant pour le dessin */ } }
 }
 function screenToWorld(x, y) { return { x: (x - V.ox) / V.s, y: (y - V.oy) / V.s }; }
 function zoomAt(sx, sy, f) {
@@ -443,7 +444,8 @@ cv.addEventListener('pointerdown', (e) => {
   }
   if (ptrs.size > 2) return;
   if (e.button === 1 || (e.button === 0 && keys.space)) { drag = panDrag(sp, null); return; }
-  if (e.button === 2) return;
+  /* clic droit : glisser = déplacer le plan ; sans glisser = menu (pc.js) */
+  if (e.button === 2) { drag = panDrag(sp, (wp2, sp2) => { if (EXT.menuContextuel) EXT.menuContextuel(wp2, sp2, e); }); return; }
   ignoreUntilUp = false;
   if (e.pointerType === 'mouse') cv.focus({ preventScroll: true });
   // mode Apple Pencil : avec un outil de dessin, un doigt déplace le plan au lieu de dessiner
@@ -496,6 +498,12 @@ cv.addEventListener('wheel', (e) => {
   const sp = evPos(e);
   if (e.ctrlKey || e.metaKey) { zoomAt(sp.x, sp.y, Math.exp(-e.deltaY * 0.012)); return; }
   const mouseWheel = e.deltaMode === 1 || (e.deltaX === 0 && Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY));
+  /* réglage « Molette : faire défiler » (ordinateur) : la molette déplace le plan, Maj = de côté, Ctrl = zoom */
+  if (S.molette === 'defiler' && mouseWheel) {
+    const k = e.deltaMode === 1 ? 40 : 1;
+    if (e.shiftKey) V.ox -= (e.deltaY || e.deltaX) * k; else { V.ox -= e.deltaX * k; V.oy -= e.deltaY * k; }
+    requestRender(); return;
+  }
   if (mouseWheel) zoomAt(sp.x, sp.y, Math.exp(-Math.sign(e.deltaY) * Math.min(Math.abs(e.deltaY), 120) * (e.deltaMode === 1 ? 0.06 : 0.0018)));
   else { V.ox -= e.deltaX; V.oy -= e.deltaY; requestRender(); }
 }, { passive: false });

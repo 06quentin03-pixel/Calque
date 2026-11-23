@@ -1,3 +1,7 @@
+## 23 novembre 2026 — Confort sur ordinateur
+- Barres de défilement du plan, menu du clic droit, clic droit + glisser, molette « Faire défiler » (réglage), raccourcis + − 0 ? Ctrl S, panneau de droite redimensionnable (`js/pc.js`).
+- Tests : `tests/pc.test.mjs` (6 tests).
+
 ## 17 novembre 2026 — Murs inclinés, toits, terrasses, piscine, chauffe-eau, KNX, ossature bois
 - Murs inclinés et « Maison en A », masquer un mur en 3D ; toits (plat, 1, 2, 4 pans) avec panneaux solaires ; terrasses et sols sans murs ; piscine et ses volumes ; cinq types de chauffe-eau avec volume conseillé ; installation KNX (bus, adresses, contrôles, CSV) ; ossature bois à l'américaine (format v20).
 - Nouveaux modules : `toits.js`, `toitsui.js`, `ecs.js`, `ecsui.js`, `knx.js`, `knxui.js`, `ossature.js`, `piscine.js`.
