@@ -114,7 +114,7 @@ const hitTol = () => (ui.pointerType === 'mouse' ? 7 : ui.pointerType === 'pen' 
 const TAP = () => (ui.pointerType === 'mouse' ? 4 : ui.pointerType === 'pen' ? 5 : 10);
 
 /* ---------------- test de sélection ---------------- */
-function K_screen() { return { px: 1 / V.s }; }
+function K_screen() { return { px: 1 / V.s, ecran: true }; } // ecran : même taille des symboles que le dessin (plan allégé)
 function handlesOf(sel) {
   const out = [];
   if (!sel) return out;
@@ -402,9 +402,9 @@ const ptrs = new Map();
 let gest = null, drag = null, ignoreUntilUp = false, downState = null;
 let lastTap = { t: 0, x: 0, y: 0, key: '' };
 function evPos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-function isDoubleTap(sp, key) {
+function isDoubleTap(sp, key, delai) {
   const now = performance.now();
-  const ok = now - lastTap.t < 380 && Math.hypot(sp.x - lastTap.x, sp.y - lastTap.y) < 24 && lastTap.key === key;
+  const ok = now - lastTap.t < (delai || 380) && Math.hypot(sp.x - lastTap.x, sp.y - lastTap.y) < 24 && lastTap.key === key;
   lastTap = { t: ok ? 0 : now, x: sp.x, y: sp.y, key };
   return ok;
 }
@@ -673,12 +673,13 @@ TOOLS.select = {
   down(wp, sp) {
     if (EXT.selectDown) { const g = EXT.selectDown(wp, sp); if (g !== undefined) return g; } // mode chantier : consultation seule
     const h = hitTest(wp, hitTol());
+    const dbl = selDouble();
     if (S.layers.dims && (!h || !['handle', 'elec', 'text', 'duct', 'opening'].includes(h.t))) {
       const dh = dimHitAt(sp);
-      if (dh) return panDrag(sp, () => openDimEdit(dh));
+      if (dh) return panDrag(sp, (w, s2) => { if (!dbl || isDoubleTap(s2, 'cote' + dh.wid + dh.sgn, DBL_MS)) openDimEdit(dh); else astuceSel(null); });
     }
-    if (!h) return panDrag(sp, () => { select(null); ui.inspOpen = false; renderInspector(); if (ui.hl || ui.hlIds) { ui.hl = null; ui.hlIds = null; updateHint(); requestRender(); } });
-    if (h.t === 'room') return panDrag(sp, (w, s2) => { select(h); onTapSelected(h, s2); });
+    const toucherVide = () => { select(null); ui.inspOpen = false; renderInspector(); if (ui.hl || ui.hlIds) { ui.hl = null; ui.hlIds = null; updateHint(); requestRender(); } };
+    if (!h) return panDrag(sp, toucherVide);
     if (h.t === 'handle') return handleDrag(h, wp, sp);
     /* appareil intégré sous le meuble choisi : glisser déplace le meuble (et l'appareil avec lui), toucher choisit l'appareil */
     const it = h.t === 'item' ? IDX.items.get(h.id) : null;
@@ -686,6 +687,16 @@ TOOLS.select = {
       const hd = moveDrag({ t: 'item', id: it.dans }, wp, sp); let bouge = false;
       return hd && { move(w2, s2) { if (!bouge && vdist(s2, sp) >= TAP()) bouge = true; hd.move(w2, s2); }, up(w2, s2) { if (bouge) hd.up(w2, s2); else select(h); }, cancel() { hd.cancel(); } };
     }
+    /* « toucher deux fois pour choisir » (réglage S.selection, par défaut) : un objet qui n'est pas encore choisi ne bouge
+       pas sous le doigt ni sous la souris ; glisser déplace le plan, un toucher le montre, un double toucher le choisit */
+    if (dbl && !estChoisi(h)) {
+      return panDrag(sp, (w, s2) => {
+        if (isDoubleTap(s2, 'sel' + h.t + h.id, DBL_MS)) { clearTimeout(astuceT); ui.hover = null; select(h); }
+        else if (h.t === 'room') { if (ui.sel) toucherVide(); } // un toucher dans une pièce = toucher le fond du plan
+        else astuceSel(h);
+      });
+    }
+    if (h.t === 'room') return panDrag(sp, (w, s2) => { select(h); onTapSelected(h, s2); });
     select(h);
     return moveDrag(h, wp, sp);
   },
@@ -693,9 +704,31 @@ TOOLS.select = {
     const h = hitTest(wp, 6);
     const dh = S.layers.dims && (!h || !['handle', 'elec', 'text', 'duct', 'opening'].includes(h.t)) && sp ? dimHitAt(sp) : null;
     ui.hover = h && h.t !== 'room' && !dh ? h : null;
-    cv.style.cursor = dh ? 'text' : h ? (h.t === 'handle' ? 'grab' : h.t === 'room' ? 'default' : 'move') : 'default';
+    const libre = selDouble() && h && h.t !== 'handle' && !estChoisi(h); // pas encore choisi : un double clic le choisit
+    cv.style.cursor = dh ? (selDouble() ? 'pointer' : 'text') : h ? (h.t === 'handle' ? 'grab' : libre ? 'pointer' : h.t === 'room' ? 'default' : 'move') : 'default';
   },
 };
+/* « toucher deux fois pour choisir » : réglage S.selection ('double' par défaut, 'simple' = comme avant) */
+const DBL_MS = 450;
+const selDouble = () => S.selection !== 'simple';
+function estChoisi(h) {
+  if (!ui.sel || !h) return false;
+  const t = h.t === 'label' ? 'room' : h.t;
+  return ui.sel.t === t && ui.sel.id === h.id;
+}
+/* un seul toucher sur un objet : il est entouré un instant ; les premières fois, une astuce rappelle le double toucher */
+let astuceT = 0;
+function astuceSel(h) {
+  clearTimeout(astuceT);
+  if (h && h.t !== 'room') { ui.hover = h; requestRender(true); }
+  astuceT = setTimeout(() => {
+    if (ui.pointerType !== 'mouse' && ui.hover === h) { ui.hover = null; requestRender(true); }
+    if ((S.astuceSel || 0) < 3) {
+      S.astuceSel = (S.astuceSel || 0) + 1; saveSettings();
+      toast(ui.pointerType === 'mouse' ? 'Double-cliquez sur un objet pour le choisir. Un clic glissé déplace le plan.' : 'Touchez deux fois un objet pour le choisir. Glisser déplace le plan.');
+    }
+  }, DBL_MS + 50);
+}
 TOOLS.wall = {
   down(wp) {
     ui.cursor = wallCursor(wp);

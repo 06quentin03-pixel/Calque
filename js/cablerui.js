@@ -7,7 +7,7 @@
    - Raccordement automatique des circuits : propositions affichées sur le plan, à valider ou refuser.
    Le moteur de calcul est js/cablage.js (sans écran). Rien n'est modifié sans geste de l'utilisateur. */
 import { EXT, IDX, P, S, bboxOf, saveSettings, ui, vdist, vmid } from './noyau.js';
-import { FONT_LABEL, RC, TS, VIEW, bbInView, setScreen, setWorld, textHalo, w2s } from './rendu2d.js';
+import { FONT_LABEL, RC, TS, VIEW, bbInView, occEcran, setScreen, setWorld, textHalo, w2s } from './rendu2d.js';
 import { ELEC_BY } from './symboles.js';
 import { accepts, circById, circNumbers, circuitColor } from './electricite.js';
 import { afterFilter, circsFiltre, creerGaineElec, ductAt, ductPts, ductVisible, elecVisible, famOn } from './reseaux.js';
@@ -67,7 +67,7 @@ function dessinerCablage(c, lv, opts) {
   if (!libelles.length) return;
   /* textes dans le repère de l'écran, toujours lisibles ; un même texte n'est pas répété à moins de 110 px */
   setScreen();
-  const vus = [], boites = [];
+  const vus = [], boites = occEcran() || []; // plan allégé : les noms des pièces déjà placés sont évités
   c.textAlign = 'center'; c.textBaseline = 'middle';
   for (const l of libelles) {
     const s = w2s(l.p);

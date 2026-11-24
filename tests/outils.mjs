@@ -36,6 +36,9 @@ export async function fresh(opts = {}) {
   /* volets du panneau de droite tout ouverts (réglage « Tout ouvrir ») : les tests touchent les boutons de toutes les sections ;
      opts.volets : comportement par défaut (volets fermés), testé dans tests/ergonomie.test.mjs */
   if (!opts.volets) await ctx.addInitScript(() => { try { const o = JSON.parse(localStorage.getItem('calque.settings') || '{}'); if (o.voletsTous === undefined) { o.voletsTous = true; localStorage.setItem('calque.settings', JSON.stringify(o)); } } catch (e) { } });
+  /* outil Sélection « toucher 1 fois » pour les tests écrits avant le réglage « toucher 2 fois pour choisir » (24 novembre 2026) ;
+     opts.selection : comportement par défaut (toucher 2 fois), testé dans tests/selection.test.mjs */
+  if (!opts.selection) await ctx.addInitScript(() => { try { const o = JSON.parse(localStorage.getItem('calque.settings') || '{}'); if (o.selection === undefined) { o.selection = 'simple'; localStorage.setItem('calque.settings', JSON.stringify(o)); } } catch (e) { } });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
