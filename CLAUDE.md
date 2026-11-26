@@ -26,6 +26,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 7. Compatibilité totale avec les plans existants. Toute évolution du format passe par une migration et une copie de sécurité.
 8. Tester chaque modification. Ne pas déclarer terminé ce qui n'est que visible à l'écran.
    - **Demande de l'utilisateur (23 novembre 2026) : ne pas lancer toute la suite de tests à chaque modification.** Lancer seulement les tests logiques pour ce qui a été touché (le fichier de test du module modifié, ceux des modules qui l'utilisent, `exemple.test.mjs` si le plan d'exemple change, `architecture.test.mjs` si un fichier est ajouté). La suite complète seulement si l'utilisateur la demande, ou pour un changement profond (format des plans, moteur partagé comme `noyau.js` ou `interaction.js`) : le dire avant.
+   - Règle confirmée par l'utilisateur le 26 novembre 2026 (« option 1 ») : pour un moteur partagé, lancer la suite complète en le disant juste avant, sans attendre de réponse.
 9. **S'arrêter et demander** avant toute décision qui risque de détruire des données, de casser une fonction existante ou de changer profondément l'architecture sans retour possible.
    - Pour le reste, décider de façon autonome.
 10. Langue : français, pour l'interface, les commentaires et les échanges. L'utilisateur débute sur GitHub : lui donner des explications simples et concrètes, adaptées à l'iPad.
