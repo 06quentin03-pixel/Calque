@@ -6,7 +6,7 @@ import { $, C, EXT, IDX, NF2, P, S, bboxOf, clamp, fmtLenU, inPoly, isNum, projS
 import { geo } from './geometrie.js';
 import { itemToLocal, itemToWorld } from './mutations.js';
 import { ELEC_BY, ELEC_CATS, S_ELEC, elecBox } from './symboles.js';
-import { FONT_LABEL, RC, TS, V, VIEW, bbInView, setScreen, setWorld, textHalo, w2s } from './rendu2d.js';
+import { FONT_LABEL, RC, TS, V, VIEW, bbInView, occEcran, placeLibre, setScreen, setWorld, textHalo, w2s } from './rendu2d.js';
 import { circById, circNumbers, circuitColor, cleanLinks, roomAt } from './electricite.js';
 import { K_screen, TAP, commit, ctx, drawSnapMarker, handleDot, hitTol, isDoubleTap, keys, requestRender, revert, tag } from './interaction.js';
 import { goToRef } from './tableau.js';
@@ -288,6 +288,7 @@ function drawGaine(c, d, pts, col, px) {
 function drawDuctLabels(lv, opts) {
   const c = RC.ctx;
   c.save(); c.font = `700 ${TS(10.5)}px ${FONT_LABEL}`; c.textAlign = 'center'; c.textBaseline = 'middle';
+  const vus = [];
   for (const d of P.ducts) {
     if (d.lv !== lv || !ductVisible(d)) continue;
     const pts = ductPts(d); let bi = -1, bl = 0;
@@ -300,7 +301,15 @@ function drawDuctLabels(lv, opts) {
     const m = vmid(a, b), n = { x: -Math.sin(ang), y: Math.cos(ang) };
     const off = (d.sys === 'vmc' ? ((d.dia || 125) / 20) * RC.s : 1) + TS(8);
     const str = d.sys === 'vmc' ? 'Ø' + (d.dia || '') : [estLienRJ45(d, IDX.elec) ? 'RJ45 ·' : '', estLienKNX(d, IDX.elec) ? 'Bus KNX ·' : '', typeChemin(d) ? typeChemin(d).court : '', tailleChemin(d)].filter(Boolean).join(' ');
-    c.save(); c.translate(m.x - n.x * off + (vdist(a, b) > 160 ? (b.x - a.x) * 0.22 : 0), m.y - n.y * off + (vdist(a, b) > 160 ? (b.y - a.y) * 0.22 : 0)); c.rotate(ang);
+    const tx = m.x - n.x * off + (vdist(a, b) > 160 ? (b.x - a.x) * 0.22 : 0), ty = m.y - n.y * off + (vdist(a, b) > 160 ? (b.y - a.y) * 0.22 : 0);
+    if (occEcran()) { /* plan allégé : pas de chevauchement, et un même texte pas répété à moins de 110 px */
+      if (vus.some((v) => v.t === str && Math.hypot(v.x - tx, v.y - ty) < 110)) continue;
+      const tw = c.measureText(str).width + 4, hh = TS(11), cs = Math.abs(Math.cos(ang)), sn = Math.abs(Math.sin(ang));
+      const bw = tw * cs + hh * sn, bh = tw * sn + hh * cs;
+      if (!placeLibre({ x0: tx - bw / 2, y0: ty - bh / 2, x1: tx + bw / 2, y1: ty + bh / 2 })) continue;
+      vus.push({ t: str, x: tx, y: ty });
+    }
+    c.save(); c.translate(tx, ty); c.rotate(ang);
     c.fillStyle = ductColor(d, !!opts.export); textHalo(c, str, 0, 0); c.restore();
   }
   c.restore();

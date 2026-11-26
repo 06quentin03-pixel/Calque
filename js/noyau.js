@@ -126,6 +126,8 @@ const S = {
   filt: { off: [], circ: null }, ductSys: 'vmc', ductKind: null, ductPose: null, // dernier type et dernière pose de gaine choisis
   raccMode: 'boites', // raccordement automatique : 'boites' (boîtes de dérivation, plafond et cloisons) ou 'proche' (de proche en proche)
   barres: 'auto', molette: 'zoom', // ordinateur (pc.js) : barres de défilement 'auto' | 'oui' | 'non' ; molette 'zoom' ou 'defiler'
+  selection: 'double', astuceSel: 0, // outil Sélection : 'double' (toucher deux fois pour choisir un objet, un seul toucher = naviguer) ou 'simple' (comme avant)
+  lisible: true, // gros plans : textes qui se chevauchent masqués à l'écran (noms des petites pièces, cotes, étiquettes des câbles)
   pencil: false, pencilSeen: false, // Apple Pencil : le stylet dessine, le doigt déplace le plan (activé au premier usage du stylet)
 };
 function loadSettings() {

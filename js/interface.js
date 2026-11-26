@@ -976,6 +976,11 @@ function renderViewPop() {
     toggleRow('Liaisons des commandes', () => L.links !== false, (v) => (L.links = v)),
     toggleRow('Couleurs des circuits', () => L.circ !== false, (v) => (L.circ = v)),
     toggleRow('Niveau inférieur en transparence', () => L.ghost, (v) => (L.ghost = v)),
+    h('h4', null, 'Gros plans'),
+    toggleRow('Plan allégé (textes qui se chevauchent masqués)', () => S.lisible !== false, (v) => (S.lisible = v)),
+    h('h4', null, 'Choisir un objet (outil Sélection)'),
+    segCtl([{ v: 'double', n: 'Toucher 2 fois' }, { v: 'simple', n: 'Toucher 1 fois' }], S.selection === 'simple' ? 'simple' : 'double', (v) => { S.selection = v; saveSettings(); renderViewPop(); }),
+    h('div', { class: 'note', style: 'padding:4px 10px 4px' }, S.selection === 'simple' ? 'Un toucher choisit l’objet ; glisser un objet le déplace.' : 'Glisser déplace le plan ; toucher 2 fois (double-clic à la souris) choisit l’objet, qui se déplace ensuite en le glissant.'),
     h('h4', null, 'Cotes des murs'),
     segCtl([{ v: 'faces', n: 'Faces' }, { v: 'axe', n: 'Axe' }, { v: 'none', n: 'Masquées' }], L.dims ? S.dimMode : 'none', (v) => { if (v === 'none') L.dims = false; else { L.dims = true; S.dimMode = v; } saveSettings(); renderViewPop(); requestRender(); }),
     h('h4', null, 'Unité des cotes'),
@@ -1137,7 +1142,9 @@ function openHelp() {
     h('h3', { style: 'margin:0;font-size:13px' }, 'Sur tablette et téléphone'),
     h('dl', { class: 'kv', style: 'grid-template-columns:auto 1fr' },
       li('Pincer', 'Zoomer'), li('Glisser à 2 doigts', 'Déplacer la vue'), li('Glisser sur le vide', 'Déplacer la vue'),
-      li('Toucher', 'Sélectionner'), li('Toucher 2 fois un nom', 'Renommer la pièce'), li('Toucher une cote de mur', 'Saisir la longueur de la face'),
+      ...(S.selection !== 'simple'
+        ? [li('Glisser (outil Sélection)', 'Déplacer le plan, même en partant d’un objet'), li('Toucher 2 fois un objet', 'Le choisir ; ensuite, le glisser le déplace'), li('Toucher 2 fois un nom choisi', 'Renommer la pièce'), li('Toucher 2 fois une cote de mur', 'Saisir la longueur de la face')]
+        : [li('Toucher', 'Sélectionner'), li('Toucher 2 fois un nom', 'Renommer la pièce'), li('Toucher une cote de mur', 'Saisir la longueur de la face')]),
       li('Outil Mur', 'Saisir la longueur, puis toucher dans la direction du mur : il prend cette longueur'), li('Outil Porte', 'Choisir « Porte » ou « Placard » dans le bandeau, puis toucher un mur'),
       li('Outil Conduit', 'Toucher le départ, chaque coude, puis le symbole d’arrivée'), li('Toucher 2 fois un coude', 'Retirer le coude d’un conduit sélectionné')),
     h('h3', { style: 'margin:6px 0 0;font-size:13px' }, 'Vue 3D'),

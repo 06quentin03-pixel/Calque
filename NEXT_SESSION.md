@@ -1,6 +1,6 @@
 # NEXT_SESSION — prompt et instructions pour la prochaine session
 
-Mise à jour : 23 novembre 2026 (confort sur ordinateur, branche `claude/awesome-dirac-wyg7fq`) ; avant : 17 novembre 2026 (murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois, branche `claude/jolly-heisenberg-lrjp4n`) ; avant : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
+Mise à jour : 24 novembre 2026 (sélection au double toucher, plan allégé, branche `claude/epic-darwin-7h2k3r`) ; avant : 23 novembre 2026 (confort sur ordinateur, branche `claude/awesome-dirac-wyg7fq`) ; avant : 17 novembre 2026 (murs inclinés, toits et panneaux solaires, terrasses, piscine, chauffe-eau, KNX, ossature bois, branche `claude/jolly-heisenberg-lrjp4n`) ; avant : 16 novembre 2026 soir (descente dans les murs, note de calcul du chauffage, branche `claude/dazzling-babbage-7wt87f`) ; avant : câbles à tirer et boîtes de dérivation (fusionnés dans `main`) ; avant : électroménager intégré, branche `claude/sharp-thompson-n0tvun`.
 
 Copiez le bloc ci-dessous au début d'une nouvelle session Claude Code.
 
@@ -30,6 +30,19 @@ fusionner la branche dans `main` : sur github.com, onglet « Pull requests » �
 compare `claude/calque-electrical-plans-module-tbt1ea` › « Create pull request » › « Merge pull request ».
 Vos plans ne sont pas touchés : à la première ouverture, le format passe de v11 à v12 avec une copie de sécurité dans
 Menu › Historique des versions (« Copie de sécurité avant mise à jour du format (v11 → v12) »).
+
+## Essais du 24 novembre 2026 : sélection au double toucher, plan allégé
+Pour l'essayer : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`, compare
+`claude/epic-darwin-7h2k3r` › Create pull request › Merge pull request). Le format des plans ne change pas (v20).
+Plan d'exemple ouvert, outil Sélection, sur l'iPad puis sur l'ordinateur :
+1. Glisser le doigt en partant d'une prise ou d'un mur : le plan bouge, l'objet reste en place.
+2. Toucher une fois une prise : elle est entourée un instant, rien d'autre (astuce les 3 premières fois).
+3. Toucher deux fois la prise (double-clic à la souris) : elle est choisie, son panneau s'ouvre ; la glisser la déplace.
+4. Toucher le vide : plus rien n'est choisi.
+5. Recadrer (bouton du milieu en bas) : les noms des pièces ne se chevauchent plus ; zoomer : les noms cachés des petites
+   pièces, les surfaces et les étiquettes des câbles reviennent.
+6. Affichage (icône des calques) › « Choisir un objet » : « Toucher 1 fois » remet le comportement d'avant ;
+   « Gros plans » › « Plan allégé » : désactivé, tout est dessiné comme avant.
 
 ## Essais du 23 novembre 2026 : confort sur ordinateur
 Pour l'essayer : fusionner la branche dans `main` (github.com › Pull requests › New pull request › base `main`, compare

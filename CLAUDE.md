@@ -12,7 +12,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 ## Règles impératives de l'utilisateur
 
 1. **Ne jamais modifier la branche `main`.** C'est la version que l'utilisateur utilise tous les jours, publiée par GitHub Pages.
-   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun` ; boîtes de dérivation et câbles à tirer : `claude/dazzling-babbage-7wt87f` ; toits, KNX, chauffe-eau : `claude/jolly-heisenberg-lrjp4n` ; confort sur ordinateur : `claude/awesome-dirac-wyg7fq`), partie de `main`.
+   - Tout le travail se fait sur la branche de développement indiquée au début de la session (phases 1 à 7 : `claude/layer-modification-prompt-feasibility-nw7oa4` ; mission de novembre 2026 : `claude/ecstatic-sagan-juah82` ; module « Plans électriques » : `claude/calque-electrical-plans-module-tbt1ea` ; compositions des murs : `claude/loving-thompson-b92t8x` ; composition par tronçon : `claude/wall-composition-per-room-877z62` ; fiabilisation : `claude/lucid-sagan-6h707m` ; électroménager intégré : `claude/sharp-thompson-n0tvun` ; boîtes de dérivation et câbles à tirer : `claude/dazzling-babbage-7wt87f` ; toits, KNX, chauffe-eau : `claude/jolly-heisenberg-lrjp4n` ; confort sur ordinateur : `claude/awesome-dirac-wyg7fq` ; sélection au double toucher et plan allégé : `claude/epic-darwin-7h2k3r`), partie de `main`.
    - L'utilisateur fusionne lui-même dans `main` quand il le décide. On lui explique comment.
 2. Pas de force push, pas de réécriture d'historique, pas de création de dépôt.
 3. Partir du code existant. Ne pas reconstruire de zéro, ne pas supprimer de fonctionnalité, ne pas remplacer un moteur qui fonctionne par une version simplifiée.
@@ -26,6 +26,7 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 7. Compatibilité totale avec les plans existants. Toute évolution du format passe par une migration et une copie de sécurité.
 8. Tester chaque modification. Ne pas déclarer terminé ce qui n'est que visible à l'écran.
    - **Demande de l'utilisateur (23 novembre 2026) : ne pas lancer toute la suite de tests à chaque modification.** Lancer seulement les tests logiques pour ce qui a été touché (le fichier de test du module modifié, ceux des modules qui l'utilisent, `exemple.test.mjs` si le plan d'exemple change, `architecture.test.mjs` si un fichier est ajouté). La suite complète seulement si l'utilisateur la demande, ou pour un changement profond (format des plans, moteur partagé comme `noyau.js` ou `interaction.js`) : le dire avant.
+   - Règle confirmée par l'utilisateur le 26 novembre 2026 (« option 1 ») : pour un moteur partagé, lancer la suite complète en le disant juste avant, sans attendre de réponse.
 9. **S'arrêter et demander** avant toute décision qui risque de détruire des données, de casser une fonction existante ou de changer profondément l'architecture sans retour possible.
    - Pour le reste, décider de façon autonome.
 10. Langue : français, pour l'interface, les commentaires et les échanges. L'utilisateur débute sur GitHub : lui donner des explications simples et concrètes, adaptées à l'iPad.
@@ -90,6 +91,8 @@ L'appareil principal de l'utilisateur est un **iPad Air M4 11 pouces avec Apple 
 - Chauffe-eau (`e.ce`) : `ecs.js` / `ecsui.js` ; piscine (volumes) : `piscine.js` ; ossature bois : `ossature.js` (matériaux avec `ossature` dans `compositions.js`).
 - KNX (`e.knx`, `P.knx`) : `knx.js` (sans écran) / `knxui.js` ; le bus est une gaine sans circuit entre deux appareils `knx_*` (`estLienKNX`, exclue du réseau du courant fort comme `estLienRJ45`).
 - Ordinateur (23 novembre 2026) : `pc.js` (écran) — barres de défilement du plan (`EXT.rendu`, réglage `S.barres` 'auto' | 'oui' | 'non'), menu du clic droit (`EXT.menuContextuel`, clic droit + glisser = déplacer), molette `S.molette` ('zoom' par défaut ou 'defiler'), raccourcis + − 0 ? Ctrl S, panneau de droite redimensionnable (`S.largeurPanneau`, variable CSS `--insp-w`).
+- Sélection (24 novembre 2026) : réglage `S.selection` (`'double'` par défaut) : avec l'outil Sélection, glisser déplace le plan, toucher 2 fois choisit un objet, un objet choisi se glisse. Les tests démarrent en `'simple'` (`fresh({ selection: true })` pour le comportement par défaut).
+- Plan allégé (24 novembre 2026, `S.lisible`, écran seulement) : tout texte dessiné à l'écran par-dessus le plan passe par `placeLibre` / `occEcran` (`rendu2d.js`) pour ne pas en chevaucher un autre ; les exports dessinent tout.
 - Apple Pencil : réglage `S.pencil`, activé au premier contact du stylet. Avec un outil de dessin, le doigt déplace le plan. La paume est ignorée pendant que le stylet est posé.
 
 ## Architecture cible

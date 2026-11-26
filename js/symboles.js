@@ -909,7 +909,13 @@ const ELEC = [
 /* range les symboles par catégorie (légende et catalogue dans le même ordre) */
 { const ci = (d) => ELEC_CATS.findIndex((x) => x.id === d.cat); ELEC.sort((a, b) => ci(a) - ci(b)); }
 const ELEC_BY = new Map(ELEC.map((e) => [e.t, e]));
-function elecSize(K) { return Math.max(S_ELEC, 20 * K.px); }
+/* taille d'un symbole : 30 cm, et au moins 20 px à l'écran pour rester lisible ; plan allégé (S.lisible, écran seulement,
+   K.ecran) : en vue très éloignée, ce minimum descend jusqu'à 12 px pour que les symboles ne se recouvrent plus */
+function elecSize(K) {
+  let mini = 20;
+  if (K.ecran && S.lisible !== false) mini = Math.max(12, Math.min(20, 12 + (1 / K.px - 0.3) * 40));
+  return Math.max(S_ELEC, mini * K.px);
+}
 /* taille d'un symbole (format v12) : 0,5 à 3, 1 par défaut */
 const tailleSym = (e) => (e && typeof e.sc === 'number' && e.sc >= 0.5 && e.sc <= 3 ? e.sc : 1);
 function drawElec(c, e, K) {

@@ -28,7 +28,7 @@ function readColors() {
 const V = { s: 0.6, ox: 0, oy: 0 };
 let RC = null;
 function K_() {
-  return { px: RC.px, ink: RC.C.ink, ink2: RC.C.ink2, fill: RC.C.fill, tone: RC.C.tone, wall: RC.C.wall, bg: RC.C.room, elec: RC.C.elec, font: FONT_LABEL };
+  return { px: RC.px, ecran: RC === SCR, ink: RC.C.ink, ink2: RC.C.ink2, fill: RC.C.fill, tone: RC.C.tone, wall: RC.C.wall, bg: RC.C.room, elec: RC.C.elec, font: FONT_LABEL };
 }
 const TS = (v) => v * (RC.ts || 1);
 function setWorld() { RC.ctx.setTransform(RC.dpr * RC.s, 0, 0, RC.dpr * RC.s, RC.dpr * RC.ox, RC.dpr * RC.oy); }
@@ -75,7 +75,53 @@ function lattes(c, r, pas, col) {
 function drawScene(lv, opts) {
   opts = opts || {};
   VIEW = opts.export || RC !== SCR || DEBUG.includes('nocull') ? null : viewRect();
-  try { drawSceneIn(lv, opts); } finally { VIEW = null; }
+  /* plan allégé (réglage S.lisible, écran seulement) : les textes posés à l'écran se réservent leur place dans OCC */
+  OCC = !opts.export && RC === SCR && S.lisible !== false ? [] : null;
+  try { drawSceneIn(lv, opts); } finally {
+    if (RC === SCR && !opts.export) DERNIER = OCC ? { boites: OCC.slice(), noms: ETQ ? [...ETQ.values()].filter((x) => x.nom).length : 0, pieces: ETQ ? ETQ.size : 0 } : null;
+    VIEW = null; OCC = null; ETQ = null;
+  }
+}
+/* dernier dessin à l'écran (diagnostic et tests) : textes placés, noms des pièces affichés */
+let DERNIER = null, ETQ = null;
+const dernieresEtiquettes = () => DERNIER;
+/* ---------- plan allégé : textes qui ne se chevauchent pas (écran seulement, jamais dans les exports) ----------
+   Ordre de priorité : noms des pièces (les plus grandes d'abord), puis surfaces, étiquettes des câbles, cotes des murs,
+   étiquettes des gaines. Un texte qui chevaucherait un texte déjà posé n'est pas dessiné ; il revient en zoomant. */
+let OCC = null;
+const occEcran = () => OCC;
+/* réserve la boîte b (repère de l'écran) si elle est libre ; sans plan allégé, tout est accepté */
+function placeLibre(b) {
+  if (!OCC) return true;
+  if (OCC.some((o) => rectHit(o, b))) return false;
+  OCC.push(b); return true;
+}
+/* noms et surfaces des pièces : ce qui est affiché pour chaque pièce, réservé dans OCC */
+function placerEtiquettesPieces(g) {
+  const out = new Map();
+  if (!OCC || (!S.layers.names && !S.layers.areas)) return null;
+  const c = RC.ctx;
+  const rooms = g.rooms.filter((r) => !VIEW || bbInView(bbOf(r, r.poly))).sort((a, b) => b.area - a.area);
+  for (const r of rooms) {
+    const lbl = r.label, p = lbl ? w2s(lbl) : w2s(labelPoint(r.poly));
+    const nom = !!(S.layers.names && lbl), aire = !!S.layers.areas;
+    c.font = `650 ${TS(13)}px ${FONT_UI}`;
+    const w1 = nom ? c.measureText(lbl.name).width : 0;
+    c.font = `500 ${TS(11.5)}px ${FONT_LABEL}`;
+    const w2 = aire ? c.measureText(fmtArea(r.area)).width : 0;
+    const bb = bbOf(r, r.poly), rw = (bb.x1 - bb.x0) * RC.s, rh = (bb.y1 - bb.y0) * RC.s;
+    const boite = (w, hh, dy) => ({ x0: p.x - w / 2 - 3, y0: p.y + dy - hh, x1: p.x + w / 2 + 3, y1: p.y + dy + hh });
+    const essais = [];
+    /* nom et surface ; la surface seule disparaît d'abord quand la pièce est petite à l'écran */
+    if (nom && aire && w2 < rw && TS(36) < rh) essais.push({ nom: true, aire: true, b: [boite(w1, TS(8), -TS(8)), boite(w2, TS(7), TS(9))] });
+    if (nom) essais.push({ nom: true, aire: false, b: [boite(w1, TS(9), 0)] });
+    else if (aire && w2 < rw) essais.push({ nom: false, aire: true, b: [boite(w2, TS(8), 0)] });
+    let choix = { nom: false, aire: false };
+    for (const e of essais) if (!e.b.some((b) => OCC.some((o) => rectHit(o, b)))) { OCC.push(...e.b); choix = e; break; }
+    out.set(r, choix);
+  }
+  ETQ = out;
+  return out;
 }
 function drawSceneIn(lv, opts) {
   const c = RC.ctx, Cc = RC.C;
@@ -91,6 +137,9 @@ function drawSceneIn(lv, opts) {
   lay('PIECES');
   const g = geo(lv);
   const K = K_();
+  setScreen();
+  const etiq = calqueVisible('archi') ? placerEtiquettesPieces(g) : null; // plan allégé : places des noms des pièces réservées d'abord
+  setWorld();
   const below = levelBelow(lv);
   /* calques : architecture (pièces, murs, ouvertures, escaliers) et mobilier, avec leur opacité */
   const archi = calqueVisible('archi'), aArchi = opaciteCalque('archi'), aMob = opaciteCalque('mobilier');
@@ -171,11 +220,11 @@ function drawSceneIn(lv, opts) {
   lay('COTES');
   if (S.layers.dims && (!opts.export || opts.dims !== false)) { alpha(opaciteCalque('cotations')); drawDims(lv); alpha(1); }
   setScreen();
-  const occ = roomLabelRects(g);
+  const occ = OCC || roomLabelRects(g);
   if (RC === SCR) setDIMHIT([]);
   if (S.layers.dims && archi) { alpha(opaciteCalque('cotations')); drawWallDims(g, occ); alpha(1); }
   lay('PIECES');
-  if (archi) { alpha(aArchi); drawRoomLabels(g); alpha(1); }
+  if (archi) { alpha(aArchi); drawRoomLabels(g, etiq); alpha(1); }
   lay('ELEC_CHEMINEMENTS');
   if (S.layers.elec) drawDuctLabels(lv, opts);
   lay('TEXTES');
@@ -543,6 +592,8 @@ function drawWallDims(g, occ) {
       const [p0, p1] = wg.faceP, [q0, q1] = wg.faceN;
       items.push({ a: p0, b: p1, L: vdist(p0, p1), n: wg.n, off: 0, sgn: 1 });
       items.push({ a: q0, b: q1, L: vdist(q0, q1), n: vmul(wg.n, -1), off: 0, sgn: -1 });
+      /* plan allégé, vue éloignée : mur très fin à l'écran, une seule cote (la plus longue face) au lieu de deux collées */
+      if (OCC && wg.th * RC.s < 22) items.splice(items[0].L >= items[1].L ? 1 : 0, 1);
     }
     for (const it of items) {
       const sa = w2s(it.a), sb = w2s(it.b);
@@ -567,7 +618,7 @@ function drawWallDims(g, occ) {
     }
   }
 }
-function drawRoomLabels(g) {
+function drawRoomLabels(g, etiq) {
   if (!S.layers.names && !S.layers.areas) return;
   const c = RC.ctx;
   c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -575,14 +626,16 @@ function drawRoomLabels(g) {
     if (VIEW && !bbInView(bbOf(r, r.poly))) continue;
     const lbl = r.label;
     const p = lbl ? w2s(lbl) : w2s(labelPoint(r.poly));
-    const showName = S.layers.names && lbl;
+    const ch = etiq ? etiq.get(r) : null; // plan allégé : ce qui a trouvé sa place
+    const showName = S.layers.names && lbl && (!ch || ch.nom);
+    const showArea = S.layers.areas && (!ch || ch.aire);
     const area = fmtArea(r.area);
     c.fillStyle = RC.C.ink;
     if (showName) {
       c.font = `650 ${TS(13)}px ${FONT_UI}`;
-      textHalo(c, lbl.name, p.x, p.y - (S.layers.areas ? TS(8) : 0));
+      textHalo(c, lbl.name, p.x, p.y - (showArea ? TS(8) : 0));
     }
-    if (S.layers.areas) {
+    if (showArea) {
       c.font = `500 ${TS(11.5)}px ${FONT_LABEL}`; c.fillStyle = RC.C.ink2;
       textHalo(c, area, p.x, p.y + (showName ? TS(9) : 0));
     }
@@ -642,5 +695,5 @@ function setRC(v) { RC = v; }
 export { DEBUG, FONT_LABEL, FONT_UI, K_, RC, TEXT_SIZES, TINTS, TINT_NAMES, TS, V, VIEW, VIEW_MARGIN, arcShort,
   arrowAlong, bbInView, bbOf, closetLeafHinges, closetPlane, dimInView, drawClosetSym, drawDimLabels, drawDims,
   drawDoorSym, drawGapSym, drawGhost, drawGrid, drawHalo, drawLinks, drawOpenings, drawRoomLabels, drawScene,
-  drawSceneIn, drawTexts, drawWallDims, drawWalls, drawWindowSym, inView, itemInView, leafRect, linkAnchorRC, pathPoly,
+  drawSceneIn, drawTexts, drawWallDims, drawWalls, drawWindowSym, dernieresEtiquettes, inView, itemInView, occEcran, placeLibre, leafRect, linkAnchorRC, pathPoly,
   readColors, rectHit, roomLabelRects, setRC, setScreen, setWorld, swing, textBox, textHalo, viewRect, w2s, wallInView };

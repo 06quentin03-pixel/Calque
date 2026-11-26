@@ -1,3 +1,8 @@
+## 24 novembre 2026 — Sélection au double toucher, plan allégé
+- Outil Sélection : glisser déplace le plan, toucher 2 fois (double-clic) choisit un objet ; réglage « Toucher 1 fois » pour revenir comme avant.
+- Gros plans : textes qui se chevauchent masqués à l'écran (noms des pièces prioritaires), une cote par mur en vue éloignée, symboles plus petits en vue éloignée ; exports inchangés.
+- Tests : `tests/selection.test.mjs` (4 tests).
+
 ## 23 novembre 2026 — Confort sur ordinateur
 - Barres de défilement du plan, menu du clic droit, clic droit + glisser, molette « Faire défiler » (réglage), raccourcis + − 0 ? Ctrl S, panneau de droite redimensionnable (`js/pc.js`).
 - Tests : `tests/pc.test.mjs` (6 tests) ; 247/247.
